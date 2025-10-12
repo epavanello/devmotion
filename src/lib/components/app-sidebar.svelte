@@ -17,6 +17,7 @@
   import type { Component, ComponentProps } from 'svelte';
   import { getSession } from '$lib/context.svelte';
   import type { User } from 'better-auth';
+  import Button from './ui/button/button.svelte';
 
   const { user } = getSession();
 
@@ -201,6 +202,8 @@
           avatar: data.user.image ?? ''
         }}
       />
+    {:else}
+      <Button href="/login" variant="outline" size="sm" class="w-full">Login</Button>
     {/if}
   </Sidebar.Footer>
 </Sidebar.Root>

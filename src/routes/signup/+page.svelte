@@ -6,6 +6,6 @@
   <title>Sign Up</title>
 </svelte:head>
 
-<div class="container mx-auto flex min-h-screen items-center justify-center px-4">
+<div class="flex min-h-full w-full items-center justify-center px-4">
   <SignupForm />
 </div>
