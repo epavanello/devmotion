@@ -1,6 +1,6 @@
 export async function load({ locals }) {
   return {
-    session: locals.session,
-    user: locals.user
+    session: locals.session ?? null,
+    user: locals.user ?? null
   };
 }
