@@ -5,6 +5,7 @@
   import * as Field from '$lib/components/ui/field/index.js';
   import GoogleIcon from '$lib/assets/svg/google-icon.svelte';
   import { login } from '$lib/functions/auth.remote';
+  import { goto, invalidate } from '$app/navigation';
 
   const id = $props.id();
 </script>
@@ -15,7 +16,17 @@
     <Card.Description>Enter your email below to login to your account</Card.Description>
   </Card.Header>
   <Card.Content>
-    <form {...login}>
+    <form
+      {...login.enhance(async ({ submit }) => {
+        try {
+          await submit();
+        } catch (error) {
+          console.error(error);
+          return;
+        }
+        window.location.href = '/';
+      })}
+    >
       <Field.Group>
         <Field.Field>
           <Field.Label for="email-{id}">Email</Field.Label>

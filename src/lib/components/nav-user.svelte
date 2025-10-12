@@ -11,6 +11,7 @@
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
   import { useSidebar } from '$lib/components/ui/sidebar/index.js';
   import { authClient } from '$lib/auth-client';
+  import { invalidateAll } from '$app/navigation';
 
   let {
     user
@@ -89,8 +90,9 @@
         </DropdownMenu.Group>
         <DropdownMenu.Separator />
         <DropdownMenu.Item
-          onclick={() => {
-            authClient.signOut();
+          onclick={async () => {
+            await authClient.signOut();
+            invalidateAll();
           }}
         >
           <LogOutIcon />

@@ -19,10 +19,9 @@
   import type { User } from 'better-auth';
   import Button from './ui/button/button.svelte';
 
-  const { user } = getSession();
+  const session = getSession();
 
   const data: {
-    user: User | null;
     navMain: {
       title: string;
       url: string;
@@ -44,7 +43,6 @@
       icon: Component;
     }[];
   } = {
-    user: user,
     navMain: [
       {
         title: 'Playground',
@@ -194,12 +192,13 @@
     <NavSecondary items={data.navSecondary} class="mt-auto" />
   </Sidebar.Content>
   <Sidebar.Footer>
-    {#if data.user}
+    {@const user = session.user}
+    {#if user}
       <NavUser
         user={{
-          name: data.user.name,
-          email: data.user.email,
-          avatar: data.user.image ?? ''
+          name: user.name ?? '',
+          email: user.email ?? '',
+          avatar: user.image ?? ''
         }}
       />
     {:else}

@@ -1,4 +1,4 @@
-import { command, form } from '$app/server';
+import { form } from '$app/server';
 import { auth } from '$lib/server/auth';
 import { z } from 'zod';
 
@@ -6,10 +6,9 @@ export const login = form(
   z.object({ email: z.email(), password: z.string() }),
   async ({ email, password }) => {
     try {
-      const response = await auth.api.signInEmail({
+      await auth.api.signInEmail({
         body: { email, password }
       });
-      return response;
     } catch (error) {
       console.error(error);
       if (error instanceof Error) {
@@ -35,10 +34,9 @@ export const signup = form(
     }),
   async ({ name, email, password }) => {
     try {
-      const response = await auth.api.signUpEmail({
+      await auth.api.signUpEmail({
         body: { name, email, password }
       });
-      return response;
     } catch (error) {
       console.error(error);
       if (error instanceof Error) {
