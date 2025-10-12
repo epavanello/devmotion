@@ -8,7 +8,15 @@ const config = {
   // for more information about preprocessors
   preprocess: [vitePreprocess(), mdsvex()],
   kit: {
-    adapter: adapter()
+    adapter: adapter(),
+    experimental: {
+      remoteFunctions: true
+    }
+  },
+  compilerOptions: {
+    experimental: {
+      async: true
+    }
   },
   extensions: ['.svelte', '.svx']
 };

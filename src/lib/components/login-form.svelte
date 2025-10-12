@@ -9,8 +9,11 @@
     FieldDescription
   } from '$lib/components/ui/field/index.js';
   import GoogleIcon from '$lib/assets/svg/google-icon.svelte';
+  import { login } from '../../routes/functions/login.remote';
 
   const id = $props.id();
+
+  login;
 </script>
 
 <Card.Root class="mx-auto w-full max-w-sm">
@@ -33,7 +36,13 @@
           <Input id="password-{id}" type="password" required />
         </Field>
         <Field>
-          <Button type="submit" class="w-full">Login</Button>
+          <Button
+            type="submit"
+            class="w-full"
+            onclick={() => {
+              login({ email: 'test@test.com', password: 'test' });
+            }}>Login</Button
+          >
           <Button variant="outline" class="w-full">
             <GoogleIcon />
             Login with Google
