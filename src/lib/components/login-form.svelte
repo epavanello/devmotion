@@ -4,7 +4,7 @@
   import { Input } from '$lib/components/ui/input';
   import * as Field from '$lib/components/ui/field/index.js';
   import GoogleIcon from '$lib/assets/svg/google-icon.svelte';
-  import { login } from '$lib/functions/login.remote';
+  import { login } from '$lib/functions/auth.remote';
 
   const id = $props.id();
 </script>
@@ -32,7 +32,9 @@
         <Field.Field>
           <div class="flex items-center">
             <Field.Label for="password-{id}">Password</Field.Label>
-            <a href="##" class="ml-auto inline-block text-sm underline"> Forgot your password? </a>
+            <a href="/forgot-password" class="ml-auto inline-block text-sm underline">
+              Forgot your password?
+            </a>
           </div>
           <Input id="password-{id}" required {...login.fields.password.as('password')} />
           {#each login.fields.password.issues() as issue}
@@ -49,7 +51,7 @@
             Login with Google
           </Button>
           <Field.Description class="text-center">
-            Don't have an account? <a href="##">Sign up</a>
+            Don't have an account? <a href="/signup">Sign up</a>
           </Field.Description>
         </Field.Field>
       </Field.Group>
