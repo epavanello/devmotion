@@ -15,11 +15,15 @@
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
   import CommandIcon from '@lucide/svelte/icons/command';
   import type { Component, ComponentProps } from 'svelte';
-  import { getSession } from '$lib/context.svelte';
-  import type { User } from 'better-auth';
   import Button from './ui/button/button.svelte';
+  import { authClient } from '$lib/auth-client';
+  import { getUser } from '$lib/functions/auth.remote';
 
-  const session = getSession();
+  const clientSession = authClient.useSession();
+
+  const serverUser = await getUser();
+
+  const user = $derived($clientSession.data?.user ?? serverUser);
 
   const data: {
     navMain: {
@@ -192,7 +196,6 @@
     <NavSecondary items={data.navSecondary} class="mt-auto" />
   </Sidebar.Content>
   <Sidebar.Footer>
-    {@const user = session.user}
     {#if user}
       <NavUser
         user={{

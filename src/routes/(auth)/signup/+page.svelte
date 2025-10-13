@@ -59,8 +59,8 @@
             <Field.Error>{issue.message}</Field.Error>
           {/each}
         </Field.Field>
-        {#if signup.result && 'error' in signup.result && signup.result.error}
-          <Field.Error>{signup.result.error}</Field.Error>
+        {#if !signup.result?.success}
+          <Field.Error>{signup.result?.error}</Field.Error>
         {/if}
         <Field.Field>
           <Button type="submit" class="w-full" disabled={!!signup.pending}>Sign Up</Button>

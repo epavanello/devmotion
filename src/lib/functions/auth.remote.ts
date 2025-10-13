@@ -1,23 +1,19 @@
-import { form } from '$app/server';
+import { form, getRequestEvent, query } from '$app/server';
 import { auth } from '$lib/server/auth';
+import { redirect } from '@sveltejs/kit';
 import { z } from 'zod';
+import { withErrorHandling } from '.';
 
 export const login = form(
   z.object({ email: z.email(), password: z.string() }),
-  async ({ email, password }) => {
-    try {
-      await auth.api.signInEmail({
-        body: { email, password }
-      });
-    } catch (error) {
-      console.error(error);
-      if (error instanceof Error) {
-        return { error: error.message };
-      }
-
-      return { error: 'An unknown error occurred' };
-    }
-  }
+  withErrorHandling(async ({ email, password }) => {
+    const { request } = getRequestEvent();
+    await auth.api.signInEmail({
+      body: { email, password },
+      headers: request.headers
+    });
+    redirect(303, '/');
+  })
 );
 
 export const signup = form(
@@ -32,36 +28,33 @@ export const signup = form(
       message: "Passwords don't match",
       path: ['confirmPassword']
     }),
-  async ({ name, email, password }) => {
-    try {
-      await auth.api.signUpEmail({
-        body: { name, email, password }
-      });
-    } catch (error) {
-      console.error(error);
-      if (error instanceof Error) {
-        return { error: error.message };
-      }
-
-      return { error: 'An unknown error occurred' };
-    }
-  }
+  withErrorHandling(async ({ name, email, password }) => {
+    await auth.api.signUpEmail({
+      body: { name, email, password }
+    });
+    redirect(303, '/');
+  })
 );
 export const forgotPassword = form(
   z.object({ email: z.email('Invalid email address') }),
-  async ({ email }) => {
-    try {
-      const response = await auth.api.forgetPassword({
-        body: { email }
-      });
-      return response;
-    } catch (error) {
-      console.error(error);
-      if (error instanceof Error) {
-        return { error: error.message };
-      }
-
-      return { error: 'An unknown error occurred' };
-    }
-  }
+  withErrorHandling(async ({ email }) => {
+    await auth.api.forgetPassword({
+      body: { email }
+    });
+  })
 );
+
+export const signOut = form(
+  withErrorHandling(async () => {
+    const { request } = getRequestEvent();
+    await auth.api.signOut({
+      headers: request.headers
+    });
+    redirect(303, '/');
+  })
+);
+
+export const getUser = query(async () => {
+  const { locals } = getRequestEvent();
+  return locals.user;
+});

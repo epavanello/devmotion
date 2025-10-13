@@ -5,7 +5,6 @@
   import * as Field from '$lib/components/ui/field/index.js';
   import GoogleIcon from '$lib/assets/svg/google-icon.svelte';
   import { login } from '$lib/functions/auth.remote';
-  import { goto, invalidate } from '$app/navigation';
 
   const id = $props.id();
 </script>
@@ -18,13 +17,7 @@
   <Card.Content>
     <form
       {...login.enhance(async ({ submit }) => {
-        try {
-          await submit();
-        } catch (error) {
-          console.error(error);
-          return;
-        }
-        window.location.href = '/';
+        submit();
       })}
     >
       <Field.Group>
@@ -52,8 +45,8 @@
             <Field.Error>{issue.message}</Field.Error>
           {/each}
         </Field.Field>
-        {#if login.result && 'error' in login.result && login.result.error}
-          <Field.Error>{login.result.error}</Field.Error>
+        {#if !login.result?.success}
+          <Field.Error>{login.result?.error}</Field.Error>
         {/if}
         <Field.Field>
           <Button type="submit" class="w-full" disabled={!!login.pending}>Login</Button>
