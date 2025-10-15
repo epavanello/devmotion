@@ -2,7 +2,7 @@
  * Factory functions for creating layers
  */
 import { nanoid } from 'nanoid';
-import type { Layer, LayerType, ShapeType } from '$lib/types/animation';
+import type { Layer, ShapeType } from '$lib/types/animation';
 
 export function createTextLayer(x = 0, y = 0): Layer {
   return {

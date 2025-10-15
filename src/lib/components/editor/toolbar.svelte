@@ -44,17 +44,13 @@
   }
 
   function addTextLayer() {
-    const layer = createTextLayer(projectStore.project.width / 2, projectStore.project.height / 2);
+    const layer = createTextLayer(0, 0);
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }
 
   function addShapeLayer(shapeType: 'rectangle' | 'circle' | 'triangle') {
-    const layer = createShapeLayer(
-      shapeType,
-      projectStore.project.width / 2,
-      projectStore.project.height / 2
-    );
+    const layer = createShapeLayer(shapeType, 0, 0);
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }

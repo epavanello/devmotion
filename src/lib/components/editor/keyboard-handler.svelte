@@ -58,10 +58,7 @@
       // T - Add text layer
       if (e.key === 't' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
-        const layer = createTextLayer(
-          projectStore.project.width / 2,
-          projectStore.project.height / 2
-        );
+        const layer = createTextLayer(0, 0);
         projectStore.addLayer(layer);
         projectStore.selectedLayerId = layer.id;
       }
@@ -69,11 +66,7 @@
       // R - Add rectangle
       if (e.key === 'r' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
-        const layer = createShapeLayer(
-          'rectangle',
-          projectStore.project.width / 2,
-          projectStore.project.height / 2
-        );
+        const layer = createShapeLayer('rectangle', 0, 0);
         projectStore.addLayer(layer);
         projectStore.selectedLayerId = layer.id;
       }
@@ -81,11 +74,7 @@
       // C - Add circle
       if (e.key === 'c' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
-        const layer = createShapeLayer(
-          'circle',
-          projectStore.project.width / 2,
-          projectStore.project.height / 2
-        );
+        const layer = createShapeLayer('circle', 0, 0);
         projectStore.addLayer(layer);
         projectStore.selectedLayerId = layer.id;
       }

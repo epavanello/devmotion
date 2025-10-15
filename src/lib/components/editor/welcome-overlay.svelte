@@ -14,27 +14,19 @@
   const hasLayers = $derived(projectStore.project.layers.length > 0);
 
   function addTextLayer() {
-    const layer = createTextLayer(projectStore.project.width / 2, projectStore.project.height / 2);
+    const layer = createTextLayer(0, 0);
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }
 
   function addRectangle() {
-    const layer = createShapeLayer(
-      'rectangle',
-      projectStore.project.width / 2,
-      projectStore.project.height / 2
-    );
+    const layer = createShapeLayer('rectangle', 0, 0);
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }
 
   function addCircle() {
-    const layer = createShapeLayer(
-      'circle',
-      projectStore.project.width / 2,
-      projectStore.project.height / 2
-    );
+    const layer = createShapeLayer('circle', 0, 0);
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }
