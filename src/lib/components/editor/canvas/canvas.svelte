@@ -101,6 +101,10 @@
     // Update grid visibility
     updateGrid();
 
+    // Remove all selection outlines from previous renders
+    const selections = scene.children.filter((child) => child.name === 'selection');
+    selections.forEach((selection) => scene.remove(selection));
+
     // Clear old objects
     layerObjects.forEach((obj) => {
       scene.remove(obj);
@@ -150,7 +154,9 @@
       }
 
       if (object) {
-        object.position.set(transform.position.x, -transform.position.y, transform.position.z);
+        // Note: Y is NOT inverted here - we use the value as-is
+        // Three.js Y-up coordinate system matches our logical coordinate system
+        object.position.set(transform.position.x, transform.position.y, transform.position.z);
         object.rotation.set(transform.rotation.x, transform.rotation.y, transform.rotation.z);
         object.scale.set(transform.scale.x, transform.scale.y, transform.scale.z);
         object.userData.layerId = layer.id;
