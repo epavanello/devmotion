@@ -98,20 +98,20 @@ export class CanvasInteractionManager {
       const layerId = this.selectedObject.userData.layerId;
       const layer = projectStore.project.layers.find((l) => l.id === layerId);
 
-       if (layer) {
-         // Calculate movement in world space
-         const rect = this.canvas.getBoundingClientRect();
-         const movementX =
-           (event.movementX / rect.width) *
-           2 *
-           (projectStore.project.width / 2) *
-           projectStore.viewport.zoom;
-         // Note: Y is inverted because screen Y goes down but Three.js Y goes up
-         const movementY =
-           (-event.movementY / rect.height) *
-           2 *
-           (projectStore.project.height / 2) *
-           projectStore.viewport.zoom;
+      if (layer) {
+        // Calculate movement in world space
+        const rect = this.canvas.getBoundingClientRect();
+        const movementX =
+          (event.movementX / rect.width) *
+          2 *
+          (projectStore.project.width / 2) *
+          projectStore.viewport.zoom;
+        // Note: Y is inverted because screen Y goes down but Three.js Y goes up
+        const movementY =
+          (-event.movementY / rect.height) *
+          2 *
+          (projectStore.project.height / 2) *
+          projectStore.viewport.zoom;
 
         const newTransform = {
           ...layer.transform,

@@ -175,25 +175,34 @@
   function createTextObject(text: string, color: string, opacity: number): THREE.Object3D {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
-    canvas.width = 512;
-    canvas.height = 128;
+    canvas.width = 1024;
+    canvas.height = 256;
 
+    // Clear canvas with transparent background
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw text
     ctx.fillStyle = color;
-    ctx.font = '48px Arial';
+    ctx.font = 'bold 96px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, 256, 64);
+    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
 
     const texture = new THREE.CanvasTexture(canvas);
-    const material = new THREE.SpriteMaterial({
+    texture.needsUpdate = true;
+
+    // Use PlaneGeometry instead of Sprite for consistent behavior with shapes
+    const geometry = new THREE.PlaneGeometry(400, 100);
+    const material = new THREE.MeshBasicMaterial({
       map: texture,
       transparent: true,
-      opacity
+      opacity,
+      side: THREE.DoubleSide
     });
-    const sprite = new THREE.Sprite(material);
-    sprite.scale.set(200, 50, 1);
 
-    return sprite;
+    const mesh = new THREE.Mesh(geometry, material);
+
+    return mesh;
   }
 
   function createShapeObject(
@@ -232,15 +241,19 @@
     opacity: number
   ): THREE.Object3D {
     const texture = new THREE.TextureLoader().load(imageData.src);
-    const material = new THREE.SpriteMaterial({
+
+    // Use PlaneGeometry for consistent behavior with other layers
+    const geometry = new THREE.PlaneGeometry(imageData.width, imageData.height);
+    const material = new THREE.MeshBasicMaterial({
       map: texture,
       transparent: true,
-      opacity
+      opacity,
+      side: THREE.DoubleSide
     });
-    const sprite = new THREE.Sprite(material);
-    sprite.scale.set(imageData.width, imageData.height, 1);
 
-    return sprite;
+    const mesh = new THREE.Mesh(geometry, material);
+
+    return mesh;
   }
 
   function addSelectionOutline(object: THREE.Object3D) {
