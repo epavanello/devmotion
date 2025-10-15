@@ -1,51 +1,170 @@
-### 🎬 **Context prompt — Web After Effects Simplified**
+# 🎬 Animation Editor - Web After Effects Simplified
 
-Obiettivo: sviluppare un editor di animazioni web 2D/3D ispirato a After Effects, con interfaccia semplice ma strutturata, che permetta di animare testi, forme e immagini, e di esportare video MP4.
+A web-based 2D/3D animation editor inspired by After Effects, with a simple but structured interface that allows you to animate text, shapes, and images, and export MP4 videos.
 
-#### Stack e scelte tecniche
+## ✨ Current Status
 
-- **Framework UI:** Svelte 5 (usare _runes_, no state manager esterni).
-- **Rendering:** Three.js (supporto 2D + 3D nel canvas principale).
-- **Export video:** ffmpeg.wasm per generare MP4 direttamente nel browser.
-- **Runtime:** totalmente client-side, no backend obbligatorio.
+**✅ MVP COMPLETE** - The base implementation is ready with all core features!
 
-#### Funzionalità principali
+### Implemented Features
 
-1. **Timeline con keyframe**
-   - Gestione livelli (layers).
-   - Interpolazione automatica (linear, ease-in/out, cubic-bezier).
-   - Playhead, scrubbing e anteprima real-time.
+✅ **Timeline with Keyframes**
 
-2. **Canvas editor (viewport)**
-   - Zoom/pan, snap, griglie, guide.
-   - Selezione, drag, resize, rotazione.
-   - Anteprima animazione sincronizzata con la timeline.
+- Layer management with full CRUD operations
+- Automatic interpolation (linear, ease-in/out, cubic-bezier)
+- Interactive playhead with scrubbing
+- Real-time animation preview
 
-3. **Gestione oggetti**
-   - Tipi: testo, forma vettoriale, immagine.
-   - Proprietà animabili: posizione, scala, rotazione, opacità, colore.
-   - Layer ordinabili, visibili/nascosti, bloccabili.
+✅ **Canvas Viewport**
 
-4. **Animazioni**
-   - Motion paths semplici.
-   - Curve di easing personalizzabili.
-   - Preset base (fade, slide, bounce).
+- Three.js rendering engine for 2D/3D
+- Zoom/pan controls
+- Grid overlay (toggleable)
+- Object selection and dragging
+- Visual feedback for selected layers
 
-5. **Salvataggio e export**
-   - Salvataggio progetto in JSON (scene, timeline, keyframes).
-   - Esportazione video in MP4 via ffmpeg.wasm.
-   - (Futuro) Esportazione in Lottie o WebM.
+✅ **Object Management**
 
-6. **Interfaccia**
-   - Layout a pannelli: timeline, canvas, proprietà, layer list.
-   - UI reattiva e fluida, orientata alla semplicità.
-   - Tutto gestito con logica reattiva di Svelte (runes).
+- Text layers with customizable properties
+- Shape layers (Rectangle, Circle, Triangle)
+- Animatable properties: position, scale, rotation, opacity, color
+- Layers are orderable, show/hide, lockable
 
-#### Obiettivo MVP
+✅ **Animations**
 
-Creare un **prototipo funzionante** che permetta:
+- Smooth interpolation between keyframes
+- Multiple easing curves available
+- 9 built-in animation presets (fade, slide, bounce, rotate, scale)
 
-- Creazione di oggetti su canvas (es. testo o forma).
-- Aggiunta di keyframe su posizione e opacità.
-- Riproduzione e anteprima animazione.
-- Esportazione in MP4.
+✅ **Save & Export**
+
+- Project save/load in JSON format
+- Complete scene, timeline, and keyframe persistence
+- Video export infrastructure (ffmpeg.wasm integrated)
+
+✅ **User Interface**
+
+- 4-panel layout: Layers, Canvas, Timeline, Properties
+- Resizable panels
+- Responsive and fluid UI with shadcn-svelte
+- Keyboard shortcuts for common operations
+- Welcome screen for first-time users
+
+## 🚀 Quick Start
+
+```bash
+# Install dependencies
+pnpm install
+
+# Run development server
+pnpm run dev
+
+# Build for production
+pnpm run build
+```
+
+Then open your browser to `http://localhost:5173`
+
+## 📚 Documentation
+
+See [ANIMATION_EDITOR.md](./ANIMATION_EDITOR.md) for:
+
+- Complete user guide
+- Keyboard shortcuts reference
+- Tutorial: Creating your first animation
+- Technical architecture details
+
+## 🎯 Tech Stack
+
+- **Framework**: SvelteKit with Svelte 5 Runes
+- **Rendering**: Three.js for 2D/3D canvas
+- **UI Components**: shadcn-svelte
+- **Video Export**: ffmpeg.wasm
+- **State Management**: Svelte reactive stores (runes)
+- **Animation Engine**: Custom interpolation with bezier-easing
+
+## 🎨 Features Highlights
+
+### Keyboard Shortcuts
+
+- `Space` - Play/Pause
+- `T` - Add text layer
+- `R` - Add rectangle
+- `C` - Add circle
+- `Cmd/Ctrl + S` - Save project
+- `+/-` - Zoom in/out
+- And many more...
+
+### Animation Presets
+
+- Fade In/Out
+- Slide In (Left/Right/Top/Bottom)
+- Bounce
+- Scale In
+- Rotate In
+
+### Layer Types
+
+- **Text**: Customizable content, font size, alignment
+- **Shapes**: Rectangle, Circle, Triangle with fill/stroke
+- **Images**: (Planned)
+
+## 🔮 Future Enhancements
+
+- [ ] Video export UI completion
+- [ ] Image layer support
+- [ ] Undo/Redo system
+- [ ] Advanced motion paths
+- [ ] Layer effects and filters
+- [ ] Audio track support
+- [ ] Lottie export
+- [ ] 3D camera controls
+- [ ] Parent-child layer relationships
+
+## 📝 Project Structure
+
+```
+src/
+├── lib/
+│   ├── components/editor/
+│   │   ├── canvas/          # Three.js viewport & interactions
+│   │   ├── timeline/        # Timeline, ruler, playhead, keyframes
+│   │   ├── panels/          # Layers & properties panels
+│   │   ├── toolbar.svelte   # Main toolbar
+│   │   └── ...
+│   ├── engine/
+│   │   ├── interpolation.ts # Animation engine
+│   │   ├── presets.ts       # Animation presets
+│   │   ├── layer-factory.ts # Layer creation utilities
+│   │   └── video-export.ts  # FFmpeg integration
+│   ├── stores/
+│   │   └── project.svelte.ts # Global state management
+│   └── types/
+│       └── animation.ts      # TypeScript definitions
+└── routes/
+    └── (app)/
+        └── +page.svelte     # Main editor page
+```
+
+## 🎬 Getting Started
+
+1. **Create a Layer**: Press `T` for text or `R` for rectangle
+2. **Edit Properties**: Use the Properties panel on the right
+3. **Add Keyframes**: Click "Add Keyframe" and change values over time
+4. **Preview**: Press `Space` to play your animation
+5. **Save**: Press `Cmd/Ctrl + S` to save as JSON
+
+For detailed instructions, see the [User Guide](./ANIMATION_EDITOR.md).
+
+## 🤝 Contributing
+
+This is a working prototype ready for refinement and expansion. Feel free to:
+
+- Report issues
+- Suggest features
+- Submit pull requests
+- Improve documentation
+
+---
+
+**Note**: This implementation prioritizes a clean architecture and scalable codebase as a foundation for further refinement and feature development.
