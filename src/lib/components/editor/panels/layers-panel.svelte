@@ -43,6 +43,13 @@
       projectStore.reorderLayers(dragIndex, dropIndex);
     }
   }
+
+  function handleKeyDown(e: KeyboardEvent, layerId: string) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      selectLayer(layerId);
+    }
+  }
 </script>
 
 <div class="flex h-full flex-col bg-background">
@@ -59,6 +66,7 @@
           class="group flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 transition-colors hover:bg-muted/50"
           class:bg-muted={projectStore.selectedLayerId === layer.id}
           onclick={() => selectLayer(layer.id)}
+          onkeydown={(e) => handleKeyDown(e, layer.id)}
           draggable="true"
           ondragstart={(e) => handleDragStart(e, index)}
           ondragover={handleDragOver}

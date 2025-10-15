@@ -35,6 +35,13 @@
     isDraggingPlayhead = false;
   }
 
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleTimelineClick(e as unknown as MouseEvent);
+    }
+  }
+
   $effect(() => {
     if (isDraggingPlayhead) {
       window.addEventListener('mousemove', handleDragPlayhead);
@@ -64,6 +71,7 @@
         bind:this={timelineContainer}
         class="relative min-h-full"
         onclick={handleTimelineClick}
+        onkeydown={handleKeyDown}
         role="button"
         tabindex="0"
       >

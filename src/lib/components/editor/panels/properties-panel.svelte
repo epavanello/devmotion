@@ -18,10 +18,7 @@
 
   const selectedLayer = $derived(projectStore.selectedLayer);
 
-  function updateLayerProperty<K extends keyof typeof selectedLayer>(
-    property: K,
-    value: (typeof selectedLayer)[K]
-  ) {
+  function updateLayerProperty(property: string, value: string) {
     if (!selectedLayer) return;
     projectStore.updateLayer(selectedLayer.id, { [property]: value } as any);
   }
@@ -305,8 +302,8 @@
           <Label class="font-semibold">Animation</Label>
 
           <DropdownMenu>
-            <DropdownMenuTrigger asChild let:builder>
-              <Button builders={[builder]} variant="outline" size="sm" class="w-full">
+            <DropdownMenuTrigger>
+              <Button variant="outline" size="sm" class="w-full">
                 <Plus class="mr-2 h-4 w-4" />
                 Add Keyframe
               </Button>
@@ -328,8 +325,8 @@
           </DropdownMenu>
 
           <DropdownMenu>
-            <DropdownMenuTrigger asChild let:builder>
-              <Button builders={[builder]} variant="outline" size="sm" class="w-full">
+            <DropdownMenuTrigger>
+              <Button variant="outline" size="sm" class="w-full">
                 <Sparkles class="mr-2 h-4 w-4" />
                 Apply Preset
               </Button>

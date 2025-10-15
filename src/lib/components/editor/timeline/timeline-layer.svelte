@@ -15,12 +15,20 @@
   function selectLayer() {
     projectStore.selectedLayerId = layer.id;
   }
+
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      selectLayer();
+    }
+  }
 </script>
 
 <div
   class="flex border-b transition-colors hover:bg-muted/50"
   class:bg-muted={isSelected}
   onclick={selectLayer}
+  onkeydown={handleKeyDown}
   role="button"
   tabindex="0"
 >

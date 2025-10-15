@@ -81,7 +81,7 @@ export async function exportToMP4(
 
   // Read output
   const data = await ffmpeg.readFile('output.mp4');
-  const blob = new Blob([data], { type: 'video/mp4' });
+  const blob = new Blob([data as BlobPart], { type: 'video/mp4' });
 
   // Cleanup
   for (let i = 0; i < frames.length; i++) {

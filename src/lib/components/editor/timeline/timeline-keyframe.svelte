@@ -23,12 +23,20 @@
       projectStore.removeKeyframe(layerId, keyframe.id);
     }
   }
+
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleClick(e as unknown as MouseEvent);
+    }
+  }
 </script>
 
 <div
   class="absolute top-1/2 h-3 w-3 -translate-y-1/2 cursor-pointer rounded-sm bg-primary transition-transform hover:scale-125"
   style="left: {position}px"
   onclick={handleClick}
+  onkeydown={handleKeyDown}
   oncontextmenu={handleDelete}
   role="button"
   tabindex="0"

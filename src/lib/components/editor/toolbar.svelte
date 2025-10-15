@@ -150,8 +150,8 @@
     </Button>
 
     <DropdownMenu>
-      <DropdownMenuTrigger asChild let:builder>
-        <Button builders={[builder]} variant="ghost" size="sm">
+      <DropdownMenuTrigger>
+        <Button variant="ghost" size="sm">
           <Layers class="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>

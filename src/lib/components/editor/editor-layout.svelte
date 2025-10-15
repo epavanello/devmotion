@@ -6,11 +6,7 @@
   import PropertiesPanel from './panels/properties-panel.svelte';
   import KeyboardHandler from './keyboard-handler.svelte';
   import WelcomeOverlay from './welcome-overlay.svelte';
-  import {
-    ResizableHandle,
-    ResizablePanel,
-    ResizablePanelGroup
-  } from '$lib/components/ui/resizable';
+  import { ResizableHandle, ResizablePane, ResizablePaneGroup } from '$lib/components/ui/resizable';
 </script>
 
 <KeyboardHandler />
@@ -24,37 +20,37 @@
 
   <!-- Main Content Area -->
   <div class="flex-1 overflow-hidden">
-    <ResizablePanelGroup direction="horizontal" class="h-full">
+    <ResizablePaneGroup direction="horizontal" class="h-full">
       <!-- Left Panel - Layers -->
-      <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
+      <ResizablePane defaultSize={20} minSize={15} maxSize={30}>
         <LayersPanel />
-      </ResizablePanel>
+      </ResizablePane>
 
       <ResizableHandle />
 
       <!-- Center - Canvas and Timeline -->
-      <ResizablePanel defaultSize={60} minSize={40}>
-        <ResizablePanelGroup direction="vertical">
+      <ResizablePane defaultSize={60} minSize={40}>
+        <ResizablePaneGroup direction="vertical">
           <!-- Canvas -->
-          <ResizablePanel defaultSize={70} minSize={30}>
+          <ResizablePane defaultSize={70} minSize={30}>
             <Canvas />
-          </ResizablePanel>
+          </ResizablePane>
 
           <ResizableHandle />
 
           <!-- Timeline -->
-          <ResizablePanel defaultSize={30} minSize={20}>
+          <ResizablePane defaultSize={30} minSize={20}>
             <Timeline />
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </ResizablePanel>
+          </ResizablePane>
+        </ResizablePaneGroup>
+      </ResizablePane>
 
       <ResizableHandle />
 
       <!-- Right Panel - Properties -->
-      <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
+      <ResizablePane defaultSize={20} minSize={15} maxSize={30}>
         <PropertiesPanel />
-      </ResizablePanel>
-    </ResizablePanelGroup>
+      </ResizablePane>
+    </ResizablePaneGroup>
   </div>
 </div>
