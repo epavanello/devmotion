@@ -13,7 +13,7 @@
 <div class="pointer-events-none absolute top-0 bottom-0 z-20" style="left: {position}px">
   <!-- Playhead handle -->
   <div
-    class="pointer-events-auto absolute -top-2 h-4 w-4 -translate-x-1/2 cursor-grab bg-red-500 active:cursor-grabbing"
+    class="pointer-events-auto absolute top-0 h-2 w-3 -translate-x-1/2 cursor-grab bg-red-500 active:cursor-grabbing"
     style="clip-path: polygon(50% 0%, 0% 100%, 100% 100%)"
     onmousedown={onDragStart}
     role="button"
@@ -21,5 +21,5 @@
   ></div>
 
   <!-- Playhead line -->
-  <div class="h-full w-0.5 bg-red-500"></div>
+  <div class="h-full w-0.5 -translate-x-1/2 bg-red-500"></div>
 </div>

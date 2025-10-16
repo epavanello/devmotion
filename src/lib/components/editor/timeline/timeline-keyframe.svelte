@@ -4,23 +4,17 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
 
   interface Props {
-    keyframe: Keyframe;
+    keyframes: Keyframe[];
     pixelsPerSecond: number;
     layerId: string;
   }
 
-  let { keyframe, pixelsPerSecond, layerId }: Props = $props();
+  let { keyframes, pixelsPerSecond, layerId }: Props = $props();
 
-  const position = $derived(keyframe.time * pixelsPerSecond);
+  const firstKeyframe = $derived(keyframes[0]);
+  const position = $derived(firstKeyframe.time * pixelsPerSecond);
 
-  const formattedValue = $derived(() => {
-    if (typeof keyframe.value === 'number') {
-      return keyframe.value.toFixed(2);
-    }
-    return keyframe.value;
-  });
-
-  const propertyLabel = $derived(() => {
+  function getPropertyLabel(property: string): string {
     const labels: Record<string, string> = {
       'position.x': 'Position X',
       'position.y': 'Position Y',
@@ -34,18 +28,31 @@
       opacity: 'Opacity',
       color: 'Color'
     };
-    return labels[keyframe.property] || keyframe.property;
-  });
+    return labels[property] || property;
+  }
+
+  function formatValue(value: number | string): string {
+    if (typeof value === 'number') {
+      return value.toFixed(2);
+    }
+    return value;
+  }
 
   function handleClick(e: MouseEvent) {
     e.stopPropagation();
-    projectStore.setCurrentTime(keyframe.time);
+    projectStore.setCurrentTime(firstKeyframe.time);
   }
 
   function handleDelete(e: MouseEvent) {
     e.stopPropagation();
-    if (confirm('Delete this keyframe?')) {
-      projectStore.removeKeyframe(layerId, keyframe.id);
+    const message =
+      keyframes.length === 1
+        ? 'Delete this keyframe?'
+        : `Delete all ${keyframes.length} keyframes at this time?`;
+    if (confirm(message)) {
+      for (const keyframe of keyframes) {
+        projectStore.removeKeyframe(layerId, keyframe.id);
+      }
     }
   }
 
@@ -68,17 +75,32 @@
   />
   <Tooltip.Content>
     <div class="space-y-1 text-xs">
-      <div class="font-semibold">{propertyLabel()}</div>
-      <div class="text-muted">
-        Time: <span class="">{keyframe.time.toFixed(2)}s</span>
+      <div class="font-semibold">
+        Time: {firstKeyframe.time.toFixed(2)}s
       </div>
-      <div class="text-muted">
-        Value: <span class="">{formattedValue()}</span>
+      {#if keyframes.length > 1}
+        <div class="text-xs text-muted-foreground">
+          {keyframes.length} keyframes
+        </div>
+      {/if}
+      <div class="mt-2 space-y-2">
+        {#each keyframes as keyframe}
+          <div class="border-t pt-2 first:border-t-0 first:pt-0">
+            <div class="font-semibold">{getPropertyLabel(keyframe.property)}</div>
+            <div class="text-muted-foreground">
+              Value: <span class="">{formatValue(keyframe.value)}</span>
+            </div>
+            <div class="text-muted-foreground">
+              Easing: <span class="">{keyframe.easing.type}</span>
+            </div>
+          </div>
+        {/each}
       </div>
-      <div class="text-muted">
-        Easing: <span class="">{keyframe.easing.type}</span>
+      <div class="mt-2 border-t pt-1 text-muted-foreground">
+        {keyframes.length === 1
+          ? 'Right-click to delete'
+          : `Right-click to delete all ${keyframes.length} keyframes`}
       </div>
-      <div class="mt-2 border-t pt-1 text-muted">Right-click to delete</div>
     </div>
   </Tooltip.Content>
 </Tooltip.Root>
