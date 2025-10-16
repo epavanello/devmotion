@@ -9,7 +9,7 @@
   let canvasContainer: HTMLDivElement;
   let renderer: THREE.WebGLRenderer;
   let scene: THREE.Scene;
-  let camera: THREE.OrthographicCamera;
+  let camera: THREE.PerspectiveCamera;
   let animationFrameId: number;
   let layerObjects = new Map<string, THREE.Object3D>();
   let interactionManager: CanvasInteractionManager | null = null;
@@ -41,18 +41,11 @@
     // Setup scene
     scene = new THREE.Scene();
 
-    // Setup camera
+    // Setup camera - using perspective camera for proper depth perception
     const aspect = width / height;
-    const frustumSize = projectStore.project.height;
-    camera = new THREE.OrthographicCamera(
-      (-frustumSize * aspect) / 2,
-      (frustumSize * aspect) / 2,
-      frustumSize / 2,
-      -frustumSize / 2,
-      0.1,
-      1000
-    );
-    camera.position.z = 10;
+    const fov = 50; // Field of view in degrees
+    camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 10000);
+    camera.position.z = 1000; // Move camera far enough to see the scene
 
     // Add grid
     updateGrid();
@@ -67,11 +60,7 @@
       renderer.setSize(width, height);
 
       const aspect = width / height;
-      const frustumSize = projectStore.project.height * projectStore.viewport.zoom;
-      camera.left = (-frustumSize * aspect) / 2;
-      camera.right = (frustumSize * aspect) / 2;
-      camera.top = frustumSize / 2;
-      camera.bottom = -frustumSize / 2;
+      camera.aspect = aspect;
       camera.updateProjectionMatrix();
     });
     resizeObserver.observe(canvasContainer);
@@ -93,6 +82,7 @@
       0x222222
     );
     gridHelper.rotation.x = Math.PI / 2;
+    gridHelper.position.z = -1; // Position grid slightly behind objects (Z=0)
     gridHelper.name = 'grid';
     scene.add(gridHelper);
   }
@@ -126,19 +116,19 @@
 
       const transform = {
         position: {
-          x: animatedTransform.position.x || layer.transform.position.x,
-          y: animatedTransform.position.y || layer.transform.position.y,
-          z: animatedTransform.position.z || layer.transform.position.z
+          x: animatedTransform.position.x ?? layer.transform.position.x,
+          y: animatedTransform.position.y ?? layer.transform.position.y,
+          z: animatedTransform.position.z ?? layer.transform.position.z
         },
         rotation: {
-          x: animatedTransform.rotation.x || layer.transform.rotation.x,
-          y: animatedTransform.rotation.y || layer.transform.rotation.y,
-          z: animatedTransform.rotation.z || layer.transform.rotation.z
+          x: animatedTransform.rotation.x ?? layer.transform.rotation.x,
+          y: animatedTransform.rotation.y ?? layer.transform.rotation.y,
+          z: animatedTransform.rotation.z ?? layer.transform.rotation.z
         },
         scale: {
-          x: animatedTransform.scale.x || layer.transform.scale.x,
-          y: animatedTransform.scale.y || layer.transform.scale.y,
-          z: animatedTransform.scale.z || layer.transform.scale.z
+          x: animatedTransform.scale.x ?? layer.transform.scale.x,
+          y: animatedTransform.scale.y ?? layer.transform.scale.y,
+          z: animatedTransform.scale.z ?? layer.transform.scale.z
         }
       };
 
@@ -273,15 +263,12 @@
     animationFrameId = requestAnimationFrame(animate);
 
     // Update camera based on viewport
-    const aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
-    const frustumSize = projectStore.project.height * projectStore.viewport.zoom;
-    camera.left = (-frustumSize * aspect) / 2;
-    camera.right = (frustumSize * aspect) / 2;
-    camera.top = frustumSize / 2;
-    camera.bottom = -frustumSize / 2;
     camera.position.x = projectStore.viewport.pan.x;
     camera.position.y = -projectStore.viewport.pan.y;
-    camera.updateProjectionMatrix();
+
+    // Adjust camera distance based on zoom (closer = more zoomed in)
+    const baseDistance = 1000;
+    camera.position.z = baseDistance / projectStore.viewport.zoom;
 
     // Update scene if playing
     if (projectStore.isPlaying) {

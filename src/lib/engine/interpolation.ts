@@ -121,25 +121,25 @@ export function getAnimatedTransform(
   keyframes: Keyframe[],
   currentTime: number
 ): {
-  position: { x: number; y: number; z: number };
-  rotation: { x: number; y: number; z: number };
-  scale: { x: number; y: number; z: number };
+  position: { x: number | null; y: number | null; z: number | null };
+  rotation: { x: number | null; y: number | null; z: number | null };
+  scale: { x: number | null; y: number | null; z: number | null };
 } {
   return {
     position: {
-      x: (getPropertyValue(keyframes, 'position.x', currentTime) as number) || 0,
-      y: (getPropertyValue(keyframes, 'position.y', currentTime) as number) || 0,
-      z: (getPropertyValue(keyframes, 'position.z', currentTime) as number) || 0
+      x: getPropertyValue(keyframes, 'position.x', currentTime) as number | null,
+      y: getPropertyValue(keyframes, 'position.y', currentTime) as number | null,
+      z: getPropertyValue(keyframes, 'position.z', currentTime) as number | null
     },
     rotation: {
-      x: (getPropertyValue(keyframes, 'rotation.x', currentTime) as number) || 0,
-      y: (getPropertyValue(keyframes, 'rotation.y', currentTime) as number) || 0,
-      z: (getPropertyValue(keyframes, 'rotation.z', currentTime) as number) || 0
+      x: getPropertyValue(keyframes, 'rotation.x', currentTime) as number | null,
+      y: getPropertyValue(keyframes, 'rotation.y', currentTime) as number | null,
+      z: getPropertyValue(keyframes, 'rotation.z', currentTime) as number | null
     },
     scale: {
-      x: (getPropertyValue(keyframes, 'scale.x', currentTime) as number) || 1,
-      y: (getPropertyValue(keyframes, 'scale.y', currentTime) as number) || 1,
-      z: (getPropertyValue(keyframes, 'scale.z', currentTime) as number) || 1
+      x: getPropertyValue(keyframes, 'scale.x', currentTime) as number | null,
+      y: getPropertyValue(keyframes, 'scale.y', currentTime) as number | null,
+      z: getPropertyValue(keyframes, 'scale.z', currentTime) as number | null
     }
   };
 }
