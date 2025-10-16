@@ -2,6 +2,7 @@
   import type { Layer } from '$lib/types/animation';
   import { projectStore } from '$lib/stores/project.svelte';
   import TimelineKeyframe from './timeline-keyframe.svelte';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   interface Props {
     layer: Layer;
@@ -39,8 +40,10 @@
 
   <!-- Keyframes area -->
   <div class="relative h-12 min-h-[3rem] flex-1">
-    {#each layer.keyframes as keyframe (keyframe.id)}
-      <TimelineKeyframe {keyframe} {pixelsPerSecond} layerId={layer.id} />
-    {/each}
+    <Tooltip.Provider>
+      {#each layer.keyframes as keyframe (keyframe.id)}
+        <TimelineKeyframe {keyframe} {pixelsPerSecond} layerId={layer.id} />
+      {/each}
+    </Tooltip.Provider>
   </div>
 </div>

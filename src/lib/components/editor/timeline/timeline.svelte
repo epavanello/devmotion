@@ -55,7 +55,7 @@
   });
 </script>
 
-<div class="flex h-full flex-col border-t bg-background">
+<div class="flex h-full flex-col border-t bg-background select-none">
   <!-- Timeline Header -->
   <div class="flex items-center justify-between border-b bg-muted/50 px-4 py-2">
     <div class="text-sm font-medium">Timeline</div>
