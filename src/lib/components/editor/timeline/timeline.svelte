@@ -7,15 +7,37 @@
 
   let timelineContainer: HTMLDivElement;
   let isDraggingPlayhead = $state(false);
+  let isDraggingTimeline = $state(false);
 
   const pixelsPerSecond = 100;
 
-  function handleTimelineClick(e: MouseEvent) {
+  function updateTimeFromMousePosition(e: MouseEvent) {
     if (!timelineContainer) return;
     const rect = timelineContainer.getBoundingClientRect();
     const x = e.clientX - rect.left - 200; // 200px for layer names column
     const time = Math.max(0, x / pixelsPerSecond);
     projectStore.setCurrentTime(Math.min(time, projectStore.project.duration));
+  }
+
+  function handleTimelineMouseDown(e: MouseEvent) {
+    // Only handle left click on the timeline area (not on keyframes)
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement;
+    // Don't start dragging if clicking on a keyframe
+    if (target.closest('[role="button"][tabindex="0"]') !== timelineContainer) return;
+
+    isDraggingTimeline = true;
+    projectStore.pause();
+    updateTimeFromMousePosition(e);
+  }
+
+  function handleTimelineMouseMove(e: MouseEvent) {
+    if (!isDraggingTimeline) return;
+    updateTimeFromMousePosition(e);
+  }
+
+  function handleTimelineMouseUp() {
+    isDraggingTimeline = false;
   }
 
   function startDragPlayhead() {
@@ -24,11 +46,8 @@
   }
 
   function handleDragPlayhead(e: MouseEvent) {
-    if (!isDraggingPlayhead || !timelineContainer) return;
-    const rect = timelineContainer.getBoundingClientRect();
-    const x = e.clientX - rect.left - 200;
-    const time = Math.max(0, x / pixelsPerSecond);
-    projectStore.setCurrentTime(Math.min(time, projectStore.project.duration));
+    if (!isDraggingPlayhead) return;
+    updateTimeFromMousePosition(e);
   }
 
   function stopDragPlayhead() {
@@ -38,7 +57,7 @@
   function handleKeyDown(e: KeyboardEvent) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      handleTimelineClick(e as unknown as MouseEvent);
+      updateTimeFromMousePosition(e as unknown as MouseEvent);
     }
   }
 
@@ -50,6 +69,18 @@
       return () => {
         window.removeEventListener('mousemove', handleDragPlayhead);
         window.removeEventListener('mouseup', stopDragPlayhead);
+      };
+    }
+  });
+
+  $effect(() => {
+    if (isDraggingTimeline) {
+      window.addEventListener('mousemove', handleTimelineMouseMove);
+      window.addEventListener('mouseup', handleTimelineMouseUp);
+
+      return () => {
+        window.removeEventListener('mousemove', handleTimelineMouseMove);
+        window.removeEventListener('mouseup', handleTimelineMouseUp);
       };
     }
   });
@@ -70,7 +101,7 @@
       <div
         bind:this={timelineContainer}
         class="relative min-h-full"
-        onclick={handleTimelineClick}
+        onmousedown={handleTimelineMouseDown}
         onkeydown={handleKeyDown}
         role="button"
         tabindex="0"

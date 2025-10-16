@@ -5,7 +5,7 @@
   import { Input } from '$lib/components/ui/input';
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
-  import { Plus, Sparkles } from 'lucide-svelte';
+  import { Plus, Sparkles, Trash2 } from 'lucide-svelte';
   import { nanoid } from 'nanoid';
   import type { AnimatableProperty } from '$lib/types/animation';
   import { animationPresets } from '$lib/engine/presets';
@@ -15,8 +15,86 @@
     DropdownMenuItem,
     DropdownMenuTrigger
   } from '$lib/components/ui/dropdown-menu';
+  import { getAnimatedTransform, getAnimatedStyle } from '$lib/engine/interpolation';
 
   const selectedLayer = $derived(projectStore.selectedLayer);
+
+  // Get the current displayed values (animated if keyframes exist, otherwise base values)
+  const currentTransform = $derived.by(() => {
+    if (!selectedLayer) return null;
+    const animatedTransform = getAnimatedTransform(
+      selectedLayer.keyframes,
+      projectStore.project.currentTime
+    );
+    return {
+      position: {
+        x: animatedTransform.position.x ?? selectedLayer.transform.position.x,
+        y: animatedTransform.position.y ?? selectedLayer.transform.position.y,
+        z: animatedTransform.position.z ?? selectedLayer.transform.position.z
+      },
+      rotation: {
+        x: animatedTransform.rotation.x ?? selectedLayer.transform.rotation.x,
+        y: animatedTransform.rotation.y ?? selectedLayer.transform.rotation.y,
+        z: animatedTransform.rotation.z ?? selectedLayer.transform.rotation.z
+      },
+      scale: {
+        x: animatedTransform.scale.x ?? selectedLayer.transform.scale.x,
+        y: animatedTransform.scale.y ?? selectedLayer.transform.scale.y,
+        z: animatedTransform.scale.z ?? selectedLayer.transform.scale.z
+      }
+    };
+  });
+
+  const currentStyle = $derived.by(() => {
+    if (!selectedLayer) return null;
+    const animatedStyle = getAnimatedStyle(
+      selectedLayer.keyframes,
+      projectStore.project.currentTime
+    );
+    return {
+      opacity: animatedStyle.opacity ?? selectedLayer.style.opacity,
+      color: animatedStyle.color ?? selectedLayer.style.color
+    };
+  });
+
+  // Sort keyframes by time for display
+  const sortedKeyframes = $derived.by(() => {
+    if (!selectedLayer) return [];
+    return [...selectedLayer.keyframes].sort((a, b) => a.time - b.time);
+  });
+
+  function getPropertyLabel(property: string): string {
+    const labels: Record<string, string> = {
+      'position.x': 'Position X',
+      'position.y': 'Position Y',
+      'position.z': 'Position Z',
+      'rotation.x': 'Rotation X',
+      'rotation.y': 'Rotation Y',
+      'rotation.z': 'Rotation Z',
+      'scale.x': 'Scale X',
+      'scale.y': 'Scale Y',
+      'scale.z': 'Scale Z',
+      opacity: 'Opacity',
+      color: 'Color'
+    };
+    return labels[property] || property;
+  }
+
+  function formatKeyframeValue(value: number | string): string {
+    if (typeof value === 'number') {
+      return value.toFixed(2);
+    }
+    return value;
+  }
+
+  function deleteKeyframe(keyframeId: string) {
+    if (!selectedLayer) return;
+    projectStore.removeKeyframe(selectedLayer.id, keyframeId);
+  }
+
+  function goToKeyframe(time: number) {
+    projectStore.setCurrentTime(time);
+  }
 
   function updateLayerProperty(property: string, value: string) {
     if (!selectedLayer) return;
@@ -29,15 +107,44 @@
     value: number
   ) {
     if (!selectedLayer) return;
-    const newTransform = { ...selectedLayer.transform };
-    newTransform[type][axis] = value;
-    projectStore.updateLayer(selectedLayer.id, { transform: newTransform });
+
+    const property = `${type}.${axis}` as AnimatableProperty;
+    const currentTime = projectStore.project.currentTime;
+
+    // Check if there's a keyframe for this property at the current time
+    const keyframe = selectedLayer.keyframes.find(
+      (k) => k.property === property && k.time === currentTime
+    );
+
+    if (keyframe) {
+      // Update the keyframe value
+      projectStore.updateKeyframe(selectedLayer.id, keyframe.id, { value });
+    } else {
+      // Update the base transform
+      const newTransform = { ...selectedLayer.transform };
+      newTransform[type][axis] = value;
+      projectStore.updateLayer(selectedLayer.id, { transform: newTransform });
+    }
   }
 
   function updateStyle(property: string, value: any) {
     if (!selectedLayer) return;
-    const newStyle = { ...selectedLayer.style, [property]: value };
-    projectStore.updateLayer(selectedLayer.id, { style: newStyle });
+
+    const currentTime = projectStore.project.currentTime;
+
+    // Check if there's a keyframe for this property at the current time
+    const keyframe = selectedLayer.keyframes.find(
+      (k) => k.property === property && k.time === currentTime
+    );
+
+    if (keyframe) {
+      // Update the keyframe value
+      projectStore.updateKeyframe(selectedLayer.id, keyframe.id, { value });
+    } else {
+      // Update the base style
+      const newStyle = { ...selectedLayer.style, [property]: value };
+      projectStore.updateLayer(selectedLayer.id, { style: newStyle });
+    }
   }
 
   function updateTextData(property: string, value: any) {
@@ -47,24 +154,24 @@
   }
 
   function addKeyframe(property: AnimatableProperty) {
-    if (!selectedLayer) return;
+    if (!selectedLayer || !currentTransform || !currentStyle) return;
 
     let currentValue: number | string = 0;
 
-    // Get current value based on property
+    // Get current animated value based on property
     if (property.startsWith('position.')) {
       const axis = property.split('.')[1] as 'x' | 'y' | 'z';
-      currentValue = selectedLayer.transform.position[axis];
+      currentValue = currentTransform.position[axis];
     } else if (property.startsWith('rotation.')) {
       const axis = property.split('.')[1] as 'x' | 'y' | 'z';
-      currentValue = selectedLayer.transform.rotation[axis];
+      currentValue = currentTransform.rotation[axis];
     } else if (property.startsWith('scale.')) {
       const axis = property.split('.')[1] as 'x' | 'y' | 'z';
-      currentValue = selectedLayer.transform.scale[axis];
+      currentValue = currentTransform.scale[axis];
     } else if (property === 'opacity') {
-      currentValue = selectedLayer.style.opacity;
+      currentValue = currentStyle.opacity;
     } else if (property === 'color') {
-      currentValue = selectedLayer.style.color;
+      currentValue = currentStyle.color;
     }
 
     projectStore.addKeyframe(selectedLayer.id, {
@@ -128,7 +235,7 @@
                 <Input
                   id="pos-x"
                   type="number"
-                  value={selectedLayer.transform.position.x}
+                  value={currentTransform?.position.x ?? 0}
                   oninput={(e) =>
                     updateTransform('x', 'position', parseFloat(e.currentTarget.value) || 0)}
                 />
@@ -138,7 +245,7 @@
                 <Input
                   id="pos-y"
                   type="number"
-                  value={selectedLayer.transform.position.y}
+                  value={currentTransform?.position.y ?? 0}
                   oninput={(e) =>
                     updateTransform('y', 'position', parseFloat(e.currentTarget.value) || 0)}
                 />
@@ -148,7 +255,7 @@
                 <Input
                   id="pos-z"
                   type="number"
-                  value={selectedLayer.transform.position.z}
+                  value={currentTransform?.position.z ?? 0}
                   oninput={(e) =>
                     updateTransform('z', 'position', parseFloat(e.currentTarget.value) || 0)}
                 />
@@ -166,7 +273,7 @@
                   id="scale-x"
                   type="number"
                   step="0.1"
-                  value={selectedLayer.transform.scale.x}
+                  value={currentTransform?.scale.x ?? 1}
                   oninput={(e) =>
                     updateTransform('x', 'scale', parseFloat(e.currentTarget.value) || 1)}
                 />
@@ -177,7 +284,7 @@
                   id="scale-y"
                   type="number"
                   step="0.1"
-                  value={selectedLayer.transform.scale.y}
+                  value={currentTransform?.scale.y ?? 1}
                   oninput={(e) =>
                     updateTransform('y', 'scale', parseFloat(e.currentTarget.value) || 1)}
                 />
@@ -188,7 +295,7 @@
                   id="scale-z"
                   type="number"
                   step="0.1"
-                  value={selectedLayer.transform.scale.z}
+                  value={currentTransform?.scale.z ?? 1}
                   oninput={(e) =>
                     updateTransform('z', 'scale', parseFloat(e.currentTarget.value) || 1)}
                 />
@@ -206,7 +313,7 @@
                   id="rot-x"
                   type="number"
                   step="0.1"
-                  value={selectedLayer.transform.rotation.x}
+                  value={currentTransform?.rotation.x ?? 0}
                   oninput={(e) =>
                     updateTransform('x', 'rotation', parseFloat(e.currentTarget.value) || 0)}
                 />
@@ -217,7 +324,7 @@
                   id="rot-y"
                   type="number"
                   step="0.1"
-                  value={selectedLayer.transform.rotation.y}
+                  value={currentTransform?.rotation.y ?? 0}
                   oninput={(e) =>
                     updateTransform('y', 'rotation', parseFloat(e.currentTarget.value) || 0)}
                 />
@@ -228,7 +335,7 @@
                   id="rot-z"
                   type="number"
                   step="0.1"
-                  value={selectedLayer.transform.rotation.z}
+                  value={currentTransform?.rotation.z ?? 0}
                   oninput={(e) =>
                     updateTransform('z', 'rotation', parseFloat(e.currentTarget.value) || 0)}
                 />
@@ -251,7 +358,7 @@
               step="0.1"
               min="0"
               max="1"
-              value={selectedLayer.style.opacity}
+              value={currentStyle?.opacity ?? 1}
               oninput={(e) => updateStyle('opacity', parseFloat(e.currentTarget.value) || 0)}
             />
           </div>
@@ -261,7 +368,7 @@
             <Input
               id="color"
               type="color"
-              value={selectedLayer.style.color}
+              value={currentStyle?.color ?? '#ffffff'}
               oninput={(e) => updateStyle('color', e.currentTarget.value)}
             />
           </div>
@@ -341,8 +448,44 @@
           </DropdownMenu>
 
           {#if selectedLayer.keyframes.length > 0}
-            <div class="text-xs text-muted-foreground">
-              {selectedLayer.keyframes.length} keyframe(s)
+            <div class="mt-4 space-y-2">
+              <div class="flex items-center justify-between">
+                <Label class="text-xs text-muted-foreground">
+                  {selectedLayer.keyframes.length} keyframe(s)
+                </Label>
+              </div>
+
+              <div
+                class="max-h-[300px] space-y-1 overflow-y-auto rounded-md border bg-muted/20 p-2"
+              >
+                {#each sortedKeyframes as keyframe (keyframe.id)}
+                  <div
+                    class="group flex items-center justify-between rounded-sm bg-background px-2 py-1.5 text-xs transition-colors hover:bg-muted"
+                  >
+                    <button
+                      class="flex-1 text-left"
+                      onclick={() => goToKeyframe(keyframe.time)}
+                      type="button"
+                    >
+                      <div class="flex items-center gap-2">
+                        <div class="h-2 w-2 rounded-sm bg-primary"></div>
+                        <div class="font-medium">{getPropertyLabel(keyframe.property)}</div>
+                      </div>
+                      <div class="mt-0.5 ml-4 text-muted-foreground">
+                        {keyframe.time.toFixed(2)}s = {formatKeyframeValue(keyframe.value)}
+                      </div>
+                    </button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      class="h-6 w-6 p-0 opacity-0 transition-opacity group-hover:opacity-100"
+                      onclick={() => deleteKeyframe(keyframe.id)}
+                    >
+                      <Trash2 class="h-3 w-3" />
+                    </Button>
+                  </div>
+                {/each}
+              </div>
             </div>
           {/if}
         </div>
