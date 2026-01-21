@@ -1,6 +1,10 @@
 /**
  * Core types for the animation editor
  */
+import type { LayerType } from '$lib/layers/registry';
+
+// Re-export LayerType for convenience
+export type { LayerType };
 
 export type EasingType = 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'cubic-bezier';
 
@@ -37,46 +41,32 @@ export interface Keyframe {
   easing: Easing;
 }
 
-export type LayerType = 'text' | 'shape' | 'image';
-
-export type ShapeType = 'rectangle' | 'circle' | 'triangle' | 'polygon';
-
+/**
+ * Transform properties using flat structure (aligned with BaseTransform in layers/base.ts)
+ */
 export interface Transform {
-  position: { x: number; y: number; z: number };
-  rotation: { x: number; y: number; z: number };
-  scale: { x: number; y: number; z: number };
+  x: number;
+  y: number;
+  z: number;
+  rotationX: number;
+  rotationY: number;
+  rotationZ: number;
+  scaleX: number;
+  scaleY: number;
+  scaleZ: number;
 }
 
+/**
+ * Base style properties shared by all layers
+ */
 export interface LayerStyle {
   opacity: number;
-  color: string;
-  fill?: string;
-  stroke?: string;
-  strokeWidth?: number;
 }
 
-export interface TextLayerData {
-  content: string;
-  fontSize: number;
-  fontFamily: string;
-  fontWeight: string;
-  textAlign: 'left' | 'center' | 'right';
-}
-
-export interface ShapeLayerData {
-  shapeType: ShapeType;
-  width: number;
-  height: number;
-  radius?: number;
-  sides?: number;
-}
-
-export interface ImageLayerData {
-  src: string;
-  width: number;
-  height: number;
-}
-
+/**
+ * Generic Layer - component-based architecture
+ * Props are defined and validated by each layer component's Zod schema
+ */
 export interface Layer {
   id: string;
   name: string;
@@ -86,10 +76,11 @@ export interface Layer {
   visible: boolean;
   locked: boolean;
   keyframes: Keyframe[];
-  // Type-specific data
-  textData?: TextLayerData;
-  shapeData?: ShapeLayerData;
-  imageData?: ImageLayerData;
+  /**
+   * Layer-specific properties validated by the component's Zod schema.
+   * Use getLayerSchema(layer.type) from registry to get the schema for validation.
+   */
+  props: Record<string, unknown>;
 }
 
 export interface Project {

@@ -1,0 +1,108 @@
+<script module lang="ts">
+  import { z } from 'zod';
+
+  /**
+   * Schema for Shape Layer custom properties
+   */
+  export const ShapeLayerPropsSchema = z.object({
+    shapeType: z.enum(['rectangle', 'circle', 'triangle', 'polygon']).describe('Shape type'),
+    width: z.number().min(1).max(2000).describe('Width (px)'),
+    height: z.number().min(1).max(2000).describe('Height (px)'),
+    fill: z.string().describe('Fill color'),
+    stroke: z.string().describe('Stroke color'),
+    strokeWidth: z.number().min(0).max(50).describe('Stroke width (px)'),
+    radius: z.number().min(0).max(1000).optional().describe('Radius for circle/polygon (px)'),
+    sides: z.number().min(3).max(12).optional().describe('Number of sides for polygon')
+  });
+
+  export type ShapeLayerProps = z.infer<typeof ShapeLayerPropsSchema>;
+</script>
+
+<script lang="ts">
+  let {
+    shapeType,
+    width,
+    height,
+    fill,
+    stroke,
+    strokeWidth,
+    radius = 100,
+    sides = 6
+  }: ShapeLayerProps = $props();
+
+  /**
+   * Generate clip-path for triangle
+   */
+  function getTriangleClipPath(): string {
+    return 'polygon(50% 0%, 0% 100%, 100% 100%)';
+  }
+
+  /**
+   * Generate clip-path for polygon
+   */
+  function getPolygonClipPath(sides: number): string {
+    const points: string[] = [];
+    const angleStep = (2 * Math.PI) / sides;
+
+    for (let i = 0; i < sides; i++) {
+      const angle = i * angleStep - Math.PI / 2; // Start from top
+      const x = 50 + 50 * Math.cos(angle);
+      const y = 50 + 50 * Math.sin(angle);
+      points.push(`${x}% ${y}%`);
+    }
+
+    return `polygon(${points.join(', ')})`;
+  }
+
+  const shapeStyles = $derived.by(() => {
+    const base = {
+      backgroundColor: fill,
+      border: `${strokeWidth}px solid ${stroke}`
+    };
+
+    switch (shapeType) {
+      case 'rectangle':
+        return {
+          ...base,
+          width: `${width}px`,
+          height: `${height}px`
+        };
+
+      case 'circle':
+        return {
+          ...base,
+          width: `${radius * 2}px`,
+          height: `${radius * 2}px`,
+          borderRadius: '50%'
+        };
+
+      case 'triangle':
+        return {
+          ...base,
+          width: `${width}px`,
+          height: `${height}px`,
+          clipPath: getTriangleClipPath()
+        };
+
+      case 'polygon':
+        return {
+          ...base,
+          width: `${radius * 2}px`,
+          height: `${radius * 2}px`,
+          clipPath: getPolygonClipPath(sides)
+        };
+
+      default:
+        return base;
+    }
+  });
+</script>
+
+<div
+  style:width={'width' in shapeStyles ? shapeStyles.width : undefined}
+  style:height={'height' in shapeStyles ? shapeStyles.height : undefined}
+  style:background-color={shapeStyles.backgroundColor}
+  style:border={shapeStyles.border}
+  style:border-radius={'borderRadius' in shapeStyles ? shapeStyles.borderRadius : undefined}
+  style:clip-path={'clipPath' in shapeStyles ? shapeStyles.clipPath : undefined}
+></div>

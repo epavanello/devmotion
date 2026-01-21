@@ -1,274 +1,29 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import * as THREE from 'three';
   import { projectStore } from '$lib/stores/project.svelte';
   import { getAnimatedTransform, getAnimatedStyle } from '$lib/engine/interpolation';
   import CanvasControls from './canvas-controls.svelte';
-  import { CanvasInteractionManager } from './canvas-interactions';
+  import LayerWrapper from '$lib/layers/LayerWrapper.svelte';
+  import { getLayerComponent } from '$lib/layers/registry';
+  import type { Transform } from '$lib/types/animation';
 
-  let canvasContainer: HTMLDivElement;
-  let renderer: THREE.WebGLRenderer;
-  let scene: THREE.Scene;
-  let camera: THREE.PerspectiveCamera;
+  let canvasContainer: HTMLDivElement | undefined = $state();
   let animationFrameId: number;
-  let layerObjects = new Map<string, THREE.Object3D>();
-  let interactionManager: CanvasInteractionManager | null = null;
+  let isPanning = $state(false);
+  let panStart = $state({ x: 0, y: 0 });
 
   onMount(() => {
-    initThreeJS();
-    updateScene();
     animate();
 
     return () => {
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
       }
-      interactionManager?.destroy();
-      renderer?.dispose();
     };
   });
 
-  function initThreeJS() {
-    const width = canvasContainer.clientWidth;
-    const height = canvasContainer.clientHeight;
-
-    // Setup renderer
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(width, height);
-    renderer.setClearColor(projectStore.project.backgroundColor, 1);
-    canvasContainer.appendChild(renderer.domElement);
-
-    // Setup scene
-    scene = new THREE.Scene();
-
-    // Setup camera - using perspective camera for proper depth perception
-    const aspect = width / height;
-    const fov = 50; // Field of view in degrees
-    camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 10000);
-    camera.position.z = 1000; // Move camera far enough to see the scene
-
-    // Add grid
-    updateGrid();
-
-    // Setup interactions
-    interactionManager = new CanvasInteractionManager(renderer.domElement, camera, scene);
-
-    // Handle resize
-    const resizeObserver = new ResizeObserver(() => {
-      const width = canvasContainer.clientWidth;
-      const height = canvasContainer.clientHeight;
-      renderer.setSize(width, height);
-
-      const aspect = width / height;
-      camera.aspect = aspect;
-      camera.updateProjectionMatrix();
-    });
-    resizeObserver.observe(canvasContainer);
-  }
-
-  function updateGrid() {
-    // Remove existing grid
-    const existingGrid = scene.getObjectByName('grid');
-    if (existingGrid) {
-      scene.remove(existingGrid);
-    }
-
-    if (!projectStore.viewport.showGrid) return;
-
-    const gridHelper = new THREE.GridHelper(
-      projectStore.project.width,
-      projectStore.project.width / projectStore.viewport.gridSize,
-      0x444444,
-      0x222222
-    );
-    gridHelper.rotation.x = Math.PI / 2;
-    gridHelper.position.z = -1; // Position grid slightly behind objects (Z=0)
-    gridHelper.name = 'grid';
-    scene.add(gridHelper);
-  }
-
-  function updateScene() {
-    // Update grid visibility
-    updateGrid();
-
-    // Remove all selection outlines from previous renders
-    const selections = scene.children.filter((child) => child.name === 'selection');
-    selections.forEach((selection) => scene.remove(selection));
-
-    // Clear old objects
-    layerObjects.forEach((obj) => {
-      scene.remove(obj);
-    });
-    layerObjects.clear();
-
-    // Create objects for each layer
-    projectStore.project.layers.forEach((layer) => {
-      if (!layer.visible) return;
-
-      let object: THREE.Object3D | null = null;
-
-      // Get animated values
-      const animatedTransform = getAnimatedTransform(
-        layer.keyframes,
-        projectStore.project.currentTime
-      );
-      const animatedStyle = getAnimatedStyle(layer.keyframes, projectStore.project.currentTime);
-
-      const transform = {
-        position: {
-          x: animatedTransform.position.x ?? layer.transform.position.x,
-          y: animatedTransform.position.y ?? layer.transform.position.y,
-          z: animatedTransform.position.z ?? layer.transform.position.z
-        },
-        rotation: {
-          x: animatedTransform.rotation.x ?? layer.transform.rotation.x,
-          y: animatedTransform.rotation.y ?? layer.transform.rotation.y,
-          z: animatedTransform.rotation.z ?? layer.transform.rotation.z
-        },
-        scale: {
-          x: animatedTransform.scale.x ?? layer.transform.scale.x,
-          y: animatedTransform.scale.y ?? layer.transform.scale.y,
-          z: animatedTransform.scale.z ?? layer.transform.scale.z
-        }
-      };
-
-      const opacity = animatedStyle.opacity ?? layer.style.opacity;
-      const color = animatedStyle.color ?? layer.style.color;
-
-      if (layer.type === 'text' && layer.textData) {
-        object = createTextObject(layer.textData.content, color, opacity);
-      } else if (layer.type === 'shape' && layer.shapeData) {
-        object = createShapeObject(layer.shapeData, color, opacity);
-      } else if (layer.type === 'image' && layer.imageData) {
-        object = createImageObject(layer.imageData, opacity);
-      }
-
-      if (object) {
-        // Note: Y is NOT inverted here - we use the value as-is
-        // Three.js Y-up coordinate system matches our logical coordinate system
-        object.position.set(transform.position.x, transform.position.y, transform.position.z);
-        object.rotation.set(transform.rotation.x, transform.rotation.y, transform.rotation.z);
-        object.scale.set(transform.scale.x, transform.scale.y, transform.scale.z);
-        object.userData.layerId = layer.id;
-
-        // Highlight selected layer
-        if (layer.id === projectStore.selectedLayerId) {
-          addSelectionOutline(object);
-        }
-
-        scene.add(object);
-        layerObjects.set(layer.id, object);
-      }
-    });
-  }
-
-  function createTextObject(text: string, color: string, opacity: number): THREE.Object3D {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d')!;
-    canvas.width = 1024;
-    canvas.height = 256;
-
-    // Clear canvas with transparent background
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw text
-    ctx.fillStyle = color;
-    ctx.font = 'bold 96px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.needsUpdate = true;
-
-    // Use PlaneGeometry instead of Sprite for consistent behavior with shapes
-    const geometry = new THREE.PlaneGeometry(400, 100);
-    const material = new THREE.MeshBasicMaterial({
-      map: texture,
-      transparent: true,
-      opacity,
-      side: THREE.DoubleSide
-    });
-
-    const mesh = new THREE.Mesh(geometry, material);
-
-    return mesh;
-  }
-
-  function createShapeObject(
-    shapeData: { shapeType: string; width: number; height: number; radius?: number },
-    color: string,
-    opacity: number
-  ): THREE.Object3D {
-    let geometry: THREE.BufferGeometry;
-
-    switch (shapeData.shapeType) {
-      case 'rectangle':
-        geometry = new THREE.PlaneGeometry(shapeData.width, shapeData.height);
-        break;
-      case 'circle':
-        geometry = new THREE.CircleGeometry(shapeData.radius || 100, 32);
-        break;
-      case 'triangle':
-        geometry = new THREE.CircleGeometry(shapeData.radius || 100, 3);
-        break;
-      default:
-        geometry = new THREE.PlaneGeometry(shapeData.width, shapeData.height);
-    }
-
-    const material = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(color),
-      transparent: true,
-      opacity,
-      side: THREE.DoubleSide
-    });
-
-    return new THREE.Mesh(geometry, material);
-  }
-
-  function createImageObject(
-    imageData: { src: string; width: number; height: number },
-    opacity: number
-  ): THREE.Object3D {
-    const texture = new THREE.TextureLoader().load(imageData.src);
-
-    // Use PlaneGeometry for consistent behavior with other layers
-    const geometry = new THREE.PlaneGeometry(imageData.width, imageData.height);
-    const material = new THREE.MeshBasicMaterial({
-      map: texture,
-      transparent: true,
-      opacity,
-      side: THREE.DoubleSide
-    });
-
-    const mesh = new THREE.Mesh(geometry, material);
-
-    return mesh;
-  }
-
-  function addSelectionOutline(object: THREE.Object3D) {
-    const bbox = new THREE.Box3().setFromObject(object);
-    const size = bbox.getSize(new THREE.Vector3());
-
-    const geometry = new THREE.EdgesGeometry(new THREE.PlaneGeometry(size.x * 1.1, size.y * 1.1));
-    const material = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2 });
-    const edges = new THREE.LineSegments(geometry, material);
-
-    edges.position.copy(object.position);
-    edges.name = 'selection';
-    scene.add(edges);
-  }
-
   function animate() {
     animationFrameId = requestAnimationFrame(animate);
-
-    // Update camera based on viewport
-    camera.position.x = projectStore.viewport.pan.x;
-    camera.position.y = -projectStore.viewport.pan.y;
-
-    // Adjust camera distance based on zoom (closer = more zoomed in)
-    const baseDistance = 1000;
-    camera.position.z = baseDistance / projectStore.viewport.zoom;
 
     // Update scene if playing
     if (projectStore.isPlaying) {
@@ -280,28 +35,176 @@
       } else {
         projectStore.setCurrentTime(newTime);
       }
-
-      updateScene();
     }
-
-    renderer.render(scene, camera);
   }
 
-  // Reactive updates
-  $effect(() => {
-    if (renderer) {
-      updateScene();
+  /**
+   * Handle pan and zoom interactions on the canvas
+   */
+  function onCanvasMouseDown(event: MouseEvent) {
+    // Middle mouse or Shift+drag for panning
+    if (event.button === 1 || (event.button === 0 && event.shiftKey)) {
+      isPanning = true;
+      panStart = { x: event.clientX, y: event.clientY };
+      event.preventDefault();
+      return;
     }
-  });
 
-  $effect(() => {
-    if (scene) {
-      updateGrid();
+    // Left click on empty space - deselect
+    if (event.button === 0 && event.target === event.currentTarget) {
+      projectStore.selectedLayerId = null;
     }
-  });
+  }
+
+  function onCanvasMouseMove(event: MouseEvent) {
+    if (isPanning) {
+      const deltaX = event.clientX - panStart.x;
+      const deltaY = event.clientY - panStart.y;
+
+      const currentPan = projectStore.viewport.pan;
+      projectStore.setPan(currentPan.x + deltaX, currentPan.y + deltaY);
+
+      panStart = { x: event.clientX, y: event.clientY };
+      event.preventDefault();
+    }
+  }
+
+  function onCanvasMouseUp() {
+    isPanning = false;
+  }
+
+  function onCanvasWheel(event: WheelEvent) {
+    event.preventDefault();
+
+    // Zoom with scroll wheel
+    const delta = event.deltaY > 0 ? 0.9 : 1.1;
+    const newZoom = projectStore.viewport.zoom * delta;
+
+    // Clamp zoom between 0.1 and 5
+    projectStore.setZoom(Math.max(0.1, Math.min(5, newZoom)));
+  }
+
+  /**
+   * Get animated transform for a layer, merging base transform with animated values
+   */
+  function getLayerTransform(layer: any): Transform {
+    const animatedTransform = getAnimatedTransform(
+      layer.keyframes,
+      projectStore.project.currentTime
+    );
+
+    return {
+      x: animatedTransform.position?.x ?? layer.transform.x,
+      y: animatedTransform.position?.y ?? layer.transform.y,
+      z: animatedTransform.position?.z ?? layer.transform.z,
+      rotationX: animatedTransform.rotation?.x ?? layer.transform.rotationX,
+      rotationY: animatedTransform.rotation?.y ?? layer.transform.rotationY,
+      rotationZ: animatedTransform.rotation?.z ?? layer.transform.rotationZ,
+      scaleX: animatedTransform.scale?.x ?? layer.transform.scaleX,
+      scaleY: animatedTransform.scale?.y ?? layer.transform.scaleY,
+      scaleZ: animatedTransform.scale?.z ?? layer.transform.scaleZ
+    };
+  }
+
+  /**
+   * Get animated style for a layer
+   */
+  function getLayerStyle(layer: any) {
+    const animatedStyle = getAnimatedStyle(layer.keyframes, projectStore.project.currentTime);
+
+    return {
+      opacity: animatedStyle.opacity ?? layer.style.opacity
+    };
+  }
+
+  // Calculate viewport transform for pan and zoom
+  const viewportTransform = $derived(
+    `translate(${projectStore.viewport.pan.x}px, ${projectStore.viewport.pan.y}px) scale(${projectStore.viewport.zoom})`
+  );
+
+  // Grid size based on project settings
+  const gridSize = $derived(projectStore.viewport.gridSize);
 </script>
 
-<div class="relative h-full w-full bg-background">
-  <div bind:this={canvasContainer} class="h-full w-full"></div>
+<div class="relative h-full w-full overflow-hidden" style:background-color={projectStore.project.backgroundColor}>
+  <!-- Canvas viewport with 3D perspective -->
+  <div
+    bind:this={canvasContainer}
+    class="canvas-viewport absolute inset-0"
+    style:perspective="1000px"
+    style:perspective-origin="center center"
+    style:cursor={isPanning ? 'grabbing' : 'default'}
+    onmousedown={onCanvasMouseDown}
+    onmousemove={onCanvasMouseMove}
+    onmouseup={onCanvasMouseUp}
+    onwheel={onCanvasWheel}
+    role="presentation"
+  >
+    <!-- Viewport transform container (pan and zoom) -->
+    <div
+      class="viewport-content absolute left-1/2 top-1/2 origin-center"
+      style:transform={viewportTransform}
+      style:transform-style="preserve-3d"
+    >
+      <!-- Grid -->
+      {#if projectStore.viewport.showGrid}
+        <div
+          class="absolute"
+          style:width="{projectStore.project.width}px"
+          style:height="{projectStore.project.height}px"
+          style:left="0"
+          style:top="0"
+          style:background-image="linear-gradient(#444 1px, transparent 1px), linear-gradient(90deg, #444 1px, transparent 1px)"
+          style:background-size="{gridSize}px {gridSize}px"
+          style:opacity="0.3"
+          style:pointer-events="none"
+        ></div>
+      {/if}
+
+      <!-- Layers -->
+      <div
+        class="layers-container absolute"
+        style:width="{projectStore.project.width}px"
+        style:height="{projectStore.project.height}px"
+        style:left="0"
+        style:top="0"
+        style:transform-style="preserve-3d"
+      >
+        {#each projectStore.project.layers as layer (layer.id)}
+          {@const transform = getLayerTransform(layer)}
+          {@const style = getLayerStyle(layer)}
+          {@const component = getLayerComponent(layer.type)}
+          {@const isSelected = projectStore.selectedLayerId === layer.id}
+
+          <LayerWrapper
+            id={layer.id}
+            name={layer.name}
+            visible={layer.visible}
+            locked={layer.locked}
+            selected={isSelected}
+            {transform}
+            {style}
+            {component}
+            customProps={layer.props}
+          />
+        {/each}
+      </div>
+    </div>
+  </div>
+
   <CanvasControls />
 </div>
+
+<style>
+  .canvas-viewport {
+    transform-style: preserve-3d;
+  }
+
+  .viewport-content {
+    transform-style: preserve-3d;
+  }
+
+  .layers-container {
+    transform-style: preserve-3d;
+  }
+</style>

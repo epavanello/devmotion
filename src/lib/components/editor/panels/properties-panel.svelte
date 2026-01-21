@@ -5,10 +5,9 @@
   import { Input } from '$lib/components/ui/input';
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
-  import { Plus, Sparkles, Trash2 } from 'lucide-svelte';
+  import { Plus, Trash2 } from 'lucide-svelte';
   import { nanoid } from 'nanoid';
   import type { AnimatableProperty } from '$lib/types/animation';
-  import { animationPresets } from '$lib/engine/presets';
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -27,21 +26,15 @@
       projectStore.project.currentTime
     );
     return {
-      position: {
-        x: animatedTransform.position.x ?? selectedLayer.transform.position.x,
-        y: animatedTransform.position.y ?? selectedLayer.transform.position.y,
-        z: animatedTransform.position.z ?? selectedLayer.transform.position.z
-      },
-      rotation: {
-        x: animatedTransform.rotation.x ?? selectedLayer.transform.rotation.x,
-        y: animatedTransform.rotation.y ?? selectedLayer.transform.rotation.y,
-        z: animatedTransform.rotation.z ?? selectedLayer.transform.rotation.z
-      },
-      scale: {
-        x: animatedTransform.scale.x ?? selectedLayer.transform.scale.x,
-        y: animatedTransform.scale.y ?? selectedLayer.transform.scale.y,
-        z: animatedTransform.scale.z ?? selectedLayer.transform.scale.z
-      }
+      x: animatedTransform.position.x ?? selectedLayer.transform.x,
+      y: animatedTransform.position.y ?? selectedLayer.transform.y,
+      z: animatedTransform.position.z ?? selectedLayer.transform.z,
+      rotationX: animatedTransform.rotation.x ?? selectedLayer.transform.rotationX,
+      rotationY: animatedTransform.rotation.y ?? selectedLayer.transform.rotationY,
+      rotationZ: animatedTransform.rotation.z ?? selectedLayer.transform.rotationZ,
+      scaleX: animatedTransform.scale.x ?? selectedLayer.transform.scaleX,
+      scaleY: animatedTransform.scale.y ?? selectedLayer.transform.scaleY,
+      scaleZ: animatedTransform.scale.z ?? selectedLayer.transform.scaleZ
     };
   });
 
@@ -52,12 +45,10 @@
       projectStore.project.currentTime
     );
     return {
-      opacity: animatedStyle.opacity ?? selectedLayer.style.opacity,
-      color: animatedStyle.color ?? selectedLayer.style.color
+      opacity: animatedStyle.opacity ?? selectedLayer.style.opacity
     };
   });
 
-  // Sort keyframes by time for display
   const sortedKeyframes = $derived.by(() => {
     if (!selectedLayer) return [];
     return [...selectedLayer.keyframes].sort((a, b) => a.time - b.time);
@@ -74,8 +65,7 @@
       'scale.x': 'Scale X',
       'scale.y': 'Scale Y',
       'scale.z': 'Scale Z',
-      opacity: 'Opacity',
-      color: 'Color'
+      opacity: 'Opacity'
     };
     return labels[property] || property;
   }
@@ -101,56 +91,22 @@
     projectStore.updateLayer(selectedLayer.id, { [property]: value } as any);
   }
 
-  function updateTransform(
-    axis: 'x' | 'y' | 'z',
-    type: 'position' | 'rotation' | 'scale',
-    value: number
-  ) {
+  function updateTransformProperty(property: string, value: number) {
     if (!selectedLayer) return;
-
-    const property = `${type}.${axis}` as AnimatableProperty;
-    const currentTime = projectStore.project.currentTime;
-
-    // Check if there's a keyframe for this property at the current time
-    const keyframe = selectedLayer.keyframes.find(
-      (k) => k.property === property && k.time === currentTime
-    );
-
-    if (keyframe) {
-      // Update the keyframe value
-      projectStore.updateKeyframe(selectedLayer.id, keyframe.id, { value });
-    } else {
-      // Update the base transform
-      const newTransform = { ...selectedLayer.transform };
-      newTransform[type][axis] = value;
-      projectStore.updateLayer(selectedLayer.id, { transform: newTransform });
-    }
+    const newTransform = { ...selectedLayer.transform, [property]: value };
+    projectStore.updateLayer(selectedLayer.id, { transform: newTransform });
   }
 
   function updateStyle(property: string, value: any) {
     if (!selectedLayer) return;
-
-    const currentTime = projectStore.project.currentTime;
-
-    // Check if there's a keyframe for this property at the current time
-    const keyframe = selectedLayer.keyframes.find(
-      (k) => k.property === property && k.time === currentTime
-    );
-
-    if (keyframe) {
-      // Update the keyframe value
-      projectStore.updateKeyframe(selectedLayer.id, keyframe.id, { value });
-    } else {
-      // Update the base style
-      const newStyle = { ...selectedLayer.style, [property]: value };
-      projectStore.updateLayer(selectedLayer.id, { style: newStyle });
-    }
+    const newStyle = { ...selectedLayer.style, [property]: value };
+    projectStore.updateLayer(selectedLayer.id, { style: newStyle });
   }
 
-  function updateTextData(property: string, value: any) {
-    if (!selectedLayer || !selectedLayer.textData) return;
-    const newTextData = { ...selectedLayer.textData, [property]: value };
-    projectStore.updateLayer(selectedLayer.id, { textData: newTextData });
+  function updateLayerProps(property: string, value: any) {
+    if (!selectedLayer) return;
+    const newProps = { ...selectedLayer.props, [property]: value };
+    projectStore.updateLayer(selectedLayer.id, { props: newProps } as any);
   }
 
   function addKeyframe(property: AnimatableProperty) {
@@ -159,20 +115,16 @@
     let currentValue: number | string = 0;
 
     // Get current animated value based on property
-    if (property.startsWith('position.')) {
-      const axis = property.split('.')[1] as 'x' | 'y' | 'z';
-      currentValue = currentTransform.position[axis];
-    } else if (property.startsWith('rotation.')) {
-      const axis = property.split('.')[1] as 'x' | 'y' | 'z';
-      currentValue = currentTransform.rotation[axis];
-    } else if (property.startsWith('scale.')) {
-      const axis = property.split('.')[1] as 'x' | 'y' | 'z';
-      currentValue = currentTransform.scale[axis];
-    } else if (property === 'opacity') {
-      currentValue = currentStyle.opacity;
-    } else if (property === 'color') {
-      currentValue = currentStyle.color;
-    }
+    if (property === 'position.x') currentValue = currentTransform.x;
+    else if (property === 'position.y') currentValue = currentTransform.y;
+    else if (property === 'position.z') currentValue = currentTransform.z;
+    else if (property === 'rotation.x') currentValue = currentTransform.rotationX;
+    else if (property === 'rotation.y') currentValue = currentTransform.rotationY;
+    else if (property === 'rotation.z') currentValue = currentTransform.rotationZ;
+    else if (property === 'scale.x') currentValue = currentTransform.scaleX;
+    else if (property === 'scale.y') currentValue = currentTransform.scaleY;
+    else if (property === 'scale.z') currentValue = currentTransform.scaleZ;
+    else if (property === 'opacity') currentValue = currentStyle.opacity;
 
     projectStore.addKeyframe(selectedLayer.id, {
       id: nanoid(),
@@ -180,21 +132,6 @@
       property,
       value: currentValue,
       easing: { type: 'ease-in-out' }
-    });
-  }
-
-  function applyPreset(presetId: string) {
-    if (!selectedLayer) return;
-
-    const preset = animationPresets.find((p) => p.id === presetId);
-    if (!preset) return;
-
-    // Add all keyframes from preset
-    preset.keyframes.forEach((kf) => {
-      projectStore.addKeyframe(selectedLayer.id, {
-        id: nanoid(),
-        ...kf
-      });
     });
   }
 </script>
@@ -222,9 +159,7 @@
 
         <!-- Transform -->
         <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <Label class="font-semibold">Transform</Label>
-          </div>
+          <Label class="font-semibold">Transform</Label>
 
           <!-- Position -->
           <div class="space-y-2">
@@ -235,9 +170,9 @@
                 <Input
                   id="pos-x"
                   type="number"
-                  value={currentTransform?.position.x ?? 0}
+                  value={currentTransform?.x ?? 0}
                   oninput={(e) =>
-                    updateTransform('x', 'position', parseFloat(e.currentTarget.value) || 0)}
+                    updateTransformProperty('x', parseFloat(e.currentTarget.value) || 0)}
                 />
               </div>
               <div>
@@ -245,9 +180,9 @@
                 <Input
                   id="pos-y"
                   type="number"
-                  value={currentTransform?.position.y ?? 0}
+                  value={currentTransform?.y ?? 0}
                   oninput={(e) =>
-                    updateTransform('y', 'position', parseFloat(e.currentTarget.value) || 0)}
+                    updateTransformProperty('y', parseFloat(e.currentTarget.value) || 0)}
                 />
               </div>
               <div>
@@ -255,9 +190,9 @@
                 <Input
                   id="pos-z"
                   type="number"
-                  value={currentTransform?.position.z ?? 0}
+                  value={currentTransform?.z ?? 0}
                   oninput={(e) =>
-                    updateTransform('z', 'position', parseFloat(e.currentTarget.value) || 0)}
+                    updateTransformProperty('z', parseFloat(e.currentTarget.value) || 0)}
                 />
               </div>
             </div>
@@ -273,9 +208,9 @@
                   id="scale-x"
                   type="number"
                   step="0.1"
-                  value={currentTransform?.scale.x ?? 1}
+                  value={currentTransform?.scaleX ?? 1}
                   oninput={(e) =>
-                    updateTransform('x', 'scale', parseFloat(e.currentTarget.value) || 1)}
+                    updateTransformProperty('scaleX', parseFloat(e.currentTarget.value) || 1)}
                 />
               </div>
               <div>
@@ -284,9 +219,9 @@
                   id="scale-y"
                   type="number"
                   step="0.1"
-                  value={currentTransform?.scale.y ?? 1}
+                  value={currentTransform?.scaleY ?? 1}
                   oninput={(e) =>
-                    updateTransform('y', 'scale', parseFloat(e.currentTarget.value) || 1)}
+                    updateTransformProperty('scaleY', parseFloat(e.currentTarget.value) || 1)}
                 />
               </div>
               <div>
@@ -295,9 +230,9 @@
                   id="scale-z"
                   type="number"
                   step="0.1"
-                  value={currentTransform?.scale.z ?? 1}
+                  value={currentTransform?.scaleZ ?? 1}
                   oninput={(e) =>
-                    updateTransform('z', 'scale', parseFloat(e.currentTarget.value) || 1)}
+                    updateTransformProperty('scaleZ', parseFloat(e.currentTarget.value) || 1)}
                 />
               </div>
             </div>
@@ -313,9 +248,9 @@
                   id="rot-x"
                   type="number"
                   step="0.1"
-                  value={currentTransform?.rotation.x ?? 0}
+                  value={currentTransform?.rotationX ?? 0}
                   oninput={(e) =>
-                    updateTransform('x', 'rotation', parseFloat(e.currentTarget.value) || 0)}
+                    updateTransformProperty('rotationX', parseFloat(e.currentTarget.value) || 0)}
                 />
               </div>
               <div>
@@ -324,9 +259,9 @@
                   id="rot-y"
                   type="number"
                   step="0.1"
-                  value={currentTransform?.rotation.y ?? 0}
+                  value={currentTransform?.rotationY ?? 0}
                   oninput={(e) =>
-                    updateTransform('y', 'rotation', parseFloat(e.currentTarget.value) || 0)}
+                    updateTransformProperty('rotationY', parseFloat(e.currentTarget.value) || 0)}
                 />
               </div>
               <div>
@@ -335,9 +270,9 @@
                   id="rot-z"
                   type="number"
                   step="0.1"
-                  value={currentTransform?.rotation.z ?? 0}
+                  value={currentTransform?.rotationZ ?? 0}
                   oninput={(e) =>
-                    updateTransform('z', 'rotation', parseFloat(e.currentTarget.value) || 0)}
+                    updateTransformProperty('rotationZ', parseFloat(e.currentTarget.value) || 0)}
                 />
               </div>
             </div>
@@ -362,31 +297,20 @@
               oninput={(e) => updateStyle('opacity', parseFloat(e.currentTarget.value) || 0)}
             />
           </div>
-
-          <div class="space-y-2">
-            <Label for="color" class="text-xs">Color</Label>
-            <Input
-              id="color"
-              type="color"
-              value={currentStyle?.color ?? '#ffffff'}
-              oninput={(e) => updateStyle('color', e.currentTarget.value)}
-            />
-          </div>
         </div>
 
-        {#if selectedLayer.type === 'text' && selectedLayer.textData}
+        <!-- Layer-specific properties -->
+        {#if selectedLayer.type === 'text'}
           <Separator />
-
-          <!-- Text Properties -->
           <div class="space-y-3">
-            <Label class="font-semibold">Text</Label>
+            <Label class="font-semibold">Text Properties</Label>
 
             <div class="space-y-2">
               <Label for="text-content" class="text-xs">Content</Label>
               <Input
                 id="text-content"
-                value={selectedLayer.textData.content}
-                oninput={(e) => updateTextData('content', e.currentTarget.value)}
+                value={selectedLayer.props.content}
+                oninput={(e) => updateLayerProps('content', e.currentTarget.value)}
               />
             </div>
 
@@ -395,8 +319,18 @@
               <Input
                 id="font-size"
                 type="number"
-                value={selectedLayer.textData.fontSize}
-                oninput={(e) => updateTextData('fontSize', parseInt(e.currentTarget.value) || 48)}
+                value={selectedLayer.props.fontSize}
+                oninput={(e) => updateLayerProps('fontSize', parseInt(e.currentTarget.value) || 48)}
+              />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="text-color" class="text-xs">Color</Label>
+              <Input
+                id="text-color"
+                type="color"
+                value={selectedLayer.props.color}
+                oninput={(e) => updateLayerProps('color', e.currentTarget.value)}
               />
             </div>
           </div>
@@ -431,29 +365,11 @@
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button variant="outline" size="sm" class="w-full">
-                <Sparkles class="mr-2 h-4 w-4" />
-                Apply Preset
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {#each animationPresets as preset}
-                <DropdownMenuItem onclick={() => applyPreset(preset.id)}>
-                  {preset.name}
-                </DropdownMenuItem>
-              {/each}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
           {#if selectedLayer.keyframes.length > 0}
             <div class="mt-4 space-y-2">
-              <div class="flex items-center justify-between">
-                <Label class="text-xs text-muted-foreground">
-                  {selectedLayer.keyframes.length} keyframe(s)
-                </Label>
-              </div>
+              <Label class="text-xs text-muted-foreground">
+                {selectedLayer.keyframes.length} keyframe(s)
+              </Label>
 
               <div
                 class="max-h-[300px] space-y-1 overflow-y-auto rounded-md border bg-muted/20 p-2"
@@ -500,3 +416,5 @@
     </div>
   {/if}
 </div>
+
+<!-- TODO: Implement dynamic property generation from Zod schemas using extractPropertyMetadata from layers/base.ts -->
