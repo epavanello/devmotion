@@ -12,21 +12,25 @@
   import { Input } from '$lib/components/ui/input';
   import { Progress } from '$lib/components/ui/progress';
   import { projectStore } from '$lib/stores/project.svelte';
-  import { Loader2 } from 'lucide-svelte';
+  import { VideoCapture } from '$lib/utils/video-capture';
+  import { Loader2, AlertCircle } from 'lucide-svelte';
 
   interface Props {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onExport: () => Promise<void>;
+    getCanvasElement: () => HTMLDivElement | undefined;
+    isRecording?: boolean;
   }
 
-  let { open, onOpenChange, onExport }: Props = $props();
+  let { open, onOpenChange, getCanvasElement, isRecording = $bindable(false) }: Props = $props();
 
   let isExporting = $state(false);
   let exportProgress = $state(0);
+  let errorMessage = $state<string | null>(null);
+  let videoCapture = new VideoCapture();
+
   let exportSettings = $state({
-    format: 'mp4',
-    quality: 'medium',
+    format: 'webm',
     fps: projectStore.project.fps,
     width: projectStore.project.width,
     height: projectStore.project.height
@@ -35,17 +39,141 @@
   async function handleExport() {
     isExporting = true;
     exportProgress = 0;
+    errorMessage = null;
+
+    // Check browser support
+    if (!VideoCapture.isSupported()) {
+      errorMessage = 'Video capture APIs are not supported in this browser. Please use Chrome 104+ on desktop.';
+      isExporting = false;
+      return;
+    }
+
+    const canvasElement = getCanvasElement();
+    if (!canvasElement) {
+      errorMessage = 'Canvas element not found. Please try again.';
+      isExporting = false;
+      return;
+    }
+
+    // Store original viewport state
+    const originalZoom = projectStore.viewport.zoom;
+    const originalPan = { ...projectStore.viewport.pan };
 
     try {
-      await onExport();
+      // Reset timeline to beginning
+      projectStore.setCurrentTime(0);
+
+      // Reset viewport to default (zoom 1, no pan) for cleaner capture
+      projectStore.setZoom(1);
+      projectStore.setPan(0, 0);
+
+      // Wait for the UI to update with new viewport
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Close the dialog to avoid capturing it
       onOpenChange(false);
-    } catch (error) {
+      isRecording = true;
+
+      // Wait for dialog to close and UI to update
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Start playback
+      projectStore.play();
+
+      // Start video capture
+      await videoCapture.startCapture(canvasElement, {
+        width: exportSettings.width,
+        height: exportSettings.height,
+        fps: exportSettings.fps,
+        duration: projectStore.project.duration,
+        onProgress: (progress) => {
+          exportProgress = progress;
+        },
+        onComplete: (blob) => {
+          // Stop playback
+          projectStore.pause();
+          projectStore.setCurrentTime(0);
+
+          // Restore original viewport
+          projectStore.setZoom(originalZoom);
+          projectStore.setPan(originalPan.x, originalPan.y);
+
+          // Download the video
+          const filename = `${projectStore.project.name || 'video'}.webm`;
+          VideoCapture.downloadBlob(blob, filename);
+
+          // Reset state
+          isExporting = false;
+          isRecording = false;
+          exportProgress = 0;
+        },
+        onError: (error) => {
+          console.error('Export error:', error);
+          errorMessage = error.message || 'An error occurred during export';
+          projectStore.pause();
+          projectStore.setCurrentTime(0);
+
+          // Restore original viewport
+          projectStore.setZoom(originalZoom);
+          projectStore.setPan(originalPan.x, originalPan.y);
+
+          isExporting = false;
+          isRecording = false;
+          exportProgress = 0;
+
+          // Reopen dialog to show error
+          onOpenChange(true);
+        }
+      });
+
+      // Auto-stop recording when animation finishes
+      setTimeout(() => {
+        if (isExporting) {
+          videoCapture.stopCapture();
+        }
+      }, projectStore.project.duration * 1000 + 500); // Add 500ms buffer
+
+    } catch (error: any) {
       console.error('Export failed:', error);
-      alert('Export failed. Please try again.');
-    } finally {
+      errorMessage = error.message || 'Export failed. Please try again.';
+      projectStore.pause();
+      projectStore.setCurrentTime(0);
+
+      // Restore original viewport
+      projectStore.setZoom(originalZoom);
+      projectStore.setPan(originalPan.x, originalPan.y);
+
+      isExporting = false;
+      isRecording = false;
+      exportProgress = 0;
+
+      // Reopen dialog to show error
+      onOpenChange(true);
+    }
+  }
+
+  function handleCancel() {
+    if (isExporting) {
+      videoCapture.stopCapture();
+      projectStore.pause();
+      projectStore.setCurrentTime(0);
+
+      // Try to restore viewport (may not have been saved yet)
+      try {
+        const zoom = projectStore.viewport.zoom;
+        if (zoom !== 1) {
+          // Viewport was already modified, leave it
+        } else {
+          // Could restore here if we track state differently
+        }
+      } catch (e) {
+        // Ignore
+      }
+
       isExporting = false;
       exportProgress = 0;
     }
+    onOpenChange(false);
   }
 </script>
 
@@ -54,9 +182,16 @@
     <DialogHeader>
       <DialogTitle>Export Video</DialogTitle>
       <DialogDescription>
-        Configure your video export settings. This may take a few minutes depending on the duration.
+        Configure your video export settings. The animation will play and be captured as a video.
       </DialogDescription>
     </DialogHeader>
+
+    {#if errorMessage}
+      <div class="flex items-start gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+        <AlertCircle class="h-4 w-4 mt-0.5 flex-shrink-0" />
+        <div>{errorMessage}</div>
+      </div>
+    {/if}
 
     {#if !isExporting}
       <div class="grid gap-4 py-4">
@@ -84,10 +219,19 @@
             class="col-span-3"
           />
         </div>
+
+        <div class="rounded-md bg-muted p-3 text-xs text-muted-foreground">
+          <p class="font-medium mb-1">Instructions:</p>
+          <ol class="list-decimal list-inside space-y-1">
+            <li>Click Export to start the capture</li>
+            <li>Select "This tab" when prompted by the browser</li>
+            <li>The animation will play and be recorded</li>
+          </ol>
+        </div>
       </div>
 
       <DialogFooter>
-        <Button variant="outline" onclick={() => onOpenChange(false)}>Cancel</Button>
+        <Button variant="outline" onclick={handleCancel}>Cancel</Button>
         <Button onclick={handleExport}>Export</Button>
       </DialogFooter>
     {:else}
@@ -97,12 +241,15 @@
         </div>
         <div class="space-y-2">
           <div class="text-center text-sm text-muted-foreground">
-            Exporting video... This may take a while.
+            Recording video... Please wait.
           </div>
           <Progress value={exportProgress} class="w-full" />
           <div class="text-center text-xs text-muted-foreground">
             {Math.round(exportProgress)}%
           </div>
+        </div>
+        <div class="text-center">
+          <Button variant="outline" size="sm" onclick={handleCancel}>Cancel</Button>
         </div>
       </div>
     {/if}

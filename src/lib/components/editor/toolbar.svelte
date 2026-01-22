@@ -28,6 +28,13 @@
     DropdownMenuTrigger
   } from '$lib/components/ui/dropdown-menu';
 
+  interface Props {
+    getCanvasElement: () => HTMLDivElement | undefined;
+    isRecording?: boolean;
+  }
+
+  let { getCanvasElement, isRecording = $bindable(false) }: Props = $props();
+
   let showExportDialog = $state(false);
 
   function togglePlayback() {
@@ -96,14 +103,6 @@
 
   function openExportDialog() {
     showExportDialog = true;
-  }
-
-  async function handleExport() {
-    // For now, just export JSON since video export requires canvas access
-    // This will be properly implemented when integrated with the canvas component
-    alert(
-      'Video export feature will be available soon. For now, use Save Project to export as JSON.'
-    );
   }
 </script>
 
@@ -184,14 +183,22 @@
   <div class="flex-1"></div>
 
   <!-- Export -->
-  <Button variant="default" size="sm" onclick={openExportDialog}>
+  <Button variant="default" size="sm" onclick={openExportDialog} disabled={isRecording}>
     <Download class="mr-2 h-4 w-4" />
     Export Video
   </Button>
+
+  {#if isRecording}
+    <div class="flex items-center gap-2 px-3 py-1 bg-red-500 text-white rounded-md text-sm font-medium animate-pulse">
+      <span class="h-2 w-2 bg-white rounded-full"></span>
+      Recording...
+    </div>
+  {/if}
 </div>
 
 <ExportDialog
   open={showExportDialog}
   onOpenChange={(open) => (showExportDialog = open)}
-  onExport={handleExport}
+  {getCanvasElement}
+  bind:isRecording
 />

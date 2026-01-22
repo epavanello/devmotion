@@ -8,16 +8,40 @@
   import type { Transform } from '$lib/types/animation';
 
   let canvasContainer: HTMLDivElement | undefined = $state();
+
+  let {
+    projectViewport = $bindable()
+  }: {
+    projectViewport: HTMLDivElement | undefined;
+  } = $props();
+
   let animationFrameId: number;
   let isPanning = $state(false);
   let panStart = $state({ x: 0, y: 0 });
+  let containerWidth = $state(1);
+  let containerHeight = $state(1);
+  let resizeObserver: ResizeObserver;
 
   onMount(() => {
     animate();
 
+    // Observe container size changes
+    if (canvasContainer) {
+      resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          containerWidth = entry.contentRect.width;
+          containerHeight = entry.contentRect.height;
+        }
+      });
+      resizeObserver.observe(canvasContainer);
+    }
+
     return () => {
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
+      }
+      if (resizeObserver) {
+        resizeObserver.disconnect();
       }
     };
   });
@@ -117,16 +141,28 @@
     };
   }
 
-  // Calculate viewport transform for pan and zoom
+  // Calculate scale factor to fit project dimensions in viewport
+  // This maintains aspect ratio and leaves some padding
+  const VIEWPORT_PADDING = 0.9; // Use 90% of available space for padding
+  const projectAspectRatio = $derived(projectStore.project.width / projectStore.project.height);
+  const containerAspectRatio = $derived(containerWidth / containerHeight);
+
+  const fitScale = $derived(
+    containerAspectRatio > projectAspectRatio
+      ? (containerHeight * VIEWPORT_PADDING) / projectStore.project.height
+      : (containerWidth * VIEWPORT_PADDING) / projectStore.project.width
+  );
+
+  // Calculate viewport transform for pan, zoom, and fit scale
   const viewportTransform = $derived(
-    `translate(${projectStore.viewport.pan.x}px, ${projectStore.viewport.pan.y}px) scale(${projectStore.viewport.zoom})`
+    `translate(${projectStore.viewport.pan.x}px, ${projectStore.viewport.pan.y}px) scale(${fitScale * projectStore.viewport.zoom})`
   );
 
   // Grid size based on project settings
   const gridSize = $derived(projectStore.viewport.gridSize);
 </script>
 
-<div class="relative h-full w-full overflow-hidden" style:background-color={projectStore.project.backgroundColor}>
+<div class="relative h-full w-full overflow-hidden bg-gray-900">
   <!-- Canvas viewport with 3D perspective -->
   <div
     bind:this={canvasContainer}
@@ -142,52 +178,55 @@
   >
     <!-- Viewport transform container (pan and zoom) -->
     <div
-      class="viewport-content absolute left-1/2 top-1/2 origin-center"
+      class="viewport-content absolute top-1/2 left-1/2 origin-center"
       style:transform={viewportTransform}
       style:transform-style="preserve-3d"
     >
-      <!-- Grid -->
-      {#if projectStore.viewport.showGrid}
-        <div
-          class="absolute"
-          style:width="{projectStore.project.width}px"
-          style:height="{projectStore.project.height}px"
-          style:left="0"
-          style:top="0"
-          style:background-image="linear-gradient(#444 1px, transparent 1px), linear-gradient(90deg, #444 1px, transparent 1px)"
-          style:background-size="{gridSize}px {gridSize}px"
-          style:opacity="0.3"
-          style:pointer-events="none"
-        ></div>
-      {/if}
-
-      <!-- Layers -->
+      <!-- Project viewport area - exact dimensions of the video output -->
       <div
-        class="layers-container absolute"
+        bind:this={projectViewport}
+        class="project-viewport absolute"
         style:width="{projectStore.project.width}px"
         style:height="{projectStore.project.height}px"
-        style:left="0"
-        style:top="0"
+        style:left="-{projectStore.project.width / 2}px"
+        style:top="-{projectStore.project.height / 2}px"
+        style:background-color={projectStore.project.backgroundColor}
         style:transform-style="preserve-3d"
+        style:isolation="isolate"
       >
-        {#each projectStore.project.layers as layer (layer.id)}
-          {@const transform = getLayerTransform(layer)}
-          {@const style = getLayerStyle(layer)}
-          {@const component = getLayerComponent(layer.type)}
-          {@const isSelected = projectStore.selectedLayerId === layer.id}
+        <!-- Grid -->
+        {#if projectStore.viewport.showGrid}
+          <div
+            class="absolute inset-0"
+            style:background-image="linear-gradient(#444 1px, transparent 1px),
+            linear-gradient(90deg, #444 1px, transparent 1px)"
+            style:background-size="{gridSize}px {gridSize}px"
+            style:opacity="0.3"
+            style:pointer-events="none"
+          ></div>
+        {/if}
 
-          <LayerWrapper
-            id={layer.id}
-            name={layer.name}
-            visible={layer.visible}
-            locked={layer.locked}
-            selected={isSelected}
-            {transform}
-            {style}
-            {component}
-            customProps={layer.props}
-          />
-        {/each}
+        <!-- Layers -->
+        <div class="layers-container absolute inset-0" style:transform-style="preserve-3d">
+          {#each projectStore.project.layers as layer (layer.id)}
+            {@const transform = getLayerTransform(layer)}
+            {@const style = getLayerStyle(layer)}
+            {@const component = getLayerComponent(layer.type)}
+            {@const isSelected = projectStore.selectedLayerId === layer.id}
+
+            <LayerWrapper
+              id={layer.id}
+              name={layer.name}
+              visible={layer.visible}
+              locked={layer.locked}
+              selected={isSelected}
+              {transform}
+              {style}
+              {component}
+              customProps={layer.props}
+            />
+          {/each}
+        </div>
       </div>
     </div>
   </div>
@@ -202,6 +241,11 @@
 
   .viewport-content {
     transform-style: preserve-3d;
+  }
+
+  .project-viewport {
+    transform-style: preserve-3d;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
   }
 
   .layers-container {
