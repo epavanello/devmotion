@@ -19,7 +19,14 @@
 </script>
 
 <script lang="ts">
-  let { content, fontSize, fontFamily, fontWeight, textAlign, color }: TextLayerProps = $props();
+  let {
+    content = 'New Text',
+    fontSize = 48,
+    fontFamily = 'Arial',
+    fontWeight = 'normal',
+    textAlign = 'center',
+    color = '#ffffff'
+  }: TextLayerProps = $props();
 </script>
 
 <div

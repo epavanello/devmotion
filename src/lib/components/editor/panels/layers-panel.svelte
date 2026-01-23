@@ -53,7 +53,7 @@
 </script>
 
 <div
-  class="flex h-full flex-col bg-background"
+  class="flex h-full flex-col overflow-y-auto bg-background"
   class:pointer-events-none={projectStore.isRecording}
   class:opacity-50={projectStore.isRecording}
 >
@@ -82,13 +82,7 @@
           <div
             class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-primary/10 text-xs font-semibold"
           >
-            {#if layer.type === 'text'}
-              T
-            {:else if layer.type === 'shape'}
-              S
-            {:else if layer.type === 'image'}
-              I
-            {/if}
+            {layer.name.charAt(0).toUpperCase()}
           </div>
 
           <!-- Layer Name -->

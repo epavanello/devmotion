@@ -5,15 +5,9 @@
   import { Input } from '$lib/components/ui/input';
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
-  import { Plus, Trash2 } from 'lucide-svelte';
+  import { Pin, Trash2 } from 'lucide-svelte';
   import { nanoid } from 'nanoid';
   import type { AnimatableProperty } from '$lib/types/animation';
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger
-  } from '$lib/components/ui/dropdown-menu';
   import { getAnimatedTransform, getAnimatedStyle } from '$lib/engine/interpolation';
 
   const selectedLayer = $derived(projectStore.selectedLayer);
@@ -134,10 +128,47 @@
       easing: { type: 'ease-in-out' }
     });
   }
+
+  interface PropertyFieldProps {
+    id: string;
+    label: string;
+    value: number;
+    property: AnimatableProperty;
+    step?: string;
+    min?: string;
+    max?: string;
+    onInput: (value: number) => void;
+  }
 </script>
 
+{#snippet propertyField({ id, label, value, property, step, min, max, onInput }: PropertyFieldProps)}
+  <div>
+    <div class="mb-1 flex items-center justify-between">
+      <Label for={id} class="text-xs">{label}</Label>
+      <Button
+        variant="ghost"
+        size="sm"
+        class="h-5 w-5 p-0"
+        onclick={() => addKeyframe(property)}
+        title="Add keyframe for {label}"
+      >
+        <Pin class="size-3" />
+      </Button>
+    </div>
+    <Input
+      {id}
+      type="number"
+      {value}
+      {step}
+      {min}
+      {max}
+      oninput={(e) => onInput(parseFloat(e.currentTarget.value) || 0)}
+    />
+  </div>
+{/snippet}
+
 <div
-  class="flex h-full flex-col bg-background"
+  class="flex h-full flex-col overflow-y-auto bg-background"
   class:pointer-events-none={projectStore.isRecording}
   class:opacity-50={projectStore.isRecording}
 >
@@ -169,36 +200,27 @@
           <div class="space-y-2">
             <Label class="text-xs text-muted-foreground">Position</Label>
             <div class="grid grid-cols-3 gap-2">
-              <div>
-                <Label for="pos-x" class="text-xs">X</Label>
-                <Input
-                  id="pos-x"
-                  type="number"
-                  value={currentTransform?.x ?? 0}
-                  oninput={(e) =>
-                    updateTransformProperty('x', parseFloat(e.currentTarget.value) || 0)}
-                />
-              </div>
-              <div>
-                <Label for="pos-y" class="text-xs">Y</Label>
-                <Input
-                  id="pos-y"
-                  type="number"
-                  value={currentTransform?.y ?? 0}
-                  oninput={(e) =>
-                    updateTransformProperty('y', parseFloat(e.currentTarget.value) || 0)}
-                />
-              </div>
-              <div>
-                <Label for="pos-z" class="text-xs">Z</Label>
-                <Input
-                  id="pos-z"
-                  type="number"
-                  value={currentTransform?.z ?? 0}
-                  oninput={(e) =>
-                    updateTransformProperty('z', parseFloat(e.currentTarget.value) || 0)}
-                />
-              </div>
+              {@render propertyField({
+                id: 'pos-x',
+                label: 'X',
+                value: currentTransform?.x ?? 0,
+                property: 'position.x',
+                onInput: (v) => updateTransformProperty('x', v)
+              })}
+              {@render propertyField({
+                id: 'pos-y',
+                label: 'Y',
+                value: currentTransform?.y ?? 0,
+                property: 'position.y',
+                onInput: (v) => updateTransformProperty('y', v)
+              })}
+              {@render propertyField({
+                id: 'pos-z',
+                label: 'Z',
+                value: currentTransform?.z ?? 0,
+                property: 'position.z',
+                onInput: (v) => updateTransformProperty('z', v)
+              })}
             </div>
           </div>
 
@@ -206,39 +228,30 @@
           <div class="space-y-2">
             <Label class="text-xs text-muted-foreground">Scale</Label>
             <div class="grid grid-cols-3 gap-2">
-              <div>
-                <Label for="scale-x" class="text-xs">X</Label>
-                <Input
-                  id="scale-x"
-                  type="number"
-                  step="0.1"
-                  value={currentTransform?.scaleX ?? 1}
-                  oninput={(e) =>
-                    updateTransformProperty('scaleX', parseFloat(e.currentTarget.value) || 1)}
-                />
-              </div>
-              <div>
-                <Label for="scale-y" class="text-xs">Y</Label>
-                <Input
-                  id="scale-y"
-                  type="number"
-                  step="0.1"
-                  value={currentTransform?.scaleY ?? 1}
-                  oninput={(e) =>
-                    updateTransformProperty('scaleY', parseFloat(e.currentTarget.value) || 1)}
-                />
-              </div>
-              <div>
-                <Label for="scale-z" class="text-xs">Z</Label>
-                <Input
-                  id="scale-z"
-                  type="number"
-                  step="0.1"
-                  value={currentTransform?.scaleZ ?? 1}
-                  oninput={(e) =>
-                    updateTransformProperty('scaleZ', parseFloat(e.currentTarget.value) || 1)}
-                />
-              </div>
+              {@render propertyField({
+                id: 'scale-x',
+                label: 'X',
+                value: currentTransform?.scaleX ?? 1,
+                property: 'scale.x',
+                step: '0.1',
+                onInput: (v) => updateTransformProperty('scaleX', v || 1)
+              })}
+              {@render propertyField({
+                id: 'scale-y',
+                label: 'Y',
+                value: currentTransform?.scaleY ?? 1,
+                property: 'scale.y',
+                step: '0.1',
+                onInput: (v) => updateTransformProperty('scaleY', v || 1)
+              })}
+              {@render propertyField({
+                id: 'scale-z',
+                label: 'Z',
+                value: currentTransform?.scaleZ ?? 1,
+                property: 'scale.z',
+                step: '0.1',
+                onInput: (v) => updateTransformProperty('scaleZ', v || 1)
+              })}
             </div>
           </div>
 
@@ -246,39 +259,30 @@
           <div class="space-y-2">
             <Label class="text-xs text-muted-foreground">Rotation (radians)</Label>
             <div class="grid grid-cols-3 gap-2">
-              <div>
-                <Label for="rot-x" class="text-xs">X</Label>
-                <Input
-                  id="rot-x"
-                  type="number"
-                  step="0.1"
-                  value={currentTransform?.rotationX ?? 0}
-                  oninput={(e) =>
-                    updateTransformProperty('rotationX', parseFloat(e.currentTarget.value) || 0)}
-                />
-              </div>
-              <div>
-                <Label for="rot-y" class="text-xs">Y</Label>
-                <Input
-                  id="rot-y"
-                  type="number"
-                  step="0.1"
-                  value={currentTransform?.rotationY ?? 0}
-                  oninput={(e) =>
-                    updateTransformProperty('rotationY', parseFloat(e.currentTarget.value) || 0)}
-                />
-              </div>
-              <div>
-                <Label for="rot-z" class="text-xs">Z</Label>
-                <Input
-                  id="rot-z"
-                  type="number"
-                  step="0.1"
-                  value={currentTransform?.rotationZ ?? 0}
-                  oninput={(e) =>
-                    updateTransformProperty('rotationZ', parseFloat(e.currentTarget.value) || 0)}
-                />
-              </div>
+              {@render propertyField({
+                id: 'rot-x',
+                label: 'X',
+                value: currentTransform?.rotationX ?? 0,
+                property: 'rotation.x',
+                step: '0.1',
+                onInput: (v) => updateTransformProperty('rotationX', v)
+              })}
+              {@render propertyField({
+                id: 'rot-y',
+                label: 'Y',
+                value: currentTransform?.rotationY ?? 0,
+                property: 'rotation.y',
+                step: '0.1',
+                onInput: (v) => updateTransformProperty('rotationY', v)
+              })}
+              {@render propertyField({
+                id: 'rot-z',
+                label: 'Z',
+                value: currentTransform?.rotationZ ?? 0,
+                property: 'rotation.z',
+                step: '0.1',
+                onInput: (v) => updateTransformProperty('rotationZ', v)
+              })}
             </div>
           </div>
         </div>
@@ -289,18 +293,16 @@
         <div class="space-y-3">
           <Label class="font-semibold">Style</Label>
 
-          <div class="space-y-2">
-            <Label for="opacity" class="text-xs">Opacity</Label>
-            <Input
-              id="opacity"
-              type="number"
-              step="0.1"
-              min="0"
-              max="1"
-              value={currentStyle?.opacity ?? 1}
-              oninput={(e) => updateStyle('opacity', parseFloat(e.currentTarget.value) || 0)}
-            />
-          </div>
+          {@render propertyField({
+            id: 'opacity',
+            label: 'Opacity',
+            value: currentStyle?.opacity ?? 1,
+            property: 'opacity',
+            step: '0.1',
+            min: '0',
+            max: '1',
+            onInput: (v) => updateStyle('opacity', v || 0)
+          })}
         </div>
 
         <!-- Layer-specific properties -->
@@ -344,30 +346,7 @@
 
         <!-- Keyframes -->
         <div class="space-y-3">
-          <Label class="font-semibold">Animation</Label>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button variant="outline" size="sm" class="w-full">
-                <Plus class="mr-2 h-4 w-4" />
-                Add Keyframe
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onclick={() => addKeyframe('position.x')}
-                >Position X</DropdownMenuItem
-              >
-              <DropdownMenuItem onclick={() => addKeyframe('position.y')}
-                >Position Y</DropdownMenuItem
-              >
-              <DropdownMenuItem onclick={() => addKeyframe('scale.x')}>Scale X</DropdownMenuItem>
-              <DropdownMenuItem onclick={() => addKeyframe('scale.y')}>Scale Y</DropdownMenuItem>
-              <DropdownMenuItem onclick={() => addKeyframe('rotation.z')}
-                >Rotation Z</DropdownMenuItem
-              >
-              <DropdownMenuItem onclick={() => addKeyframe('opacity')}>Opacity</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Label class="font-semibold">Keyframes</Label>
 
           {#if selectedLayer.keyframes.length > 0}
             <div class="mt-4 space-y-2">

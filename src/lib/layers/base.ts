@@ -70,12 +70,7 @@ export interface LayerComponentDefinition<T extends z.ZodType = z.ZodType> {
   /**
    * The Svelte component that renders this layer
    */
-  component: Component<any>;
-
-  /**
-   * Default values for custom properties
-   */
-  defaultProps: Partial<z.infer<T>>;
+  component: Component<Record<string, unknown>>;
 }
 
 /**
@@ -89,7 +84,6 @@ export interface PropertyMetadata {
   max?: number;
   step?: number;
   options?: Array<{ value: string | number; label: string }>;
-  defaultValue?: any;
 }
 
 /**

@@ -20,12 +20,12 @@
 
 <script lang="ts">
   let {
-    shapeType,
-    width,
-    height,
-    fill,
-    stroke,
-    strokeWidth,
+    shapeType = 'rectangle',
+    width = 200,
+    height = 200,
+    fill = '#4a90e2',
+    stroke = '#g',
+    strokeWidth = 2,
     radius = 100,
     sides = 6
   }: ShapeLayerProps = $props();

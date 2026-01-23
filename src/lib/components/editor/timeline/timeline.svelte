@@ -92,11 +92,7 @@
   });
 </script>
 
-<div
-  class="flex h-full flex-col border-t bg-background select-none"
-  class:pointer-events-none={projectStore.isRecording}
-  class:opacity-50={projectStore.isRecording}
->
+<div class="flex h-full flex-col border-t bg-background select-none">
   <!-- Timeline Header -->
   <div class="flex items-center justify-between border-b bg-muted/50 px-4 py-2">
     <div class="text-sm font-medium">Timeline</div>
@@ -107,10 +103,11 @@
 
   <!-- Timeline Content -->
   <div class="flex-1 overflow-hidden">
-    <ScrollArea class="h-full">
+    <ScrollArea class="h-full" orientation="both">
       <div
         bind:this={timelineContainer}
         class="relative min-h-full"
+        style="min-width: {projectStore.project.duration * pixelsPerSecond + 200}px"
         onmousedown={handleTimelineMouseDown}
         onkeydown={handleKeyDown}
         role="button"
@@ -123,7 +120,7 @@
 
         <!-- Layers -->
         <div class="relative">
-          {#each projectStore.project.layers as layer, index (layer.id)}
+          {#each projectStore.project.layers as layer (layer.id)}
             <TimelineLayer {layer} {pixelsPerSecond} />
           {/each}
 

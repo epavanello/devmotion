@@ -206,7 +206,7 @@
   }
 
   .layer-wrapper.selected {
-    outline: 2px solid rgb(34, 197, 94);
+    outline: 2px solid #3b82f6;
     outline-offset: 0px;
   }
 

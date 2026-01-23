@@ -16,7 +16,7 @@
 </script>
 
 <script lang="ts">
-  let { src, width, height, objectFit }: ImageLayerProps = $props();
+  let { src = '', width = 400, height = 300, objectFit = 'contain' }: ImageLayerProps = $props();
 </script>
 
 <div class="overflow-hidden" style:width="{width}px" style:height="{height}px">

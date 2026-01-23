@@ -20,6 +20,7 @@ export interface VideoExportOptions {
   height: number;
   fps: number;
   duration: number;
+  onReadyToRecord?: () => void;
   onProgress?: (progress: number) => void;
   onComplete?: (blob: Blob) => void;
   onError?: (error: Error) => void;
@@ -43,19 +44,7 @@ export class VideoCapture {
     const hasGetDisplayMedia = hasMediaDevices && 'getDisplayMedia' in navigator.mediaDevices;
     const hasDisplayMedia = hasMediaDevices && hasGetDisplayMedia;
 
-    const supported = (hasElementCapture || hasRegionCapture) && hasDisplayMedia;
-
-    console.log('[VideoCapture] Support check:', {
-      hasRestrictionTarget,
-      hasElementCapture,
-      hasCropTarget,
-      hasRegionCapture,
-      hasMediaDevices,
-      hasGetDisplayMedia,
-      supported
-    });
-
-    return supported;
+    return (hasElementCapture || hasRegionCapture) && hasDisplayMedia;
   }
 
   /**
@@ -71,16 +60,7 @@ export class VideoCapture {
     }
 
     try {
-      console.log('[VideoCapture] Starting capture process...');
-      console.log('[VideoCapture] Target element:', element);
-      console.log('[VideoCapture] Element dimensions:', {
-        width: element.offsetWidth,
-        height: element.offsetHeight,
-        visible: element.offsetParent !== null
-      });
-
-      // Step 1: Request display media with preferCurrentTab
-      console.log('[VideoCapture] Requesting display media...');
+      // Request display media with preferCurrentTab
       this.mediaStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           width: { ideal: options.width },
@@ -91,25 +71,14 @@ export class VideoCapture {
         preferCurrentTab: true
       } as any);
 
-      console.log('[VideoCapture] Display media obtained');
-
       const [videoTrack] = this.mediaStream.getVideoTracks();
       if (!videoTrack) {
         throw new Error('No video track available');
       }
 
-      const settings = videoTrack.getSettings();
-      console.log('[VideoCapture] Video track:', {
-        label: videoTrack.label,
-        enabled: videoTrack.enabled,
-        muted: videoTrack.muted,
-        readyState: videoTrack.readyState,
-        settings
-      });
-
       // Check if user selected the current tab
+      const settings = videoTrack.getSettings();
       const displaySurface = settings.displaySurface;
-      console.log('[VideoCapture] Display surface:', displaySurface);
 
       if (!displaySurface || displaySurface !== 'browser') {
         throw new Error(
@@ -117,59 +86,32 @@ export class VideoCapture {
         );
       }
 
-      // Step 2: Try Element Capture first, then Region Capture as fallback
-      let captureMethod = 'none';
+      // Try Element Capture first, then Region Capture as fallback
       let hasValidFrames = false;
 
       // Try Element Capture first (better for removing occluding content)
       if ('RestrictionTarget' in self && 'fromElement' in RestrictionTarget) {
         try {
-          console.log('[VideoCapture] Trying Element Capture (RestrictionTarget)...');
           const RestrictionTargetClass = (self as any).RestrictionTarget;
           const restrictionTarget = await RestrictionTargetClass.fromElement(element);
           await (videoTrack as any).restrictTo(restrictionTarget);
-          console.log('[VideoCapture] Element Capture applied successfully');
-
-          // Wait for restriction to take effect
           await new Promise((resolve) => setTimeout(resolve, 500));
-
-          // Test if frames are valid
           hasValidFrames = await this.testVideoTrack(this.mediaStream);
-          if (hasValidFrames) {
-            captureMethod = 'element';
-            console.log('[VideoCapture] Element Capture working correctly!');
-          } else {
-            console.warn(
-              '[VideoCapture] Element Capture produced empty frames, trying Region Capture...'
-            );
-          }
-        } catch (error) {
-          console.warn('[VideoCapture] Element Capture failed:', error);
+        } catch {
+          // Element Capture failed, will try Region Capture
         }
       }
 
       // If Element Capture didn't work, try Region Capture
       if (!hasValidFrames && 'CropTarget' in self && 'fromElement' in CropTarget) {
         try {
-          console.log('[VideoCapture] Trying Region Capture (CropTarget)...');
           const CropTargetClass = (self as any).CropTarget;
           const cropTarget = await CropTargetClass.fromElement(element);
           await (videoTrack as any).cropTo(cropTarget);
-          console.log('[VideoCapture] Region Capture applied successfully');
-
-          // Wait for crop to take effect
           await new Promise((resolve) => setTimeout(resolve, 500));
-
-          // Test if frames are valid
           hasValidFrames = await this.testVideoTrack(this.mediaStream);
-          if (hasValidFrames) {
-            captureMethod = 'region';
-            console.log('[VideoCapture] Region Capture working correctly!');
-          } else {
-            console.error('[VideoCapture] Region Capture also produced empty frames');
-          }
-        } catch (error) {
-          console.error('[VideoCapture] Region Capture failed:', error);
+        } catch {
+          // Region Capture also failed
         }
       }
 
@@ -179,9 +121,7 @@ export class VideoCapture {
         );
       }
 
-      console.log('[VideoCapture] Using capture method:', captureMethod);
-
-      // Step 4: Setup MediaRecorder
+      // Setup MediaRecorder
       this.recordedChunks = [];
 
       // Try different codecs in order of preference
@@ -210,60 +150,43 @@ export class VideoCapture {
       });
 
       this.mediaRecorder.ondataavailable = (event) => {
-        console.log('[VideoCapture] Data available:', {
-          size: event.data?.size,
-          type: event.data?.type
-        });
         if (event.data && event.data.size > 0) {
           this.recordedChunks.push(event.data);
-          console.log('[VideoCapture] Chunk added. Total chunks:', this.recordedChunks.length);
         }
       };
 
       this.mediaRecorder.onstop = () => {
-        console.log('[VideoCapture] Recording stopped. Total chunks:', this.recordedChunks.length);
         const blob = new Blob(this.recordedChunks, { type: selectedMimeType });
-        console.log('[VideoCapture] Final blob:', {
-          size: blob.size,
-          type: blob.type
-        });
         options.onComplete?.(blob);
         this.cleanup();
       };
 
       this.mediaRecorder.onerror = () => {
-        console.error('[VideoCapture] MediaRecorder error');
         const error = new Error('MediaRecorder error');
         options.onError?.(error);
         this.cleanup();
       };
 
-      this.mediaRecorder.onstart = () => {
-        console.log('[VideoCapture] MediaRecorder started');
-      };
-
-      // Start recording
+      // Start recording immediately
       this.startTime = Date.now();
-      console.log('[VideoCapture] Starting MediaRecorder...');
-      this.mediaRecorder.start(100); // Capture in 100ms chunks
+      this.mediaRecorder.start(100);
 
-      // Wait a moment and check state
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      console.log('[VideoCapture] MediaRecorder state:', this.mediaRecorder.state);
+      // Wait for recording to actually start
+      await new Promise((resolve) => {
+        if (this.mediaRecorder) {
+          this.mediaRecorder.onstart = () => {
+            resolve(undefined);
+          };
+        }
+      });
+
+      // Notify that we're ready to start playback
+      options.onReadyToRecord?.();
 
       // Track progress
       if (options.onProgress) {
         this.trackProgress(options.duration * 1000, options.onProgress);
       }
-
-      console.log('[VideoCapture] Video capture started successfully', {
-        mimeType: selectedMimeType,
-        width: options.width,
-        height: options.height,
-        fps: options.fps,
-        duration: options.duration,
-        recorderState: this.mediaRecorder.state
-      });
     } catch (error) {
       this.cleanup();
       throw error;
@@ -275,8 +198,6 @@ export class VideoCapture {
    * @returns true if frames have content, false if empty
    */
   private async testVideoTrack(stream: MediaStream): Promise<boolean> {
-    console.log('[VideoCapture] Testing video track for frame production...');
-
     return new Promise((resolve) => {
       const video = document.createElement('video');
       video.srcObject = stream;
@@ -284,22 +205,14 @@ export class VideoCapture {
       video.playsInline = true;
 
       const timeout = setTimeout(() => {
-        console.warn('[VideoCapture] Video track test timeout');
         video.remove();
         resolve(false);
       }, 3000);
 
       video.onloadedmetadata = () => {
-        console.log('[VideoCapture] Video metadata loaded:', {
-          videoWidth: video.videoWidth,
-          videoHeight: video.videoHeight,
-          duration: video.duration
-        });
-
         video
           .play()
           .then(() => {
-            // Wait a bit for first frame
             setTimeout(() => {
               const canvas = document.createElement('canvas');
               canvas.width = video.videoWidth || 100;
@@ -313,27 +226,20 @@ export class VideoCapture {
                   ctx.drawImage(video, 0, 0);
                   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-                  // Check if we got any non-zero pixels (checking RGB, not just alpha)
+                  // Check if we got any non-zero pixels
                   for (let i = 0; i < imageData.data.length; i += 4) {
                     const r = imageData.data[i];
                     const g = imageData.data[i + 1];
                     const b = imageData.data[i + 2];
                     const a = imageData.data[i + 3];
 
-                    // If any pixel has any color or alpha, we have content
                     if (r > 0 || g > 0 || b > 0 || a > 0) {
                       hasContent = true;
                       break;
                     }
                   }
-
-                  console.log('[VideoCapture] Frame test result:', {
-                    canvasSize: `${canvas.width}x${canvas.height}`,
-                    hasContent,
-                    samplePixels: Array.from(imageData.data.slice(0, 20))
-                  });
-                } catch (error) {
-                  console.error('[VideoCapture] Error testing frame:', error);
+                } catch {
+                  // Error testing frame
                 }
               }
 
@@ -343,18 +249,16 @@ export class VideoCapture {
               resolve(hasContent);
             }, 500);
           })
-          .catch((error) => {
-            console.error('[VideoCapture] Video play error:', error);
+          .catch(() => {
             clearTimeout(timeout);
             video.remove();
             resolve(false);
           });
       };
 
-      video.onerror = (error) => {
+      video.onerror = () => {
         clearTimeout(timeout);
         video.remove();
-        console.error('[VideoCapture] Video element error:', error);
         resolve(false);
       };
     });
