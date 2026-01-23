@@ -5,17 +5,14 @@
     Play,
     Pause,
     SkipBack,
-    SkipForward,
     Type,
     Square,
     Circle,
     Triangle,
-    Image,
     Download,
     Upload,
     Save,
     FileText,
-    Grid3x3,
     Layers
   } from 'lucide-svelte';
   import { projectStore } from '$lib/stores/project.svelte';
@@ -97,10 +94,6 @@
     }
   }
 
-  function toggleGrid() {
-    projectStore.toggleGrid();
-  }
-
   function openExportDialog() {
     showExportDialog = true;
   }
@@ -109,13 +102,13 @@
 <div class="flex items-center gap-2 bg-muted/50 p-2">
   <!-- Project Actions -->
   <div class="flex items-center gap-1">
-    <Button variant="ghost" size="sm" onclick={newProject}>
+    <Button variant="ghost" size="sm" onclick={newProject} disabled={isRecording}>
       <FileText class="h-4 w-4" />
     </Button>
-    <Button variant="ghost" size="sm" onclick={saveProject}>
+    <Button variant="ghost" size="sm" onclick={saveProject} disabled={isRecording}>
       <Save class="h-4 w-4" />
     </Button>
-    <Button variant="ghost" size="sm" onclick={loadProject}>
+    <Button variant="ghost" size="sm" onclick={loadProject} disabled={isRecording}>
       <Upload class="h-4 w-4" />
     </Button>
   </div>
@@ -124,10 +117,10 @@
 
   <!-- Playback Controls -->
   <div class="flex items-center gap-1">
-    <Button variant="ghost" size="sm" onclick={resetPlayhead}>
+    <Button variant="ghost" size="sm" onclick={resetPlayhead} disabled={isRecording}>
       <SkipBack class="h-4 w-4" />
     </Button>
-    <Button variant="ghost" size="sm" onclick={togglePlayback}>
+    <Button variant="ghost" size="sm" onclick={togglePlayback} disabled={isRecording}>
       {#if projectStore.isPlaying}
         <Pause class="h-4 w-4" />
       {:else}
@@ -140,13 +133,13 @@
 
   <!-- Creation Tools -->
   <div class="flex items-center gap-1">
-    <Button variant="ghost" size="sm" onclick={addTextLayer}>
+    <Button variant="ghost" size="sm" onclick={addTextLayer} disabled={isRecording}>
       <Type class="h-4 w-4" />
     </Button>
 
     <DropdownMenu>
-      <DropdownMenuTrigger>
-        <Button variant="ghost" size="sm">
+      <DropdownMenuTrigger disabled={isRecording}>
+        <Button variant="ghost" size="sm" disabled={isRecording}>
           <Layers class="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -169,17 +162,6 @@
 
   <Separator orientation="vertical" class="h-6" />
 
-  <!-- View Controls -->
-  <div class="flex items-center gap-1">
-    <Button
-      variant={projectStore.viewport.showGrid ? 'secondary' : 'ghost'}
-      size="sm"
-      onclick={toggleGrid}
-    >
-      <Grid3x3 class="h-4 w-4" />
-    </Button>
-  </div>
-
   <div class="flex-1"></div>
 
   <!-- Export -->
@@ -189,8 +171,10 @@
   </Button>
 
   {#if isRecording}
-    <div class="flex items-center gap-2 px-3 py-1 bg-red-500 text-white rounded-md text-sm font-medium animate-pulse">
-      <span class="h-2 w-2 bg-white rounded-full"></span>
+    <div
+      class="flex animate-pulse items-center gap-2 rounded-md bg-red-500 px-3 py-1 text-sm font-medium text-white"
+    >
+      <span class="h-2 w-2 rounded-full bg-white"></span>
       Recording...
     </div>
   {/if}

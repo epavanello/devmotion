@@ -139,7 +139,9 @@ export class VideoCapture {
             captureMethod = 'element';
             console.log('[VideoCapture] Element Capture working correctly!');
           } else {
-            console.warn('[VideoCapture] Element Capture produced empty frames, trying Region Capture...');
+            console.warn(
+              '[VideoCapture] Element Capture produced empty frames, trying Region Capture...'
+            );
           }
         } catch (error) {
           console.warn('[VideoCapture] Element Capture failed:', error);
@@ -294,56 +296,59 @@ export class VideoCapture {
           duration: video.duration
         });
 
-        video.play().then(() => {
-          // Wait a bit for first frame
-          setTimeout(() => {
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth || 100;
-            canvas.height = video.videoHeight || 100;
-            const ctx = canvas.getContext('2d');
+        video
+          .play()
+          .then(() => {
+            // Wait a bit for first frame
+            setTimeout(() => {
+              const canvas = document.createElement('canvas');
+              canvas.width = video.videoWidth || 100;
+              canvas.height = video.videoHeight || 100;
+              const ctx = canvas.getContext('2d');
 
-            let hasContent = false;
+              let hasContent = false;
 
-            if (ctx) {
-              try {
-                ctx.drawImage(video, 0, 0);
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              if (ctx) {
+                try {
+                  ctx.drawImage(video, 0, 0);
+                  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-                // Check if we got any non-zero pixels (checking RGB, not just alpha)
-                for (let i = 0; i < imageData.data.length; i += 4) {
-                  const r = imageData.data[i];
-                  const g = imageData.data[i + 1];
-                  const b = imageData.data[i + 2];
-                  const a = imageData.data[i + 3];
+                  // Check if we got any non-zero pixels (checking RGB, not just alpha)
+                  for (let i = 0; i < imageData.data.length; i += 4) {
+                    const r = imageData.data[i];
+                    const g = imageData.data[i + 1];
+                    const b = imageData.data[i + 2];
+                    const a = imageData.data[i + 3];
 
-                  // If any pixel has any color or alpha, we have content
-                  if (r > 0 || g > 0 || b > 0 || a > 0) {
-                    hasContent = true;
-                    break;
+                    // If any pixel has any color or alpha, we have content
+                    if (r > 0 || g > 0 || b > 0 || a > 0) {
+                      hasContent = true;
+                      break;
+                    }
                   }
+
+                  console.log('[VideoCapture] Frame test result:', {
+                    canvasSize: `${canvas.width}x${canvas.height}`,
+                    hasContent,
+                    samplePixels: Array.from(imageData.data.slice(0, 20))
+                  });
+                } catch (error) {
+                  console.error('[VideoCapture] Error testing frame:', error);
                 }
-
-                console.log('[VideoCapture] Frame test result:', {
-                  canvasSize: `${canvas.width}x${canvas.height}`,
-                  hasContent,
-                  samplePixels: Array.from(imageData.data.slice(0, 20))
-                });
-              } catch (error) {
-                console.error('[VideoCapture] Error testing frame:', error);
               }
-            }
 
+              clearTimeout(timeout);
+              video.remove();
+              canvas.remove();
+              resolve(hasContent);
+            }, 500);
+          })
+          .catch((error) => {
+            console.error('[VideoCapture] Video play error:', error);
             clearTimeout(timeout);
             video.remove();
-            canvas.remove();
-            resolve(hasContent);
-          }, 500);
-        }).catch((error) => {
-          console.error('[VideoCapture] Video play error:', error);
-          clearTimeout(timeout);
-          video.remove();
-          resolve(false);
-        });
+            resolve(false);
+          });
       };
 
       video.onerror = (error) => {

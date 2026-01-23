@@ -43,7 +43,8 @@
 
     // Check browser support
     if (!VideoCapture.isSupported()) {
-      errorMessage = 'Video capture APIs are not supported in this browser. Please use Chrome 104+ on desktop.';
+      errorMessage =
+        'Video capture APIs are not supported in this browser. Please use Chrome 104+ on desktop.';
       isExporting = false;
       return;
     }
@@ -68,14 +69,15 @@
       projectStore.setPan(0, 0);
 
       // Wait for the UI to update with new viewport
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       // Close the dialog to avoid capturing it
       onOpenChange(false);
       isRecording = true;
+      projectStore.isRecording = true;
 
       // Wait for dialog to close and UI to update
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Start playback
       projectStore.play();
@@ -105,6 +107,7 @@
           // Reset state
           isExporting = false;
           isRecording = false;
+          projectStore.isRecording = false;
           exportProgress = 0;
         },
         onError: (error) => {
@@ -119,6 +122,7 @@
 
           isExporting = false;
           isRecording = false;
+          projectStore.isRecording = false;
           exportProgress = 0;
 
           // Reopen dialog to show error
@@ -127,12 +131,14 @@
       });
 
       // Auto-stop recording when animation finishes
-      setTimeout(() => {
-        if (isExporting) {
-          videoCapture.stopCapture();
-        }
-      }, projectStore.project.duration * 1000 + 500); // Add 500ms buffer
-
+      setTimeout(
+        () => {
+          if (isExporting) {
+            videoCapture.stopCapture();
+          }
+        },
+        projectStore.project.duration * 1000 + 500
+      ); // Add 500ms buffer
     } catch (error: any) {
       console.error('Export failed:', error);
       errorMessage = error.message || 'Export failed. Please try again.';
@@ -145,6 +151,7 @@
 
       isExporting = false;
       isRecording = false;
+      projectStore.isRecording = false;
       exportProgress = 0;
 
       // Reopen dialog to show error
@@ -171,6 +178,8 @@
       }
 
       isExporting = false;
+      isRecording = false;
+      projectStore.isRecording = false;
       exportProgress = 0;
     }
     onOpenChange(false);
@@ -188,7 +197,7 @@
 
     {#if errorMessage}
       <div class="flex items-start gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-        <AlertCircle class="h-4 w-4 mt-0.5 flex-shrink-0" />
+        <AlertCircle class="mt-0.5 h-4 w-4 flex-shrink-0" />
         <div>{errorMessage}</div>
       </div>
     {/if}
@@ -221,8 +230,8 @@
         </div>
 
         <div class="rounded-md bg-muted p-3 text-xs text-muted-foreground">
-          <p class="font-medium mb-1">Instructions:</p>
-          <ol class="list-decimal list-inside space-y-1">
+          <p class="mb-1 font-medium">Instructions:</p>
+          <ol class="list-inside list-decimal space-y-1">
             <li>Click Export to start the capture</li>
             <li>Select "This tab" when prompted by the browser</li>
             <li>The animation will play and be recorded</li>

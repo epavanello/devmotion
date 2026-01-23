@@ -98,10 +98,8 @@ export interface Project {
 export interface ViewportSettings {
   zoom: number;
   pan: { x: number; y: number };
-  showGrid: boolean;
   showGuides: boolean;
   snapToGrid: boolean;
-  gridSize: number;
 }
 
 export interface AnimationPreset {

@@ -22,7 +22,7 @@
 <div
   class="absolute right-4 bottom-4 flex items-center gap-2 rounded-lg border bg-background/95 p-2 shadow-lg"
 >
-  <Button variant="ghost" size="sm" onclick={zoomIn}>
+  <Button variant="ghost" size="sm" onclick={zoomIn} disabled={projectStore.isRecording}>
     <ZoomIn class="h-4 w-4" />
   </Button>
 
@@ -30,11 +30,11 @@
     {zoomPercentage}%
   </span>
 
-  <Button variant="ghost" size="sm" onclick={zoomOut}>
+  <Button variant="ghost" size="sm" onclick={zoomOut} disabled={projectStore.isRecording}>
     <ZoomOut class="h-4 w-4" />
   </Button>
 
-  <Button variant="ghost" size="sm" onclick={resetView}>
+  <Button variant="ghost" size="sm" onclick={resetView} disabled={projectStore.isRecording}>
     <Maximize class="h-4 w-4" />
   </Button>
 </div>

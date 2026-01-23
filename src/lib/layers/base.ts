@@ -132,7 +132,11 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
         meta.type = 'string';
 
         // Check if it's a color by convention (field name contains 'color')
-        if (key.toLowerCase().includes('color') || key.toLowerCase().includes('fill') || key.toLowerCase().includes('stroke')) {
+        if (
+          key.toLowerCase().includes('color') ||
+          key.toLowerCase().includes('fill') ||
+          key.toLowerCase().includes('stroke')
+        ) {
           meta.type = 'color';
         }
       } else if (zodType instanceof z.ZodEnum) {
@@ -168,5 +172,7 @@ export function generateTransformCSS(transform: BaseTransform): string {
     rotateY(${rotationY}rad)
     rotateZ(${rotationZ}rad)
     scale3d(${scaleX}, ${scaleY}, ${scaleZ})
-  `.trim().replace(/\s+/g, ' ');
+  `
+    .trim()
+    .replace(/\s+/g, ' ');
 }

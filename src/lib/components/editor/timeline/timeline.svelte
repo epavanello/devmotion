@@ -20,6 +20,9 @@
   }
 
   function handleTimelineMouseDown(e: MouseEvent) {
+    // Disable interactions during recording
+    if (projectStore.isRecording) return;
+
     // Only handle left click on the timeline area (not on keyframes)
     if (e.button !== 0) return;
     const target = e.target as HTMLElement;
@@ -41,6 +44,9 @@
   }
 
   function startDragPlayhead() {
+    // Disable interactions during recording
+    if (projectStore.isRecording) return;
+
     isDraggingPlayhead = true;
     projectStore.pause();
   }
@@ -86,7 +92,11 @@
   });
 </script>
 
-<div class="flex h-full flex-col border-t bg-background select-none">
+<div
+  class="flex h-full flex-col border-t bg-background select-none"
+  class:pointer-events-none={projectStore.isRecording}
+  class:opacity-50={projectStore.isRecording}
+>
   <!-- Timeline Header -->
   <div class="flex items-center justify-between border-b bg-muted/50 px-4 py-2">
     <div class="text-sm font-medium">Timeline</div>

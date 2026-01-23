@@ -136,7 +136,11 @@
   }
 </script>
 
-<div class="flex h-full flex-col bg-background">
+<div
+  class="flex h-full flex-col bg-background"
+  class:pointer-events-none={projectStore.isRecording}
+  class:opacity-50={projectStore.isRecording}
+>
   <!-- Panel Header -->
   <div class="border-b bg-muted/50 px-4 py-3">
     <h2 class="text-sm font-semibold">Properties</h2>

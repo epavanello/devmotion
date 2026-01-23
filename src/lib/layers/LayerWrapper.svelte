@@ -22,7 +22,16 @@
     selected?: boolean;
   }
 
-  let { id, transform, style, visible, locked, component: C, customProps, selected = false }: Props = $props();
+  let {
+    id,
+    transform,
+    style,
+    visible,
+    locked,
+    component: C,
+    customProps,
+    selected = false
+  }: Props = $props();
 
   const transformCSS = $derived(generateTransformCSS(transform));
 
@@ -175,7 +184,7 @@
 
 {#if visible}
   <div
-    class="layer-wrapper absolute left-0 top-0"
+    class="layer-wrapper absolute top-0 left-0"
     class:selected
     class:locked
     data-layer-id={id}

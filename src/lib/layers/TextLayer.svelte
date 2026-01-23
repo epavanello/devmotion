@@ -23,12 +23,12 @@
 </script>
 
 <div
-  class="select-none whitespace-nowrap"
+  class="whitespace-nowrap select-none"
   style:font-size="{fontSize}px"
   style:font-family={fontFamily}
   style:font-weight={fontWeight}
   style:text-align={textAlign}
-  style:color={color}
+  style:color
 >
   {content}
 </div>

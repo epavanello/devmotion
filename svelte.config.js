@@ -18,7 +18,13 @@ const config = {
       async: true
     }
   },
-  extensions: ['.svelte', '.svx']
+  extensions: ['.svelte', '.svx'],
+  vitePlugin: {
+    inspector: {
+      showToggleButton: 'always',
+      toggleButtonPos: 'bottom-right'
+    }
+  }
 };
 
 export default config;

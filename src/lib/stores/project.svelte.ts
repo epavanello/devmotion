@@ -20,14 +20,13 @@ class ProjectStore {
   viewport = $state<ViewportSettings>({
     zoom: 1,
     pan: { x: 0, y: 0 },
-    showGrid: true,
     showGuides: true,
-    snapToGrid: false,
-    gridSize: 20
+    snapToGrid: false
   });
 
   selectedLayerId = $state<string | null>(null);
   isPlaying = $state(false);
+  isRecording = $state(false);
 
   // Layer operations
   addLayer(layer: Layer) {
@@ -111,10 +110,6 @@ class ProjectStore {
 
   setPan(x: number, y: number) {
     this.viewport.pan = { x, y };
-  }
-
-  toggleGrid() {
-    this.viewport.showGrid = !this.viewport.showGrid;
   }
 
   toggleGuides() {
