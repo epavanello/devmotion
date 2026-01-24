@@ -2,7 +2,7 @@
  * Generic layer factory using the component registry
  */
 import { nanoid } from 'nanoid';
-import type { Layer, LayerType } from '$lib/types/animation';
+import type { Layer, LayerType, Keyframe, Easing } from '$lib/types/animation';
 import { getLayerDefinition } from '$lib/layers/registry';
 import { extractDefaultValues } from '$lib/layers/base';
 
@@ -22,6 +22,26 @@ export function createLayer(
 
   // Extract default values from the Zod schema
   const defaultProps = extractDefaultValues(definition.customPropsSchema);
+
+  const defaultEasing: Easing = { type: 'linear' };
+
+  // Create initial keyframes for position properties
+  const initialKeyframes: Keyframe[] = [
+    {
+      id: nanoid(),
+      time: 0,
+      property: 'position.x',
+      value: x,
+      easing: defaultEasing
+    },
+    {
+      id: nanoid(),
+      time: 0,
+      property: 'position.y',
+      value: y,
+      easing: defaultEasing
+    }
+  ];
 
   return {
     id: nanoid(),
@@ -43,7 +63,7 @@ export function createLayer(
     },
     visible: true,
     locked: false,
-    keyframes: [],
+    keyframes: initialKeyframes,
     props: {
       ...defaultProps,
       ...propsOverrides
