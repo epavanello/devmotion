@@ -1,54 +1,33 @@
-# 🎬 Animation Editor - Web After Effects Simplified
+# 🎬 DevMotion - Free AI-Powered Animation Video Creator
 
-A web-based 2D/3D animation editor inspired by After Effects, with a simple but structured interface that allows you to animate text, shapes, and images, and export MP4 videos.
+Create stunning animated videos with ease. Design with full manual controls or leverage AI-powered suggestions to accelerate your workflow. Export professional-quality MP4 videos—completely free, no watermark, no limits.
 
-## ✨ Current Status
+Perfect for content creators, marketers, educators, and motion designers who want to bring their ideas to life without expensive software.
 
-**✅ MVP COMPLETE** - The base implementation is ready with all core features!
+## ✨ Key Features
 
-### Implemented Features
-
-✅ **Timeline with Keyframes**
-
-- Layer management with full CRUD operations
-- Automatic interpolation (linear, ease-in/out, cubic-bezier)
-- Interactive playhead with scrubbing
+🎯 **Manual Animation Studio**
+- Full timeline-based animation editor with keyframe support
+- Text, shapes, and image layers with complete customization
+- Interactive canvas with zoom, pan, and grid controls
+- Smooth interpolation with multiple easing curves
 - Real-time animation preview
 
-✅ **Canvas Viewport**
+🤖 **AI-Powered Assistance**
+- Get intelligent animation suggestions
+- Auto-generate motion sequences
+- Smart layer recommendations
 
-- Three.js rendering engine for 2D/3D
-- Zoom/pan controls
-- Grid overlay (toggleable)
-- Object selection and dragging
-- Visual feedback for selected layers
+💾 **Save & Export**
+- Save projects in JSON format for future editing
+- Export high-quality MP4 videos with ffmpeg
+- No file size limits or watermarks
 
-✅ **Object Management**
-
-- Text layers with customizable properties
-- Shape layers (Rectangle, Circle, Triangle)
-- Animatable properties: position, scale, rotation, opacity, color
-- Layers are orderable, show/hide, lockable
-
-✅ **Animations**
-
-- Smooth interpolation between keyframes
-- Multiple easing curves available
-- 9 built-in animation presets (fade, slide, bounce, rotate, scale)
-
-✅ **Save & Export**
-
-- Project save/load in JSON format
-- Complete scene, timeline, and keyframe persistence
-- Video export infrastructure (ffmpeg.wasm integrated)
-
-✅ **User Interface**
-
-- 4-panel layout: Layers, Canvas, Timeline, Properties
-- Resizable panels
-- Responsive and fluid UI with shadcn-svelte
-- Keyboard shortcuts for common operations
-- Welcome screen for first-time users
+⚡ **Modern Tech Stack**
+- Built with SvelteKit and Svelte 5 Runes
+- Responsive, intuitive UI with shadcn-svelte components
+- Lightning-fast canvas rendering
+- Browser-based—no installation needed
 
 ## 🚀 Quick Start
 
@@ -63,108 +42,121 @@ pnpm run dev
 pnpm run build
 ```
 
-Then open your browser to `http://localhost:5173`
+Open your browser to `http://localhost:5173` and start creating!
 
-## 📚 Documentation
+## 📖 Documentation
 
 See [ANIMATION_EDITOR.md](./ANIMATION_EDITOR.md) for:
-
-- Complete user guide
+- Complete user guide & tutorials
 - Keyboard shortcuts reference
-- Tutorial: Creating your first animation
 - Technical architecture details
+- Animation presets showcase
 
-## 🎯 Tech Stack
+## 🛠️ Tech Stack
 
-- **Framework**: SvelteKit with Svelte 5 Runes
-- **Rendering**: Three.js for 2D/3D canvas
-- **UI Components**: shadcn-svelte
-- **Video Export**: ffmpeg.wasm
-- **State Management**: Svelte reactive stores (runes)
-- **Animation Engine**: Custom interpolation with bezier-easing
+| Component | Technology |
+|-----------|-----------|
+| **Framework** | SvelteKit with Svelte 5 Runes |
+| **UI Components** | shadcn-svelte |
+| **Canvas Rendering** | HTML5 Canvas / SVG |
+| **Video Export** | ffmpeg.wasm |
+| **State Management** | Svelte reactive stores (runes) |
+| **Animation Engine** | Custom interpolation with bezier-easing |
 
-## 🎨 Features Highlights
+## ⌨️ Keyboard Shortcuts
 
-### Keyboard Shortcuts
+| Shortcut | Action |
+|----------|--------|
+| `Space` | Play / Pause |
+| `T` | Add text layer |
+| `R` | Add rectangle |
+| `C` | Add circle |
+| `Cmd/Ctrl + S` | Save project |
+| `+` / `-` | Zoom in / out |
+| `Delete` | Remove selected layer |
 
-- `Space` - Play/Pause
-- `T` - Add text layer
-- `R` - Add rectangle
-- `C` - Add circle
-- `Cmd/Ctrl + S` - Save project
-- `+/-` - Zoom in/out
-- And many more...
+## 🎨 Supported Layers
 
-### Animation Presets
+- **Text**: Fully customizable font, size, alignment, color
+- **Shapes**: Rectangle, Circle, Triangle with fill & stroke
+- **Images**: Import and animate custom images
 
+## 🎬 Animation Presets
+
+Quick-start animations to speed up your workflow:
 - Fade In/Out
-- Slide In (Left/Right/Top/Bottom)
+- Slide In/Out (all directions)
 - Bounce
-- Scale In
+- Scale In/Out
 - Rotate In
 
-### Layer Types
+## 🎯 Typical Workflow
 
-- **Text**: Customizable content, font size, alignment
-- **Shapes**: Rectangle, Circle, Triangle with fill/stroke
-- **Images**: (Planned)
+1. **Create**: Add layers (text, shapes, or images)
+2. **Position**: Move and size elements on the canvas
+3. **Animate**: Set keyframes and create smooth transitions
+4. **Preview**: Play your animation in real-time
+5. **Export**: Generate an MP4 video
+6. **Save**: Keep your project for future editing
 
-## 🔮 Future Enhancements
-
-- [ ] Video export UI completion
-- [ ] Image layer support
-- [ ] Undo/Redo system
-- [ ] Advanced motion paths
-- [ ] Layer effects and filters
-- [ ] Audio track support
-- [ ] Lottie export
-- [ ] 3D camera controls
-- [ ] Parent-child layer relationships
-
-## 📝 Project Structure
+## 📁 Project Structure
 
 ```
 src/
 ├── lib/
 │   ├── components/editor/
-│   │   ├── canvas/          # Three.js viewport & interactions
-│   │   ├── timeline/        # Timeline, ruler, playhead, keyframes
+│   │   ├── canvas/          # Canvas viewport & interactions
+│   │   ├── timeline/        # Timeline, playhead, keyframes
 │   │   ├── panels/          # Layers & properties panels
-│   │   ├── toolbar.svelte   # Main toolbar
-│   │   └── ...
+│   │   ├── toolbar.svelte   # Main toolbar with controls
+│   │   └── export-dialog.svelte
 │   ├── engine/
-│   │   ├── interpolation.ts # Animation engine
-│   │   ├── presets.ts       # Animation presets
+│   │   ├── interpolation.ts # Animation interpolation
+│   │   ├── presets.ts       # Built-in animation presets
 │   │   ├── layer-factory.ts # Layer creation utilities
-│   │   └── video-export.ts  # FFmpeg integration
+│   │   └── video-export.ts  # FFmpeg video rendering
 │   ├── stores/
-│   │   └── project.svelte.ts # Global state management
+│   │   └── project.svelte.ts # Global reactive state
 │   └── types/
-│       └── animation.ts      # TypeScript definitions
+│       └── animation.ts      # TypeScript interfaces
 └── routes/
     └── (app)/
-        └── +page.svelte     # Main editor page
+        └── +page.svelte     # Main editor interface
 ```
 
-## 🎬 Getting Started
+## 🚦 Current Status
 
-1. **Create a Layer**: Press `T` for text or `R` for rectangle
-2. **Edit Properties**: Use the Properties panel on the right
-3. **Add Keyframes**: Click "Add Keyframe" and change values over time
-4. **Preview**: Press `Space` to play your animation
-5. **Save**: Press `Cmd/Ctrl + S` to save as JSON
+✅ **MVP Complete** - All core features working and tested
+- Timeline editing with keyframe support
+- Layer management (create, edit, delete, reorder)
+- Smooth animation rendering
+- Video export via ffmpeg.wasm
+- Project persistence (save/load JSON)
+- Responsive UI with full keyboard shortcuts
 
-For detailed instructions, see the [User Guide](./ANIMATION_EDITOR.md).
+## 🔮 Roadmap
+
+- [ ] Enhanced AI animation suggestions
+- [ ] Advanced motion paths
+- [ ] Layer effects and filters
+- [ ] Audio track synchronization
+- [ ] Lottie animation export
+- [ ] Collaborative editing
+- [ ] Stock media library integration
+- [ ] Mobile-optimized interface
 
 ## 🤝 Contributing
 
-This is a working prototype ready for refinement and expansion. Feel free to:
-
-- Report issues
-- Suggest features
+Contributions are welcome! Feel free to:
+- Report bugs and issues
+- Suggest new features
 - Submit pull requests
 - Improve documentation
 
+## 📄 License
+
+Check the repository for license details.
+
 ---
 
-**Note**: This implementation prioritizes a clean architecture and scalable codebase as a foundation for further refinement and feature development.
+**DevMotion** - Create, animate, export. Completely free. 🎬
