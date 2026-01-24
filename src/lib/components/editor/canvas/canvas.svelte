@@ -1,10 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { projectStore } from '$lib/stores/project.svelte';
-  import { getAnimatedTransform, getAnimatedStyle } from '$lib/engine/interpolation';
+  import { getAnimatedTransform, getAnimatedStyle, getAnimatedProps } from '$lib/engine/interpolation';
   import CanvasControls from './canvas-controls.svelte';
   import LayerWrapper from '$lib/layers/LayerWrapper.svelte';
-  import { getLayerComponent } from '$lib/layers/registry';
+  import { getLayerComponent, getLayerSchema } from '$lib/layers/registry';
+  import { extractPropertyMetadata } from '$lib/layers/base';
   import type { Layer, Transform } from '$lib/types/animation';
 
   let canvasContainer: HTMLDivElement | undefined = $state();
@@ -165,6 +166,20 @@
     };
   }
 
+  /**
+   * Get animated props for a layer, merging base props with animated values
+   */
+  function getLayerProps(layer: Layer): Record<string, unknown> {
+    const schema = getLayerSchema(layer.type);
+    const propsMetadata = extractPropertyMetadata(schema);
+    return getAnimatedProps(
+      layer.keyframes,
+      layer.props,
+      propsMetadata,
+      projectStore.project.currentTime
+    );
+  }
+
   // Calculate scale factor to fit project dimensions in viewport
   // This maintains aspect ratio and leaves some padding
   const VIEWPORT_PADDING = 0.9; // Use 90% of available space for padding
@@ -220,6 +235,7 @@
           {#each projectStore.project.layers as layer (layer.id)}
             {@const transform = getLayerTransform(layer)}
             {@const style = getLayerStyle(layer)}
+            {@const props = getLayerProps(layer)}
             {@const component = getLayerComponent(layer.type)}
             {@const isSelected = projectStore.selectedLayerId === layer.id}
 
@@ -232,7 +248,7 @@
               {transform}
               {style}
               {component}
-              customProps={layer.props}
+              customProps={props}
             />
           {/each}
         </div>

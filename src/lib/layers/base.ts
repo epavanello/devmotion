@@ -87,6 +87,13 @@ export interface PropertyMetadata {
   max?: number;
   step?: number;
   options?: Array<{ value: string | number; label: string }>;
+  /**
+   * How this property should be interpolated between keyframes
+   * - 'number': Linear interpolation
+   * - 'color': RGB color interpolation
+   * - 'discrete': Jump to new value (no smooth transition)
+   */
+  interpolationType: 'number' | 'color' | 'discrete';
 }
 
 // Type helpers for accessing Zod 4 internals in a type-safe way
@@ -135,7 +142,8 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
 
       const meta: PropertyMetadata = {
         name: key,
-        type: 'string'
+        type: 'string',
+        interpolationType: 'discrete' // Default to discrete (no interpolation)
       };
 
       // Extract description from Zod 4 internals
@@ -144,9 +152,10 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
         meta.description = internals._zod.def.description;
       }
 
-      // Determine type
+      // Determine type and interpolation type
       if (unwrapped instanceof z.ZodNumber) {
         meta.type = 'number';
+        meta.interpolationType = 'number'; // Numbers can be interpolated
 
         // Extract min/max from checks in Zod 4
         const checks = internals._zod?.def.checks || [];
@@ -159,8 +168,10 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
         }
       } else if (unwrapped instanceof z.ZodBoolean) {
         meta.type = 'boolean';
+        meta.interpolationType = 'discrete'; // Booleans jump between values
       } else if (unwrapped instanceof z.ZodString) {
         meta.type = 'string';
+        meta.interpolationType = 'discrete'; // Strings jump between values
 
         // Check if it's a color by convention (field name contains 'color')
         if (
@@ -169,9 +180,11 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
           key.toLowerCase().includes('stroke')
         ) {
           meta.type = 'color';
+          meta.interpolationType = 'color'; // Colors can be interpolated
         }
       } else if (unwrapped instanceof z.ZodEnum) {
         meta.type = 'select';
+        meta.interpolationType = 'discrete'; // Enums jump between values
         // Extract enum values from Zod 4 internals
         if (internals._zod?.def.values) {
           meta.options = Array.from(internals._zod.def.values).map((v) => ({

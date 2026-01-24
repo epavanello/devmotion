@@ -8,7 +8,7 @@
   import { Pin, Trash2 } from 'lucide-svelte';
   import { nanoid } from 'nanoid';
   import type { AnimatableProperty, Transform, LayerStyle, Layer } from '$lib/types/animation';
-  import { getAnimatedTransform, getAnimatedStyle } from '$lib/engine/interpolation';
+  import { getAnimatedTransform, getAnimatedStyle, getAnimatedProps } from '$lib/engine/interpolation';
   import { getLayerSchema } from '$lib/layers/registry';
   import { extractPropertyMetadata, type PropertyMetadata } from '$lib/layers/base';
 
@@ -57,6 +57,17 @@
     return extractPropertyMetadata(schema);
   });
 
+  // Get the current animated props values
+  const currentAnimatedProps = $derived.by(() => {
+    if (!selectedLayer) return {};
+    return getAnimatedProps(
+      selectedLayer.keyframes,
+      selectedLayer.props,
+      layerPropertyMetadata,
+      projectStore.project.currentTime
+    );
+  });
+
   function getPropertyLabel(property: string): string {
     const labels: Record<string, string> = {
       'position.x': 'Position X',
@@ -70,12 +81,25 @@
       'scale.z': 'Scale Z',
       opacity: 'Opacity'
     };
-    return labels[property] || property;
+    if (labels[property]) return labels[property];
+
+    // Handle props.* properties
+    if (property.startsWith('props.')) {
+      const propName = property.slice(6);
+      // Find metadata for this prop to get description
+      const meta = layerPropertyMetadata.find((m) => m.name === propName);
+      return meta?.description || propName;
+    }
+
+    return property;
   }
 
-  function formatKeyframeValue(value: number | string): string {
+  function formatKeyframeValue(value: number | string | boolean): string {
     if (typeof value === 'number') {
       return value.toFixed(2);
+    }
+    if (typeof value === 'boolean') {
+      return value ? 'true' : 'false';
     }
     return value;
   }
@@ -106,16 +130,55 @@
     projectStore.updateLayer(selectedLayer.id, { style: newStyle });
   }
 
+  /**
+   * Update layer props - if the property has keyframes, update/create keyframe at current time
+   * Similar to how LayerWrapper handles drag with keyframes
+   */
   function updateLayerProps(property: string, value: unknown) {
     if (!selectedLayer) return;
-    const newProps = { ...selectedLayer.props, [property]: value };
-    projectStore.updateLayer(selectedLayer.id, { props: newProps });
+
+    const animatableProperty: AnimatableProperty = `props.${property}`;
+    const currentTime = projectStore.project.currentTime;
+
+    // Check if this property has any keyframes
+    const hasKeyframes = selectedLayer.keyframes.some((k) => k.property === animatableProperty);
+
+    if (hasKeyframes) {
+      // Property is animated - work with keyframes
+      const keyframeAtTime = selectedLayer.keyframes.find(
+        (k) => k.property === animatableProperty && k.time === currentTime
+      );
+
+      if (keyframeAtTime) {
+        // Update existing keyframe at current time
+        projectStore.updateKeyframe(selectedLayer.id, keyframeAtTime.id, {
+          value: value as number | string | boolean
+        });
+      } else {
+        // Create new keyframe at current time
+        projectStore.addKeyframe(selectedLayer.id, {
+          id: nanoid(),
+          time: currentTime,
+          property: animatableProperty,
+          value: value as number | string | boolean,
+          easing: { type: 'ease-in-out' }
+        });
+      }
+    } else {
+      // No keyframes - update base props
+      const newProps = { ...selectedLayer.props, [property]: value };
+      projectStore.updateLayer(selectedLayer.id, { props: newProps });
+    }
   }
 
+  /**
+   * Add a keyframe for a property at current time
+   * Uses base props value for props.* properties (not animated value)
+   */
   function addKeyframe(property: AnimatableProperty) {
     if (!selectedLayer || !currentTransform || !currentStyle) return;
 
-    let currentValue: number | string = 0;
+    let currentValue: number | string | boolean = 0;
 
     // Get current animated value based on property
     if (property === 'position.x') currentValue = currentTransform.x;
@@ -128,14 +191,37 @@
     else if (property === 'scale.y') currentValue = currentTransform.scaleY;
     else if (property === 'scale.z') currentValue = currentTransform.scaleZ;
     else if (property === 'opacity') currentValue = currentStyle.opacity;
+    else if (property.startsWith('props.')) {
+      // Handle dynamic props - read from base props, not animated
+      const propName = property.slice(6); // Remove 'props.' prefix
+      const propValue = selectedLayer.props[propName];
+      if (propValue !== undefined) {
+        currentValue = propValue as number | string | boolean;
+      }
+    }
 
-    projectStore.addKeyframe(selectedLayer.id, {
-      id: nanoid(),
-      time: projectStore.project.currentTime,
-      property,
-      value: currentValue,
-      easing: { type: 'ease-in-out' }
-    });
+    const currentTime = projectStore.project.currentTime;
+
+    // Check if there's already a keyframe at this exact time for this property
+    const existingKeyframe = selectedLayer.keyframes.find(
+      (k) => k.property === property && k.time === currentTime
+    );
+
+    if (existingKeyframe) {
+      // Update existing keyframe
+      projectStore.updateKeyframe(selectedLayer.id, existingKeyframe.id, {
+        value: currentValue
+      });
+    } else {
+      // Create new keyframe
+      projectStore.addKeyframe(selectedLayer.id, {
+        id: nanoid(),
+        time: currentTime,
+        property,
+        value: currentValue,
+        easing: { type: 'ease-in-out' }
+      });
+    }
   }
 
   interface PropertyFieldProps {
@@ -191,8 +277,23 @@
 {/snippet}
 
 {#snippet dynamicPropertyField({ metadata, value }: DynamicPropertyFieldProps)}
+  {@const isAnimatable = metadata.interpolationType !== 'discrete'}
+  {@const property = `props.${metadata.name}` as AnimatableProperty}
   <div class="space-y-2">
-    <Label for={metadata.name} class="text-xs">{metadata.description || metadata.name}</Label>
+    <div class="flex items-center justify-between">
+      <Label for={metadata.name} class="text-xs">{metadata.description || metadata.name}</Label>
+      {#if isAnimatable}
+        <Button
+          variant="ghost"
+          size="sm"
+          class="h-5 w-5 p-0"
+          onclick={() => addKeyframe(property)}
+          title="Add keyframe for {metadata.description || metadata.name}"
+        >
+          <Pin class="size-3" />
+        </Button>
+      {/if}
+    </div>
 
     {#if metadata.type === 'number'}
       <Input
@@ -393,7 +494,7 @@
             {#each layerPropertyMetadata as propMetadata (propMetadata.name)}
               {@render dynamicPropertyField({
                 metadata: propMetadata,
-                value: selectedLayer.props[propMetadata.name]
+                value: currentAnimatedProps[propMetadata.name]
               })}
             {/each}
           </div>

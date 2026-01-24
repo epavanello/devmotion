@@ -2,7 +2,8 @@
  * Animation interpolation and easing functions
  */
 import BezierEasing from 'bezier-easing';
-import type { Easing, Keyframe, AnimatableProperty } from '$lib/types/animation';
+import type { Easing, Keyframe, AnimatableProperty, InterpolationType } from '$lib/types/animation';
+import type { PropertyMetadata } from '$lib/layers/base';
 
 export function getEasingFunction(easing: Easing): (t: number) => number {
   switch (easing.type) {
@@ -24,15 +25,30 @@ export function getEasingFunction(easing: Easing): (t: number) => number {
   }
 }
 
+/**
+ * Interpolate between two values based on interpolation type
+ * - 'number': Linear interpolation
+ * - 'color': RGB color interpolation
+ * - 'discrete': Jump to end value when progress >= 1
+ */
 export function interpolateValue(
-  startValue: number | string,
-  endValue: number | string,
+  startValue: number | string | boolean,
+  endValue: number | string | boolean,
   progress: number,
-  easing: Easing
-): number | string {
+  easing: Easing,
+  interpolationType?: InterpolationType
+): number | string | boolean {
+  // If interpolation type is explicitly discrete, jump to end value
+  if (interpolationType === 'discrete') {
+    return progress >= 1 ? endValue : startValue;
+  }
+
   // Handle color interpolation
-  if (typeof startValue === 'string' && typeof endValue === 'string') {
-    return interpolateColor(startValue, endValue, progress, easing);
+  if (
+    interpolationType === 'color' ||
+    (typeof startValue === 'string' && typeof endValue === 'string' && isColorValue(startValue))
+  ) {
+    return interpolateColor(startValue as string, endValue as string, progress, easing);
   }
 
   // Handle numeric interpolation
@@ -42,7 +58,15 @@ export function interpolateValue(
     return startValue + (endValue - startValue) * easedProgress;
   }
 
-  return endValue;
+  // Default: discrete interpolation for strings, booleans, etc.
+  return progress >= 1 ? endValue : startValue;
+}
+
+/**
+ * Check if a string value looks like a color (hex format)
+ */
+function isColorValue(value: string): boolean {
+  return /^#([a-f\d]{3}|[a-f\d]{6})$/i.test(value);
 }
 
 function interpolateColor(
@@ -84,8 +108,9 @@ function rgbToHex(r: number, g: number, b: number): string {
 export function getPropertyValue(
   keyframes: Keyframe[],
   property: AnimatableProperty,
-  currentTime: number
-): number | string | null {
+  currentTime: number,
+  interpolationType?: InterpolationType
+): number | string | boolean | null {
   const propertyKeyframes = keyframes
     .filter((k) => k.property === property)
     .sort((a, b) => a.time - b.time);
@@ -110,7 +135,7 @@ export function getPropertyValue(
     if (currentTime >= startKf.time && currentTime <= endKf.time) {
       const duration = endKf.time - startKf.time;
       const progress = duration > 0 ? (currentTime - startKf.time) / duration : 0;
-      return interpolateValue(startKf.value, endKf.value, progress, startKf.easing);
+      return interpolateValue(startKf.value, endKf.value, progress, startKf.easing, interpolationType);
     }
   }
 
@@ -164,4 +189,32 @@ export function getAnimatedStyle(
   }
 
   return style;
+}
+
+/**
+ * Get animated values for layer-specific props based on keyframes and property metadata
+ * @param keyframes - All keyframes for the layer
+ * @param baseProps - The base props values from the layer
+ * @param propsMetadata - Property metadata from the layer's Zod schema
+ * @param currentTime - Current time in the animation
+ * @returns Object with animated prop values merged with base props
+ */
+export function getAnimatedProps(
+  keyframes: Keyframe[],
+  baseProps: Record<string, unknown>,
+  propsMetadata: PropertyMetadata[],
+  currentTime: number
+): Record<string, unknown> {
+  const animatedProps: Record<string, unknown> = { ...baseProps };
+
+  for (const meta of propsMetadata) {
+    const property: AnimatableProperty = `props.${meta.name}`;
+    const animatedValue = getPropertyValue(keyframes, property, currentTime, meta.interpolationType);
+
+    if (animatedValue !== null) {
+      animatedProps[meta.name] = animatedValue;
+    }
+  }
+
+  return animatedProps;
 }
