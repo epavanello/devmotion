@@ -15,6 +15,9 @@ RUN pnpm install --frozen-lockfile
 # Copy source code
 COPY . .
 
+# Prepare the app
+RUN pnpm run prepare
+
 # Build the app
 RUN pnpm run build
 
