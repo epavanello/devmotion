@@ -23,7 +23,8 @@
     BookOpen,
     Smartphone,
     Globe,
-    Smile
+    Smile,
+    Github
   } from 'lucide-svelte';
   import { projectStore } from '$lib/stores/project.svelte';
   import { createTextLayer, createShapeLayer } from '$lib/engine/layer-factory';
@@ -220,6 +221,10 @@
       Recording...
     </div>
   {/if}
+
+  <a href="https://github.com/epavanello/devmotion" target="_blank" rel="noreferrer">
+    <Github class="h-5 w-5 mx-2" />
+  </a>
 </div>
 
 <ExportDialog
