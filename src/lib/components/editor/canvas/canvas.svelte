@@ -233,6 +233,20 @@
       style:transform={isRecording ? 'none' : viewportTransform}
       style:transform-style="preserve-3d"
     >
+      <!-- Dark overlay with transparent hole around canvas view -->
+      {#if !isRecording}
+        <div
+          class="canvas-overlay absolute"
+          style:width="20000px"
+          style:height="20000px"
+          style:left="-10000px"
+          style:top="-10000px"
+          style:background-color="rgba(0, 0, 0, 0.6)"
+          style:clip-path={`polygon(evenodd, 0 0, 0 20000px, 20000px 20000px, 20000px 0, 0 0, ${10000 - projectStore.project.width / 2}px ${10000 - projectStore.project.height / 2}px, ${10000 - projectStore.project.width / 2}px ${10000 + projectStore.project.height / 2}px, ${10000 + projectStore.project.width / 2}px ${10000 + projectStore.project.height / 2}px, ${10000 + projectStore.project.width / 2}px ${10000 - projectStore.project.height / 2}px, ${10000 - projectStore.project.width / 2}px ${10000 - projectStore.project.height / 2}px)`}
+          style:pointer-events="none"
+        />
+      {/if}
+
       <!-- Project viewport area - exact dimensions of the video output -->
       <div
         bind:this={projectViewport}
@@ -289,10 +303,16 @@
     transform-style: preserve-3d;
   }
 
+  .canvas-overlay {
+    pointer-events: none;
+    z-index: 1;
+  }
+
   .project-viewport {
     position: absolute;
     transform-style: preserve-3d;
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+    z-index: 2;
   }
 
   .layers-container {
