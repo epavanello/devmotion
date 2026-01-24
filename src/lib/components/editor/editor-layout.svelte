@@ -6,9 +6,9 @@
   import PropertiesPanel from './panels/properties-panel.svelte';
   import KeyboardHandler from './keyboard-handler.svelte';
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from '$lib/components/ui/resizable';
+  import { projectStore } from '$lib/stores/project.svelte';
 
   let projectViewport: HTMLDivElement | undefined = $state();
-  let isRecording = $state(false);
 </script>
 
 <KeyboardHandler />
@@ -16,7 +16,7 @@
 <div class="flex h-screen w-full flex-col bg-background">
   <!-- Toolbar -->
   <div class="border-b">
-    <Toolbar getCanvasElement={() => projectViewport} bind:isRecording />
+    <Toolbar getCanvasElement={() => projectViewport} />
   </div>
 
   <!-- Main Content Area -->
@@ -34,7 +34,7 @@
         <ResizablePaneGroup direction="vertical">
           <!-- Canvas -->
           <ResizablePane defaultSize={70} minSize={30}>
-            <Canvas bind:projectViewport />
+            <Canvas bind:projectViewport isRecording={projectStore.isRecording} />
           </ResizablePane>
 
           <ResizableHandle />

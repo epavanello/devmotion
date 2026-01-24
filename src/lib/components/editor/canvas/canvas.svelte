@@ -15,9 +15,11 @@
   let canvasContainer: HTMLDivElement | undefined = $state();
 
   let {
-    projectViewport = $bindable()
+    projectViewport = $bindable(),
+    isRecording = false
   }: {
     projectViewport: HTMLDivElement | undefined;
+    isRecording?: boolean;
   } = $props();
 
   let animationFrameId: number;
@@ -200,9 +202,20 @@
   const viewportTransform = $derived(
     `translate(${projectStore.viewport.pan.x}px, ${projectStore.viewport.pan.y}px) scale(${fitScale * projectStore.viewport.zoom})`
   );
+
+  // Calculate scale for recording mode to fit viewport while maintaining aspect ratio
+  const recordingScale = $derived(() => {
+    if (typeof window === 'undefined') return 1;
+    const scaleX = window.innerWidth / projectStore.project.width;
+    const scaleY = window.innerHeight / projectStore.project.height;
+    return Math.min(1, scaleX, scaleY); // Never scale up, only down
+  });
 </script>
 
-<div class="relative h-full w-full overflow-hidden bg-gray-700">
+<div
+  class="relative h-full w-full overflow-hidden bg-gray-700"
+  class:recording-mode={isRecording}
+>
   <!-- Canvas viewport -->
   <div
     bind:this={canvasContainer}
@@ -217,17 +230,19 @@
     <!-- Viewport transform container (pan and zoom) -->
     <div
       class="viewport-content absolute top-1/2 left-1/2 origin-center"
-      style:transform={viewportTransform}
+      style:transform={isRecording ? 'none' : viewportTransform}
       style:transform-style="preserve-3d"
     >
       <!-- Project viewport area - exact dimensions of the video output -->
       <div
         bind:this={projectViewport}
-        class="project-viewport absolute"
+        class="project-viewport"
+        class:project-viewport-recording={isRecording}
         style:width="{projectStore.project.width}px"
         style:height="{projectStore.project.height}px"
-        style:left="-{projectStore.project.width / 2}px"
-        style:top="-{projectStore.project.height / 2}px"
+        style:left={isRecording ? 'auto' : `-${projectStore.project.width / 2}px`}
+        style:top={isRecording ? 'auto' : `-${projectStore.project.height / 2}px`}
+        style:transform={isRecording ? `scale(${recordingScale()})` : undefined}
         style:perspective="1000px"
         style:perspective-origin="center center"
         style:transform-style="preserve-3d"
@@ -260,7 +275,9 @@
     </div>
   </div>
 
-  <CanvasControls />
+  {#if !isRecording}
+    <CanvasControls />
+  {/if}
 </div>
 
 <style>
@@ -273,11 +290,42 @@
   }
 
   .project-viewport {
+    position: absolute;
     transform-style: preserve-3d;
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
   }
 
   .layers-container {
     transform-style: preserve-3d;
+  }
+
+  /* Recording mode: fullscreen with black background */
+  .recording-mode {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 9999 !important;
+    background: black !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .recording-mode .canvas-viewport {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .recording-mode .viewport-content {
+    position: relative;
+    top: auto;
+    left: auto;
+  }
+
+  .project-viewport-recording {
+    position: relative !important;
+    box-shadow: none !important;
+    transform-origin: center center;
   }
 </style>

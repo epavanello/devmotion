@@ -25,6 +25,7 @@
   let { open, onOpenChange, getCanvasElement, isRecording = $bindable(false) }: Props = $props();
 
   let isExporting = $state(false);
+  let isConverting = $state(false);
   let exportProgress = $state(0);
   let errorMessage = $state<string | null>(null);
   let videoCapture = new VideoCapture();
@@ -71,12 +72,12 @@
       // Wait for the UI to update with new viewport
       await new Promise((resolve) => setTimeout(resolve, 300));
 
-      // Close the dialog to avoid capturing it
+      // Close the dialog and enable recording mode
       onOpenChange(false);
       isRecording = true;
       projectStore.isRecording = true;
 
-      // Wait for dialog to close and UI to update
+      // Wait for UI to switch to recording mode
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Start video capture (this will request screen permission)
@@ -100,10 +101,26 @@
         onProgress: (progress) => {
           exportProgress = progress;
         },
-        onComplete: (blob) => {
-          // Download the video
-          const filename = `${projectStore.project.name || 'video'}.webm`;
-          VideoCapture.downloadBlob(blob, filename);
+        onComplete: async (blob) => {
+          // Convert to MP4
+          isConverting = true;
+          exportProgress = 0;
+          onOpenChange(true); // Reopen dialog to show conversion progress
+
+          try {
+            const mp4Blob = await VideoCapture.convertToMp4(blob, (progress) => {
+              exportProgress = progress;
+            });
+
+            // Download the video
+            const filename = `${projectStore.project.name || 'video'}.mp4`;
+            VideoCapture.downloadBlob(mp4Blob, filename);
+
+            // Close dialog after successful export
+            onOpenChange(false);
+          } catch (err) {
+            errorMessage = err instanceof Error ? err.message : 'Failed to convert video to MP4';
+          }
 
           // Reset timeline and restore viewport
           projectStore.setCurrentTime(0);
@@ -112,6 +129,7 @@
 
           // Reset state
           isExporting = false;
+          isConverting = false;
           isRecording = false;
           projectStore.isRecording = false;
           exportProgress = 0;
@@ -130,9 +148,10 @@
           onOpenChange(true);
         }
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Export failed:', error);
-      errorMessage = error.message || 'Export failed. Please try again.';
+      errorMessage =
+        error instanceof Error ? error.message : 'Export failed. Please try again.';
       projectStore.pause();
       projectStore.setCurrentTime(0);
 
@@ -193,7 +212,22 @@
       </div>
     {/if}
 
-    {#if !isExporting}
+    {#if isConverting}
+      <div class="space-y-4 py-8">
+        <div class="flex items-center justify-center">
+          <Loader2 class="h-8 w-8 animate-spin text-primary" />
+        </div>
+        <div class="space-y-2">
+          <div class="text-center text-sm text-muted-foreground">
+            Converting to MP4... Please wait.
+          </div>
+          <Progress value={exportProgress} class="w-full" />
+          <div class="text-center text-xs text-muted-foreground">
+            {Math.round(exportProgress)}%
+          </div>
+        </div>
+      </div>
+    {:else if !isExporting}
       <div class="grid gap-4 py-4">
         <div class="grid grid-cols-4 items-center gap-4">
           <Label for="export-fps" class="text-right">FPS</Label>

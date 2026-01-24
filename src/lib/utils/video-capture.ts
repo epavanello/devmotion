@@ -3,6 +3,16 @@
  * @see https://developer.chrome.com/docs/web-platform/element-capture
  */
 
+import {
+  Input,
+  Output,
+  Conversion,
+  ALL_FORMATS,
+  BlobSource,
+  Mp4OutputFormat,
+  BufferTarget
+} from 'mediabunny';
+
 // Type definitions for Element Capture and Region Capture APIs
 declare global {
   type RestrictionTarget = object;
@@ -333,5 +343,45 @@ export class VideoCapture {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  /**
+   * Convert WebM blob to MP4 using mediabunny
+   */
+  static async convertToMp4(
+    webmBlob: Blob,
+    onProgress?: (progress: number) => void
+  ): Promise<Blob> {
+    console.log('Starting WebM to MP4 conversion...');
+
+    const input = new Input({
+      source: new BlobSource(webmBlob),
+      formats: ALL_FORMATS
+    });
+
+    const target = new BufferTarget();
+    const output = new Output({
+      format: new Mp4OutputFormat(),
+      target
+    });
+
+    const conversion = await Conversion.init({ input, output });
+
+    conversion.onProgress = (progress) => {
+      console.log('Conversion progress:', progress);
+      onProgress?.(Math.round(progress * 100));
+    };
+
+    await conversion.execute();
+    console.log('Conversion complete');
+
+    if (!target.buffer) {
+      throw new Error('Conversion failed: no output buffer');
+    }
+
+    const mp4Blob = new Blob([target.buffer], { type: 'video/mp4' });
+    console.log('Output file size:', mp4Blob.size);
+
+    return mp4Blob;
   }
 }
