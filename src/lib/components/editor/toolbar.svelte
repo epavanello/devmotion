@@ -22,13 +22,22 @@
     Smartphone,
     Globe,
     Github,
-    Settings
+    Settings,
+    User,
+    LogOut,
+    LogIn,
+    UserPlus,
+    Keyboard
   } from 'lucide-svelte';
   import { projectStore } from '$lib/stores/project.svelte';
   import { createTextLayer, createShapeLayer, createLayer } from '$lib/engine/layer-factory';
   import ExportDialog from './export-dialog.svelte';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import ProjectSettingsDialog from './project-settings-dialog.svelte';
+  import { authClient } from '$lib/auth-client';
+  import { signOut } from '$lib/functions/auth.remote';
+  import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
 
   interface Props {
     getCanvasElement: () => HTMLDivElement | undefined;
@@ -39,8 +48,21 @@
 
   let showExportDialog = $state(false);
   let showProjectSettings = $state(false);
+  let showShortcuts = $state(false);
 
+  const session = authClient.useSession();
   const readonlyItems = [{ label: 'Image', icon: Image }];
+
+  const shortcuts = [
+    { key: 'Space', description: 'Play/Pause' },
+    { key: 'Ctrl/Cmd + S', description: 'Save Project' },
+    { key: 'Ctrl/Cmd + O', description: 'Open Project' },
+    { key: 'Ctrl/Cmd + N', description: 'New Project' },
+    { key: 'Ctrl/Cmd + E', description: 'Export Video' },
+    { key: 'T', description: 'Add Text Layer' },
+    { key: 'R', description: 'Add Rectangle' },
+    { key: '0', description: 'Reset Playhead' }
+  ];
 
   function togglePlayback() {
     if (projectStore.isPlaying) {
@@ -152,6 +174,14 @@
 
   function openProjectSettings() {
     showProjectSettings = true;
+  }
+
+  function handleLogin() {
+    goto(resolve('/login'));
+  }
+
+  function handleSignup() {
+    goto(resolve('/signup'));
   }
 </script>
 
@@ -277,6 +307,71 @@
       Recording...
     </div>
   {/if}
+
+  <Separator orientation="vertical" class="h-6" />
+
+  <!-- Keyboard Shortcuts -->
+  <DropdownMenu.Root>
+    <DropdownMenu.Trigger>
+      <Button variant="ghost" size="sm" title="Keyboard Shortcuts">
+        <Keyboard class="h-4 w-4" />
+      </Button>
+    </DropdownMenu.Trigger>
+    <DropdownMenu.Content align="end" class="w-64">
+      <DropdownMenu.Label>Keyboard Shortcuts</DropdownMenu.Label>
+      <DropdownMenu.Separator />
+      {#each shortcuts as shortcut (shortcut.key)}
+        <div class="flex items-center justify-between px-2 py-1.5 text-sm">
+          <span class="text-muted-foreground">{shortcut.description}</span>
+          <kbd
+            class="pointer-events-none inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 select-none"
+          >
+            {shortcut.key}
+          </kbd>
+        </div>
+      {/each}
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
+
+  <!-- User Menu -->
+  <DropdownMenu.Root>
+    <DropdownMenu.Trigger>
+      <Button variant="ghost" size="sm" title="Account">
+        <User class="h-4 w-4" />
+      </Button>
+    </DropdownMenu.Trigger>
+    <DropdownMenu.Content align="end" class="w-56">
+      {#if $session.data}
+        <DropdownMenu.Label>
+          <div class="flex flex-col space-y-1">
+            <p class="text-sm leading-none font-medium">{$session.data.user.name}</p>
+            <p class="text-xs leading-none text-muted-foreground">{$session.data.user.email}</p>
+          </div>
+        </DropdownMenu.Label>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item>
+          {#snippet child({ props })}
+            <form {...signOut}>
+              <button type="submit" class="flex w-full items-center" {...props}> Logout </button>
+            </form>
+          {/snippet}
+          <LogOut class="mr-2 h-4 w-4" />
+          Logout
+        </DropdownMenu.Item>
+      {:else}
+        <DropdownMenu.Label>Not logged in</DropdownMenu.Label>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item onclick={handleLogin}>
+          <LogIn class="mr-2 h-4 w-4" />
+          Login
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onclick={handleSignup}>
+          <UserPlus class="mr-2 h-4 w-4" />
+          Sign Up
+        </DropdownMenu.Item>
+      {/if}
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
 
   <a href="https://github.com/epavanello/devmotion" target="_blank" rel="noreferrer">
     <Github class="mx-2 h-5 w-5" />

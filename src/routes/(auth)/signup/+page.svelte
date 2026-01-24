@@ -5,9 +5,21 @@
   import * as Field from '$lib/components/ui/field/index.js';
   import GoogleIcon from '$lib/assets/svg/google-icon.svelte';
   import { signup } from '$lib/functions/auth.remote';
+  import { authClient } from '$lib/auth-client';
   import { resolve } from '$app/paths';
 
   const id = $props.id();
+
+  async function handleGoogleSignup() {
+    try {
+      await authClient.signIn.social({
+        provider: 'google',
+        callbackURL: '/'
+      });
+    } catch (error) {
+      console.error('Google signup failed:', error);
+    }
+  }
 </script>
 
 <Card.Root class="mx-auto w-full max-w-sm">
@@ -65,7 +77,7 @@
         {/if}
         <Field.Field>
           <Button type="submit" class="w-full" disabled={!!signup.pending}>Sign Up</Button>
-          <Button variant="outline" class="w-full">
+          <Button type="button" variant="outline" class="w-full" onclick={handleGoogleSignup}>
             <GoogleIcon />
             Sign up with Google
           </Button>
