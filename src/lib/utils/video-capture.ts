@@ -5,14 +5,30 @@
 
 // Type definitions for Element Capture and Region Capture APIs
 declare global {
-  interface RestrictionTarget {}
+  type RestrictionTarget = object;
+
   var RestrictionTarget: {
     fromElement(element: Element): Promise<RestrictionTarget>;
   };
-  interface CropTarget {}
+
+  type CropTarget = object;
+
   var CropTarget: {
     fromElement(element: Element): Promise<CropTarget>;
   };
+
+  interface MediaStreamTrack {
+    restrictTo(target: RestrictionTarget | null): Promise<void>;
+    cropTo(target: CropTarget | null): Promise<void>;
+  }
+
+  interface DisplayMediaStreamOptions extends MediaStreamConstraints {
+    preferCurrentTab?: boolean;
+  }
+
+  interface MediaDevices {
+    getDisplayMedia(constraints?: DisplayMediaStreamOptions): Promise<MediaStream>;
+  }
 }
 
 export interface VideoExportOptions {
@@ -36,13 +52,10 @@ export class VideoCapture {
    * Check if Element Capture or Region Capture API is supported
    */
   static isSupported(): boolean {
-    const hasRestrictionTarget = 'RestrictionTarget' in self;
-    const hasElementCapture = hasRestrictionTarget && 'fromElement' in RestrictionTarget;
-    const hasCropTarget = 'CropTarget' in self;
-    const hasRegionCapture = hasCropTarget && 'fromElement' in CropTarget;
-    const hasMediaDevices = 'mediaDevices' in navigator;
-    const hasGetDisplayMedia = hasMediaDevices && 'getDisplayMedia' in navigator.mediaDevices;
-    const hasDisplayMedia = hasMediaDevices && hasGetDisplayMedia;
+    const hasElementCapture = 'RestrictionTarget' in self && 'fromElement' in RestrictionTarget;
+    const hasRegionCapture = 'CropTarget' in self && 'fromElement' in CropTarget;
+    const hasDisplayMedia =
+      'mediaDevices' in navigator && 'getDisplayMedia' in navigator.mediaDevices;
 
     return (hasElementCapture || hasRegionCapture) && hasDisplayMedia;
   }
@@ -66,10 +79,10 @@ export class VideoCapture {
           width: { ideal: options.width },
           height: { ideal: options.height },
           frameRate: { ideal: options.fps }
-        } as MediaTrackConstraints,
+        },
         audio: false,
         preferCurrentTab: true
-      } as any);
+      });
 
       const [videoTrack] = this.mediaStream.getVideoTracks();
       if (!videoTrack) {
@@ -86,15 +99,13 @@ export class VideoCapture {
         );
       }
 
-      // Try Element Capture first, then Region Capture as fallback
       let hasValidFrames = false;
 
       // Try Element Capture first (better for removing occluding content)
       if ('RestrictionTarget' in self && 'fromElement' in RestrictionTarget) {
         try {
-          const RestrictionTargetClass = (self as any).RestrictionTarget;
-          const restrictionTarget = await RestrictionTargetClass.fromElement(element);
-          await (videoTrack as any).restrictTo(restrictionTarget);
+          const restrictionTarget = await RestrictionTarget.fromElement(element);
+          await videoTrack.restrictTo(restrictionTarget);
           await new Promise((resolve) => setTimeout(resolve, 500));
           hasValidFrames = await this.testVideoTrack(this.mediaStream);
         } catch {
@@ -102,12 +113,11 @@ export class VideoCapture {
         }
       }
 
-      // If Element Capture didn't work, try Region Capture
+      // If Element Capture didn't work, try Region Capture as fallback
       if (!hasValidFrames && 'CropTarget' in self && 'fromElement' in CropTarget) {
         try {
-          const CropTargetClass = (self as any).CropTarget;
-          const cropTarget = await CropTargetClass.fromElement(element);
-          await (videoTrack as any).cropTo(cropTarget);
+          const cropTarget = await CropTarget.fromElement(element);
+          await videoTrack.cropTo(cropTarget);
           await new Promise((resolve) => setTimeout(resolve, 500));
           hasValidFrames = await this.testVideoTrack(this.mediaStream);
         } catch {

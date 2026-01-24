@@ -9,6 +9,8 @@
   import { nanoid } from 'nanoid';
   import type { AnimatableProperty } from '$lib/types/animation';
   import { getAnimatedTransform, getAnimatedStyle } from '$lib/engine/interpolation';
+  import { getLayerSchema } from '$lib/layers/registry';
+  import { extractPropertyMetadata, type PropertyMetadata } from '$lib/layers/base';
 
   const selectedLayer = $derived(projectStore.selectedLayer);
 
@@ -46,6 +48,13 @@
   const sortedKeyframes = $derived.by(() => {
     if (!selectedLayer) return [];
     return [...selectedLayer.keyframes].sort((a, b) => a.time - b.time);
+  });
+
+  // Extract property metadata from the layer's Zod schema
+  const layerPropertyMetadata = $derived.by(() => {
+    if (!selectedLayer) return [];
+    const schema = getLayerSchema(selectedLayer.type);
+    return extractPropertyMetadata(schema);
   });
 
   function getPropertyLabel(property: string): string {
@@ -139,6 +148,11 @@
     max?: string;
     onInput: (value: number) => void;
   }
+
+  interface DynamicPropertyFieldProps {
+    metadata: PropertyMetadata;
+    value: unknown;
+  }
 </script>
 
 {#snippet propertyField({ id, label, value, property, step, min, max, onInput }: PropertyFieldProps)}
@@ -164,6 +178,62 @@
       {max}
       oninput={(e) => onInput(parseFloat(e.currentTarget.value) || 0)}
     />
+  </div>
+{/snippet}
+
+{#snippet dynamicPropertyField({ metadata, value }: DynamicPropertyFieldProps)}
+  <div class="space-y-2">
+    <Label for={metadata.name} class="text-xs">{metadata.description || metadata.name}</Label>
+
+    {#if metadata.type === 'number'}
+      <Input
+        id={metadata.name}
+        type="number"
+        value={typeof value === 'number' ? value : 0}
+        min={metadata.min?.toString()}
+        max={metadata.max?.toString()}
+        step={metadata.step?.toString() || '1'}
+        oninput={(e) =>
+          updateLayerProps(metadata.name, parseFloat(e.currentTarget.value) || metadata.min || 0)}
+      />
+    {:else if metadata.type === 'color'}
+      <Input
+        id={metadata.name}
+        type="color"
+        value={typeof value === 'string' ? value : '#000000'}
+        oninput={(e) => updateLayerProps(metadata.name, e.currentTarget.value)}
+      />
+    {:else if metadata.type === 'boolean'}
+      <label class="flex items-center gap-2">
+        <input
+          id={metadata.name}
+          type="checkbox"
+          checked={typeof value === 'boolean' ? value : false}
+          onchange={(e) => updateLayerProps(metadata.name, e.currentTarget.checked)}
+          class="h-4 w-4 rounded border-gray-300"
+        />
+        <span class="text-sm">Enable</span>
+      </label>
+    {:else if metadata.type === 'select' && metadata.options}
+      <select
+        id={metadata.name}
+        value={typeof value === 'string' || typeof value === 'number' ? value : ''}
+        onchange={(e) => updateLayerProps(metadata.name, e.currentTarget.value)}
+        class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      >
+        {#each metadata.options as option}
+          <option value={option.value}>{option.label}</option>
+        {/each}
+      </select>
+    {:else}
+      <!-- Default to text input for strings and unknown types -->
+      <Input
+        id={metadata.name}
+        type="text"
+        value={typeof value === 'string' ? value : ''}
+        oninput={(e) => updateLayerProps(metadata.name, e.currentTarget.value)}
+      />
+    {/if}
   </div>
 {/snippet}
 
@@ -305,40 +375,18 @@
           })}
         </div>
 
-        <!-- Layer-specific properties -->
-        {#if selectedLayer.type === 'text'}
+        <!-- Layer-specific properties (dynamic based on schema) -->
+        {#if layerPropertyMetadata.length > 0}
           <Separator />
           <div class="space-y-3">
-            <Label class="font-semibold">Text Properties</Label>
+            <Label class="font-semibold">Layer Properties</Label>
 
-            <div class="space-y-2">
-              <Label for="text-content" class="text-xs">Content</Label>
-              <Input
-                id="text-content"
-                value={selectedLayer.props.content}
-                oninput={(e) => updateLayerProps('content', e.currentTarget.value)}
-              />
-            </div>
-
-            <div class="space-y-2">
-              <Label for="font-size" class="text-xs">Font Size</Label>
-              <Input
-                id="font-size"
-                type="number"
-                value={selectedLayer.props.fontSize}
-                oninput={(e) => updateLayerProps('fontSize', parseInt(e.currentTarget.value) || 48)}
-              />
-            </div>
-
-            <div class="space-y-2">
-              <Label for="text-color" class="text-xs">Color</Label>
-              <Input
-                id="text-color"
-                type="color"
-                value={selectedLayer.props.color}
-                oninput={(e) => updateLayerProps('color', e.currentTarget.value)}
-              />
-            </div>
+            {#each layerPropertyMetadata as propMetadata (propMetadata.name)}
+              {@render dynamicPropertyField({
+                metadata: propMetadata,
+                value: selectedLayer.props[propMetadata.name]
+              })}
+            {/each}
           </div>
         {/if}
 
@@ -399,5 +447,3 @@
     </div>
   {/if}
 </div>
-
-<!-- TODO: Implement dynamic property generation from Zod schemas using extractPropertyMetadata from layers/base.ts -->

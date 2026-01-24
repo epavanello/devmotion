@@ -45,7 +45,10 @@ export type BaseLayerProps = z.infer<typeof BaseLayerSchema>;
 /**
  * Layer component definition with schema and component
  */
-export interface LayerComponentDefinition<T extends z.ZodType = z.ZodType> {
+export interface LayerComponentDefinition<
+  T extends z.ZodType = z.ZodType,
+  P extends Record<string, unknown> = Record<string, unknown>
+> {
   /**
    * Unique identifier for this layer type
    */
@@ -70,7 +73,7 @@ export interface LayerComponentDefinition<T extends z.ZodType = z.ZodType> {
   /**
    * The Svelte component that renders this layer
    */
-  component: Component<Record<string, unknown>>;
+  component: Component<P>;
 }
 
 /**
