@@ -4,18 +4,80 @@
 import type { Project, Layer, Keyframe, ViewportSettings } from '$lib/types/animation';
 import { nanoid } from 'nanoid';
 
+const STORAGE_KEY = 'devmotion_store';
+const DEBOUNCE_MS = 500;
+
 class ProjectStore {
-  project = $state<Project>({
-    id: nanoid(),
-    name: 'Untitled Project',
-    width: 720,
-    height: 1280,
-    duration: 5,
-    fps: 30,
-    backgroundColor: '#000000',
-    layers: [],
-    currentTime: 0
-  });
+  project = $state<Project>(undefined!);
+  #saveTimeout: ReturnType<typeof setTimeout> | null = null;
+  #initialized = false;
+
+  constructor() {
+    // Load first, before setting up the effect
+    this.project = this.loadFromLocalStorage();
+    this.#initialized = true;
+
+    $effect.root(() => {
+      $effect(() => {
+        // Access all nested properties via JSON.stringify to create deep dependencies
+        void JSON.stringify(this.project);
+
+        // Skip saving during initial load
+        if (!this.#initialized) return;
+
+        // Debounced save
+        if (this.#saveTimeout) {
+          clearTimeout(this.#saveTimeout);
+        }
+        this.#saveTimeout = setTimeout(() => {
+          this.saveToLocalStorage();
+        }, DEBOUNCE_MS);
+      });
+    });
+  }
+
+  private loadFromLocalStorage(): Project {
+    if (typeof localStorage === 'undefined') {
+      return this.getDefaultProject();
+    }
+
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return parsed;
+      }
+    } catch (error) {
+      console.error('Failed to load project from localStorage:', error);
+    }
+
+    return this.getDefaultProject();
+  }
+
+  private getDefaultProject(): Project {
+    return {
+      id: nanoid(),
+      name: 'Untitled Project',
+      width: 720,
+      height: 1280,
+      duration: 5,
+      fps: 30,
+      backgroundColor: '#000000',
+      layers: [],
+      currentTime: 0
+    };
+  }
+
+  private saveToLocalStorage() {
+    if (typeof localStorage === 'undefined') return;
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.project));
+      console.log('Project saved to localStorage');
+    } catch (error) {
+      console.error('Failed to save project to localStorage:', error);
+    }
+  }
 
   viewport = $state<ViewportSettings>({
     zoom: 1,
