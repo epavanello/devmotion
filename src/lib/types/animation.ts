@@ -20,7 +20,10 @@ export interface Easing {
   bezier?: CubicBezierPoints;
 }
 
-export type AnimatableProperty =
+/**
+ * Built-in animatable properties for transform and style
+ */
+export type BuiltInAnimatableProperty =
   | 'position.x'
   | 'position.y'
   | 'position.z'
@@ -33,11 +36,29 @@ export type AnimatableProperty =
   | 'opacity'
   | 'color';
 
+/**
+ * Dynamic props property (e.g., props.fontSize, props.fill)
+ */
+export type PropsAnimatableProperty = `props.${string}`;
+
+/**
+ * All animatable properties - built-in or dynamic props
+ */
+export type AnimatableProperty = BuiltInAnimatableProperty | PropsAnimatableProperty;
+
+/**
+ * Interpolation type for a property
+ * - 'number': Linear interpolation between numeric values
+ * - 'color': Color interpolation in RGB space
+ * - 'discrete': Jump to new value (no interpolation)
+ */
+export type InterpolationType = 'number' | 'color' | 'discrete';
+
 export interface Keyframe {
   id: string;
   time: number; // in seconds
   property: AnimatableProperty;
-  value: number | string;
+  value: number | string | boolean;
   easing: Easing;
 }
 

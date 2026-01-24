@@ -79,30 +79,36 @@
       // Wait for dialog to close and UI to update
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // Start playback
-      projectStore.play();
-
-      // Start video capture
+      // Start video capture (this will request screen permission)
       await videoCapture.startCapture(canvasElement, {
         width: exportSettings.width,
         height: exportSettings.height,
         fps: exportSettings.fps,
         duration: projectStore.project.duration,
+        onReadyToRecord: () => {
+          // Start playback synchronized with recording
+          projectStore.play();
+
+          // Monitor playback and stop recording when it ends
+          const checkInterval = setInterval(() => {
+            if (!projectStore.isPlaying && isExporting) {
+              clearInterval(checkInterval);
+              videoCapture.stopCapture();
+            }
+          }, 100);
+        },
         onProgress: (progress) => {
           exportProgress = progress;
         },
         onComplete: (blob) => {
-          // Stop playback
-          projectStore.pause();
-          projectStore.setCurrentTime(0);
-
-          // Restore original viewport
-          projectStore.setZoom(originalZoom);
-          projectStore.setPan(originalPan.x, originalPan.y);
-
           // Download the video
           const filename = `${projectStore.project.name || 'video'}.webm`;
           VideoCapture.downloadBlob(blob, filename);
+
+          // Reset timeline and restore viewport
+          projectStore.setCurrentTime(0);
+          projectStore.setZoom(originalZoom);
+          projectStore.setPan(originalPan.x, originalPan.y);
 
           // Reset state
           isExporting = false;
@@ -111,12 +117,9 @@
           exportProgress = 0;
         },
         onError: (error) => {
-          console.error('Export error:', error);
           errorMessage = error.message || 'An error occurred during export';
           projectStore.pause();
           projectStore.setCurrentTime(0);
-
-          // Restore original viewport
           projectStore.setZoom(originalZoom);
           projectStore.setPan(originalPan.x, originalPan.y);
 
@@ -124,21 +127,9 @@
           isRecording = false;
           projectStore.isRecording = false;
           exportProgress = 0;
-
-          // Reopen dialog to show error
           onOpenChange(true);
         }
       });
-
-      // Auto-stop recording when animation finishes
-      setTimeout(
-        () => {
-          if (isExporting) {
-            videoCapture.stopCapture();
-          }
-        },
-        projectStore.project.duration * 1000 + 500
-      ); // Add 500ms buffer
     } catch (error: any) {
       console.error('Export failed:', error);
       errorMessage = error.message || 'Export failed. Please try again.';

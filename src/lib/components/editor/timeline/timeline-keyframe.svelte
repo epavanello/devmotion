@@ -28,12 +28,23 @@
       opacity: 'Opacity',
       color: 'Color'
     };
-    return labels[property] || property;
+    if (labels[property]) return labels[property];
+
+    // Handle props.* properties - show just the prop name capitalized
+    if (property.startsWith('props.')) {
+      const propName = property.slice(6);
+      return propName.charAt(0).toUpperCase() + propName.slice(1);
+    }
+
+    return property;
   }
 
-  function formatValue(value: number | string): string {
+  function formatValue(value: number | string | boolean): string {
     if (typeof value === 'number') {
       return value.toFixed(2);
+    }
+    if (typeof value === 'boolean') {
+      return value ? 'true' : 'false';
     }
     return value;
   }
@@ -84,7 +95,7 @@
         </div>
       {/if}
       <div class="mt-2 space-y-2">
-        {#each keyframes as keyframe}
+        {#each keyframes as keyframe (keyframe.id)}
           <div class="border-t pt-2 first:border-t-0 first:pt-0">
             <div class="font-semibold">{getPropertyLabel(keyframe.property)}</div>
             <div class="text-muted-foreground">

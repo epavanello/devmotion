@@ -5,16 +5,16 @@
   import { Input } from '$lib/components/ui/input';
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
-  import { Plus, Trash2 } from 'lucide-svelte';
+  import { Pin, Trash2 } from 'lucide-svelte';
   import { nanoid } from 'nanoid';
-  import type { AnimatableProperty } from '$lib/types/animation';
+  import type { AnimatableProperty, Transform, LayerStyle, Layer } from '$lib/types/animation';
   import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger
-  } from '$lib/components/ui/dropdown-menu';
-  import { getAnimatedTransform, getAnimatedStyle } from '$lib/engine/interpolation';
+    getAnimatedTransform,
+    getAnimatedStyle,
+    getAnimatedProps
+  } from '$lib/engine/interpolation';
+  import { getLayerSchema } from '$lib/layers/registry';
+  import { extractPropertyMetadata, type PropertyMetadata } from '$lib/layers/base';
 
   const selectedLayer = $derived(projectStore.selectedLayer);
 
@@ -54,6 +54,24 @@
     return [...selectedLayer.keyframes].sort((a, b) => a.time - b.time);
   });
 
+  // Extract property metadata from the layer's Zod schema
+  const layerPropertyMetadata = $derived.by(() => {
+    if (!selectedLayer) return [];
+    const schema = getLayerSchema(selectedLayer.type);
+    return extractPropertyMetadata(schema);
+  });
+
+  // Get the current animated props values
+  const currentAnimatedProps = $derived.by(() => {
+    if (!selectedLayer) return {};
+    return getAnimatedProps(
+      selectedLayer.keyframes,
+      selectedLayer.props,
+      layerPropertyMetadata,
+      projectStore.project.currentTime
+    );
+  });
+
   function getPropertyLabel(property: string): string {
     const labels: Record<string, string> = {
       'position.x': 'Position X',
@@ -67,12 +85,25 @@
       'scale.z': 'Scale Z',
       opacity: 'Opacity'
     };
-    return labels[property] || property;
+    if (labels[property]) return labels[property];
+
+    // Handle props.* properties
+    if (property.startsWith('props.')) {
+      const propName = property.slice(6);
+      // Find metadata for this prop to get description
+      const meta = layerPropertyMetadata.find((m) => m.name === propName);
+      return meta?.description || propName;
+    }
+
+    return property;
   }
 
-  function formatKeyframeValue(value: number | string): string {
+  function formatKeyframeValue(value: number | string | boolean): string {
     if (typeof value === 'number') {
       return value.toFixed(2);
+    }
+    if (typeof value === 'boolean') {
+      return value ? 'true' : 'false';
     }
     return value;
   }
@@ -86,58 +117,244 @@
     projectStore.setCurrentTime(time);
   }
 
-  function updateLayerProperty(property: string, value: string) {
+  function updateLayerProperty<K extends keyof Pick<Layer, 'name'>>(property: K, value: Layer[K]) {
     if (!selectedLayer) return;
-    projectStore.updateLayer(selectedLayer.id, { [property]: value } as any);
+    projectStore.updateLayer(selectedLayer.id, { [property]: value });
   }
 
-  function updateTransformProperty(property: string, value: number) {
+  function updateTransformProperty<K extends keyof Transform>(property: K, value: Transform[K]) {
     if (!selectedLayer) return;
-    const newTransform = { ...selectedLayer.transform, [property]: value };
+    const newTransform: Transform = { ...selectedLayer.transform, [property]: value };
     projectStore.updateLayer(selectedLayer.id, { transform: newTransform });
   }
 
-  function updateStyle(property: string, value: any) {
-    if (!selectedLayer) return;
-    const newStyle = { ...selectedLayer.style, [property]: value };
-    projectStore.updateLayer(selectedLayer.id, { style: newStyle });
+  /**
+   * Helper to update an animatable property - handles keyframe logic
+   * If the property has keyframes, updates/creates keyframe at current time
+   * Otherwise calls updateBase to update the base value
+   */
+  /**
+   * Helper to update an animatable property - handles keyframe logic
+   * If the property has keyframes, updates/creates keyframe at current time
+   * If updateBase is provided and no keyframes exist, calls updateBase
+   * If updateBase is not provided, always creates/updates keyframe
+   */
+  function updateAnimatableValue(
+    layer: Layer,
+    animatableProperty: AnimatableProperty,
+    value: number | string | boolean,
+    updateBase?: () => void
+  ) {
+    const currentTime = projectStore.project.currentTime;
+    const hasKeyframes = layer.keyframes.some((k) => k.property === animatableProperty);
+
+    if (hasKeyframes || !updateBase) {
+      const keyframeAtTime = layer.keyframes.find(
+        (k) => k.property === animatableProperty && k.time === currentTime
+      );
+
+      if (keyframeAtTime) {
+        projectStore.updateKeyframe(layer.id, keyframeAtTime.id, { value });
+      } else {
+        projectStore.addKeyframe(layer.id, {
+          id: nanoid(),
+          time: currentTime,
+          property: animatableProperty,
+          value,
+          easing: { type: 'ease-in-out' }
+        });
+      }
+    } else {
+      updateBase();
+    }
   }
 
-  function updateLayerProps(property: string, value: any) {
+  function updateStyle<K extends keyof LayerStyle>(property: K, value: LayerStyle[K]) {
     if (!selectedLayer) return;
-    const newProps = { ...selectedLayer.props, [property]: value };
-    projectStore.updateLayer(selectedLayer.id, { props: newProps } as any);
+
+    updateAnimatableValue(
+      selectedLayer,
+      property as AnimatableProperty,
+      value as number | string | boolean,
+      () => {
+        const newStyle: LayerStyle = { ...selectedLayer.style, [property]: value };
+        projectStore.updateLayer(selectedLayer.id, { style: newStyle });
+      }
+    );
+  }
+
+  function updateLayerProps(property: string, value: unknown) {
+    if (!selectedLayer) return;
+
+    updateAnimatableValue(
+      selectedLayer,
+      `props.${property}` as AnimatableProperty,
+      value as number | string | boolean,
+      () => {
+        const newProps = { ...selectedLayer.props, [property]: value };
+        projectStore.updateLayer(selectedLayer.id, { props: newProps });
+      }
+    );
   }
 
   function addKeyframe(property: AnimatableProperty) {
     if (!selectedLayer || !currentTransform || !currentStyle) return;
 
-    let currentValue: number | string = 0;
+    const propertyValueMap: Record<string, number> = {
+      'position.x': currentTransform.x,
+      'position.y': currentTransform.y,
+      'position.z': currentTransform.z,
+      'rotation.x': currentTransform.rotationX,
+      'rotation.y': currentTransform.rotationY,
+      'rotation.z': currentTransform.rotationZ,
+      'scale.x': currentTransform.scaleX,
+      'scale.y': currentTransform.scaleY,
+      'scale.z': currentTransform.scaleZ,
+      opacity: currentStyle.opacity
+    };
 
-    // Get current animated value based on property
-    if (property === 'position.x') currentValue = currentTransform.x;
-    else if (property === 'position.y') currentValue = currentTransform.y;
-    else if (property === 'position.z') currentValue = currentTransform.z;
-    else if (property === 'rotation.x') currentValue = currentTransform.rotationX;
-    else if (property === 'rotation.y') currentValue = currentTransform.rotationY;
-    else if (property === 'rotation.z') currentValue = currentTransform.rotationZ;
-    else if (property === 'scale.x') currentValue = currentTransform.scaleX;
-    else if (property === 'scale.y') currentValue = currentTransform.scaleY;
-    else if (property === 'scale.z') currentValue = currentTransform.scaleZ;
-    else if (property === 'opacity') currentValue = currentStyle.opacity;
+    let currentValue: number | string | boolean;
 
-    projectStore.addKeyframe(selectedLayer.id, {
-      id: nanoid(),
-      time: projectStore.project.currentTime,
-      property,
-      value: currentValue,
-      easing: { type: 'ease-in-out' }
-    });
+    if (property in propertyValueMap) {
+      currentValue = propertyValueMap[property];
+    } else if (property.startsWith('props.')) {
+      const propName = property.slice(6);
+      currentValue = (selectedLayer.props[propName] as number | string | boolean) ?? 0;
+    } else {
+      currentValue = 0;
+    }
+
+    // No updateBase = always create/update keyframe
+    updateAnimatableValue(selectedLayer, property, currentValue);
+  }
+
+  interface PropertyFieldProps {
+    id: string;
+    label: string;
+    value: number;
+    property: AnimatableProperty;
+    step?: string;
+    min?: string;
+    max?: string;
+    onInput: (value: number) => void;
+  }
+
+  interface DynamicPropertyFieldProps {
+    metadata: PropertyMetadata;
+    value: unknown;
   }
 </script>
 
+{#snippet propertyField({
+  id,
+  label,
+  value,
+  property,
+  step,
+  min,
+  max,
+  onInput
+}: PropertyFieldProps)}
+  {@const hasKeyframes = selectedLayer?.keyframes.some((k) => k.property === property)}
+  <div>
+    <div class="mb-1 flex items-center justify-between">
+      <Label for={id} class="text-xs">{label}</Label>
+      <Button
+        variant="ghost"
+        size="sm"
+        class="h-5 w-5 p-0"
+        onclick={() => addKeyframe(property)}
+        title="Add keyframe for {label}"
+      >
+        <Pin class="size-3" fill={hasKeyframes ? 'currentColor' : 'none'} />
+      </Button>
+    </div>
+    <Input
+      {id}
+      type="number"
+      {value}
+      {step}
+      {min}
+      {max}
+      oninput={(e) => onInput(parseFloat(e.currentTarget.value) || 0)}
+    />
+  </div>
+{/snippet}
+
+{#snippet dynamicPropertyField({ metadata, value }: DynamicPropertyFieldProps)}
+  {@const isInterpolatable = metadata.interpolationType !== 'discrete'}
+  {@const property = `props.${metadata.name}` as AnimatableProperty}
+  {@const hasKeyframes = selectedLayer?.keyframes.some((k) => k.property === property)}
+  <div class="space-y-2">
+    <div class="flex items-center justify-between">
+      <Label for={metadata.name} class="text-xs">{metadata.description || metadata.name}</Label>
+      <Button
+        variant="ghost"
+        size="sm"
+        class="h-5 w-5 p-0"
+        onclick={() => addKeyframe(property)}
+        title={isInterpolatable
+          ? `Add keyframe for ${metadata.description || metadata.name}`
+          : `Add keyframe for ${metadata.description || metadata.name} (discrete - jumps to value)`}
+      >
+        <Pin class="size-3" fill={hasKeyframes ? 'currentColor' : 'none'} />
+      </Button>
+    </div>
+
+    {#if metadata.type === 'number'}
+      <Input
+        id={metadata.name}
+        type="number"
+        value={typeof value === 'number' ? value : 0}
+        min={metadata.min?.toString()}
+        max={metadata.max?.toString()}
+        step={metadata.step?.toString() || '1'}
+        oninput={(e) =>
+          updateLayerProps(metadata.name, parseFloat(e.currentTarget.value) || metadata.min || 0)}
+      />
+    {:else if metadata.type === 'color'}
+      <Input
+        id={metadata.name}
+        type="color"
+        value={typeof value === 'string' ? value : '#000000'}
+        oninput={(e) => updateLayerProps(metadata.name, e.currentTarget.value)}
+      />
+    {:else if metadata.type === 'boolean'}
+      <label class="flex items-center gap-2">
+        <input
+          id={metadata.name}
+          type="checkbox"
+          checked={typeof value === 'boolean' ? value : false}
+          onchange={(e) => updateLayerProps(metadata.name, e.currentTarget.checked)}
+          class="h-4 w-4 rounded border-gray-300"
+        />
+        <span class="text-sm">Enable</span>
+      </label>
+    {:else if metadata.type === 'select' && metadata.options}
+      <select
+        id={metadata.name}
+        value={typeof value === 'string' || typeof value === 'number' ? value : ''}
+        onchange={(e) => updateLayerProps(metadata.name, e.currentTarget.value)}
+        class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+      >
+        {#each metadata.options as option (option.value)}
+          <option value={option.value}>{option.label}</option>
+        {/each}
+      </select>
+    {:else}
+      <!-- Default to text input for strings and unknown types -->
+      <Input
+        id={metadata.name}
+        type="text"
+        value={typeof value === 'string' ? value : ''}
+        oninput={(e) => updateLayerProps(metadata.name, e.currentTarget.value)}
+      />
+    {/if}
+  </div>
+{/snippet}
+
 <div
-  class="flex h-full flex-col bg-background"
+  class="flex h-full flex-col overflow-y-auto bg-background"
   class:pointer-events-none={projectStore.isRecording}
   class:opacity-50={projectStore.isRecording}
 >
@@ -169,36 +386,27 @@
           <div class="space-y-2">
             <Label class="text-xs text-muted-foreground">Position</Label>
             <div class="grid grid-cols-3 gap-2">
-              <div>
-                <Label for="pos-x" class="text-xs">X</Label>
-                <Input
-                  id="pos-x"
-                  type="number"
-                  value={currentTransform?.x ?? 0}
-                  oninput={(e) =>
-                    updateTransformProperty('x', parseFloat(e.currentTarget.value) || 0)}
-                />
-              </div>
-              <div>
-                <Label for="pos-y" class="text-xs">Y</Label>
-                <Input
-                  id="pos-y"
-                  type="number"
-                  value={currentTransform?.y ?? 0}
-                  oninput={(e) =>
-                    updateTransformProperty('y', parseFloat(e.currentTarget.value) || 0)}
-                />
-              </div>
-              <div>
-                <Label for="pos-z" class="text-xs">Z</Label>
-                <Input
-                  id="pos-z"
-                  type="number"
-                  value={currentTransform?.z ?? 0}
-                  oninput={(e) =>
-                    updateTransformProperty('z', parseFloat(e.currentTarget.value) || 0)}
-                />
-              </div>
+              {@render propertyField({
+                id: 'pos-x',
+                label: 'X',
+                value: currentTransform?.x ?? 0,
+                property: 'position.x',
+                onInput: (v) => updateTransformProperty('x', v)
+              })}
+              {@render propertyField({
+                id: 'pos-y',
+                label: 'Y',
+                value: currentTransform?.y ?? 0,
+                property: 'position.y',
+                onInput: (v) => updateTransformProperty('y', v)
+              })}
+              {@render propertyField({
+                id: 'pos-z',
+                label: 'Z',
+                value: currentTransform?.z ?? 0,
+                property: 'position.z',
+                onInput: (v) => updateTransformProperty('z', v)
+              })}
             </div>
           </div>
 
@@ -206,39 +414,30 @@
           <div class="space-y-2">
             <Label class="text-xs text-muted-foreground">Scale</Label>
             <div class="grid grid-cols-3 gap-2">
-              <div>
-                <Label for="scale-x" class="text-xs">X</Label>
-                <Input
-                  id="scale-x"
-                  type="number"
-                  step="0.1"
-                  value={currentTransform?.scaleX ?? 1}
-                  oninput={(e) =>
-                    updateTransformProperty('scaleX', parseFloat(e.currentTarget.value) || 1)}
-                />
-              </div>
-              <div>
-                <Label for="scale-y" class="text-xs">Y</Label>
-                <Input
-                  id="scale-y"
-                  type="number"
-                  step="0.1"
-                  value={currentTransform?.scaleY ?? 1}
-                  oninput={(e) =>
-                    updateTransformProperty('scaleY', parseFloat(e.currentTarget.value) || 1)}
-                />
-              </div>
-              <div>
-                <Label for="scale-z" class="text-xs">Z</Label>
-                <Input
-                  id="scale-z"
-                  type="number"
-                  step="0.1"
-                  value={currentTransform?.scaleZ ?? 1}
-                  oninput={(e) =>
-                    updateTransformProperty('scaleZ', parseFloat(e.currentTarget.value) || 1)}
-                />
-              </div>
+              {@render propertyField({
+                id: 'scale-x',
+                label: 'X',
+                value: currentTransform?.scaleX ?? 1,
+                property: 'scale.x',
+                step: '0.1',
+                onInput: (v) => updateTransformProperty('scaleX', v || 1)
+              })}
+              {@render propertyField({
+                id: 'scale-y',
+                label: 'Y',
+                value: currentTransform?.scaleY ?? 1,
+                property: 'scale.y',
+                step: '0.1',
+                onInput: (v) => updateTransformProperty('scaleY', v || 1)
+              })}
+              {@render propertyField({
+                id: 'scale-z',
+                label: 'Z',
+                value: currentTransform?.scaleZ ?? 1,
+                property: 'scale.z',
+                step: '0.1',
+                onInput: (v) => updateTransformProperty('scaleZ', v || 1)
+              })}
             </div>
           </div>
 
@@ -246,39 +445,30 @@
           <div class="space-y-2">
             <Label class="text-xs text-muted-foreground">Rotation (radians)</Label>
             <div class="grid grid-cols-3 gap-2">
-              <div>
-                <Label for="rot-x" class="text-xs">X</Label>
-                <Input
-                  id="rot-x"
-                  type="number"
-                  step="0.1"
-                  value={currentTransform?.rotationX ?? 0}
-                  oninput={(e) =>
-                    updateTransformProperty('rotationX', parseFloat(e.currentTarget.value) || 0)}
-                />
-              </div>
-              <div>
-                <Label for="rot-y" class="text-xs">Y</Label>
-                <Input
-                  id="rot-y"
-                  type="number"
-                  step="0.1"
-                  value={currentTransform?.rotationY ?? 0}
-                  oninput={(e) =>
-                    updateTransformProperty('rotationY', parseFloat(e.currentTarget.value) || 0)}
-                />
-              </div>
-              <div>
-                <Label for="rot-z" class="text-xs">Z</Label>
-                <Input
-                  id="rot-z"
-                  type="number"
-                  step="0.1"
-                  value={currentTransform?.rotationZ ?? 0}
-                  oninput={(e) =>
-                    updateTransformProperty('rotationZ', parseFloat(e.currentTarget.value) || 0)}
-                />
-              </div>
+              {@render propertyField({
+                id: 'rot-x',
+                label: 'X',
+                value: currentTransform?.rotationX ?? 0,
+                property: 'rotation.x',
+                step: '0.1',
+                onInput: (v) => updateTransformProperty('rotationX', v)
+              })}
+              {@render propertyField({
+                id: 'rot-y',
+                label: 'Y',
+                value: currentTransform?.rotationY ?? 0,
+                property: 'rotation.y',
+                step: '0.1',
+                onInput: (v) => updateTransformProperty('rotationY', v)
+              })}
+              {@render propertyField({
+                id: 'rot-z',
+                label: 'Z',
+                value: currentTransform?.rotationZ ?? 0,
+                property: 'rotation.z',
+                step: '0.1',
+                onInput: (v) => updateTransformProperty('rotationZ', v)
+              })}
             </div>
           </div>
         </div>
@@ -289,54 +479,30 @@
         <div class="space-y-3">
           <Label class="font-semibold">Style</Label>
 
-          <div class="space-y-2">
-            <Label for="opacity" class="text-xs">Opacity</Label>
-            <Input
-              id="opacity"
-              type="number"
-              step="0.1"
-              min="0"
-              max="1"
-              value={currentStyle?.opacity ?? 1}
-              oninput={(e) => updateStyle('opacity', parseFloat(e.currentTarget.value) || 0)}
-            />
-          </div>
+          {@render propertyField({
+            id: 'opacity',
+            label: 'Opacity',
+            value: currentStyle?.opacity ?? 1,
+            property: 'opacity',
+            step: '0.1',
+            min: '0',
+            max: '1',
+            onInput: (v) => updateStyle('opacity', v || 0)
+          })}
         </div>
 
-        <!-- Layer-specific properties -->
-        {#if selectedLayer.type === 'text'}
+        <!-- Layer-specific properties (dynamic based on schema) -->
+        {#if layerPropertyMetadata.length > 0}
           <Separator />
           <div class="space-y-3">
-            <Label class="font-semibold">Text Properties</Label>
+            <Label class="font-semibold">Layer Properties</Label>
 
-            <div class="space-y-2">
-              <Label for="text-content" class="text-xs">Content</Label>
-              <Input
-                id="text-content"
-                value={selectedLayer.props.content}
-                oninput={(e) => updateLayerProps('content', e.currentTarget.value)}
-              />
-            </div>
-
-            <div class="space-y-2">
-              <Label for="font-size" class="text-xs">Font Size</Label>
-              <Input
-                id="font-size"
-                type="number"
-                value={selectedLayer.props.fontSize}
-                oninput={(e) => updateLayerProps('fontSize', parseInt(e.currentTarget.value) || 48)}
-              />
-            </div>
-
-            <div class="space-y-2">
-              <Label for="text-color" class="text-xs">Color</Label>
-              <Input
-                id="text-color"
-                type="color"
-                value={selectedLayer.props.color}
-                oninput={(e) => updateLayerProps('color', e.currentTarget.value)}
-              />
-            </div>
+            {#each layerPropertyMetadata as propMetadata (propMetadata.name)}
+              {@render dynamicPropertyField({
+                metadata: propMetadata,
+                value: currentAnimatedProps[propMetadata.name]
+              })}
+            {/each}
           </div>
         {/if}
 
@@ -344,30 +510,7 @@
 
         <!-- Keyframes -->
         <div class="space-y-3">
-          <Label class="font-semibold">Animation</Label>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button variant="outline" size="sm" class="w-full">
-                <Plus class="mr-2 h-4 w-4" />
-                Add Keyframe
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onclick={() => addKeyframe('position.x')}
-                >Position X</DropdownMenuItem
-              >
-              <DropdownMenuItem onclick={() => addKeyframe('position.y')}
-                >Position Y</DropdownMenuItem
-              >
-              <DropdownMenuItem onclick={() => addKeyframe('scale.x')}>Scale X</DropdownMenuItem>
-              <DropdownMenuItem onclick={() => addKeyframe('scale.y')}>Scale Y</DropdownMenuItem>
-              <DropdownMenuItem onclick={() => addKeyframe('rotation.z')}
-                >Rotation Z</DropdownMenuItem
-              >
-              <DropdownMenuItem onclick={() => addKeyframe('opacity')}>Opacity</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Label class="font-semibold">Keyframes</Label>
 
           {#if selectedLayer.keyframes.length > 0}
             <div class="mt-4 space-y-2">
@@ -420,5 +563,3 @@
     </div>
   {/if}
 </div>
-
-<!-- TODO: Implement dynamic property generation from Zod schemas using extractPropertyMetadata from layers/base.ts -->

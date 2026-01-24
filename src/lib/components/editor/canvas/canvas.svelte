@@ -1,10 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { projectStore } from '$lib/stores/project.svelte';
-  import { getAnimatedTransform, getAnimatedStyle } from '$lib/engine/interpolation';
+  import { getAnimatedTransform, getAnimatedStyle, getAnimatedProps } from '$lib/engine/interpolation';
   import CanvasControls from './canvas-controls.svelte';
   import LayerWrapper from '$lib/layers/LayerWrapper.svelte';
-  import { getLayerComponent } from '$lib/layers/registry';
+  import { getLayerComponent, getLayerSchema } from '$lib/layers/registry';
+  import { extractPropertyMetadata } from '$lib/layers/base';
   import type { Layer, Transform } from '$lib/types/animation';
 
   let canvasContainer: HTMLDivElement | undefined = $state();
@@ -63,8 +64,14 @@
       const newTime = projectStore.project.currentTime + deltaTime;
 
       if (newTime >= projectStore.project.duration) {
-        projectStore.setCurrentTime(0);
-        lastFrameTime = null; // Reset for next loop
+        // When recording, stop at the end instead of looping
+        if (projectStore.isRecording) {
+          projectStore.setCurrentTime(projectStore.project.duration);
+          projectStore.pause();
+        } else {
+          projectStore.setCurrentTime(0);
+        }
+        lastFrameTime = null;
       } else {
         projectStore.setCurrentTime(newTime);
       }
@@ -159,6 +166,20 @@
     };
   }
 
+  /**
+   * Get animated props for a layer, merging base props with animated values
+   */
+  function getLayerProps(layer: Layer): Record<string, unknown> {
+    const schema = getLayerSchema(layer.type);
+    const propsMetadata = extractPropertyMetadata(schema);
+    return getAnimatedProps(
+      layer.keyframes,
+      layer.props,
+      propsMetadata,
+      projectStore.project.currentTime
+    );
+  }
+
   // Calculate scale factor to fit project dimensions in viewport
   // This maintains aspect ratio and leaves some padding
   const VIEWPORT_PADDING = 0.9; // Use 90% of available space for padding
@@ -184,7 +205,7 @@
     class="canvas-viewport absolute inset-0"
     style:perspective="1000px"
     style:perspective-origin="center center"
-    style:cursor={isPanning ? 'grabbing' : 'default'}
+    style:cursor={projectStore.isRecording ? 'none' : isPanning ? 'grabbing' : 'default'}
     onmousedown={onCanvasMouseDown}
     onmousemove={onCanvasMouseMove}
     onmouseup={onCanvasMouseUp}
@@ -201,22 +222,20 @@
       <div
         bind:this={projectViewport}
         class="project-viewport absolute"
-        class:transparency-grid={!projectStore.isRecording}
         style:width="{projectStore.project.width}px"
         style:height="{projectStore.project.height}px"
         style:left="-{projectStore.project.width / 2}px"
         style:top="-{projectStore.project.height / 2}px"
         style:transform-style="preserve-3d"
         style:isolation="isolate"
-        style:background-color={projectStore.isRecording
-          ? projectStore.project.backgroundColor
-          : undefined}
+        style:background-color={projectStore.project.backgroundColor}
       >
         <!-- Layers -->
         <div class="layers-container absolute inset-0" style:transform-style="preserve-3d">
           {#each projectStore.project.layers as layer (layer.id)}
             {@const transform = getLayerTransform(layer)}
             {@const style = getLayerStyle(layer)}
+            {@const props = getLayerProps(layer)}
             {@const component = getLayerComponent(layer.type)}
             {@const isSelected = projectStore.selectedLayerId === layer.id}
 
@@ -229,7 +248,7 @@
               {transform}
               {style}
               {component}
-              customProps={layer.props}
+              customProps={props}
             />
           {/each}
         </div>
@@ -252,21 +271,6 @@
   .project-viewport {
     transform-style: preserve-3d;
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
-  }
-
-  .transparency-grid {
-    background-color: #ffffff;
-    background-image:
-      linear-gradient(45deg, #cccccc 25%, transparent 25%),
-      linear-gradient(-45deg, #cccccc 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, #cccccc 75%),
-      linear-gradient(-45deg, transparent 75%, #cccccc 75%);
-    background-size: 20px 20px;
-    background-position:
-      0 0,
-      0 10px,
-      10px -10px,
-      -10px 0px;
   }
 
   .layers-container {

@@ -10,52 +10,30 @@ import type { LayerComponentDefinition } from './base';
 /**
  * Registry of all available layer types
  */
-export const layerRegistry = {
+export const layerRegistry: Record<string, LayerComponentDefinition> = {
   text: {
     type: 'text',
     displayName: 'Text',
     icon: 'Type',
     customPropsSchema: TextLayerPropsSchema,
-    component: TextLayer,
-    defaultProps: {
-      content: 'New Text',
-      fontSize: 48,
-      fontFamily: 'Arial',
-      fontWeight: 'normal',
-      textAlign: 'center',
-      color: '#ffffff'
-    }
-  } satisfies LayerComponentDefinition,
+    component: TextLayer
+  },
 
   shape: {
     type: 'shape',
     displayName: 'Shape',
     icon: 'Square',
     customPropsSchema: ShapeLayerPropsSchema,
-    component: ShapeLayer,
-    defaultProps: {
-      shapeType: 'rectangle' as const,
-      width: 200,
-      height: 200,
-      fill: '#4a90e2',
-      stroke: '#ffffff',
-      strokeWidth: 2
-    }
-  } satisfies LayerComponentDefinition,
+    component: ShapeLayer
+  },
 
   image: {
     type: 'image',
     displayName: 'Image',
     icon: 'Image',
     customPropsSchema: ImageLayerPropsSchema,
-    component: ImageLayer,
-    defaultProps: {
-      src: '',
-      width: 400,
-      height: 300,
-      objectFit: 'contain' as const
-    }
-  } satisfies LayerComponentDefinition
+    component: ImageLayer
+  }
 } as const;
 
 /**
@@ -93,11 +71,4 @@ export function getLayerComponent(type: LayerType) {
  */
 export function getLayerSchema(type: LayerType) {
   return getLayerDefinition(type).customPropsSchema;
-}
-
-/**
- * Get default props for a layer type
- */
-export function getDefaultLayerProps(type: LayerType) {
-  return getLayerDefinition(type).defaultProps;
 }

@@ -52,7 +52,7 @@
       // Cmd/Ctrl + G - Toggle grid
       if ((e.metaKey || e.ctrlKey) && e.key === 'g') {
         e.preventDefault();
-        projectStore.toggleGrid();
+        projectStore.toggleSnapToGrid();
       }
 
       // T - Add text layer
