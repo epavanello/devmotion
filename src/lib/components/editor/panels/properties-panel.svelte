@@ -126,8 +126,40 @@
 
   function updateStyle<K extends keyof LayerStyle>(property: K, value: LayerStyle[K]) {
     if (!selectedLayer) return;
-    const newStyle: LayerStyle = { ...selectedLayer.style, [property]: value };
-    projectStore.updateLayer(selectedLayer.id, { style: newStyle });
+
+    // Map style property to animatable property
+    const animatableProperty: AnimatableProperty = property as AnimatableProperty;
+    const currentTime = projectStore.project.currentTime;
+
+    // Check if this property has any keyframes
+    const hasKeyframes = selectedLayer.keyframes.some((k) => k.property === animatableProperty);
+
+    if (hasKeyframes) {
+      // Property is animated - work with keyframes
+      const keyframeAtTime = selectedLayer.keyframes.find(
+        (k) => k.property === animatableProperty && k.time === currentTime
+      );
+
+      if (keyframeAtTime) {
+        // Update existing keyframe at current time
+        projectStore.updateKeyframe(selectedLayer.id, keyframeAtTime.id, {
+          value: value as number
+        });
+      } else {
+        // Create new keyframe at current time
+        projectStore.addKeyframe(selectedLayer.id, {
+          id: nanoid(),
+          time: currentTime,
+          property: animatableProperty,
+          value: value as number,
+          easing: { type: 'ease-in-out' }
+        });
+      }
+    } else {
+      // No keyframes - update base style
+      const newStyle: LayerStyle = { ...selectedLayer.style, [property]: value };
+      projectStore.updateLayer(selectedLayer.id, { style: newStyle });
+    }
   }
 
   /**
