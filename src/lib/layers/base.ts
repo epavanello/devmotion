@@ -104,7 +104,7 @@ interface ZodInternals {
     innerType?: z.ZodType;
     description?: string;
     checks?: Array<{ kind: string; value?: number }>;
-    values?: readonly (string | number)[];
+    entries?: Record<string, string | number>; // Zod 4 enum entries
     defaultValue?: () => unknown;
   };
 }
@@ -185,9 +185,10 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
       } else if (unwrapped instanceof z.ZodEnum) {
         meta.type = 'select';
         meta.interpolationType = 'discrete'; // Enums jump between values
-        // Extract enum values from Zod 4 internals
-        if (internals._zod?.def.values) {
-          meta.options = Array.from(internals._zod.def.values).map((v) => ({
+        // Extract enum values from Zod 4 - uses 'entries' object or 'options' array
+        const enumEntries = internals._zod?.def?.entries;
+        if (enumEntries && typeof enumEntries === 'object') {
+          meta.options = Object.keys(enumEntries).map((v) => ({
             value: v,
             label: String(v).charAt(0).toUpperCase() + String(v).slice(1)
           }));

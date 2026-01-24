@@ -12,7 +12,6 @@
       .enum(['normal', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900'])
       .default('normal')
       .describe('Font weight'),
-    textAlign: z.enum(['left', 'center', 'right']).default('center').describe('Text alignment'),
     color: z.string().default('#ffffff').describe('Text color')
   });
 
@@ -20,7 +19,7 @@
 </script>
 
 <script lang="ts">
-  let { content, fontSize, fontFamily, fontWeight, textAlign, color }: TextLayerProps = $props();
+  let { content, fontSize, fontFamily, fontWeight, color }: TextLayerProps = $props();
 </script>
 
 <div
@@ -28,7 +27,6 @@
   style:font-size="{fontSize}px"
   style:font-family={fontFamily}
   style:font-weight={fontWeight}
-  style:text-align={textAlign}
   style:color
 >
   {content}

@@ -277,22 +277,22 @@
 {/snippet}
 
 {#snippet dynamicPropertyField({ metadata, value }: DynamicPropertyFieldProps)}
-  {@const isAnimatable = metadata.interpolationType !== 'discrete'}
+  {@const isInterpolatable = metadata.interpolationType !== 'discrete'}
   {@const property = `props.${metadata.name}` as AnimatableProperty}
   <div class="space-y-2">
     <div class="flex items-center justify-between">
       <Label for={metadata.name} class="text-xs">{metadata.description || metadata.name}</Label>
-      {#if isAnimatable}
-        <Button
-          variant="ghost"
-          size="sm"
-          class="h-5 w-5 p-0"
-          onclick={() => addKeyframe(property)}
-          title="Add keyframe for {metadata.description || metadata.name}"
-        >
-          <Pin class="size-3" />
-        </Button>
-      {/if}
+      <Button
+        variant="ghost"
+        size="sm"
+        class="h-5 w-5 p-0"
+        onclick={() => addKeyframe(property)}
+        title={isInterpolatable
+          ? `Add keyframe for ${metadata.description || metadata.name}`
+          : `Add keyframe for ${metadata.description || metadata.name} (discrete - jumps to value)`}
+      >
+        <Pin class="size-3" />
+      </Button>
     </div>
 
     {#if metadata.type === 'number'}
