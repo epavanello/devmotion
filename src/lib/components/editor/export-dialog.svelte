@@ -108,13 +108,9 @@
           onOpenChange(true); // Reopen dialog to show conversion progress
 
           try {
-            const mp4Blob = await VideoCapture.convertToMp4(blob, (progress) => {
-              exportProgress = progress;
-            });
-
             // Download the video
             const filename = `${projectStore.project.name || 'video'}.mp4`;
-            VideoCapture.downloadBlob(mp4Blob, filename);
+            VideoCapture.downloadBlob(blob, filename);
 
             // Close dialog after successful export
             onOpenChange(false);
@@ -150,8 +146,7 @@
       });
     } catch (error) {
       console.error('Export failed:', error);
-      errorMessage =
-        error instanceof Error ? error.message : 'Export failed. Please try again.';
+      errorMessage = error instanceof Error ? error.message : 'Export failed. Please try again.';
       projectStore.pause();
       projectStore.setCurrentTime(0);
 
