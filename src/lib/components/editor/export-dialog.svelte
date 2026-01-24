@@ -29,7 +29,7 @@
   let errorMessage = $state<string | null>(null);
   let videoCapture = new VideoCapture();
 
-  let exportSettings = $state({
+  let exportSettings = $derived({
     format: 'webm',
     fps: projectStore.project.fps,
     width: projectStore.project.width,
@@ -197,7 +197,13 @@
       <div class="grid gap-4 py-4">
         <div class="grid grid-cols-4 items-center gap-4">
           <Label for="export-fps" class="text-right">FPS</Label>
-          <Input id="export-fps" type="number" bind:value={exportSettings.fps} class="col-span-3" />
+          <Input
+            id="export-fps"
+            type="number"
+            value={exportSettings.fps}
+            class="col-span-3"
+            readonly
+          />
         </div>
 
         <div class="grid grid-cols-4 items-center gap-4">
@@ -205,8 +211,9 @@
           <Input
             id="export-width"
             type="number"
-            bind:value={exportSettings.width}
+            value={exportSettings.width}
             class="col-span-3"
+            readonly
           />
         </div>
 

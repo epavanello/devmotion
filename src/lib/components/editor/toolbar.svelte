@@ -24,17 +24,14 @@
     Smartphone,
     Globe,
     Smile,
-    Github
+    Github,
+    Settings
   } from 'lucide-svelte';
   import { projectStore } from '$lib/stores/project.svelte';
   import { createTextLayer, createShapeLayer } from '$lib/engine/layer-factory';
   import ExportDialog from './export-dialog.svelte';
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger
-  } from '$lib/components/ui/dropdown-menu';
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+  import ProjectSettingsDialog from './project-settings-dialog.svelte';
 
   interface Props {
     getCanvasElement: () => HTMLDivElement | undefined;
@@ -44,6 +41,7 @@
   let { getCanvasElement, isRecording = $bindable(false) }: Props = $props();
 
   let showExportDialog = $state(false);
+  let showProjectSettings = $state(false);
 
   const readonlyItems = [
     { label: 'Terminal GUI', icon: Terminal },
@@ -121,6 +119,10 @@
   function openExportDialog() {
     showExportDialog = true;
   }
+
+  function openProjectSettings() {
+    showProjectSettings = true;
+  }
 </script>
 
 <div class="flex items-center gap-2 bg-muted/50 p-2">
@@ -138,6 +140,9 @@
 
   <!-- Project Actions -->
   <div class="flex items-center gap-1">
+    <Button variant="ghost" size="sm" onclick={() => openProjectSettings()} disabled={isRecording}>
+      <Settings class="h-4 w-4" />
+    </Button>
     <Button variant="ghost" size="sm" onclick={newProject} disabled={isRecording}>
       <FileText class="h-4 w-4" />
     </Button>
@@ -173,34 +178,34 @@
       <Type class="h-4 w-4" />
     </Button>
 
-    <DropdownMenu>
-      <DropdownMenuTrigger disabled={isRecording}>
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger disabled={isRecording}>
         <Button variant="ghost" size="sm" disabled={isRecording}>
           <Layers class="h-4 w-4" />
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DropdownMenuItem onclick={() => addShapeLayer('rectangle')}>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content>
+        <DropdownMenu.Item onclick={() => addShapeLayer('rectangle')}>
           <Square class="mr-2 h-4 w-4" />
           Rectangle
-        </DropdownMenuItem>
-        <DropdownMenuItem onclick={() => addShapeLayer('circle')}>
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onclick={() => addShapeLayer('circle')}>
           <Circle class="mr-2 h-4 w-4" />
           Circle
-        </DropdownMenuItem>
-        <DropdownMenuItem onclick={() => addShapeLayer('triangle')}>
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onclick={() => addShapeLayer('triangle')}>
           <Triangle class="mr-2 h-4 w-4" />
           Triangle
-        </DropdownMenuItem>
+        </DropdownMenu.Item>
         {#each readonlyItems as item (item.label)}
-          <DropdownMenuItem disabled>
+          <DropdownMenu.Item disabled>
             {@const Icon = item.icon}
             <Icon class="mr-2 h-4 w-4" />
             {item.label}
-          </DropdownMenuItem>
+          </DropdownMenu.Item>
         {/each}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
   </div>
 
   <Separator orientation="vertical" class="h-6" />
@@ -223,7 +228,7 @@
   {/if}
 
   <a href="https://github.com/epavanello/devmotion" target="_blank" rel="noreferrer">
-    <Github class="h-5 w-5 mx-2" />
+    <Github class="mx-2 h-5 w-5" />
   </a>
 </div>
 
@@ -232,4 +237,9 @@
   onOpenChange={(open) => (showExportDialog = open)}
   {getCanvasElement}
   bind:isRecording
+/>
+
+<ProjectSettingsDialog
+  open={showProjectSettings}
+  onOpenChange={(open) => (showProjectSettings = open)}
 />
