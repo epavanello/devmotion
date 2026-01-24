@@ -7,7 +7,7 @@
   import { Separator } from '$lib/components/ui/separator';
   import { Pin, Trash2 } from 'lucide-svelte';
   import { nanoid } from 'nanoid';
-  import type { AnimatableProperty } from '$lib/types/animation';
+  import type { AnimatableProperty, Transform, LayerStyle, Layer } from '$lib/types/animation';
   import { getAnimatedTransform, getAnimatedStyle } from '$lib/engine/interpolation';
   import { getLayerSchema } from '$lib/layers/registry';
   import { extractPropertyMetadata, type PropertyMetadata } from '$lib/layers/base';
@@ -89,27 +89,27 @@
     projectStore.setCurrentTime(time);
   }
 
-  function updateLayerProperty(property: string, value: string) {
+  function updateLayerProperty<K extends keyof Pick<Layer, 'name'>>(property: K, value: Layer[K]) {
     if (!selectedLayer) return;
-    projectStore.updateLayer(selectedLayer.id, { [property]: value } as any);
+    projectStore.updateLayer(selectedLayer.id, { [property]: value });
   }
 
-  function updateTransformProperty(property: string, value: number) {
+  function updateTransformProperty<K extends keyof Transform>(property: K, value: Transform[K]) {
     if (!selectedLayer) return;
-    const newTransform = { ...selectedLayer.transform, [property]: value };
+    const newTransform: Transform = { ...selectedLayer.transform, [property]: value };
     projectStore.updateLayer(selectedLayer.id, { transform: newTransform });
   }
 
-  function updateStyle(property: string, value: any) {
+  function updateStyle<K extends keyof LayerStyle>(property: K, value: LayerStyle[K]) {
     if (!selectedLayer) return;
-    const newStyle = { ...selectedLayer.style, [property]: value };
+    const newStyle: LayerStyle = { ...selectedLayer.style, [property]: value };
     projectStore.updateLayer(selectedLayer.id, { style: newStyle });
   }
 
-  function updateLayerProps(property: string, value: any) {
+  function updateLayerProps(property: string, value: unknown) {
     if (!selectedLayer) return;
     const newProps = { ...selectedLayer.props, [property]: value };
-    projectStore.updateLayer(selectedLayer.id, { props: newProps } as any);
+    projectStore.updateLayer(selectedLayer.id, { props: newProps });
   }
 
   function addKeyframe(property: AnimatableProperty) {
@@ -155,7 +155,16 @@
   }
 </script>
 
-{#snippet propertyField({ id, label, value, property, step, min, max, onInput }: PropertyFieldProps)}
+{#snippet propertyField({
+  id,
+  label,
+  value,
+  property,
+  step,
+  min,
+  max,
+  onInput
+}: PropertyFieldProps)}
   <div>
     <div class="mb-1 flex items-center justify-between">
       <Label for={id} class="text-xs">{label}</Label>
@@ -219,9 +228,9 @@
         id={metadata.name}
         value={typeof value === 'string' || typeof value === 'number' ? value : ''}
         onchange={(e) => updateLayerProps(metadata.name, e.currentTarget.value)}
-        class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
       >
-        {#each metadata.options as option}
+        {#each metadata.options as option (option.value)}
           <option value={option.value}>{option.label}</option>
         {/each}
       </select>
