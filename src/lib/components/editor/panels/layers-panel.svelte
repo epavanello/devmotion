@@ -8,6 +8,11 @@
 
   let prompt = '';
 
+  // Touch drag state
+  let touchDragIndex = $state<number | null>(null);
+  let touchDragOverIndex = $state<number | null>(null);
+  let layerElements: HTMLElement[] = [];
+
   function selectLayer(layerId: string) {
     projectStore.selectedLayerId = layerId;
   }
@@ -53,6 +58,48 @@
       selectLayer(layerId);
     }
   }
+
+  // Touch drag handlers
+  function handleTouchStart(e: TouchEvent, index: number) {
+    touchDragIndex = index;
+    touchDragOverIndex = index;
+
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener('touchcancel', handleTouchEnd);
+  }
+
+  function handleTouchMove(e: TouchEvent) {
+    if (touchDragIndex === null) return;
+
+    e.preventDefault();
+    const touchY = e.touches[0].clientY;
+
+    // Find which layer the touch is currently over
+    for (let i = 0; i < layerElements.length; i++) {
+      const el = layerElements[i];
+      if (!el) continue;
+
+      const rect = el.getBoundingClientRect();
+      if (touchY >= rect.top && touchY <= rect.bottom) {
+        touchDragOverIndex = i;
+        break;
+      }
+    }
+  }
+
+  function handleTouchEnd() {
+    if (touchDragIndex !== null && touchDragOverIndex !== null && touchDragIndex !== touchDragOverIndex) {
+      projectStore.reorderLayers(touchDragIndex, touchDragOverIndex);
+    }
+
+    touchDragIndex = null;
+    touchDragOverIndex = null;
+
+    window.removeEventListener('touchmove', handleTouchMove);
+    window.removeEventListener('touchend', handleTouchEnd);
+    window.removeEventListener('touchcancel', handleTouchEnd);
+  }
 </script>
 
 <div
@@ -70,14 +117,19 @@
     <div class="space-y-1 p-2">
       {#each projectStore.project.layers as layer, index (layer.id)}
         <div
+          bind:this={layerElements[index]}
           class="group flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 transition-colors hover:bg-muted/50"
           class:bg-muted={projectStore.selectedLayerId === layer.id}
+          class:opacity-50={touchDragIndex === index}
+          class:ring-2={touchDragOverIndex === index && touchDragIndex !== null && touchDragIndex !== index}
+          class:ring-primary={touchDragOverIndex === index && touchDragIndex !== null && touchDragIndex !== index}
           onclick={() => selectLayer(layer.id)}
           onkeydown={(e) => handleKeyDown(e, layer.id)}
           draggable="true"
           ondragstart={(e) => handleDragStart(e, index)}
           ondragover={handleDragOver}
           ondrop={(e) => handleDrop(e, index)}
+          ontouchstart={(e) => handleTouchStart(e, index)}
           role="button"
           tabindex="0"
         >
