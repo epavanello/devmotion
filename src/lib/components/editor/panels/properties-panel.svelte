@@ -124,8 +124,31 @@
 
   function updateTransformProperty<K extends keyof Transform>(property: K, value: Transform[K]) {
     if (!selectedLayer) return;
-    const newTransform: Transform = { ...selectedLayer.transform, [property]: value };
-    projectStore.updateLayer(selectedLayer.id, { transform: newTransform });
+
+    // Map transform property to animatable property format
+    const transformPropertyMap: Record<keyof Transform, AnimatableProperty> = {
+      x: 'position.x',
+      y: 'position.y',
+      z: 'position.z',
+      rotationX: 'rotation.x',
+      rotationY: 'rotation.y',
+      rotationZ: 'rotation.z',
+      scaleX: 'scale.x',
+      scaleY: 'scale.y',
+      scaleZ: 'scale.z'
+    };
+
+    const animatableProperty = transformPropertyMap[property];
+
+    updateAnimatableValue(
+      selectedLayer,
+      animatableProperty,
+      value as number | string | boolean,
+      () => {
+        const newTransform: Transform = { ...selectedLayer.transform, [property]: value };
+        projectStore.updateLayer(selectedLayer.id, { transform: newTransform });
+      }
+    );
   }
 
   /**
