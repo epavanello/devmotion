@@ -8,8 +8,8 @@ class ProjectStore {
   project = $state<Project>({
     id: nanoid(),
     name: 'Untitled Project',
-    width: 1920,
-    height: 1080,
+    width: 720,
+    height: 1280,
     duration: 5,
     fps: 30,
     backgroundColor: '#000000',

@@ -4,7 +4,11 @@
  */
 import TextLayer, { TextLayerPropsSchema } from './TextLayer.svelte';
 import ShapeLayer, { ShapeLayerPropsSchema } from './ShapeLayer.svelte';
-import ImageLayer, { ImageLayerPropsSchema } from './ImageLayer.svelte';
+import TerminalLayer, { TerminalLayerPropsSchema } from './TerminalLayer.svelte';
+import MouseLayer, { MouseLayerPropsSchema } from './MouseLayer.svelte';
+import ButtonLayer, { ButtonLayerPropsSchema } from './ButtonLayer.svelte';
+import PhoneLayer, { PhoneLayerPropsSchema } from './PhoneLayer.svelte';
+import BrowserLayer, { BrowserLayerPropsSchema } from './BrowserLayer.svelte';
 import type { LayerComponentDefinition } from './base';
 
 /**
@@ -27,12 +31,44 @@ export const layerRegistry: Record<string, LayerComponentDefinition> = {
     component: ShapeLayer
   },
 
-  image: {
-    type: 'image',
-    displayName: 'Image',
-    icon: 'Image',
-    customPropsSchema: ImageLayerPropsSchema,
-    component: ImageLayer
+  terminal: {
+    type: 'terminal',
+    displayName: 'Terminal',
+    icon: 'Terminal',
+    customPropsSchema: TerminalLayerPropsSchema,
+    component: TerminalLayer
+  },
+
+  mouse: {
+    type: 'mouse',
+    displayName: 'Mouse',
+    icon: 'Pointer',
+    customPropsSchema: MouseLayerPropsSchema,
+    component: MouseLayer
+  },
+
+  button: {
+    type: 'button',
+    displayName: 'Button',
+    icon: 'ClickSquare',
+    customPropsSchema: ButtonLayerPropsSchema,
+    component: ButtonLayer
+  },
+
+  phone: {
+    type: 'phone',
+    displayName: 'Phone',
+    icon: 'Smartphone',
+    customPropsSchema: PhoneLayerPropsSchema,
+    component: PhoneLayer
+  },
+
+  browser: {
+    type: 'browser',
+    displayName: 'Browser',
+    icon: 'Globe',
+    customPropsSchema: BrowserLayerPropsSchema,
+    component: BrowserLayer
   }
 } as const;
 

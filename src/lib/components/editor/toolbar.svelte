@@ -17,18 +17,15 @@
     Fullscreen,
     Terminal,
     Image,
-    Video,
     MousePointer,
     Zap,
-    BookOpen,
     Smartphone,
     Globe,
-    Smile,
     Github,
     Settings
   } from 'lucide-svelte';
   import { projectStore } from '$lib/stores/project.svelte';
-  import { createTextLayer, createShapeLayer } from '$lib/engine/layer-factory';
+  import { createTextLayer, createShapeLayer, createLayer } from '$lib/engine/layer-factory';
   import ExportDialog from './export-dialog.svelte';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import ProjectSettingsDialog from './project-settings-dialog.svelte';
@@ -43,18 +40,7 @@
   let showExportDialog = $state(false);
   let showProjectSettings = $state(false);
 
-  const readonlyItems = [
-    { label: 'Terminal GUI', icon: Terminal },
-    { label: 'Text', icon: Type },
-    { label: 'Video', icon: Video },
-    { label: 'Image', icon: Image },
-    { label: 'Mouse pointer', icon: MousePointer },
-    { label: 'Button', icon: Zap },
-    { label: 'Card', icon: BookOpen },
-    { label: 'Icon', icon: Smile },
-    { label: 'Phone', icon: Smartphone },
-    { label: 'Browser', icon: Globe }
-  ];
+  const readonlyItems = [{ label: 'Image', icon: Image }];
 
   function togglePlayback() {
     if (projectStore.isPlaying) {
@@ -81,6 +67,46 @@
     const centerX = projectStore.project.width / 2;
     const centerY = projectStore.project.height / 2;
     const layer = createShapeLayer(shapeType, centerX, centerY);
+    projectStore.addLayer(layer);
+    projectStore.selectedLayerId = layer.id;
+  }
+
+  function addTerminalLayer() {
+    const centerX = projectStore.project.width / 2;
+    const centerY = projectStore.project.height / 2;
+    const layer = createLayer('terminal', {}, { x: centerX, y: centerY });
+    projectStore.addLayer(layer);
+    projectStore.selectedLayerId = layer.id;
+  }
+
+  function addMouseLayer() {
+    const centerX = projectStore.project.width / 2;
+    const centerY = projectStore.project.height / 2;
+    const layer = createLayer('mouse', {}, { x: centerX, y: centerY });
+    projectStore.addLayer(layer);
+    projectStore.selectedLayerId = layer.id;
+  }
+
+  function addButtonLayer() {
+    const centerX = projectStore.project.width / 2;
+    const centerY = projectStore.project.height / 2;
+    const layer = createLayer('button', {}, { x: centerX, y: centerY });
+    projectStore.addLayer(layer);
+    projectStore.selectedLayerId = layer.id;
+  }
+
+  function addPhoneLayer() {
+    const centerX = projectStore.project.width / 2;
+    const centerY = projectStore.project.height / 2;
+    const layer = createLayer('phone', {}, { x: centerX, y: centerY });
+    projectStore.addLayer(layer);
+    projectStore.selectedLayerId = layer.id;
+  }
+
+  function addBrowserLayer() {
+    const centerX = projectStore.project.width / 2;
+    const centerY = projectStore.project.height / 2;
+    const layer = createLayer('browser', {}, { x: centerX, y: centerY });
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }
@@ -200,6 +226,27 @@
         <DropdownMenu.Item onclick={() => addShapeLayer('triangle')}>
           <Triangle class="mr-2 h-4 w-4" />
           Triangle
+        </DropdownMenu.Item>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item onclick={addTerminalLayer}>
+          <Terminal class="mr-2 h-4 w-4" />
+          Terminal GUI
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onclick={addMouseLayer}>
+          <MousePointer class="mr-2 h-4 w-4" />
+          Mouse Pointer
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onclick={addButtonLayer}>
+          <Zap class="mr-2 h-4 w-4" />
+          Button
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onclick={addPhoneLayer}>
+          <Smartphone class="mr-2 h-4 w-4" />
+          Phone
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onclick={addBrowserLayer}>
+          <Globe class="mr-2 h-4 w-4" />
+          Browser
         </DropdownMenu.Item>
         {#each readonlyItems as item (item.label)}
           <DropdownMenu.Item disabled>
