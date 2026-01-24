@@ -23,7 +23,7 @@ export function createLayer(
   // Extract default values from the Zod schema
   const defaultProps = extractDefaultValues(definition.customPropsSchema);
 
-  const defaultEasing: Easing = { type: 'linear' };
+  const defaultEasing: Easing = { type: 'ease-in-out' };
 
   // Create initial keyframes for position properties
   const initialKeyframes: Keyframe[] = [

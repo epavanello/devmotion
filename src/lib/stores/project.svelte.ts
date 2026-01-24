@@ -190,17 +190,7 @@ class ProjectStore {
   }
 
   newProject() {
-    this.project = {
-      id: nanoid(),
-      name: 'Untitled Project',
-      width: 1920,
-      height: 1080,
-      duration: 10,
-      fps: 30,
-      backgroundColor: '#000000',
-      layers: [],
-      currentTime: 0
-    };
+    this.project = this.getDefaultProject();
     this.selectedLayerId = null;
     this.isPlaying = false;
   }

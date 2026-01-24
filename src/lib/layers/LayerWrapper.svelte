@@ -135,7 +135,7 @@
             time: currentTime,
             property: 'position.x',
             value: currentX + movementX,
-            easing: { type: 'linear' }
+            easing: { type: 'ease-in-out' }
           });
         }
       }
@@ -155,7 +155,7 @@
             time: currentTime,
             property: 'position.y',
             value: currentY + movementY,
-            easing: { type: 'linear' }
+            easing: { type: 'ease-in-out' }
           });
         }
       }

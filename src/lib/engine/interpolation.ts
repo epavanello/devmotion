@@ -29,6 +29,7 @@ export function getEasingFunction(easing: Easing): (t: number) => number {
  * Interpolate between two values based on interpolation type
  * - 'number': Linear interpolation
  * - 'color': RGB color interpolation
+ * - 'text': Character-by-character text reveal
  * - 'discrete': Jump to end value when progress >= 1
  */
 export function interpolateValue(
@@ -41,6 +42,11 @@ export function interpolateValue(
   // If interpolation type is explicitly discrete, jump to end value
   if (interpolationType === 'discrete') {
     return progress >= 1 ? endValue : startValue;
+  }
+
+  // Handle text interpolation (character by character)
+  if (interpolationType === 'text' && typeof endValue === 'string') {
+    return interpolateText(endValue, progress, easing);
   }
 
   // Handle color interpolation
@@ -88,6 +94,20 @@ function interpolateColor(
   const b = Math.round(start.b + (end.b - start.b) * easedProgress);
 
   return rgbToHex(r, g, b);
+}
+
+/**
+ * Interpolate text character by character
+ * Reveals characters progressively based on progress (0 to 1)
+ */
+function interpolateText(text: string, progress: number, easing: Easing): string {
+  const easingFn = getEasingFunction(easing);
+  const easedProgress = easingFn(progress);
+
+  const totalChars = text.length;
+  const charsToShow = Math.round(totalChars * easedProgress);
+
+  return text.slice(0, charsToShow);
 }
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {

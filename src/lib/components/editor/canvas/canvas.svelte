@@ -203,12 +203,10 @@
 </script>
 
 <div class="relative h-full w-full overflow-hidden bg-gray-700">
-  <!-- Canvas viewport with 3D perspective -->
+  <!-- Canvas viewport -->
   <div
     bind:this={canvasContainer}
     class="canvas-viewport absolute inset-0"
-    style:perspective="1000px"
-    style:perspective-origin="center center"
     style:cursor={projectStore.isRecording ? 'none' : isPanning ? 'grabbing' : 'default'}
     onmousedown={onCanvasMouseDown}
     onmousemove={onCanvasMouseMove}
@@ -230,6 +228,8 @@
         style:height="{projectStore.project.height}px"
         style:left="-{projectStore.project.width / 2}px"
         style:top="-{projectStore.project.height / 2}px"
+        style:perspective="1000px"
+        style:perspective-origin="center center"
         style:transform-style="preserve-3d"
         style:isolation="isolate"
         style:background-color={projectStore.project.backgroundColor}

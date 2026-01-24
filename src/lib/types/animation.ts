@@ -50,9 +50,10 @@ export type AnimatableProperty = BuiltInAnimatableProperty | PropsAnimatableProp
  * Interpolation type for a property
  * - 'number': Linear interpolation between numeric values
  * - 'color': Color interpolation in RGB space
+ * - 'text': Character-by-character text reveal
  * - 'discrete': Jump to new value (no interpolation)
  */
-export type InterpolationType = 'number' | 'color' | 'discrete';
+export type InterpolationType = 'number' | 'color' | 'text' | 'discrete';
 
 export interface Keyframe {
   id: string;

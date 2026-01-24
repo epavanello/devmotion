@@ -7,7 +7,7 @@
   import { Separator } from '$lib/components/ui/separator';
   import { Pin, Trash2 } from 'lucide-svelte';
   import { nanoid } from 'nanoid';
-  import type { AnimatableProperty, Transform, LayerStyle, Layer } from '$lib/types/animation';
+  import type { AnimatableProperty, Transform, LayerStyle, Layer, EasingType, Easing } from '$lib/types/animation';
   import {
     getAnimatedTransform,
     getAnimatedStyle,
@@ -115,6 +115,19 @@
 
   function goToKeyframe(time: number) {
     projectStore.setCurrentTime(time);
+  }
+
+  const easingOptions: { value: EasingType; label: string }[] = [
+    { value: 'linear', label: 'Linear' },
+    { value: 'ease-in', label: 'Ease In' },
+    { value: 'ease-out', label: 'Ease Out' },
+    { value: 'ease-in-out', label: 'Ease In-Out' }
+  ];
+
+  function updateKeyframeEasing(keyframeId: string, easingType: EasingType) {
+    if (!selectedLayer) return;
+    const newEasing: Easing = { type: easingType };
+    projectStore.updateKeyframe(selectedLayer.id, keyframeId, { easing: newEasing });
   }
 
   function updateLayerProperty<K extends keyof Pick<Layer, 'name'>>(property: K, value: Layer[K]) {
@@ -546,29 +559,42 @@
               >
                 {#each sortedKeyframes as keyframe (keyframe.id)}
                   <div
-                    class="group flex items-center justify-between rounded-sm bg-background px-2 py-1.5 text-xs transition-colors hover:bg-muted"
+                    class="group rounded-sm bg-background px-2 py-1.5 text-xs transition-colors hover:bg-muted"
                   >
-                    <button
-                      class="flex-1 text-left"
-                      onclick={() => goToKeyframe(keyframe.time)}
-                      type="button"
-                    >
-                      <div class="flex items-center gap-2">
-                        <div class="h-2 w-2 rounded-sm bg-primary"></div>
-                        <div class="font-medium">{getPropertyLabel(keyframe.property)}</div>
-                      </div>
-                      <div class="mt-0.5 ml-4 text-muted-foreground">
-                        {keyframe.time.toFixed(2)}s = {formatKeyframeValue(keyframe.value)}
-                      </div>
-                    </button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      class="h-6 w-6 p-0 opacity-0 transition-opacity group-hover:opacity-100"
-                      onclick={() => deleteKeyframe(keyframe.id)}
-                    >
-                      <Trash2 class="h-3 w-3" />
-                    </Button>
+                    <div class="flex items-center justify-between">
+                      <button
+                        class="flex-1 text-left"
+                        onclick={() => goToKeyframe(keyframe.time)}
+                        type="button"
+                      >
+                        <div class="flex items-center gap-2">
+                          <div class="h-2 w-2 rounded-sm bg-primary"></div>
+                          <div class="font-medium">{getPropertyLabel(keyframe.property)}</div>
+                        </div>
+                        <div class="mt-0.5 ml-4 text-muted-foreground">
+                          {keyframe.time.toFixed(2)}s = {formatKeyframeValue(keyframe.value)}
+                        </div>
+                      </button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        class="h-6 w-6 p-0 opacity-0 transition-opacity group-hover:opacity-100"
+                        onclick={() => deleteKeyframe(keyframe.id)}
+                      >
+                        <Trash2 class="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <div class="mt-1.5 ml-4">
+                      <select
+                        value={keyframe.easing.type}
+                        onchange={(e) => updateKeyframeEasing(keyframe.id, e.currentTarget.value as EasingType)}
+                        class="h-6 w-full rounded border border-input bg-transparent px-2 text-xs focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+                      >
+                        {#each easingOptions as option (option.value)}
+                          <option value={option.value}>{option.label}</option>
+                        {/each}
+                      </select>
+                    </div>
                   </div>
                 {/each}
               </div>

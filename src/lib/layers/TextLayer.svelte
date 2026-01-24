@@ -12,6 +12,12 @@
       .enum(['normal', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900'])
       .default('normal')
       .describe('Font weight'),
+    autoWidth: z.boolean().default(true).describe('Auto width'),
+    width: z.number().min(10).max(5000).default(400).describe('Width (px)'),
+    textAlign: z
+      .enum(['left', 'center', 'right'])
+      .default('center')
+      .describe('Text alignment'),
     color: z.string().default('#ffffff').describe('Text color')
   });
 
@@ -19,15 +25,27 @@
 </script>
 
 <script lang="ts">
-  let { content, fontSize, fontFamily, fontWeight, color }: TextLayerProps = $props();
+  let {
+    content,
+    fontSize,
+    fontFamily,
+    fontWeight,
+    autoWidth,
+    width,
+    textAlign,
+    color
+  }: TextLayerProps = $props();
 </script>
 
 <div
-  class="whitespace-nowrap select-none"
+  class="select-none"
+  class:whitespace-nowrap={autoWidth}
   style:font-size="{fontSize}px"
   style:font-family={fontFamily}
   style:font-weight={fontWeight}
   style:color
+  style:width={autoWidth ? 'auto' : `${width}px`}
+  style:text-align={textAlign}
 >
   {content}
 </div>

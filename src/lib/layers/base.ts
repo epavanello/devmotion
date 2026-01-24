@@ -91,9 +91,10 @@ export interface PropertyMetadata {
    * How this property should be interpolated between keyframes
    * - 'number': Linear interpolation
    * - 'color': RGB color interpolation
+   * - 'text': Character-by-character text reveal
    * - 'discrete': Jump to new value (no smooth transition)
    */
-  interpolationType: 'number' | 'color' | 'discrete';
+  interpolationType: 'number' | 'color' | 'text' | 'discrete';
 }
 
 // Type helpers for accessing Zod 4 internals in a type-safe way
@@ -181,6 +182,10 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
         ) {
           meta.type = 'color';
           meta.interpolationType = 'color'; // Colors can be interpolated
+        }
+        // Check if it's text content (for character-by-character animation)
+        else if (key === 'content' || key === 'text') {
+          meta.interpolationType = 'text'; // Text can be interpolated character by character
         }
       } else if (unwrapped instanceof z.ZodEnum) {
         meta.type = 'select';
