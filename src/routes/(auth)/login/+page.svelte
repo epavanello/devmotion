@@ -5,6 +5,7 @@
   import * as Field from '$lib/components/ui/field/index.js';
   import GoogleIcon from '$lib/assets/svg/google-icon.svelte';
   import { login } from '$lib/functions/auth.remote';
+  import { resolve } from '$app/paths';
 
   const id = $props.id();
 </script>
@@ -29,19 +30,19 @@
             required
             {...login.fields.email.as('email')}
           />
-          {#each login.fields.email.issues() as issue}
+          {#each login.fields.email.issues() as issue, index (index)}
             <Field.Error>{issue.message}</Field.Error>
           {/each}
         </Field.Field>
         <Field.Field>
           <div class="flex items-center">
             <Field.Label for="password-{id}">Password</Field.Label>
-            <a href="/forgot-password" class="ml-auto inline-block text-sm underline">
+            <a href={resolve('/forgot-password')} class="ml-auto inline-block text-sm underline">
               Forgot your password?
             </a>
           </div>
           <Input id="password-{id}" required {...login.fields.password.as('password')} />
-          {#each login.fields.password.issues() as issue}
+          {#each login.fields.password.issues() as issue, index (index)}
             <Field.Error>{issue.message}</Field.Error>
           {/each}
         </Field.Field>
@@ -55,7 +56,7 @@
             Login with Google
           </Button>
           <Field.Description class="text-center">
-            Don't have an account? <a href="/signup">Sign up</a>
+            Don't have an account? <a href={resolve('/signup')}>Sign up</a>
           </Field.Description>
         </Field.Field>
       </Field.Group>

@@ -5,6 +5,7 @@
   import * as Field from '$lib/components/ui/field/index.js';
   import GoogleIcon from '$lib/assets/svg/google-icon.svelte';
   import { signup } from '$lib/functions/auth.remote';
+  import { resolve } from '$app/paths';
 
   const id = $props.id();
 </script>
@@ -25,7 +26,7 @@
             required
             {...signup.fields.name.as('text')}
           />
-          {#each signup.fields.name.issues() as issue}
+          {#each signup.fields.name.issues() as issue, index (index)}
             <Field.Error>{issue.message}</Field.Error>
           {/each}
         </Field.Field>
@@ -37,14 +38,14 @@
             required
             {...signup.fields.email.as('email')}
           />
-          {#each signup.fields.email.issues() as issue}
+          {#each signup.fields.email.issues() as issue, index (index)}
             <Field.Error>{issue.message}</Field.Error>
           {/each}
         </Field.Field>
         <Field.Field>
           <Field.Label for="password-{id}">Password</Field.Label>
           <Input id="password-{id}" required {...signup.fields.password.as('password')} />
-          {#each signup.fields.password.issues() as issue}
+          {#each signup.fields.password.issues() as issue, index (index)}
             <Field.Error>{issue.message}</Field.Error>
           {/each}
         </Field.Field>
@@ -55,7 +56,7 @@
             required
             {...signup.fields.confirmPassword.as('password')}
           />
-          {#each signup.fields.confirmPassword.issues() as issue}
+          {#each signup.fields.confirmPassword.issues() as issue, index (index)}
             <Field.Error>{issue.message}</Field.Error>
           {/each}
         </Field.Field>
@@ -69,7 +70,7 @@
             Sign up with Google
           </Button>
           <Field.Description class="text-center">
-            Already have an account? <a href="/login">Sign in</a>
+            Already have an account? <a href={resolve('/login')}>Sign in</a>
           </Field.Description>
         </Field.Field>
       </Field.Group>

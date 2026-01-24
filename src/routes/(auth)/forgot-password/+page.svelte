@@ -4,6 +4,7 @@
   import { Input } from '$lib/components/ui/input';
   import * as Field from '$lib/components/ui/field/index.js';
   import { forgotPassword } from '$lib/functions/auth.remote';
+  import { resolve } from '$app/paths';
 
   const id = $props.id();
 </script>
@@ -24,7 +25,7 @@
             required
             {...forgotPassword.fields.email.as('email')}
           />
-          {#each forgotPassword.fields.email.issues() as issue}
+          {#each forgotPassword.fields.email.issues() as issue, index (index)}
             <Field.Error>{issue.message}</Field.Error>
           {/each}
         </Field.Field>
@@ -45,7 +46,7 @@
             Send Reset Link
           </Button>
           <Field.Description class="text-center">
-            Remember your password? <a href="/login">Sign in</a>
+            Remember your password? <a href={resolve('/login')}>Sign in</a>
           </Field.Description>
         </Field.Field>
       </Field.Group>
