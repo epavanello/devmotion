@@ -135,7 +135,13 @@ export function getPropertyValue(
     if (currentTime >= startKf.time && currentTime <= endKf.time) {
       const duration = endKf.time - startKf.time;
       const progress = duration > 0 ? (currentTime - startKf.time) / duration : 0;
-      return interpolateValue(startKf.value, endKf.value, progress, startKf.easing, interpolationType);
+      return interpolateValue(
+        startKf.value,
+        endKf.value,
+        progress,
+        startKf.easing,
+        interpolationType
+      );
     }
   }
 
@@ -209,7 +215,12 @@ export function getAnimatedProps(
 
   for (const meta of propsMetadata) {
     const property: AnimatableProperty = `props.${meta.name}`;
-    const animatedValue = getPropertyValue(keyframes, property, currentTime, meta.interpolationType);
+    const animatedValue = getPropertyValue(
+      keyframes,
+      property,
+      currentTime,
+      meta.interpolationType
+    );
 
     if (animatedValue !== null) {
       animatedProps[meta.name] = animatedValue;

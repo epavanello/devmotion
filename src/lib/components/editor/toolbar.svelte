@@ -14,7 +14,16 @@
     Save,
     FileText,
     Layers,
-    Fullscreen
+    Fullscreen,
+    Terminal,
+    Image,
+    Video,
+    MousePointer,
+    Zap,
+    BookOpen,
+    Smartphone,
+    Globe,
+    Smile
   } from 'lucide-svelte';
   import { projectStore } from '$lib/stores/project.svelte';
   import { createTextLayer, createShapeLayer } from '$lib/engine/layer-factory';
@@ -34,6 +43,19 @@
   let { getCanvasElement, isRecording = $bindable(false) }: Props = $props();
 
   let showExportDialog = $state(false);
+
+  const readonlyItems = [
+    { label: 'Terminal GUI', icon: Terminal },
+    { label: 'Text', icon: Type },
+    { label: 'Video', icon: Video },
+    { label: 'Image', icon: Image },
+    { label: 'Mouse pointer', icon: MousePointer },
+    { label: 'Button', icon: Zap },
+    { label: 'Card', icon: BookOpen },
+    { label: 'Icon', icon: Smile },
+    { label: 'Phone', icon: Smartphone },
+    { label: 'Browser', icon: Globe }
+  ];
 
   function togglePlayback() {
     if (projectStore.isPlaying) {
@@ -169,6 +191,13 @@
           <Triangle class="mr-2 h-4 w-4" />
           Triangle
         </DropdownMenuItem>
+        {#each readonlyItems as item (item.label)}
+          <DropdownMenuItem disabled>
+            {@const Icon = item.icon}
+            <Icon class="mr-2 h-4 w-4" />
+            {item.label}
+          </DropdownMenuItem>
+        {/each}
       </DropdownMenuContent>
     </DropdownMenu>
   </div>

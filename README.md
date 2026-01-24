@@ -7,6 +7,7 @@ Perfect for content creators, marketers, educators, and motion designers who wan
 ## ✨ Key Features
 
 🎯 **Manual Animation Studio**
+
 - Full timeline-based animation editor with keyframe support
 - Text, shapes, and image layers with complete customization
 - Interactive canvas with zoom, pan, and grid controls
@@ -14,16 +15,19 @@ Perfect for content creators, marketers, educators, and motion designers who wan
 - Real-time animation preview
 
 🤖 **AI-Powered Assistance**
+
 - Get intelligent animation suggestions
 - Auto-generate motion sequences
 - Smart layer recommendations
 
 💾 **Save & Export**
+
 - Save projects in JSON format for future editing
 - Export high-quality MP4 videos with ffmpeg
 - No file size limits or watermarks
 
 ⚡ **Modern Tech Stack**
+
 - Built with SvelteKit and Svelte 5 Runes
 - Responsive, intuitive UI with shadcn-svelte components
 - Lightning-fast canvas rendering
@@ -47,6 +51,7 @@ Open your browser to `http://localhost:5173` and start creating!
 ## 📖 Documentation
 
 See [ANIMATION_EDITOR.md](./ANIMATION_EDITOR.md) for:
+
 - Complete user guide & tutorials
 - Keyboard shortcuts reference
 - Technical architecture details
@@ -54,26 +59,26 @@ See [ANIMATION_EDITOR.md](./ANIMATION_EDITOR.md) for:
 
 ## 🛠️ Tech Stack
 
-| Component | Technology |
-|-----------|-----------|
-| **Framework** | SvelteKit with Svelte 5 Runes |
-| **UI Components** | shadcn-svelte |
-| **Canvas Rendering** | HTML5 Canvas / SVG |
-| **Video Export** | ffmpeg.wasm |
-| **State Management** | Svelte reactive stores (runes) |
+| Component            | Technology                              |
+| -------------------- | --------------------------------------- |
+| **Framework**        | SvelteKit with Svelte 5 Runes           |
+| **UI Components**    | shadcn-svelte                           |
+| **Canvas Rendering** | HTML5 Canvas / SVG                      |
+| **Video Export**     | ffmpeg.wasm                             |
+| **State Management** | Svelte reactive stores (runes)          |
 | **Animation Engine** | Custom interpolation with bezier-easing |
 
 ## ⌨️ Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
-| `Space` | Play / Pause |
-| `T` | Add text layer |
-| `R` | Add rectangle |
-| `C` | Add circle |
-| `Cmd/Ctrl + S` | Save project |
-| `+` / `-` | Zoom in / out |
-| `Delete` | Remove selected layer |
+| Shortcut       | Action                |
+| -------------- | --------------------- |
+| `Space`        | Play / Pause          |
+| `T`            | Add text layer        |
+| `R`            | Add rectangle         |
+| `C`            | Add circle            |
+| `Cmd/Ctrl + S` | Save project          |
+| `+` / `-`      | Zoom in / out         |
+| `Delete`       | Remove selected layer |
 
 ## 🎨 Supported Layers
 
@@ -84,6 +89,7 @@ See [ANIMATION_EDITOR.md](./ANIMATION_EDITOR.md) for:
 ## 🎬 Animation Presets
 
 Quick-start animations to speed up your workflow:
+
 - Fade In/Out
 - Slide In/Out (all directions)
 - Bounce
@@ -127,6 +133,7 @@ src/
 ## 🚦 Current Status
 
 ✅ **MVP Complete** - All core features working and tested
+
 - Timeline editing with keyframe support
 - Layer management (create, edit, delete, reorder)
 - Smooth animation rendering
@@ -148,6 +155,7 @@ src/
 ## 🤝 Contributing
 
 Contributions are welcome! Feel free to:
+
 - Report bugs and issues
 - Suggest new features
 - Submit pull requests

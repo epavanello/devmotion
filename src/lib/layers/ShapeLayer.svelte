@@ -5,13 +5,22 @@
    * Schema for Shape Layer custom properties
    */
   export const ShapeLayerPropsSchema = z.object({
-    shapeType: z.enum(['rectangle', 'circle', 'triangle', 'polygon']).default('rectangle').describe('Shape type'),
+    shapeType: z
+      .enum(['rectangle', 'circle', 'triangle', 'polygon'])
+      .default('rectangle')
+      .describe('Shape type'),
     width: z.number().min(1).max(2000).default(200).describe('Width (px)'),
     height: z.number().min(1).max(2000).default(200).describe('Height (px)'),
     fill: z.string().default('#4a90e2').describe('Fill color'),
     stroke: z.string().default('#000000').describe('Stroke color'),
     strokeWidth: z.number().min(0).max(50).default(2).describe('Stroke width (px)'),
-    radius: z.number().min(0).max(1000).default(100).optional().describe('Radius for circle/polygon (px)'),
+    radius: z
+      .number()
+      .min(0)
+      .max(1000)
+      .default(100)
+      .optional()
+      .describe('Radius for circle/polygon (px)'),
     sides: z.number().min(3).max(12).default(6).optional().describe('Number of sides for polygon')
   });
 

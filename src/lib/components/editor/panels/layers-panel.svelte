@@ -4,6 +4,9 @@
   import { ScrollArea } from '$lib/components/ui/scroll-area';
   import { Eye, EyeOff, Lock, Unlock, Trash2 } from 'lucide-svelte';
   import type { Layer } from '$lib/types/animation';
+  import * as Tooltip from '$lib/components/ui/tooltip';
+
+  let prompt = '';
 
   function selectLayer(layerId: string) {
     projectStore.selectedLayerId = layerId;
@@ -138,4 +141,27 @@
       {/if}
     </div>
   </ScrollArea>
+
+  <!-- Prompt Input Section -->
+  <div class="border-b bg-background p-4">
+    <label for="prompt" class="mb-2 block text-xs font-medium">Generate Animation</label>
+    <textarea
+      id="prompt"
+      bind:value={prompt}
+      placeholder="Describe the animation you want to generate..."
+      class="mb-3 flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+    ></textarea>
+    <Tooltip.Provider>
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          {#snippet child({ props })}
+            <Button class="w-full" {...props}>Generate</Button>
+          {/snippet}
+        </Tooltip.Trigger>
+        <Tooltip.Content>
+          <p>AI generation is coming soon!</p>
+        </Tooltip.Content>
+      </Tooltip.Root>
+    </Tooltip.Provider>
+  </div>
 </div>

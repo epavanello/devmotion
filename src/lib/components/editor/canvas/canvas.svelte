@@ -1,7 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { projectStore } from '$lib/stores/project.svelte';
-  import { getAnimatedTransform, getAnimatedStyle, getAnimatedProps } from '$lib/engine/interpolation';
+  import {
+    getAnimatedTransform,
+    getAnimatedStyle,
+    getAnimatedProps
+  } from '$lib/engine/interpolation';
   import CanvasControls from './canvas-controls.svelte';
   import LayerWrapper from '$lib/layers/LayerWrapper.svelte';
   import { getLayerComponent, getLayerSchema } from '$lib/layers/registry';
