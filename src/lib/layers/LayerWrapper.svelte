@@ -189,14 +189,15 @@
     class:locked
     data-layer-id={id}
     style:transform={transformCSS}
-    style:opacity={style.opacity}
     style:transform-style="preserve-3d"
     style:cursor={locked ? 'not-allowed' : 'move'}
     onmousedown={onMouseDown}
     role="button"
     tabindex="0"
   >
-    <C {...customProps} />
+    <div class="layer-content" style:opacity={style.opacity}>
+      <C {...customProps} />
+    </div>
   </div>
 {/if}
 
@@ -204,6 +205,7 @@
   .layer-wrapper {
     user-select: none;
   }
+
 
   .layer-wrapper.selected {
     outline: 2px solid #3b82f6;

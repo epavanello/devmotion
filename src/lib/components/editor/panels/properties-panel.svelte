@@ -8,7 +8,11 @@
   import { Pin, Trash2 } from 'lucide-svelte';
   import { nanoid } from 'nanoid';
   import type { AnimatableProperty, Transform, LayerStyle, Layer } from '$lib/types/animation';
-  import { getAnimatedTransform, getAnimatedStyle, getAnimatedProps } from '$lib/engine/interpolation';
+  import {
+    getAnimatedTransform,
+    getAnimatedStyle,
+    getAnimatedProps
+  } from '$lib/engine/interpolation';
   import { getLayerSchema } from '$lib/layers/registry';
   import { extractPropertyMetadata, type PropertyMetadata } from '$lib/layers/base';
 
@@ -124,136 +128,104 @@
     projectStore.updateLayer(selectedLayer.id, { transform: newTransform });
   }
 
+  /**
+   * Helper to update an animatable property - handles keyframe logic
+   * If the property has keyframes, updates/creates keyframe at current time
+   * Otherwise calls updateBase to update the base value
+   */
+  /**
+   * Helper to update an animatable property - handles keyframe logic
+   * If the property has keyframes, updates/creates keyframe at current time
+   * If updateBase is provided and no keyframes exist, calls updateBase
+   * If updateBase is not provided, always creates/updates keyframe
+   */
+  function updateAnimatableValue(
+    layer: Layer,
+    animatableProperty: AnimatableProperty,
+    value: number | string | boolean,
+    updateBase?: () => void
+  ) {
+    const currentTime = projectStore.project.currentTime;
+    const hasKeyframes = layer.keyframes.some((k) => k.property === animatableProperty);
+
+    if (hasKeyframes || !updateBase) {
+      const keyframeAtTime = layer.keyframes.find(
+        (k) => k.property === animatableProperty && k.time === currentTime
+      );
+
+      if (keyframeAtTime) {
+        projectStore.updateKeyframe(layer.id, keyframeAtTime.id, { value });
+      } else {
+        projectStore.addKeyframe(layer.id, {
+          id: nanoid(),
+          time: currentTime,
+          property: animatableProperty,
+          value,
+          easing: { type: 'ease-in-out' }
+        });
+      }
+    } else {
+      updateBase();
+    }
+  }
+
   function updateStyle<K extends keyof LayerStyle>(property: K, value: LayerStyle[K]) {
     if (!selectedLayer) return;
 
-    // Map style property to animatable property
-    const animatableProperty: AnimatableProperty = property as AnimatableProperty;
-    const currentTime = projectStore.project.currentTime;
-
-    // Check if this property has any keyframes
-    const hasKeyframes = selectedLayer.keyframes.some((k) => k.property === animatableProperty);
-
-    if (hasKeyframes) {
-      // Property is animated - work with keyframes
-      const keyframeAtTime = selectedLayer.keyframes.find(
-        (k) => k.property === animatableProperty && k.time === currentTime
-      );
-
-      if (keyframeAtTime) {
-        // Update existing keyframe at current time
-        projectStore.updateKeyframe(selectedLayer.id, keyframeAtTime.id, {
-          value: value as number
-        });
-      } else {
-        // Create new keyframe at current time
-        projectStore.addKeyframe(selectedLayer.id, {
-          id: nanoid(),
-          time: currentTime,
-          property: animatableProperty,
-          value: value as number,
-          easing: { type: 'ease-in-out' }
-        });
+    updateAnimatableValue(
+      selectedLayer,
+      property as AnimatableProperty,
+      value as number | string | boolean,
+      () => {
+        const newStyle: LayerStyle = { ...selectedLayer.style, [property]: value };
+        projectStore.updateLayer(selectedLayer.id, { style: newStyle });
       }
-    } else {
-      // No keyframes - update base style
-      const newStyle: LayerStyle = { ...selectedLayer.style, [property]: value };
-      projectStore.updateLayer(selectedLayer.id, { style: newStyle });
-    }
+    );
   }
 
-  /**
-   * Update layer props - if the property has keyframes, update/create keyframe at current time
-   * Similar to how LayerWrapper handles drag with keyframes
-   */
   function updateLayerProps(property: string, value: unknown) {
     if (!selectedLayer) return;
 
-    const animatableProperty: AnimatableProperty = `props.${property}`;
-    const currentTime = projectStore.project.currentTime;
-
-    // Check if this property has any keyframes
-    const hasKeyframes = selectedLayer.keyframes.some((k) => k.property === animatableProperty);
-
-    if (hasKeyframes) {
-      // Property is animated - work with keyframes
-      const keyframeAtTime = selectedLayer.keyframes.find(
-        (k) => k.property === animatableProperty && k.time === currentTime
-      );
-
-      if (keyframeAtTime) {
-        // Update existing keyframe at current time
-        projectStore.updateKeyframe(selectedLayer.id, keyframeAtTime.id, {
-          value: value as number | string | boolean
-        });
-      } else {
-        // Create new keyframe at current time
-        projectStore.addKeyframe(selectedLayer.id, {
-          id: nanoid(),
-          time: currentTime,
-          property: animatableProperty,
-          value: value as number | string | boolean,
-          easing: { type: 'ease-in-out' }
-        });
+    updateAnimatableValue(
+      selectedLayer,
+      `props.${property}` as AnimatableProperty,
+      value as number | string | boolean,
+      () => {
+        const newProps = { ...selectedLayer.props, [property]: value };
+        projectStore.updateLayer(selectedLayer.id, { props: newProps });
       }
-    } else {
-      // No keyframes - update base props
-      const newProps = { ...selectedLayer.props, [property]: value };
-      projectStore.updateLayer(selectedLayer.id, { props: newProps });
-    }
+    );
   }
 
-  /**
-   * Add a keyframe for a property at current time
-   * Uses base props value for props.* properties (not animated value)
-   */
   function addKeyframe(property: AnimatableProperty) {
     if (!selectedLayer || !currentTransform || !currentStyle) return;
 
-    let currentValue: number | string | boolean = 0;
+    const propertyValueMap: Record<string, number> = {
+      'position.x': currentTransform.x,
+      'position.y': currentTransform.y,
+      'position.z': currentTransform.z,
+      'rotation.x': currentTransform.rotationX,
+      'rotation.y': currentTransform.rotationY,
+      'rotation.z': currentTransform.rotationZ,
+      'scale.x': currentTransform.scaleX,
+      'scale.y': currentTransform.scaleY,
+      'scale.z': currentTransform.scaleZ,
+      opacity: currentStyle.opacity
+    };
 
-    // Get current animated value based on property
-    if (property === 'position.x') currentValue = currentTransform.x;
-    else if (property === 'position.y') currentValue = currentTransform.y;
-    else if (property === 'position.z') currentValue = currentTransform.z;
-    else if (property === 'rotation.x') currentValue = currentTransform.rotationX;
-    else if (property === 'rotation.y') currentValue = currentTransform.rotationY;
-    else if (property === 'rotation.z') currentValue = currentTransform.rotationZ;
-    else if (property === 'scale.x') currentValue = currentTransform.scaleX;
-    else if (property === 'scale.y') currentValue = currentTransform.scaleY;
-    else if (property === 'scale.z') currentValue = currentTransform.scaleZ;
-    else if (property === 'opacity') currentValue = currentStyle.opacity;
-    else if (property.startsWith('props.')) {
-      // Handle dynamic props - read from base props, not animated
-      const propName = property.slice(6); // Remove 'props.' prefix
-      const propValue = selectedLayer.props[propName];
-      if (propValue !== undefined) {
-        currentValue = propValue as number | string | boolean;
-      }
-    }
+    let currentValue: number | string | boolean;
 
-    const currentTime = projectStore.project.currentTime;
-
-    // Check if there's already a keyframe at this exact time for this property
-    const existingKeyframe = selectedLayer.keyframes.find(
-      (k) => k.property === property && k.time === currentTime
-    );
-
-    if (existingKeyframe) {
-      // Update existing keyframe
-      projectStore.updateKeyframe(selectedLayer.id, existingKeyframe.id, {
-        value: currentValue
-      });
+    if (property in propertyValueMap) {
+      currentValue = propertyValueMap[property];
+    } else if (property.startsWith('props.')) {
+      const propName = property.slice(6);
+      currentValue = (selectedLayer.props[propName] as number | string | boolean) ?? 0;
     } else {
-      // Create new keyframe
-      projectStore.addKeyframe(selectedLayer.id, {
-        id: nanoid(),
-        time: currentTime,
-        property,
-        value: currentValue,
-        easing: { type: 'ease-in-out' }
-      });
+      currentValue = 0;
     }
+
+    // No updateBase = always create/update keyframe
+    updateAnimatableValue(selectedLayer, property, currentValue);
   }
 
   interface PropertyFieldProps {
@@ -283,6 +255,7 @@
   max,
   onInput
 }: PropertyFieldProps)}
+  {@const hasKeyframes = selectedLayer?.keyframes.some((k) => k.property === property)}
   <div>
     <div class="mb-1 flex items-center justify-between">
       <Label for={id} class="text-xs">{label}</Label>
@@ -293,7 +266,7 @@
         onclick={() => addKeyframe(property)}
         title="Add keyframe for {label}"
       >
-        <Pin class="size-3" />
+        <Pin class="size-3" fill={hasKeyframes ? 'currentColor' : 'none'} />
       </Button>
     </div>
     <Input
@@ -311,6 +284,7 @@
 {#snippet dynamicPropertyField({ metadata, value }: DynamicPropertyFieldProps)}
   {@const isInterpolatable = metadata.interpolationType !== 'discrete'}
   {@const property = `props.${metadata.name}` as AnimatableProperty}
+  {@const hasKeyframes = selectedLayer?.keyframes.some((k) => k.property === property)}
   <div class="space-y-2">
     <div class="flex items-center justify-between">
       <Label for={metadata.name} class="text-xs">{metadata.description || metadata.name}</Label>
@@ -323,7 +297,7 @@
           ? `Add keyframe for ${metadata.description || metadata.name}`
           : `Add keyframe for ${metadata.description || metadata.name} (discrete - jumps to value)`}
       >
-        <Pin class="size-3" />
+        <Pin class="size-3" fill={hasKeyframes ? 'currentColor' : 'none'} />
       </Button>
     </div>
 

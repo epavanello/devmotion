@@ -5,7 +5,6 @@
   import LayersPanel from './panels/layers-panel.svelte';
   import PropertiesPanel from './panels/properties-panel.svelte';
   import KeyboardHandler from './keyboard-handler.svelte';
-  import WelcomeOverlay from './welcome-overlay.svelte';
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from '$lib/components/ui/resizable';
 
   let projectViewport: HTMLDivElement | undefined = $state();
@@ -13,7 +12,6 @@
 </script>
 
 <KeyboardHandler />
-<WelcomeOverlay />
 
 <div class="flex h-screen w-full flex-col bg-background">
   <!-- Toolbar -->
