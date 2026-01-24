@@ -4,6 +4,7 @@
 import { nanoid } from 'nanoid';
 import type { Layer, LayerType } from '$lib/types/animation';
 import { getLayerDefinition } from '$lib/layers/registry';
+import { extractDefaultValues } from '$lib/layers/base';
 
 /**
  * Create a new layer of the specified type
@@ -18,6 +19,9 @@ export function createLayer(
 ): Layer {
   const { x = 0, y = 0 } = position;
   const definition = getLayerDefinition(type);
+
+  // Extract default values from the Zod schema
+  const defaultProps = extractDefaultValues(definition.customPropsSchema);
 
   return {
     id: nanoid(),
@@ -41,7 +45,7 @@ export function createLayer(
     locked: false,
     keyframes: [],
     props: {
-      ...definition.defaultProps,
+      ...defaultProps,
       ...propsOverrides
     }
   };

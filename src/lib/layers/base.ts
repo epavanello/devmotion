@@ -46,8 +46,7 @@ export type BaseLayerProps = z.infer<typeof BaseLayerSchema>;
  * Layer component definition with schema and component
  */
 export interface LayerComponentDefinition<
-  T extends z.ZodType = z.ZodType,
-  P extends Record<string, unknown> = Record<string, unknown>
+  T extends z.ZodObject<z.ZodRawShape> = z.ZodObject<z.ZodRawShape>
 > {
   /**
    * Unique identifier for this layer type
@@ -73,7 +72,8 @@ export interface LayerComponentDefinition<
   /**
    * The Svelte component that renders this layer
    */
-  component: Component<P>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  component: Component<any>;
 }
 
 /**
@@ -89,43 +89,77 @@ export interface PropertyMetadata {
   options?: Array<{ value: string | number; label: string }>;
 }
 
+// Type helpers for accessing Zod 4 internals in a type-safe way
+// Note: In Zod 4, internals moved from _def to _zod.def
+// Reference: https://zod.dev/v4/changelog
+interface ZodInternals {
+  def: {
+    innerType?: z.ZodType;
+    description?: string;
+    checks?: Array<{ kind: string; value?: number }>;
+    values?: readonly (string | number)[];
+    defaultValue?: () => unknown;
+  };
+}
+
 /**
- * Extract property metadata from a Zod schema
+ * Unwrap ZodDefault and ZodOptional to get the inner type
+ */
+function unwrapZodType(zodType: z.ZodType): z.ZodType {
+  let current = zodType;
+  // Unwrap ZodDefault and ZodOptional to get to the base type
+  while (current instanceof z.ZodDefault || current instanceof z.ZodOptional) {
+    const internals = (current as unknown as { _zod: ZodInternals })._zod;
+    if (internals.def.innerType) {
+      current = internals.def.innerType;
+    } else {
+      break;
+    }
+  }
+  return current;
+}
+
+/**
+ * Extract property metadata from a Zod schema for UI generation
+ * Uses Zod 4 internals (_zod.def) as there's no public API for this
  */
 export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
   const metadata: PropertyMetadata[] = [];
 
   if (schema instanceof z.ZodObject) {
-    const shape = schema.shape;
+    const shape = schema.shape as Record<string, z.ZodType>;
 
     for (const [key, value] of Object.entries(shape)) {
-      const zodType = value as z.ZodType;
+      const zodType = value;
+      const unwrapped = unwrapZodType(zodType);
+
       const meta: PropertyMetadata = {
         name: key,
         type: 'string'
       };
 
-      // Extract description
-      if (zodType.description) {
-        meta.description = zodType.description;
+      // Extract description from Zod 4 internals
+      const internals = unwrapped as unknown as { _zod: ZodInternals };
+      if (internals._zod?.def.description) {
+        meta.description = internals._zod.def.description;
       }
 
       // Determine type
-      if (zodType instanceof z.ZodNumber) {
+      if (unwrapped instanceof z.ZodNumber) {
         meta.type = 'number';
 
-        // Extract min/max/step from checks
-        const checks = (zodType as any)._def.checks || [];
+        // Extract min/max from checks in Zod 4
+        const checks = internals._zod?.def.checks || [];
         for (const check of checks) {
-          if (check.kind === 'min') {
+          if (check.kind === 'min' && check.value !== undefined) {
             meta.min = check.value;
-          } else if (check.kind === 'max') {
+          } else if (check.kind === 'max' && check.value !== undefined) {
             meta.max = check.value;
           }
         }
-      } else if (zodType instanceof z.ZodBoolean) {
+      } else if (unwrapped instanceof z.ZodBoolean) {
         meta.type = 'boolean';
-      } else if (zodType instanceof z.ZodString) {
+      } else if (unwrapped instanceof z.ZodString) {
         meta.type = 'string';
 
         // Check if it's a color by convention (field name contains 'color')
@@ -136,12 +170,15 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
         ) {
           meta.type = 'color';
         }
-      } else if (zodType instanceof z.ZodEnum) {
+      } else if (unwrapped instanceof z.ZodEnum) {
         meta.type = 'select';
-        meta.options = (zodType as any)._def.values.map((v: string) => ({
-          value: v,
-          label: v.charAt(0).toUpperCase() + v.slice(1)
-        }));
+        // Extract enum values from Zod 4 internals
+        if (internals._zod?.def.values) {
+          meta.options = Array.from(internals._zod.def.values).map((v) => ({
+            value: v,
+            label: String(v).charAt(0).toUpperCase() + String(v).slice(1)
+          }));
+        }
       }
 
       metadata.push(meta);
@@ -149,6 +186,25 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
   }
 
   return metadata;
+}
+
+/**
+ * Extract default values from a Zod schema
+ * Uses Zod's parse with an empty object to get defaults
+ * Reference: https://github.com/colinhacks/zod/discussions/1953
+ */
+export function extractDefaultValues(schema: z.ZodType): Record<string, unknown> {
+  if (schema instanceof z.ZodObject) {
+    // Parse an empty object - Zod will fill in the default values
+    try {
+      return schema.parse({}) as Record<string, unknown>;
+    } catch {
+      // If parsing fails, return empty object
+      return {};
+    }
+  }
+
+  return {};
 }
 
 /**

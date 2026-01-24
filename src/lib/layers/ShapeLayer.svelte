@@ -5,14 +5,14 @@
    * Schema for Shape Layer custom properties
    */
   export const ShapeLayerPropsSchema = z.object({
-    shapeType: z.enum(['rectangle', 'circle', 'triangle', 'polygon']).describe('Shape type'),
-    width: z.number().min(1).max(2000).describe('Width (px)'),
-    height: z.number().min(1).max(2000).describe('Height (px)'),
-    fill: z.string().describe('Fill color'),
-    stroke: z.string().describe('Stroke color'),
-    strokeWidth: z.number().min(0).max(50).describe('Stroke width (px)'),
-    radius: z.number().min(0).max(1000).optional().describe('Radius for circle/polygon (px)'),
-    sides: z.number().min(3).max(12).optional().describe('Number of sides for polygon')
+    shapeType: z.enum(['rectangle', 'circle', 'triangle', 'polygon']).default('rectangle').describe('Shape type'),
+    width: z.number().min(1).max(2000).default(200).describe('Width (px)'),
+    height: z.number().min(1).max(2000).default(200).describe('Height (px)'),
+    fill: z.string().default('#4a90e2').describe('Fill color'),
+    stroke: z.string().default('#000000').describe('Stroke color'),
+    strokeWidth: z.number().min(0).max(50).default(2).describe('Stroke width (px)'),
+    radius: z.number().min(0).max(1000).default(100).optional().describe('Radius for circle/polygon (px)'),
+    sides: z.number().min(3).max(12).default(6).optional().describe('Number of sides for polygon')
   });
 
   export type ShapeLayerProps = z.infer<typeof ShapeLayerPropsSchema>;
@@ -20,12 +20,12 @@
 
 <script lang="ts">
   let {
-    shapeType = 'rectangle',
-    width = 200,
-    height = 200,
-    fill = '#4a90e2',
-    stroke = '#g',
-    strokeWidth = 2,
+    shapeType,
+    width,
+    height,
+    fill,
+    stroke,
+    strokeWidth,
     radius = 100,
     sides = 6
   }: ShapeLayerProps = $props();

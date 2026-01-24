@@ -10,7 +10,7 @@ class ProjectStore {
     name: 'Untitled Project',
     width: 1920,
     height: 1080,
-    duration: 10,
+    duration: 5,
     fps: 30,
     backgroundColor: '#000000',
     layers: [],
