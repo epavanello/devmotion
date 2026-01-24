@@ -13,7 +13,8 @@
     Upload,
     Save,
     FileText,
-    Layers
+    Layers,
+    Fullscreen
   } from 'lucide-svelte';
   import { projectStore } from '$lib/stores/project.svelte';
   import { createTextLayer, createShapeLayer } from '$lib/engine/layer-factory';
@@ -100,6 +101,18 @@
 </script>
 
 <div class="flex items-center gap-2 bg-muted/50 p-2">
+  <!-- DevMotion Branding -->
+  <div class="flex items-center gap-2 pl-2">
+    <div
+      class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600"
+    >
+      <Fullscreen class="h-5 w-5 text-white" />
+    </div>
+    <span class="hidden font-bold text-foreground sm:inline">DevMotion</span>
+  </div>
+
+  <Separator orientation="vertical" class="h-6" />
+
   <!-- Project Actions -->
   <div class="flex items-center gap-1">
     <Button variant="ghost" size="sm" onclick={newProject} disabled={isRecording}>
