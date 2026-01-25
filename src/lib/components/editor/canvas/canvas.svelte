@@ -95,8 +95,8 @@
     // Disable interactions during recording
     if (projectStore.isRecording) return;
 
-    // Middle mouse or Shift+drag for panning
-    if (event.button === 1 || (event.button === 0 && event.shiftKey)) {
+    // Middle mouse, right mouse, or Shift+drag for panning
+    if (event.button === 1 || event.button === 2 || (event.button === 0 && event.shiftKey)) {
       isPanning = true;
       panStart = { x: event.clientX, y: event.clientY };
       event.preventDefault();
@@ -124,6 +124,11 @@
 
   function onCanvasMouseUp() {
     isPanning = false;
+  }
+
+  function onCanvasContextMenu(event: MouseEvent) {
+    // Prevent context menu when panning or when the user might be about to pan
+    event.preventDefault();
   }
 
   function onCanvasWheel(event: WheelEvent) {
@@ -222,6 +227,7 @@
     onmousedown={onCanvasMouseDown}
     onmousemove={onCanvasMouseMove}
     onmouseup={onCanvasMouseUp}
+    oncontextmenu={onCanvasContextMenu}
     onwheel={onCanvasWheel}
     role="presentation"
   >
