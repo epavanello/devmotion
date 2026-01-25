@@ -4,9 +4,14 @@ import { db } from './db';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
 import { PUBLIC_BASE_URL } from '$env/static/public';
-import { PRIVATE_GOOGLE_CLIENT_ID, PRIVATE_GOOGLE_CLIENT_SECRET } from '$env/static/private';
+import {
+  PRIVATE_BETTER_AUTH_SECRET,
+  PRIVATE_GOOGLE_CLIENT_ID,
+  PRIVATE_GOOGLE_CLIENT_SECRET
+} from '$env/static/private';
 
 export const auth = betterAuth({
+  secret: PRIVATE_BETTER_AUTH_SECRET,
   database: drizzleAdapter(db, {
     provider: 'pg'
   }),
