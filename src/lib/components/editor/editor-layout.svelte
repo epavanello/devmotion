@@ -24,9 +24,7 @@
 
 <div class="flex h-screen w-full flex-col bg-background">
   <!-- Toolbar -->
-  <div class="border-b">
-    <Toolbar getCanvasElement={() => projectViewport} {projectId} {isOwner} {canEdit} {isPublic} />
-  </div>
+  <Toolbar getCanvasElement={() => projectViewport} {projectId} {isOwner} {canEdit} {isPublic} />
 
   <!-- Main Content Area -->
   <div class="flex-1 overflow-hidden">
