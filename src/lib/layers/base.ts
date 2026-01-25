@@ -5,6 +5,21 @@ import { z } from 'zod';
 import type { Component } from 'svelte';
 
 /**
+ * Anchor point options for layer positioning
+ */
+export const AnchorPointSchema = z.enum([
+  'top-left',
+  'top-center',
+  'top-right',
+  'center-left',
+  'center',
+  'center-right',
+  'bottom-left',
+  'bottom-center',
+  'bottom-right'
+]);
+
+/**
  * Base transform properties shared by all layers
  */
 export const BaseTransformSchema = z.object({
@@ -16,7 +31,8 @@ export const BaseTransformSchema = z.object({
   rotationZ: z.number().describe('Rotation Z (radians)'),
   scaleX: z.number().min(0).describe('Scale X'),
   scaleY: z.number().min(0).describe('Scale Y'),
-  scaleZ: z.number().min(0).describe('Scale Z')
+  scaleZ: z.number().min(0).describe('Scale Z'),
+  anchor: AnchorPointSchema.describe('Anchor point')
 });
 
 /**
@@ -227,19 +243,41 @@ export function extractDefaultValues(schema: z.ZodType): Record<string, unknown>
 }
 
 /**
+ * Get translate percentages for an anchor point
+ * Returns the X and Y percentages to offset the element
+ */
+function getAnchorOffset(anchor: z.infer<typeof AnchorPointSchema>): { x: string; y: string } {
+  const offsets: Record<z.infer<typeof AnchorPointSchema>, { x: string; y: string }> = {
+    'top-left': { x: '0%', y: '0%' },
+    'top-center': { x: '-50%', y: '0%' },
+    'top-right': { x: '-100%', y: '0%' },
+    'center-left': { x: '0%', y: '-50%' },
+    center: { x: '-50%', y: '-50%' },
+    'center-right': { x: '-100%', y: '-50%' },
+    'bottom-left': { x: '0%', y: '-100%' },
+    'bottom-center': { x: '-50%', y: '-100%' },
+    'bottom-right': { x: '-100%', y: '-100%' }
+  };
+  return offsets[anchor];
+}
+
+/**
  * Generate CSS transform string from transform properties
  * Coordinate system: (0, 0) is at the CENTER of the canvas
- * The element's center will be positioned at (x, y, z)
+ * The element's anchor point will be positioned at (x, y, z)
+ *
+ * Note: The layer element should be positioned at top-1/2 left-1/2 (center of canvas)
+ * so that translate3d(0, 0, 0) places it at the canvas center.
  */
 export function generateTransformCSS(transform: BaseTransform): string {
-  const { x, y, z, rotationX, rotationY, rotationZ, scaleX, scaleY, scaleZ } = transform;
+  const { x, y, z, rotationX, rotationY, rotationZ, scaleX, scaleY, scaleZ, anchor } = transform;
+  const anchorOffset = getAnchorOffset(anchor);
 
-  // Translate to center the canvas first, then to position,
-  // then center the element, finally apply rotation and scale
+  // Apply position offset, then anchor offset, then rotation and scale
+  // The layer is already positioned at canvas center via CSS (top-1/2 left-1/2)
   return `
-    translate(50%, 50%)
     translate3d(${x}px, ${y}px, ${z}px)
-    translate(-50%, -50%)
+    translate(${anchorOffset.x}, ${anchorOffset.y})
     rotateX(${rotationX}rad)
     rotateY(${rotationY}rad)
     rotateZ(${rotationZ}rad)

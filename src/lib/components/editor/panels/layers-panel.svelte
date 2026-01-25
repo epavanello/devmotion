@@ -27,58 +27,45 @@
 
   const readonlyItems = [{ label: 'Image', icon: Image }];
 
+  // Note: Coordinate system has (0, 0) at canvas center
   function addTextLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createTextLayer(centerX, centerY);
+    const layer = createTextLayer(0, 0);
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }
 
   function addShapeLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createShapeLayer(centerX, centerY);
+    const layer = createShapeLayer(0, 0);
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }
 
   function addTerminalLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createLayer('terminal', {}, { x: centerX, y: centerY });
+    const layer = createLayer('terminal', {}, { x: 0, y: 0 });
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }
 
   function addMouseLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createLayer('mouse', {}, { x: centerX, y: centerY });
+    const layer = createLayer('mouse', {}, { x: 0, y: 0 });
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }
 
   function addButtonLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createLayer('button', {}, { x: centerX, y: centerY });
+    const layer = createLayer('button', {}, { x: 0, y: 0 });
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }
 
   function addPhoneLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createLayer('phone', {}, { x: centerX, y: centerY });
+    const layer = createLayer('phone', {}, { x: 0, y: 0 });
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }
 
   function addBrowserLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createLayer('browser', {}, { x: centerX, y: centerY });
+    const layer = createLayer('browser', {}, { x: 0, y: 0 });
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }

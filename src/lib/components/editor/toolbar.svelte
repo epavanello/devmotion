@@ -50,8 +50,6 @@
     isPublic = false
   }: Props = $props();
 
-  let isSavingToCloud = $state(false);
-
   let showExportDialog = $state(false);
   let showProjectSettings = $state(false);
 
@@ -114,20 +112,15 @@
   async function handleSaveToCloud() {
     if (!user) return;
 
-    isSavingToCloud = true;
-    try {
-      const result = await saveProjectToDb({
-        id: projectId || undefined,
-        data: projectStore.project
-      });
+    const result = await saveProjectToDb({
+      id: projectId || undefined,
+      data: projectStore.project
+    });
 
-      if (result.success && result.data.id) {
-        if (!projectId) {
-          goto(resolve(`/p/${result.data.id}`));
-        }
+    if (result.success && result.data.id) {
+      if (!projectId) {
+        goto(resolve(`/p/${result.data.id}`));
       }
-    } finally {
-      isSavingToCloud = false;
     }
   }
 
@@ -181,14 +174,9 @@
           <Button
             variant="ghost"
             onclick={handleSaveToCloud}
-            disabled={isRecording || isSavingToCloud || !canEdit}
-          >
-            {#if isSavingToCloud}
-              <Loader2 class="h-4 w-4 animate-spin" />
-            {:else}
-              <Save />
-            {/if}
-          </Button>
+            disabled={isRecording || !canEdit}
+            icon={Save}
+          />
         </Tooltip>
       {/if}
     </div>
@@ -198,13 +186,12 @@
       <div class="flex items-center gap-1">
         {#if isOwner}
           <Tooltip content={isPublic ? 'Make Private' : 'Make Public'}>
-            <Button variant="ghost" onclick={handleToggleVisibility} disabled={isRecording}>
-              {#if isPublic}
-                <Unlock />
-              {:else}
-                <Lock />
-              {/if}
-            </Button>
+            <Button
+              variant="ghost"
+              onclick={handleToggleVisibility}
+              disabled={isRecording}
+              icon={isPublic ? Unlock : Lock}
+            />
           </Tooltip>
         {:else if user}
           <Tooltip content="Fork Project">

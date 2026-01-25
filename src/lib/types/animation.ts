@@ -55,6 +55,21 @@ export type AnimatableProperty = BuiltInAnimatableProperty | PropsAnimatableProp
  */
 export type InterpolationType = 'number' | 'color' | 'text' | 'discrete';
 
+/**
+ * Anchor point for layer positioning
+ * Determines which point of the layer is placed at the position coordinates
+ */
+export type AnchorPoint =
+  | 'top-left'
+  | 'top-center'
+  | 'top-right'
+  | 'center-left'
+  | 'center'
+  | 'center-right'
+  | 'bottom-left'
+  | 'bottom-center'
+  | 'bottom-right';
+
 export interface Keyframe {
   id: string;
   time: number; // in seconds
@@ -76,6 +91,7 @@ export interface Transform {
   scaleX: number;
   scaleY: number;
   scaleZ: number;
+  anchor: AnchorPoint;
 }
 
 /**

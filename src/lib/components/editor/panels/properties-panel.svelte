@@ -5,7 +5,21 @@
   import { Input } from '$lib/components/ui/input';
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
-  import { Pin, Trash2 } from 'lucide-svelte';
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+  import {
+    Pin,
+    Trash2,
+    ArrowUpLeft,
+    ArrowUp,
+    ArrowUpRight,
+    ArrowLeft,
+    Locate,
+    ArrowRight,
+    ArrowDownLeft,
+    ArrowDown,
+    ArrowDownRight,
+    ChevronDown
+  } from 'lucide-svelte';
   import { nanoid } from 'nanoid';
   import type {
     AnimatableProperty,
@@ -13,7 +27,8 @@
     LayerStyle,
     Layer,
     EasingType,
-    Easing
+    Easing,
+    AnchorPoint
   } from '$lib/types/animation';
   import {
     getAnimatedTransform,
@@ -131,6 +146,30 @@
     { value: 'ease-in-out', label: 'Ease In-Out' }
   ];
 
+  const anchorOptions: { value: AnchorPoint; label: string; icon: typeof ArrowUpLeft }[] = [
+    { value: 'top-left', label: 'Top Left', icon: ArrowUpLeft },
+    { value: 'top-center', label: 'Top Center', icon: ArrowUp },
+    { value: 'top-right', label: 'Top Right', icon: ArrowUpRight },
+    { value: 'center-left', label: 'Center Left', icon: ArrowLeft },
+    { value: 'center', label: 'Center', icon: Locate },
+    { value: 'center-right', label: 'Center Right', icon: ArrowRight },
+    { value: 'bottom-left', label: 'Bottom Left', icon: ArrowDownLeft },
+    { value: 'bottom-center', label: 'Bottom Center', icon: ArrowDown },
+    { value: 'bottom-right', label: 'Bottom Right', icon: ArrowDownRight }
+  ];
+
+  const currentAnchorLabel = $derived.by(() => {
+    if (!selectedLayer) return 'Center';
+    const option = anchorOptions.find((opt) => opt.value === selectedLayer.transform.anchor);
+    return option?.label || 'Center';
+  });
+
+  function updateAnchor(anchor: AnchorPoint) {
+    if (!selectedLayer) return;
+    const newTransform: Transform = { ...selectedLayer.transform, anchor };
+    projectStore.updateLayer(selectedLayer.id, { transform: newTransform });
+  }
+
   function updateKeyframeEasing(keyframeId: string, easingType: EasingType) {
     if (!selectedLayer) return;
     const newEasing: Easing = { type: easingType };
@@ -142,11 +181,17 @@
     projectStore.updateLayer(selectedLayer.id, { [property]: value });
   }
 
-  function updateTransformProperty<K extends keyof Transform>(property: K, value: Transform[K]) {
+  // Animatable transform properties (excludes anchor which is not animatable)
+  type AnimatableTransformKey = Exclude<keyof Transform, 'anchor'>;
+
+  function updateTransformProperty<K extends AnimatableTransformKey>(
+    property: K,
+    value: Transform[K]
+  ) {
     if (!selectedLayer) return;
 
     // Map transform property to animatable property format
-    const transformPropertyMap: Record<keyof Transform, AnimatableProperty> = {
+    const transformPropertyMap: Record<AnimatableTransformKey, AnimatableProperty> = {
       x: 'position.x',
       y: 'position.y',
       z: 'position.z',
@@ -513,6 +558,38 @@
                 onInput: (v) => updateTransformProperty('rotationZ', v)
               })}
             </div>
+          </div>
+
+          <!-- Anchor Point -->
+          <div class="space-y-2">
+            <Label class="text-xs text-muted-foreground">Anchor Point</Label>
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger>
+                {#snippet child({ props })}
+                  <Button variant="outline" class="w-full justify-between" {...props}>
+                    {currentAnchorLabel}
+                    <ChevronDown class="ml-2 h-4 w-4 opacity-50" />
+                  </Button>
+                {/snippet}
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content class="w-56" align="end">
+                <div class="grid grid-cols-3 gap-0">
+                  {#each anchorOptions as option (option.value)}
+                    {@const isSelected = selectedLayer?.transform.anchor === option.value}
+                    {@const Icon = option.icon}
+                    <DropdownMenu.Item onclick={() => updateAnchor(option.value)}>
+                      {#snippet child({ props })}
+                        <Button
+                          variant={isSelected ? 'outline' : 'ghost'}
+                          icon={Icon}
+                          {...props}
+                        />
+                      {/snippet}
+                    </DropdownMenu.Item>
+                  {/each}
+                </div>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
           </div>
         </div>
 
