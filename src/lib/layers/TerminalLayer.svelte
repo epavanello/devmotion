@@ -20,31 +20,44 @@
 </script>
 
 <script lang="ts">
-  let { title, content, width, height, backgroundColor, textColor, fontSize, showBorder, borderColor }: TerminalLayerProps = $props();
+  let {
+    title,
+    content,
+    width,
+    height,
+    backgroundColor,
+    textColor,
+    fontSize,
+    showBorder,
+    borderColor
+  }: TerminalLayerProps = $props();
 </script>
 
 <div
-  class="flex flex-col rounded-lg overflow-hidden"
+  class="flex flex-col overflow-hidden rounded-lg"
   style:width="{width}px"
   style:height="{height}px"
   style:border={showBorder ? `1px solid ${borderColor}` : 'none'}
   style:background-color={backgroundColor}
 >
   <!-- Header -->
-  <div class="flex items-center justify-between px-4 py-2 border-b" style:border-color={borderColor}>
+  <div
+    class="flex items-center justify-between border-b px-4 py-2"
+    style:border-color={borderColor}
+  >
     <span class="text-xs font-semibold" style:color={textColor}>
       {title}
     </span>
     <div class="flex gap-1">
-      <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-      <div class="w-3 h-3 rounded-full bg-orange-500"></div>
-      <div class="w-3 h-3 rounded-full bg-red-500"></div>
+      <div class="h-3 w-3 rounded-full bg-yellow-500"></div>
+      <div class="h-3 w-3 rounded-full bg-orange-500"></div>
+      <div class="h-3 w-3 rounded-full bg-red-500"></div>
     </div>
   </div>
 
   <!-- Content -->
   <div
-    class="flex-1 p-4 font-mono overflow-hidden text-left whitespace-pre-wrap break-words"
+    class="flex-1 overflow-hidden p-4 text-left font-mono wrap-break-word whitespace-pre-wrap"
     style:font-size="{fontSize}px"
     style:color={textColor}
   >

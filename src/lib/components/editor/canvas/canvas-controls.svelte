@@ -20,21 +20,21 @@
 </script>
 
 <div
-  class="absolute right-4 bottom-4 flex items-center gap-2 rounded-lg border bg-background/95 p-2 shadow-lg"
+  class="absolute right-4 bottom-4 flex items-center rounded-lg border bg-background/95 p-2 shadow-lg"
 >
   <Button variant="ghost" size="sm" onclick={zoomIn} disabled={projectStore.isRecording}>
-    <ZoomIn class="h-4 w-4" />
+    <ZoomIn />
   </Button>
 
-  <span class="min-w-[3rem] text-center font-mono text-sm">
+  <span class="min-w-12 text-center font-mono text-sm">
     {zoomPercentage}%
   </span>
 
   <Button variant="ghost" size="sm" onclick={zoomOut} disabled={projectStore.isRecording}>
-    <ZoomOut class="h-4 w-4" />
+    <ZoomOut />
   </Button>
 
   <Button variant="ghost" size="sm" onclick={resetView} disabled={projectStore.isRecording}>
-    <Maximize class="h-4 w-4" />
+    <Maximize />
   </Button>
 </div>

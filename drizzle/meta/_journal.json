@@ -8,6 +8,13 @@
       "when": 1769027456063,
       "tag": "0000_round_roulette",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1769300175094,
+      "tag": "0001_majestic_hedge_knight",
+      "breakpoints": true
     }
   ]
 }

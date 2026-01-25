@@ -19,7 +19,16 @@
 </script>
 
 <script lang="ts">
-  let { url, width, height, phoneColor, borderRadius, notchHeight, showNotch, bezelWidth }: PhoneLayerProps = $props();
+  let {
+    url,
+    width,
+    height,
+    phoneColor,
+    borderRadius,
+    notchHeight,
+    showNotch,
+    bezelWidth
+  }: PhoneLayerProps = $props();
 </script>
 
 <div
@@ -33,7 +42,7 @@
   <!-- Notch -->
   {#if showNotch}
     <div
-      class="absolute left-1/2 top-0 z-20 -translate-x-1/2 bg-black rounded-b-2xl"
+      class="absolute top-0 left-1/2 z-20 -translate-x-1/2 rounded-b-2xl bg-black"
       style:width="{width * 0.5}px"
       style:height="{notchHeight}px"
     ></div>
@@ -41,20 +50,20 @@
 
   <!-- Screen content -->
   <div
-    class="relative w-full h-full overflow-hidden bg-white"
+    class="relative h-full w-full overflow-hidden bg-white"
     style:border-radius="{borderRadius - bezelWidth}px"
   >
     <iframe
       src={url}
       title="Phone content"
-      class="w-full h-full border-none pointer-events-none"
+      class="pointer-events-none h-full w-full border-none"
       sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-presentation allow-modals"
     ></iframe>
   </div>
 
   <!-- Home indicator -->
   <div
-    class="absolute bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-black bg-opacity-80 z-10"
+    class="bg-opacity-80 absolute bottom-1 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black"
     style:width="{width * 0.3}px"
     style:height="4px"
   ></div>

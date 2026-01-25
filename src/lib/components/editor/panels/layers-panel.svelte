@@ -2,11 +2,86 @@
   import { projectStore } from '$lib/stores/project.svelte';
   import { Button } from '$lib/components/ui/button';
   import { ScrollArea } from '$lib/components/ui/scroll-area';
-  import { Eye, EyeOff, Lock, Unlock, Trash2 } from 'lucide-svelte';
+  import {
+    Eye,
+    EyeOff,
+    Lock,
+    Unlock,
+    Trash2,
+    Plus,
+    Type,
+    Square,
+    Terminal,
+    MousePointer,
+    Zap,
+    Smartphone,
+    Globe,
+    Image
+  } from 'lucide-svelte';
   import type { Layer } from '$lib/types/animation';
-  import * as Tooltip from '$lib/components/ui/tooltip';
+  import Tooltip from '$lib/components/ui/tooltip';
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+  import { createTextLayer, createShapeLayer, createLayer } from '$lib/engine/layer-factory';
 
   let prompt = '';
+
+  const readonlyItems = [{ label: 'Image', icon: Image }];
+
+  function addTextLayer() {
+    const centerX = projectStore.project.width / 2;
+    const centerY = projectStore.project.height / 2;
+    const layer = createTextLayer(centerX, centerY);
+    projectStore.addLayer(layer);
+    projectStore.selectedLayerId = layer.id;
+  }
+
+  function addShapeLayer() {
+    const centerX = projectStore.project.width / 2;
+    const centerY = projectStore.project.height / 2;
+    const layer = createShapeLayer(centerX, centerY);
+    projectStore.addLayer(layer);
+    projectStore.selectedLayerId = layer.id;
+  }
+
+  function addTerminalLayer() {
+    const centerX = projectStore.project.width / 2;
+    const centerY = projectStore.project.height / 2;
+    const layer = createLayer('terminal', {}, { x: centerX, y: centerY });
+    projectStore.addLayer(layer);
+    projectStore.selectedLayerId = layer.id;
+  }
+
+  function addMouseLayer() {
+    const centerX = projectStore.project.width / 2;
+    const centerY = projectStore.project.height / 2;
+    const layer = createLayer('mouse', {}, { x: centerX, y: centerY });
+    projectStore.addLayer(layer);
+    projectStore.selectedLayerId = layer.id;
+  }
+
+  function addButtonLayer() {
+    const centerX = projectStore.project.width / 2;
+    const centerY = projectStore.project.height / 2;
+    const layer = createLayer('button', {}, { x: centerX, y: centerY });
+    projectStore.addLayer(layer);
+    projectStore.selectedLayerId = layer.id;
+  }
+
+  function addPhoneLayer() {
+    const centerX = projectStore.project.width / 2;
+    const centerY = projectStore.project.height / 2;
+    const layer = createLayer('phone', {}, { x: centerX, y: centerY });
+    projectStore.addLayer(layer);
+    projectStore.selectedLayerId = layer.id;
+  }
+
+  function addBrowserLayer() {
+    const centerX = projectStore.project.width / 2;
+    const centerY = projectStore.project.height / 2;
+    const layer = createLayer('browser', {}, { x: centerX, y: centerY });
+    projectStore.addLayer(layer);
+    projectStore.selectedLayerId = layer.id;
+  }
 
   function selectLayer(layerId: string) {
     projectStore.selectedLayerId = layerId;
@@ -61,8 +136,53 @@
   class:opacity-50={projectStore.isRecording}
 >
   <!-- Panel Header -->
-  <div class="border-b bg-muted/50 px-4 py-3">
+  <div class="flex items-center justify-between border-b bg-muted/50 px-4 py-3">
     <h2 class="text-sm font-semibold">Layers</h2>
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger disabled={projectStore.isRecording}>
+        <Button variant="outline" size="icon" disabled={projectStore.isRecording}>
+          <Plus />
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content align="start">
+        <DropdownMenu.Item onclick={addTextLayer}>
+          <Type class="mr-2 h-4 w-4" />
+          Text
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onclick={() => addShapeLayer()}>
+          <Square class="mr-2 h-4 w-4" />
+          Shape
+        </DropdownMenu.Item>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item onclick={addTerminalLayer}>
+          <Terminal class="mr-2 h-4 w-4" />
+          Terminal GUI
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onclick={addMouseLayer}>
+          <MousePointer class="mr-2 h-4 w-4" />
+          Mouse Pointer
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onclick={addButtonLayer}>
+          <Zap class="mr-2 h-4 w-4" />
+          Button
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onclick={addPhoneLayer}>
+          <Smartphone class="mr-2 h-4 w-4" />
+          Phone
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onclick={addBrowserLayer}>
+          <Globe class="mr-2 h-4 w-4" />
+          Browser
+        </DropdownMenu.Item>
+        {#each readonlyItems as item (item.label)}
+          <DropdownMenu.Item disabled>
+            {@const Icon = item.icon}
+            <Icon class="mr-2 h-4 w-4" />
+            {item.label}
+          </DropdownMenu.Item>
+        {/each}
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
   </div>
 
   <!-- Layers List -->
@@ -83,7 +203,7 @@
         >
           <!-- Layer Icon/Type -->
           <div
-            class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-primary/10 text-xs font-semibold"
+            class="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary/10 text-xs font-semibold"
           >
             {layer.name.charAt(0).toUpperCase()}
           </div>
@@ -151,17 +271,8 @@
       placeholder="Describe the animation you want to generate..."
       class="mb-3 flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
     ></textarea>
-    <Tooltip.Provider>
-      <Tooltip.Root>
-        <Tooltip.Trigger>
-          {#snippet child({ props })}
-            <Button class="w-full" {...props}>Generate</Button>
-          {/snippet}
-        </Tooltip.Trigger>
-        <Tooltip.Content>
-          <p>AI generation is coming soon!</p>
-        </Tooltip.Content>
-      </Tooltip.Root>
-    </Tooltip.Provider>
+    <Tooltip content="AI generation is coming soon!">
+      <Button class="w-full">Generate</Button>
+    </Tooltip>
   </div>
 </div>

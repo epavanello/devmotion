@@ -7,7 +7,14 @@
   import { Separator } from '$lib/components/ui/separator';
   import { Pin, Trash2 } from 'lucide-svelte';
   import { nanoid } from 'nanoid';
-  import type { AnimatableProperty, Transform, LayerStyle, Layer, EasingType, Easing } from '$lib/types/animation';
+  import type {
+    AnimatableProperty,
+    Transform,
+    LayerStyle,
+    Layer,
+    EasingType,
+    Easing
+  } from '$lib/types/animation';
   import {
     getAnimatedTransform,
     getAnimatedStyle,
@@ -554,9 +561,7 @@
                 {selectedLayer.keyframes.length} keyframe(s)
               </Label>
 
-              <div
-                class="max-h-[300px] space-y-1 overflow-y-auto rounded-md border bg-muted/20 p-2"
-              >
+              <div class="max-h-75 space-y-1 overflow-y-auto rounded-md border bg-muted/20 p-2">
                 {#each sortedKeyframes as keyframe (keyframe.id)}
                   <div
                     class="group rounded-sm bg-background px-2 py-1.5 text-xs transition-colors hover:bg-muted"
@@ -587,7 +592,8 @@
                     <div class="mt-1.5 ml-4">
                       <select
                         value={keyframe.easing.type}
-                        onchange={(e) => updateKeyframeEasing(keyframe.id, e.currentTarget.value as EasingType)}
+                        onchange={(e) =>
+                          updateKeyframeEasing(keyframe.id, e.currentTarget.value as EasingType)}
                         class="h-6 w-full rounded border border-input bg-transparent px-2 text-xs focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
                       >
                         {#each easingOptions as option (option.value)}

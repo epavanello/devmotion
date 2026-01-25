@@ -1,117 +1,70 @@
 <script lang="ts">
+  import AppHeader from '$lib/components/layout/app-header.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Separator } from '$lib/components/ui/separator';
   import {
-    Play,
-    Pause,
-    SkipBack,
-    Type,
-    Square,
-    Circle,
-    Triangle,
     Download,
     Upload,
     Save,
-    FileText,
-    Layers,
-    Fullscreen,
-    Terminal,
-    Image,
-    MousePointer,
-    Zap,
-    Smartphone,
-    Globe,
-    Github,
-    Settings
+    Settings,
+    User,
+    LogOut,
+    LogIn,
+    Keyboard,
+    Lock,
+    Unlock,
+    GitFork,
+    Loader2,
+    FileDown,
+    Trash
   } from 'lucide-svelte';
   import { projectStore } from '$lib/stores/project.svelte';
-  import { createTextLayer, createShapeLayer, createLayer } from '$lib/engine/layer-factory';
   import ExportDialog from './export-dialog.svelte';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+  import Tooltip from '$lib/components/ui/tooltip';
   import ProjectSettingsDialog from './project-settings-dialog.svelte';
+  import { getUser, signOut } from '$lib/functions/auth.remote';
+  import {
+    saveProject as saveProjectToDb,
+    toggleVisibility,
+    forkProject
+  } from '$lib/functions/projects.remote';
+  import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
+  import ProjectSwitcher from './project-switcher.svelte';
 
   interface Props {
     getCanvasElement: () => HTMLDivElement | undefined;
     isRecording?: boolean;
+    projectId?: string | null;
+    isOwner?: boolean;
+    canEdit?: boolean;
+    isPublic?: boolean;
   }
 
-  let { getCanvasElement, isRecording = $bindable(false) }: Props = $props();
+  let {
+    getCanvasElement,
+    isRecording = $bindable(false),
+    projectId = null,
+    isOwner = true,
+    canEdit = true,
+    isPublic = false
+  }: Props = $props();
+
+  let isSavingToCloud = $state(false);
 
   let showExportDialog = $state(false);
   let showProjectSettings = $state(false);
 
-  const readonlyItems = [{ label: 'Image', icon: Image }];
+  const user = $derived(await getUser());
 
-  function togglePlayback() {
-    if (projectStore.isPlaying) {
-      projectStore.pause();
-    } else {
-      projectStore.play();
-    }
-  }
+  const shortcuts = [
+    { key: 'Ctrl/Cmd + S', description: 'Save Project' },
+    { key: 'Ctrl/Cmd + O', description: 'Open Project' },
+    { key: 'Ctrl/Cmd + N', description: 'New Project' },
+    { key: 'Ctrl/Cmd + E', description: 'Export Video' }
+  ];
 
-  function resetPlayhead() {
-    projectStore.setCurrentTime(0);
-    projectStore.pause();
-  }
-
-  function addTextLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createTextLayer(centerX, centerY);
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addShapeLayer(shapeType: 'rectangle' | 'circle' | 'triangle') {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createShapeLayer(shapeType, centerX, centerY);
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addTerminalLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createLayer('terminal', {}, { x: centerX, y: centerY });
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addMouseLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createLayer('mouse', {}, { x: centerX, y: centerY });
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addButtonLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createLayer('button', {}, { x: centerX, y: centerY });
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addPhoneLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createLayer('phone', {}, { x: centerX, y: centerY });
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addBrowserLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createLayer('browser', {}, { x: centerX, y: centerY });
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function saveProject() {
+  function exportProject() {
     const json = projectStore.exportToJSON();
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -153,135 +106,193 @@
   function openProjectSettings() {
     showProjectSettings = true;
   }
+
+  function handleLogin() {
+    goto(resolve('/login'));
+  }
+
+  async function handleSaveToCloud() {
+    if (!user) return;
+
+    isSavingToCloud = true;
+    try {
+      const result = await saveProjectToDb({
+        id: projectId || undefined,
+        data: projectStore.project
+      });
+
+      if (result.success && result.data.id) {
+        if (!projectId) {
+          goto(resolve(`/p/${result.data.id}`));
+        }
+      }
+    } finally {
+      isSavingToCloud = false;
+    }
+  }
+
+  async function handleToggleVisibility() {
+    if (!projectId) return;
+    await toggleVisibility({ id: projectId });
+    isPublic = !isPublic;
+  }
+
+  async function handleFork() {
+    if (!projectId || !user) return;
+    const result = await forkProject({ id: projectId });
+    if (result.success && result.data.id) {
+      goto(resolve(`/p/${result.data.id}`));
+    }
+  }
 </script>
 
-<div class="flex items-center gap-2 bg-muted/50 p-2">
-  <!-- DevMotion Branding -->
-  <div class="flex items-center gap-2 pl-2">
-    <div
-      class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600"
-    >
-      <Fullscreen class="h-5 w-5 text-white" />
-    </div>
-    <span class="hidden font-bold text-foreground sm:inline">DevMotion</span>
-  </div>
+<AppHeader>
+  {#snippet leftContent()}
+    <!-- Project Switcher (only when logged in) -->
+    <Tooltip content={!user ? 'Login to switch projects' : undefined}>
+      <ProjectSwitcher currentProjectId={projectId} />
+    </Tooltip>
 
-  <Separator orientation="vertical" class="h-6" />
+    <!-- Project Actions -->
+    <div class="flex items-center gap-1">
+      <Tooltip content="Project Settings (Dimensions, Duration, etc.)">
+        <Button
+          variant="ghost"
+          onclick={() => openProjectSettings()}
+          disabled={isRecording || !canEdit}
+          icon={Settings}
+        />
+      </Tooltip>
 
-  <!-- Project Actions -->
-  <div class="flex items-center gap-1">
-    <Button variant="ghost" size="sm" onclick={() => openProjectSettings()} disabled={isRecording}>
-      <Settings class="h-4 w-4" />
-    </Button>
-    <Button variant="ghost" size="sm" onclick={newProject} disabled={isRecording}>
-      <FileText class="h-4 w-4" />
-    </Button>
-    <Button variant="ghost" size="sm" onclick={saveProject} disabled={isRecording}>
-      <Save class="h-4 w-4" />
-    </Button>
-    <Button variant="ghost" size="sm" onclick={loadProject} disabled={isRecording}>
-      <Upload class="h-4 w-4" />
-    </Button>
-  </div>
+      <Tooltip content="New Project (Ctrl/Cmd + N)">
+        <Button variant="ghost" onclick={newProject} disabled={isRecording} icon={Trash} />
+      </Tooltip>
 
-  <Separator orientation="vertical" class="h-6" />
+      <Tooltip content="Download as JSON">
+        <Button variant="ghost" onclick={exportProject} disabled={isRecording} icon={FileDown} />
+      </Tooltip>
 
-  <!-- Playback Controls -->
-  <div class="flex items-center gap-1">
-    <Button variant="ghost" size="sm" onclick={resetPlayhead} disabled={isRecording}>
-      <SkipBack class="h-4 w-4" />
-    </Button>
-    <Button variant="ghost" size="sm" onclick={togglePlayback} disabled={isRecording}>
-      {#if projectStore.isPlaying}
-        <Pause class="h-4 w-4" />
-      {:else}
-        <Play class="h-4 w-4" />
+      <Tooltip content="Load from JSON (Ctrl/Cmd + O)">
+        <Button variant="ghost" onclick={loadProject} disabled={isRecording} icon={Upload} />
+      </Tooltip>
+
+      {#if user}
+        <Tooltip content="Save to Cloud (Ctrl/Cmd + S)">
+          <Button
+            variant="ghost"
+            onclick={handleSaveToCloud}
+            disabled={isRecording || isSavingToCloud || !canEdit}
+          >
+            {#if isSavingToCloud}
+              <Loader2 class="h-4 w-4 animate-spin" />
+            {:else}
+              <Save />
+            {/if}
+          </Button>
+        </Tooltip>
       {/if}
-    </Button>
-  </div>
-
-  <Separator orientation="vertical" class="h-6" />
-
-  <!-- Creation Tools -->
-  <div class="flex items-center gap-1">
-    <Button variant="ghost" size="sm" onclick={addTextLayer} disabled={isRecording}>
-      <Type class="h-4 w-4" />
-    </Button>
-
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger disabled={isRecording}>
-        <Button variant="ghost" size="sm" disabled={isRecording}>
-          <Layers class="h-4 w-4" />
-        </Button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content>
-        <DropdownMenu.Item onclick={() => addShapeLayer('rectangle')}>
-          <Square class="mr-2 h-4 w-4" />
-          Rectangle
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => addShapeLayer('circle')}>
-          <Circle class="mr-2 h-4 w-4" />
-          Circle
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => addShapeLayer('triangle')}>
-          <Triangle class="mr-2 h-4 w-4" />
-          Triangle
-        </DropdownMenu.Item>
-        <DropdownMenu.Separator />
-        <DropdownMenu.Item onclick={addTerminalLayer}>
-          <Terminal class="mr-2 h-4 w-4" />
-          Terminal GUI
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={addMouseLayer}>
-          <MousePointer class="mr-2 h-4 w-4" />
-          Mouse Pointer
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={addButtonLayer}>
-          <Zap class="mr-2 h-4 w-4" />
-          Button
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={addPhoneLayer}>
-          <Smartphone class="mr-2 h-4 w-4" />
-          Phone
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={addBrowserLayer}>
-          <Globe class="mr-2 h-4 w-4" />
-          Browser
-        </DropdownMenu.Item>
-        {#each readonlyItems as item (item.label)}
-          <DropdownMenu.Item disabled>
-            {@const Icon = item.icon}
-            <Icon class="mr-2 h-4 w-4" />
-            {item.label}
-          </DropdownMenu.Item>
-        {/each}
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
-  </div>
-
-  <Separator orientation="vertical" class="h-6" />
-
-  <div class="flex-1"></div>
-
-  <!-- Export -->
-  <Button variant="default" size="sm" onclick={openExportDialog} disabled={isRecording}>
-    <Download class="mr-2 h-4 w-4" />
-    Export Video
-  </Button>
-
-  {#if isRecording}
-    <div
-      class="flex animate-pulse items-center gap-2 rounded-md bg-red-500 px-3 py-1 text-sm font-medium text-white"
-    >
-      <span class="h-2 w-2 rounded-full bg-white"></span>
-      Recording...
     </div>
-  {/if}
 
-  <a href="https://github.com/epavanello/devmotion" target="_blank" rel="noreferrer">
-    <Github class="mx-2 h-5 w-5" />
-  </a>
-</div>
+    <!-- Share/Fork Actions (only for saved projects) -->
+    {#if projectId}
+      <div class="flex items-center gap-1">
+        {#if isOwner}
+          <Tooltip content={isPublic ? 'Make Private' : 'Make Public'}>
+            <Button variant="ghost" onclick={handleToggleVisibility} disabled={isRecording}>
+              {#if isPublic}
+                <Unlock />
+              {:else}
+                <Lock />
+              {/if}
+            </Button>
+          </Tooltip>
+        {:else if user}
+          <Tooltip content="Fork Project">
+            <Button variant="ghost" onclick={handleFork} disabled={isRecording} icon={GitFork} />
+          </Tooltip>
+        {/if}
+      </div>
+    {/if}
+  {/snippet}
+
+  {#snippet rightContent()}
+    {#if isRecording}
+      <div
+        class="flex animate-pulse items-center gap-2 rounded-md bg-red-500 px-3 py-1 text-sm font-medium text-white"
+      >
+        <span class="h-2 w-2 rounded-full bg-white"></span>
+        Recording...
+      </div>
+    {/if}
+
+    <!-- Keyboard Shortcuts -->
+    <Tooltip content="Keyboard Shortcuts">
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger>
+          {#snippet child({ props })}
+            <Button variant="ghost" icon={Keyboard} {...props} />
+          {/snippet}
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content align="end" class="w-64">
+          <DropdownMenu.Label>Keyboard Shortcuts</DropdownMenu.Label>
+          <DropdownMenu.Separator />
+          {#each shortcuts as shortcut (shortcut.key)}
+            <div class="flex items-center justify-between px-2 py-1.5 text-sm">
+              <span class="text-muted-foreground">{shortcut.description}</span>
+              <kbd
+                class="pointer-events-none inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 select-none"
+              >
+                {shortcut.key}
+              </kbd>
+            </div>
+          {/each}
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    </Tooltip>
+
+    <!-- Export -->
+    <Tooltip content="Export as MP4 or WebM (Ctrl/Cmd + E)">
+      <Button variant="outline" onclick={openExportDialog} disabled={isRecording} icon={Download}>
+        Export Video
+      </Button>
+    </Tooltip>
+
+    <!-- User Menu -->
+    {#if user}
+      <Tooltip content="Account Menu">
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            {#snippet child({ props })}
+              <Button variant="ghost" icon={User} {...props} />
+            {/snippet}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="end">
+            <DropdownMenu.Label>
+              <div class="flex flex-col space-y-1">
+                <p class="text-sm leading-none font-medium">{user.name}</p>
+                <p class="text-xs leading-none text-muted-foreground">
+                  {user.email}
+                </p>
+              </div>
+            </DropdownMenu.Label>
+            <DropdownMenu.Separator />
+            <form {...signOut}>
+              <DropdownMenu.Item>
+                {#snippet child({ props })}
+                  <Button {...props} variant="ghost" type="submit" class="w-full">Logout</Button>
+                {/snippet}
+                <LogOut />
+                Logout
+              </DropdownMenu.Item>
+            </form>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      </Tooltip>
+    {:else}
+      <Button onclick={handleLogin} icon={LogIn}>Login</Button>
+    {/if}
+  {/snippet}
+</AppHeader>
 
 <ExportDialog
   open={showExportDialog}

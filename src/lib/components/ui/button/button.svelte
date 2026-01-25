@@ -1,5 +1,8 @@
 <script lang="ts" module>
+  /* eslint-disable svelte/no-navigation-without-resolve */
   import { cn, type WithElementRef } from '$lib/utils.js';
+  import { LoaderCircle } from 'lucide-svelte';
+  import type { ComponentType, Component } from 'svelte';
   import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements';
   import { type VariantProps, tv } from 'tailwind-variants';
 
@@ -38,6 +41,7 @@
     WithElementRef<HTMLAnchorAttributes> & {
       variant?: ButtonVariant;
       size?: ButtonSize;
+      icon?: ComponentType | Component;
     };
 </script>
 
@@ -49,11 +53,35 @@
     ref = $bindable(null),
     href = undefined,
     type = 'button',
-    disabled,
+    disabled: externalDisabled,
     children,
+    onclick,
+    icon,
     ...restProps
   }: ButtonProps = $props();
+
+  let isLoading = $state(false);
+  const disabled = $derived(externalDisabled || isLoading);
+
+  const handleClick: ButtonProps['onclick'] = (event) => {
+    const result = onclick?.(event as Parameters<NonNullable<ButtonProps['onclick']>>[0]);
+    if (result instanceof Promise) {
+      isLoading = true;
+      result.finally(() => {
+        isLoading = false;
+      });
+    }
+  };
 </script>
+
+{#snippet spinnerAndIcon()}
+  {#if isLoading}
+    <LoaderCircle class="animate-spin" />
+  {:else if icon}
+    {@const Icon = icon}
+    <Icon />
+  {/if}
+{/snippet}
 
 {#if href}
   <a
@@ -64,8 +92,10 @@
     aria-disabled={disabled}
     role={disabled ? 'link' : undefined}
     tabindex={disabled ? -1 : undefined}
+    onclick={handleClick}
     {...restProps}
   >
+    {@render spinnerAndIcon()}
     {@render children?.()}
   </a>
 {:else}
@@ -75,8 +105,10 @@
     class={cn(buttonVariants({ variant, size }), className)}
     {type}
     {disabled}
+    onclick={handleClick}
     {...restProps}
   >
+    {@render spinnerAndIcon()}
     {@render children?.()}
   </button>
 {/if}

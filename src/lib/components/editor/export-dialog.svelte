@@ -62,6 +62,9 @@
     const originalPan = { ...projectStore.viewport.pan };
 
     try {
+      // Stop playback if running
+      projectStore.pause();
+
       // Reset timeline to beginning
       projectStore.setCurrentTime(0);
 

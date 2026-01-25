@@ -1,7 +1,8 @@
 <script lang="ts">
   import '../app.css';
-  import favicon from '$lib/assets/favicon.svg';
   import { PUBLIC_BASE_URL } from '$env/static/public';
+  import { asset } from '$app/paths';
+  import JsonLd from '$lib/components/json-ld.svelte';
 
   // SEO Configuration for DevMotion
   const baseUrl = PUBLIC_BASE_URL;
@@ -11,34 +12,6 @@
   const keywords =
     'animation editor, video creator, ai animation, video export, motion graphics, animation software, free video editor, animated video maker';
   const twitterHandle = '@emadev01';
-
-  // Structured Data for Rich Snippets
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const schemaDataJson = JSON.stringify({
-    '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
-    name: 'DevMotion',
-    description,
-    url: baseUrl,
-    applicationCategory: 'MultimediaApplication',
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.8',
-      ratingCount: '1200'
-    },
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'USD'
-    },
-    operatingSystem: 'Web',
-    screenshot: `${baseUrl}/screenshot.png`,
-    softwareVersion: '1.0',
-    author: {
-      '@type': 'Organization',
-      name: 'DevMotion'
-    }
-  });
 
   let { children } = $props();
 </script>
@@ -81,8 +54,8 @@
   <meta name="googlebot" content="index, follow" />
 
   <!-- Favicon -->
-  <link rel="icon" href={favicon} type="image/svg+xml" />
-  <link rel="apple-touch-icon" href={favicon} />
+  <link rel="icon" href={asset('/favicon.svg')} type="image/svg+xml" />
+  <link rel="apple-touch-icon" href={asset('/favicon.svg')} />
   <link rel="manifest" href="/site.webmanifest" />
 
   <!-- Preconnect to External Resources -->
@@ -92,13 +65,37 @@
   <!-- Sitemap & RSS -->
   <link rel="sitemap" href="/sitemap.xml" />
 
-  <!-- Structured Data (JSON-LD) -->
-  <script type="application/ld+json">
-    {@html schemaDataJson}
-  </script>
-
   <!-- Alternative Titles for Dynamic Pages -->
   <title>{title}</title>
 </svelte:head>
+
+<!-- Structured Data (JSON-LD) -->
+<JsonLd
+  item={{
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'DevMotion',
+    description,
+    url: baseUrl,
+    applicationCategory: 'MultimediaApplication',
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.8',
+      ratingCount: '1200'
+    },
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD'
+    },
+    operatingSystem: 'Web',
+    // screenshot: `${baseUrl}/screenshot.png`,
+    softwareVersion: '1.0',
+    author: {
+      '@type': 'Organization',
+      name: 'DevMotion'
+    }
+  }}
+/>
 
 {@render children?.()}

@@ -12,6 +12,17 @@ class ProjectStore {
   #saveTimeout: ReturnType<typeof setTimeout> | null = null;
   #initialized = false;
 
+  selectedLayerId = $state<string | null>(null);
+  isPlaying = $state(false);
+  isRecording = $state(false);
+
+  // DB context state
+  dbProjectId = $state<string | null>(null);
+  isOwner = $state(true);
+  canEdit = $state(true);
+  isPublic = $state(false);
+  isSaving = $state(false);
+
   constructor() {
     // Load first, before setting up the effect
     this.project = this.loadFromLocalStorage();
@@ -86,9 +97,24 @@ class ProjectStore {
     snapToGrid: false
   });
 
-  selectedLayerId = $state<string | null>(null);
-  isPlaying = $state(false);
-  isRecording = $state(false);
+  get isDbProject(): boolean {
+    return this.dbProjectId !== null;
+  }
+
+  setDbContext(projectId: string | null, isOwner: boolean, canEdit: boolean, isPublic: boolean) {
+    this.dbProjectId = projectId;
+    this.isOwner = isOwner;
+    this.canEdit = canEdit;
+    this.isPublic = isPublic;
+  }
+
+  resetToNew() {
+    this.dbProjectId = null;
+    this.isOwner = true;
+    this.canEdit = true;
+    this.isPublic = false;
+    this.newProject();
+  }
 
   // Layer operations
   addLayer(layer: Layer) {
