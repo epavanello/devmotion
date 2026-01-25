@@ -1,6 +1,8 @@
 <script lang="ts" module>
+  /* eslint-disable svelte/no-navigation-without-resolve */
   import { cn, type WithElementRef } from '$lib/utils.js';
   import { LoaderCircle } from 'lucide-svelte';
+  import { type ComponentType } from 'svelte';
   import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements';
   import { type VariantProps, tv } from 'tailwind-variants';
 
@@ -39,6 +41,7 @@
     WithElementRef<HTMLAnchorAttributes> & {
       variant?: ButtonVariant;
       size?: ButtonSize;
+      icon?: ComponentType;
     };
 </script>
 
@@ -53,6 +56,7 @@
     disabled: externalDisabled,
     children,
     onclick,
+    icon,
     ...restProps
   }: ButtonProps = $props();
 
@@ -70,9 +74,12 @@
   };
 </script>
 
-{#snippet spinner()}
+{#snippet spinnerAndIcon()}
   {#if isLoading}
     <LoaderCircle class="animate-spin" />
+  {:else if icon}
+    {@const Icon = icon}
+    <Icon />
   {/if}
 {/snippet}
 
@@ -88,7 +95,7 @@
     onclick={handleClick}
     {...restProps}
   >
-    {@render spinner()}
+    {@render spinnerAndIcon()}
     {@render children?.()}
   </a>
 {:else}
@@ -101,7 +108,7 @@
     onclick={handleClick}
     {...restProps}
   >
-    {@render spinner()}
+    {@render spinnerAndIcon()}
     {@render children?.()}
   </button>
 {/if}

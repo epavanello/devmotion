@@ -46,10 +46,13 @@ export const forgotPassword = form(
 
 export const signOut = form(
   withErrorHandling(async () => {
-    const { request } = getRequestEvent();
+    const { request, locals } = getRequestEvent();
     await auth.api.signOut({
       headers: request.headers
     });
+    locals.session = null;
+    locals.user = null;
+    await getUser().refresh();
     redirect(303, '/');
   })
 );

@@ -42,7 +42,7 @@
 <DropdownMenu.Root bind:open={isOpen}>
   <DropdownMenu.Trigger disabled={!user}>
     {#snippet child({ props })}
-      <Button variant="ghost" size="sm" class="max-w-48" {...props}>
+      <Button variant="outline" size="sm" class="max-w-48" {...props}>
         <FolderOpen />
         <ChevronDown />
       </Button>

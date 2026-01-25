@@ -1,11 +1,12 @@
 <script lang="ts">
+  import Logo from './Logo.svelte';
+
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
   import {
     Download,
     Upload,
     Save,
-    Fullscreen,
     Github,
     Settings,
     User,
@@ -155,14 +156,16 @@
 
 <div class="flex items-center gap-2 bg-muted/50 p-2">
   <!-- DevMotion Branding -->
-  <div class="flex items-center gap-2 pl-2">
-    <div
-      class="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-blue-500 to-purple-600"
-    >
-      <Fullscreen class="h-5 w-5 text-white" />
-    </div>
-    <span class="hidden font-bold text-foreground sm:inline">DevMotion</span>
-  </div>
+  <Logo />
+
+  <Button
+    variant="ghost"
+    size="icon"
+    href="https://github.com/epavanello/devmotion"
+    target="_blank"
+    rel="noreferrer"
+    icon={Github}
+  />
 
   <Separator orientation="vertical" class="h-6" />
 
@@ -179,27 +182,20 @@
         variant="ghost"
         onclick={() => openProjectSettings()}
         disabled={isRecording || !canEdit}
-      >
-        <Settings />
-      </Button>
+        icon={Settings}
+      />
     </Tooltip>
 
     <Tooltip content="New Project (Ctrl/Cmd + N)">
-      <Button variant="ghost" onclick={newProject} disabled={isRecording}>
-        <Trash />
-      </Button>
+      <Button variant="ghost" onclick={newProject} disabled={isRecording} icon={Trash} />
     </Tooltip>
 
     <Tooltip content="Download as JSON">
-      <Button variant="ghost" onclick={exportProject} disabled={isRecording}>
-        <FileDown />
-      </Button>
+      <Button variant="ghost" onclick={exportProject} disabled={isRecording} icon={FileDown} />
     </Tooltip>
 
     <Tooltip content="Load from JSON (Ctrl/Cmd + O)">
-      <Button variant="ghost" onclick={loadProject} disabled={isRecording}>
-        <Upload />
-      </Button>
+      <Button variant="ghost" onclick={loadProject} disabled={isRecording} icon={Upload} />
     </Tooltip>
 
     {#if user}
@@ -235,9 +231,7 @@
         </Tooltip>
       {:else if user}
         <Tooltip content="Fork Project">
-          <Button variant="ghost" onclick={handleFork} disabled={isRecording}>
-            <GitFork />
-          </Button>
+          <Button variant="ghost" onclick={handleFork} disabled={isRecording} icon={GitFork} />
         </Tooltip>
       {/if}
     </div>
@@ -247,8 +241,7 @@
 
   <!-- Export -->
   <Tooltip content="Export as MP4 or WebM (Ctrl/Cmd + E)">
-    <Button variant="default" onclick={openExportDialog} disabled={isRecording}>
-      <Download class="mr-2 h-4 w-4" />
+    <Button variant="default" onclick={openExportDialog} disabled={isRecording} icon={Download}>
       Export Video
     </Button>
   </Tooltip>
@@ -268,9 +261,9 @@
   <Tooltip content="Keyboard Shortcuts">
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
-        <Button variant="ghost">
-          <Keyboard />
-        </Button>
+        {#snippet child({ props })}
+          <Button variant="ghost" icon={Keyboard} {...props} />
+        {/snippet}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="end" class="w-64">
         <DropdownMenu.Label>Keyboard Shortcuts</DropdownMenu.Label>
@@ -293,11 +286,11 @@
   <Tooltip content="Account Menu">
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
-        <Button variant="ghost">
-          <User />
-        </Button>
+        {#snippet child({ props })}
+          <Button variant="ghost" icon={User} {...props} />
+        {/snippet}
       </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="end" class="w-56">
+      <DropdownMenu.Content align="end">
         {#if user}
           <DropdownMenu.Label>
             <div class="flex flex-col space-y-1">
@@ -313,7 +306,7 @@
               {#snippet child({ props })}
                 <Button {...props} variant="ghost" type="submit" class="w-full">Logout</Button>
               {/snippet}
-              <LogOut class="mr-2 h-4 w-4" />
+              <LogOut />
               Logout
             </DropdownMenu.Item>
           </form>
@@ -321,27 +314,17 @@
           <DropdownMenu.Label>Not logged in</DropdownMenu.Label>
           <DropdownMenu.Separator />
           <DropdownMenu.Item onclick={handleLogin}>
-            <LogIn class="mr-2 h-4 w-4" />
+            <LogIn />
             Login
           </DropdownMenu.Item>
           <DropdownMenu.Item onclick={handleSignup}>
-            <UserPlus class="mr-2 h-4 w-4" />
+            <UserPlus />
             Sign Up
           </DropdownMenu.Item>
         {/if}
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   </Tooltip>
-
-  <Button
-    variant="ghost"
-    size="icon"
-    href="https://github.com/epavanello/devmotion"
-    target="_blank"
-    rel="noreferrer"
-  >
-    <Github />
-  </Button>
 </div>
 
 <ExportDialog

@@ -144,7 +144,7 @@
           <Plus />
         </Button>
       </DropdownMenu.Trigger>
-      <DropdownMenu.Content>
+      <DropdownMenu.Content align="start">
         <DropdownMenu.Item onclick={addTextLayer}>
           <Type class="mr-2 h-4 w-4" />
           Text
