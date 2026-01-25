@@ -90,7 +90,7 @@
 </script>
 
 <Dialog {open} onOpenChange={handleOpenChange}>
-  <DialogContent class="sm:max-w-[425px]">
+  <DialogContent class="sm:max-w-106.25">
     <DialogHeader>
       <DialogTitle class="flex items-center gap-2">
         <Settings class="h-5 w-5" />

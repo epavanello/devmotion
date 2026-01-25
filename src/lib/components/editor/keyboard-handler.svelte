@@ -66,15 +66,7 @@
       // R - Add rectangle
       if (e.key === 'r' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
-        const layer = createShapeLayer('rectangle', 0, 0);
-        projectStore.addLayer(layer);
-        projectStore.selectedLayerId = layer.id;
-      }
-
-      // C - Add circle
-      if (e.key === 'c' && !e.metaKey && !e.ctrlKey) {
-        e.preventDefault();
-        const layer = createShapeLayer('circle', 0, 0);
+        const layer = createShapeLayer(0, 0);
         projectStore.addLayer(layer);
         projectStore.selectedLayerId = layer.id;
       }

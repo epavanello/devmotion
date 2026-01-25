@@ -63,9 +63,11 @@
     'data-active': isActive,
     ...restProps
   });
+
+  type ButtonProps = Record<string, unknown>;
 </script>
 
-{#snippet Button({ props }: { props?: Record })}
+{#snippet Button(props?: ButtonProps)}
   {@const mergedProps = mergeProps(buttonProps, props)}
   {#if child}
     {@render child({ props: mergedProps })}
@@ -77,7 +79,7 @@
 {/snippet}
 
 {#if !tooltipContent}
-  {@render Button({})}
+  {@render Button()}
 {:else}
   <Tooltip.Root>
     <Tooltip.Trigger>

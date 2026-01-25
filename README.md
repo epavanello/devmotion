@@ -75,7 +75,6 @@ See [ANIMATION_EDITOR.md](./ANIMATION_EDITOR.md) for:
 | `Space`        | Play / Pause          |
 | `T`            | Add text layer        |
 | `R`            | Add rectangle         |
-| `C`            | Add circle            |
 | `Cmd/Ctrl + S` | Save project          |
 | `+` / `-`      | Zoom in / out         |
 | `Delete`       | Remove selected layer |
