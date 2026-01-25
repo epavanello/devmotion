@@ -561,9 +561,7 @@
                 {selectedLayer.keyframes.length} keyframe(s)
               </Label>
 
-              <div
-                class="max-h-[300px] space-y-1 overflow-y-auto rounded-md border bg-muted/20 p-2"
-              >
+              <div class="max-h-75 space-y-1 overflow-y-auto rounded-md border bg-muted/20 p-2">
                 {#each sortedKeyframes as keyframe (keyframe.id)}
                   <div
                     class="group rounded-sm bg-background px-2 py-1.5 text-xs transition-colors hover:bg-muted"

@@ -8,6 +8,15 @@
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from '$lib/components/ui/resizable';
   import { projectStore } from '$lib/stores/project.svelte';
 
+  interface Props {
+    projectId?: string | null;
+    isOwner?: boolean;
+    canEdit?: boolean;
+    isPublic?: boolean;
+  }
+
+  let { projectId = null, isOwner = true, canEdit = true, isPublic = false }: Props = $props();
+
   let projectViewport: HTMLDivElement | undefined = $state();
 </script>
 
@@ -16,7 +25,7 @@
 <div class="flex h-screen w-full flex-col bg-background">
   <!-- Toolbar -->
   <div class="border-b">
-    <Toolbar getCanvasElement={() => projectViewport} />
+    <Toolbar getCanvasElement={() => projectViewport} {projectId} {isOwner} {canEdit} {isPublic} />
   </div>
 
   <!-- Main Content Area -->

@@ -7,6 +7,7 @@
     getAnimatedProps
   } from '$lib/engine/interpolation';
   import CanvasControls from './canvas-controls.svelte';
+  import PlaybackControls from './playback-controls.svelte';
   import LayerWrapper from '$lib/layers/LayerWrapper.svelte';
   import { getLayerComponent, getLayerSchema } from '$lib/layers/registry';
   import { extractPropertyMetadata } from '$lib/layers/base';
@@ -287,6 +288,7 @@
   </div>
 
   {#if !isRecording}
+    <PlaybackControls />
     <CanvasControls />
   {/if}
 </div>

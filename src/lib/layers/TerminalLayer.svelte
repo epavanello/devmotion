@@ -57,7 +57,7 @@
 
   <!-- Content -->
   <div
-    class="flex-1 overflow-hidden p-4 text-left font-mono break-words whitespace-pre-wrap"
+    class="flex-1 overflow-hidden p-4 text-left font-mono wrap-break-word whitespace-pre-wrap"
     style:font-size="{fontSize}px"
     style:color={textColor}
   >

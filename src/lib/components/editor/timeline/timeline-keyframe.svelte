@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Keyframe } from '$lib/types/animation';
   import { projectStore } from '$lib/stores/project.svelte';
-  import * as Tooltip from '$lib/components/ui/tooltip';
+  import Tooltip from '$lib/components/ui/tooltip';
 
   interface Props {
     keyframes: Keyframe[];
@@ -75,16 +75,8 @@
   }
 </script>
 
-<Tooltip.Root delayDuration={0}>
-  <Tooltip.Trigger
-    class="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2
-    cursor-pointer rounded-sm bg-primary transition-transform hover:scale-125"
-    style="left: {position}px"
-    onclick={handleClick}
-    onkeydown={handleKeyDown}
-    oncontextmenu={handleDelete}
-  />
-  <Tooltip.Content>
+<Tooltip delayDuration={0}>
+  {#snippet content()}
     <div class="space-y-1 text-xs">
       <div class="font-semibold">
         Time: {firstKeyframe.time.toFixed(2)}s
@@ -113,5 +105,14 @@
           : `Right-click to delete all ${keyframes.length} keyframes`}
       </div>
     </div>
-  </Tooltip.Content>
-</Tooltip.Root>
+  {/snippet}
+  <button
+    class="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-sm bg-primary transition-transform hover:scale-125"
+    style="left: {position}px"
+    onclick={handleClick}
+    onkeydown={handleKeyDown}
+    oncontextmenu={handleDelete}
+    aria-label="Keyframe at {firstKeyframe.time.toFixed(2)}s"
+  >
+  </button>
+</Tooltip>

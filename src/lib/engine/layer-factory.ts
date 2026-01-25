@@ -81,8 +81,8 @@ export function createTextLayer(x = 0, y = 0): Layer {
 /**
  * Convenience function for creating shape layers
  */
-export function createShapeLayer(shapeType: string, x = 0, y = 0): Layer {
-  return createLayer('shape', { shapeType }, { x, y });
+export function createShapeLayer(x = 0, y = 0): Layer {
+  return createLayer('shape', {}, { x, y });
 }
 
 /**

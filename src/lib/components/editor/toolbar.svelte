@@ -2,138 +2,72 @@
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
   import {
-    Play,
-    Pause,
-    SkipBack,
-    Type,
-    Square,
-    Circle,
-    Triangle,
     Download,
     Upload,
     Save,
-    FileText,
-    Layers,
     Fullscreen,
-    Terminal,
-    Image,
-    MousePointer,
-    Zap,
-    Smartphone,
-    Globe,
     Github,
     Settings,
     User,
     LogOut,
     LogIn,
     UserPlus,
-    Keyboard
+    Keyboard,
+    Lock,
+    Unlock,
+    GitFork,
+    Loader2,
+    FileDown,
+    Trash
   } from 'lucide-svelte';
   import { projectStore } from '$lib/stores/project.svelte';
-  import { createTextLayer, createShapeLayer, createLayer } from '$lib/engine/layer-factory';
   import ExportDialog from './export-dialog.svelte';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+  import Tooltip from '$lib/components/ui/tooltip';
   import ProjectSettingsDialog from './project-settings-dialog.svelte';
-  import { authClient } from '$lib/auth-client';
-  import { signOut } from '$lib/functions/auth.remote';
+  import { getUser, signOut } from '$lib/functions/auth.remote';
+  import {
+    saveProject as saveProjectToDb,
+    toggleVisibility,
+    forkProject
+  } from '$lib/functions/projects.remote';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
+  import ProjectSwitcher from './project-switcher.svelte';
 
   interface Props {
     getCanvasElement: () => HTMLDivElement | undefined;
     isRecording?: boolean;
+    projectId?: string | null;
+    isOwner?: boolean;
+    canEdit?: boolean;
+    isPublic?: boolean;
   }
 
-  let { getCanvasElement, isRecording = $bindable(false) }: Props = $props();
+  let {
+    getCanvasElement,
+    isRecording = $bindable(false),
+    projectId = null,
+    isOwner = true,
+    canEdit = true,
+    isPublic = false
+  }: Props = $props();
+
+  let isSavingToCloud = $state(false);
 
   let showExportDialog = $state(false);
   let showProjectSettings = $state(false);
-  let showShortcuts = $state(false);
 
-  const session = authClient.useSession();
-  const readonlyItems = [{ label: 'Image', icon: Image }];
+  const user = $derived(await getUser());
 
   const shortcuts = [
-    { key: 'Space', description: 'Play/Pause' },
     { key: 'Ctrl/Cmd + S', description: 'Save Project' },
     { key: 'Ctrl/Cmd + O', description: 'Open Project' },
     { key: 'Ctrl/Cmd + N', description: 'New Project' },
-    { key: 'Ctrl/Cmd + E', description: 'Export Video' },
-    { key: 'T', description: 'Add Text Layer' },
-    { key: 'R', description: 'Add Rectangle' },
-    { key: '0', description: 'Reset Playhead' }
+    { key: 'Ctrl/Cmd + E', description: 'Export Video' }
   ];
 
-  function togglePlayback() {
-    if (projectStore.isPlaying) {
-      projectStore.pause();
-    } else {
-      projectStore.play();
-    }
-  }
-
-  function resetPlayhead() {
-    projectStore.setCurrentTime(0);
-    projectStore.pause();
-  }
-
-  function addTextLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createTextLayer(centerX, centerY);
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addShapeLayer(shapeType: 'rectangle' | 'circle' | 'triangle') {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createShapeLayer(shapeType, centerX, centerY);
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addTerminalLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createLayer('terminal', {}, { x: centerX, y: centerY });
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addMouseLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createLayer('mouse', {}, { x: centerX, y: centerY });
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addButtonLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createLayer('button', {}, { x: centerX, y: centerY });
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addPhoneLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createLayer('phone', {}, { x: centerX, y: centerY });
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addBrowserLayer() {
-    const centerX = projectStore.project.width / 2;
-    const centerY = projectStore.project.height / 2;
-    const layer = createLayer('browser', {}, { x: centerX, y: centerY });
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function saveProject() {
+  function exportProject() {
     const json = projectStore.exportToJSON();
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -183,13 +117,47 @@
   function handleSignup() {
     goto(resolve('/signup'));
   }
+
+  async function handleSaveToCloud() {
+    if (!user) return;
+
+    isSavingToCloud = true;
+    try {
+      const result = await saveProjectToDb({
+        id: projectId || undefined,
+        data: projectStore.project
+      });
+
+      if (result.success && result.data.id) {
+        if (!projectId) {
+          goto(resolve(`/p/${result.data.id}`));
+        }
+      }
+    } finally {
+      isSavingToCloud = false;
+    }
+  }
+
+  async function handleToggleVisibility() {
+    if (!projectId) return;
+    await toggleVisibility({ id: projectId });
+    isPublic = !isPublic;
+  }
+
+  async function handleFork() {
+    if (!projectId || !user) return;
+    const result = await forkProject({ id: projectId });
+    if (result.success && result.data.id) {
+      goto(resolve(`/p/${result.data.id}`));
+    }
+  }
 </script>
 
 <div class="flex items-center gap-2 bg-muted/50 p-2">
   <!-- DevMotion Branding -->
   <div class="flex items-center gap-2 pl-2">
     <div
-      class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600"
+      class="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-blue-500 to-purple-600"
     >
       <Fullscreen class="h-5 w-5 text-white" />
     </div>
@@ -198,106 +166,92 @@
 
   <Separator orientation="vertical" class="h-6" />
 
+  <!-- Project Switcher (only when logged in) -->
+  <Tooltip content={!user ? 'Login to switch projects' : undefined}>
+    <ProjectSwitcher currentProjectId={projectId} />
+  </Tooltip>
+  <Separator orientation="vertical" class="h-6" />
+
   <!-- Project Actions -->
   <div class="flex items-center gap-1">
-    <Button variant="ghost" size="sm" onclick={() => openProjectSettings()} disabled={isRecording}>
-      <Settings class="h-4 w-4" />
-    </Button>
-    <Button variant="ghost" size="sm" onclick={newProject} disabled={isRecording}>
-      <FileText class="h-4 w-4" />
-    </Button>
-    <Button variant="ghost" size="sm" onclick={saveProject} disabled={isRecording}>
-      <Save class="h-4 w-4" />
-    </Button>
-    <Button variant="ghost" size="sm" onclick={loadProject} disabled={isRecording}>
-      <Upload class="h-4 w-4" />
-    </Button>
-  </div>
+    <Tooltip content="Project Settings (Dimensions, Duration, etc.)">
+      <Button
+        variant="ghost"
+        onclick={() => openProjectSettings()}
+        disabled={isRecording || !canEdit}
+      >
+        <Settings />
+      </Button>
+    </Tooltip>
 
-  <Separator orientation="vertical" class="h-6" />
+    <Tooltip content="New Project (Ctrl/Cmd + N)">
+      <Button variant="ghost" onclick={newProject} disabled={isRecording}>
+        <Trash />
+      </Button>
+    </Tooltip>
 
-  <!-- Playback Controls -->
-  <div class="flex items-center gap-1">
-    <Button variant="ghost" size="sm" onclick={resetPlayhead} disabled={isRecording}>
-      <SkipBack class="h-4 w-4" />
-    </Button>
-    <Button variant="ghost" size="sm" onclick={togglePlayback} disabled={isRecording}>
-      {#if projectStore.isPlaying}
-        <Pause class="h-4 w-4" />
-      {:else}
-        <Play class="h-4 w-4" />
-      {/if}
-    </Button>
-  </div>
+    <Tooltip content="Download as JSON">
+      <Button variant="ghost" onclick={exportProject} disabled={isRecording}>
+        <FileDown />
+      </Button>
+    </Tooltip>
 
-  <Separator orientation="vertical" class="h-6" />
+    <Tooltip content="Load from JSON (Ctrl/Cmd + O)">
+      <Button variant="ghost" onclick={loadProject} disabled={isRecording}>
+        <Upload />
+      </Button>
+    </Tooltip>
 
-  <!-- Creation Tools -->
-  <div class="flex items-center gap-1">
-    <Button variant="ghost" size="sm" onclick={addTextLayer} disabled={isRecording}>
-      <Type class="h-4 w-4" />
-    </Button>
-
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger disabled={isRecording}>
-        <Button variant="ghost" size="sm" disabled={isRecording}>
-          <Layers class="h-4 w-4" />
+    {#if user}
+      <Tooltip content="Save to Cloud (Ctrl/Cmd + S)">
+        <Button
+          variant="ghost"
+          onclick={handleSaveToCloud}
+          disabled={isRecording || isSavingToCloud || !canEdit}
+        >
+          {#if isSavingToCloud}
+            <Loader2 class="h-4 w-4 animate-spin" />
+          {:else}
+            <Save />
+          {/if}
         </Button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content>
-        <DropdownMenu.Item onclick={() => addShapeLayer('rectangle')}>
-          <Square class="mr-2 h-4 w-4" />
-          Rectangle
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => addShapeLayer('circle')}>
-          <Circle class="mr-2 h-4 w-4" />
-          Circle
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => addShapeLayer('triangle')}>
-          <Triangle class="mr-2 h-4 w-4" />
-          Triangle
-        </DropdownMenu.Item>
-        <DropdownMenu.Separator />
-        <DropdownMenu.Item onclick={addTerminalLayer}>
-          <Terminal class="mr-2 h-4 w-4" />
-          Terminal GUI
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={addMouseLayer}>
-          <MousePointer class="mr-2 h-4 w-4" />
-          Mouse Pointer
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={addButtonLayer}>
-          <Zap class="mr-2 h-4 w-4" />
-          Button
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={addPhoneLayer}>
-          <Smartphone class="mr-2 h-4 w-4" />
-          Phone
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={addBrowserLayer}>
-          <Globe class="mr-2 h-4 w-4" />
-          Browser
-        </DropdownMenu.Item>
-        {#each readonlyItems as item (item.label)}
-          <DropdownMenu.Item disabled>
-            {@const Icon = item.icon}
-            <Icon class="mr-2 h-4 w-4" />
-            {item.label}
-          </DropdownMenu.Item>
-        {/each}
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
+      </Tooltip>
+    {/if}
   </div>
 
-  <Separator orientation="vertical" class="h-6" />
+  <!-- Share/Fork Actions (only for saved projects) -->
+  {#if projectId}
+    <Separator orientation="vertical" class="h-6" />
+    <div class="flex items-center gap-1">
+      {#if isOwner}
+        <Tooltip content={isPublic ? 'Make Private' : 'Make Public'}>
+          <Button variant="ghost" onclick={handleToggleVisibility} disabled={isRecording}>
+            {#if isPublic}
+              <Unlock />
+            {:else}
+              <Lock />
+            {/if}
+          </Button>
+        </Tooltip>
+      {:else if user}
+        <Tooltip content="Fork Project">
+          <Button variant="ghost" onclick={handleFork} disabled={isRecording}>
+            <GitFork />
+          </Button>
+        </Tooltip>
+      {/if}
+    </div>
+  {/if}
 
   <div class="flex-1"></div>
 
   <!-- Export -->
-  <Button variant="default" size="sm" onclick={openExportDialog} disabled={isRecording}>
-    <Download class="mr-2 h-4 w-4" />
-    Export Video
-  </Button>
+  <Tooltip content="Export as MP4 or WebM (Ctrl/Cmd + E)">
+    <Button variant="default" onclick={openExportDialog} disabled={isRecording}>
+      <Download class="mr-2 h-4 w-4" />
+      Export Video
+    </Button>
+  </Tooltip>
 
   {#if isRecording}
     <div
@@ -311,71 +265,83 @@
   <Separator orientation="vertical" class="h-6" />
 
   <!-- Keyboard Shortcuts -->
-  <DropdownMenu.Root>
-    <DropdownMenu.Trigger>
-      <Button variant="ghost" size="sm" title="Keyboard Shortcuts">
-        <Keyboard class="h-4 w-4" />
-      </Button>
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="end" class="w-64">
-      <DropdownMenu.Label>Keyboard Shortcuts</DropdownMenu.Label>
-      <DropdownMenu.Separator />
-      {#each shortcuts as shortcut (shortcut.key)}
-        <div class="flex items-center justify-between px-2 py-1.5 text-sm">
-          <span class="text-muted-foreground">{shortcut.description}</span>
-          <kbd
-            class="pointer-events-none inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 select-none"
-          >
-            {shortcut.key}
-          </kbd>
-        </div>
-      {/each}
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
+  <Tooltip content="Keyboard Shortcuts">
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger>
+        <Button variant="ghost">
+          <Keyboard />
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content align="end" class="w-64">
+        <DropdownMenu.Label>Keyboard Shortcuts</DropdownMenu.Label>
+        <DropdownMenu.Separator />
+        {#each shortcuts as shortcut (shortcut.key)}
+          <div class="flex items-center justify-between px-2 py-1.5 text-sm">
+            <span class="text-muted-foreground">{shortcut.description}</span>
+            <kbd
+              class="pointer-events-none inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 select-none"
+            >
+              {shortcut.key}
+            </kbd>
+          </div>
+        {/each}
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+  </Tooltip>
 
   <!-- User Menu -->
-  <DropdownMenu.Root>
-    <DropdownMenu.Trigger>
-      <Button variant="ghost" size="sm" title="Account">
-        <User class="h-4 w-4" />
-      </Button>
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="end" class="w-56">
-      {#if $session.data}
-        <DropdownMenu.Label>
-          <div class="flex flex-col space-y-1">
-            <p class="text-sm leading-none font-medium">{$session.data.user.name}</p>
-            <p class="text-xs leading-none text-muted-foreground">{$session.data.user.email}</p>
-          </div>
-        </DropdownMenu.Label>
-        <DropdownMenu.Separator />
-        <DropdownMenu.Item>
-          {#snippet child({ props })}
-            <form {...signOut}>
-              <button type="submit" class="flex w-full items-center" {...props}> Logout </button>
-            </form>
-          {/snippet}
-          <LogOut class="mr-2 h-4 w-4" />
-          Logout
-        </DropdownMenu.Item>
-      {:else}
-        <DropdownMenu.Label>Not logged in</DropdownMenu.Label>
-        <DropdownMenu.Separator />
-        <DropdownMenu.Item onclick={handleLogin}>
-          <LogIn class="mr-2 h-4 w-4" />
-          Login
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={handleSignup}>
-          <UserPlus class="mr-2 h-4 w-4" />
-          Sign Up
-        </DropdownMenu.Item>
-      {/if}
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
+  <Tooltip content="Account Menu">
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger>
+        <Button variant="ghost">
+          <User />
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content align="end" class="w-56">
+        {#if user}
+          <DropdownMenu.Label>
+            <div class="flex flex-col space-y-1">
+              <p class="text-sm leading-none font-medium">{user.name}</p>
+              <p class="text-xs leading-none text-muted-foreground">
+                {user.email}
+              </p>
+            </div>
+          </DropdownMenu.Label>
+          <DropdownMenu.Separator />
+          <form {...signOut}>
+            <DropdownMenu.Item>
+              {#snippet child({ props })}
+                <Button {...props} variant="ghost" type="submit" class="w-full">Logout</Button>
+              {/snippet}
+              <LogOut class="mr-2 h-4 w-4" />
+              Logout
+            </DropdownMenu.Item>
+          </form>
+        {:else}
+          <DropdownMenu.Label>Not logged in</DropdownMenu.Label>
+          <DropdownMenu.Separator />
+          <DropdownMenu.Item onclick={handleLogin}>
+            <LogIn class="mr-2 h-4 w-4" />
+            Login
+          </DropdownMenu.Item>
+          <DropdownMenu.Item onclick={handleSignup}>
+            <UserPlus class="mr-2 h-4 w-4" />
+            Sign Up
+          </DropdownMenu.Item>
+        {/if}
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+  </Tooltip>
 
-  <a href="https://github.com/epavanello/devmotion" target="_blank" rel="noreferrer">
-    <Github class="mx-2 h-5 w-5" />
-  </a>
+  <Button
+    variant="ghost"
+    size="icon"
+    href="https://github.com/epavanello/devmotion"
+    target="_blank"
+    rel="noreferrer"
+  >
+    <Github />
+  </Button>
 </div>
 
 <ExportDialog
