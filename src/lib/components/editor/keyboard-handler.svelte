@@ -58,7 +58,7 @@
       // T - Add text layer
       if (e.key === 't' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
-        const layer = createTextLayer(0, 0);
+        const layer = createTextLayer();
         projectStore.addLayer(layer);
         projectStore.selectedLayerId = layer.id;
       }
@@ -66,7 +66,7 @@
       // R - Add rectangle
       if (e.key === 'r' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
-        const layer = createShapeLayer(0, 0);
+        const layer = createShapeLayer('rectangle');
         projectStore.addLayer(layer);
         projectStore.selectedLayerId = layer.id;
       }

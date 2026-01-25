@@ -16,56 +16,29 @@
     Zap,
     Smartphone,
     Globe,
-    Image
+    Star,
+    Minus,
+    Tag,
+    Loader,
+    Code
   } from 'lucide-svelte';
   import type { Layer } from '$lib/types/animation';
-  import Tooltip from '$lib/components/ui/tooltip';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-  import { createTextLayer, createShapeLayer, createLayer } from '$lib/engine/layer-factory';
+  import { createLayer } from '$lib/engine/layer-factory';
+  import AiChat from '$lib/components/ai/ai-chat.svelte';
+  import { toast } from 'svelte-sonner';
 
-  let prompt = '';
-
-  const readonlyItems = [{ label: 'Image', icon: Image }];
+  function handleAiMessage(message: string, type: 'success' | 'error') {
+    if (type === 'success') {
+      toast.success(message);
+    } else {
+      toast.error(message);
+    }
+  }
 
   // Note: Coordinate system has (0, 0) at canvas center
-  function addTextLayer() {
-    const layer = createTextLayer(0, 0);
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addShapeLayer() {
-    const layer = createShapeLayer(0, 0);
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addTerminalLayer() {
-    const layer = createLayer('terminal', {}, { x: 0, y: 0 });
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addMouseLayer() {
-    const layer = createLayer('mouse', {}, { x: 0, y: 0 });
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addButtonLayer() {
-    const layer = createLayer('button', {}, { x: 0, y: 0 });
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addPhoneLayer() {
-    const layer = createLayer('phone', {}, { x: 0, y: 0 });
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addBrowserLayer() {
-    const layer = createLayer('browser', {}, { x: 0, y: 0 });
+  function addLayer(type: string) {
+    const layer = createLayer(type as import('$lib/types/animation').LayerType, {}, { x: 0, y: 0 });
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }
@@ -131,43 +104,64 @@
           <Plus />
         </Button>
       </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="start">
-        <DropdownMenu.Item onclick={addTextLayer}>
+      <DropdownMenu.Content align="start" class="max-h-80 overflow-y-auto">
+        <DropdownMenu.Label>Basic</DropdownMenu.Label>
+        <DropdownMenu.Item onclick={() => addLayer('text')}>
           <Type class="mr-2 h-4 w-4" />
           Text
         </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => addShapeLayer()}>
+        <DropdownMenu.Item onclick={() => addLayer('shape')}>
           <Square class="mr-2 h-4 w-4" />
           Shape
         </DropdownMenu.Item>
-        <DropdownMenu.Separator />
-        <DropdownMenu.Item onclick={addTerminalLayer}>
-          <Terminal class="mr-2 h-4 w-4" />
-          Terminal GUI
+        <DropdownMenu.Item onclick={() => addLayer('icon')}>
+          <Star class="mr-2 h-4 w-4" />
+          Icon
         </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={addMouseLayer}>
-          <MousePointer class="mr-2 h-4 w-4" />
-          Mouse Pointer
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={addButtonLayer}>
+        <DropdownMenu.Item onclick={() => addLayer('button')}>
           <Zap class="mr-2 h-4 w-4" />
           Button
         </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={addPhoneLayer}>
+
+        <DropdownMenu.Separator />
+        <DropdownMenu.Label>UI Elements</DropdownMenu.Label>
+        <DropdownMenu.Item onclick={() => addLayer('progress')}>
+          <Loader class="mr-2 h-4 w-4" />
+          Progress
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onclick={() => addLayer('divider')}>
+          <Minus class="mr-2 h-4 w-4" />
+          Divider
+        </DropdownMenu.Item>
+
+        <DropdownMenu.Separator />
+        <DropdownMenu.Label>Code & Terminal</DropdownMenu.Label>
+        <DropdownMenu.Item onclick={() => addLayer('terminal')}>
+          <Terminal class="mr-2 h-4 w-4" />
+          Terminal
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onclick={() => addLayer('code')}>
+          <Code class="mr-2 h-4 w-4" />
+          Code Block
+        </DropdownMenu.Item>
+
+        <DropdownMenu.Separator />
+        <DropdownMenu.Label>Mockups</DropdownMenu.Label>
+        <DropdownMenu.Item onclick={() => addLayer('phone')}>
           <Smartphone class="mr-2 h-4 w-4" />
           Phone
         </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={addBrowserLayer}>
+        <DropdownMenu.Item onclick={() => addLayer('browser')}>
           <Globe class="mr-2 h-4 w-4" />
           Browser
         </DropdownMenu.Item>
-        {#each readonlyItems as item (item.label)}
-          <DropdownMenu.Item disabled>
-            {@const Icon = item.icon}
-            <Icon class="mr-2 h-4 w-4" />
-            {item.label}
-          </DropdownMenu.Item>
-        {/each}
+
+        <DropdownMenu.Separator />
+        <DropdownMenu.Label>Interaction</DropdownMenu.Label>
+        <DropdownMenu.Item onclick={() => addLayer('mouse')}>
+          <MousePointer class="mr-2 h-4 w-4" />
+          Mouse Cursor
+        </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   </div>
@@ -249,17 +243,6 @@
     </div>
   </ScrollArea>
 
-  <!-- Prompt Input Section -->
-  <div class="border-b bg-background p-4">
-    <label for="prompt" class="mb-2 block text-xs font-medium">Generate Animation</label>
-    <textarea
-      id="prompt"
-      bind:value={prompt}
-      placeholder="Describe the animation you want to generate..."
-      class="mb-3 flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-    ></textarea>
-    <Tooltip content="AI generation is coming soon!">
-      <Button class="w-full">Generate</Button>
-    </Tooltip>
-  </div>
+  <!-- AI Generation Section -->
+  <AiChat onMessage={handleAiMessage} />
 </div>

@@ -1,11 +1,12 @@
 import { command, getRequestEvent, query } from '$app/server';
 import { db } from '$lib/server/db';
-import { project, projectDataSchema } from '$lib/server/db/schema';
+import { project } from '$lib/server/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { z } from 'zod';
 import { withErrorHandling } from '.';
 import { nanoid } from 'nanoid';
 import { invalid } from '@sveltejs/kit';
+import { projectDataSchema } from '$lib/schemas/animation';
 
 export const saveProject = command(
   z.object({

@@ -9,6 +9,10 @@ import MouseLayer, { schema as MouseLayerPropsSchema } from './MouseLayer.svelte
 import ButtonLayer, { schema as ButtonLayerPropsSchema } from './ButtonLayer.svelte';
 import PhoneLayer, { schema as PhoneLayerPropsSchema } from './PhoneLayer.svelte';
 import BrowserLayer, { schema as BrowserLayerPropsSchema } from './BrowserLayer.svelte';
+import IconLayer, { schema as IconLayerPropsSchema } from './IconLayer.svelte';
+import DividerLayer, { schema as DividerLayerPropsSchema } from './DividerLayer.svelte';
+import ProgressLayer, { schema as ProgressLayerPropsSchema } from './ProgressLayer.svelte';
+import CodeLayer, { schema as CodeLayerPropsSchema } from './CodeLayer.svelte';
 import type { LayerComponentDefinition } from './base';
 
 /**
@@ -50,7 +54,7 @@ export const layerRegistry: Record<string, LayerComponentDefinition> = {
   button: {
     type: 'button',
     displayName: 'Button',
-    icon: 'ClickSquare',
+    icon: 'SquareMousePointer',
     customPropsSchema: ButtonLayerPropsSchema,
     component: ButtonLayer
   },
@@ -69,6 +73,38 @@ export const layerRegistry: Record<string, LayerComponentDefinition> = {
     icon: 'Globe',
     customPropsSchema: BrowserLayerPropsSchema,
     component: BrowserLayer
+  },
+
+  icon: {
+    type: 'icon',
+    displayName: 'Icon',
+    icon: 'Star',
+    customPropsSchema: IconLayerPropsSchema,
+    component: IconLayer
+  },
+
+  divider: {
+    type: 'divider',
+    displayName: 'Divider',
+    icon: 'Minus',
+    customPropsSchema: DividerLayerPropsSchema,
+    component: DividerLayer
+  },
+
+  progress: {
+    type: 'progress',
+    displayName: 'Progress',
+    icon: 'Loader',
+    customPropsSchema: ProgressLayerPropsSchema,
+    component: ProgressLayer
+  },
+
+  code: {
+    type: 'code',
+    displayName: 'Code',
+    icon: 'Code',
+    customPropsSchema: CodeLayerPropsSchema,
+    component: CodeLayer
   }
 } as const;
 
