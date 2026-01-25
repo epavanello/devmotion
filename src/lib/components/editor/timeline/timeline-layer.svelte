@@ -2,7 +2,6 @@
   import type { Layer, Keyframe } from '$lib/types/animation';
   import { projectStore } from '$lib/stores/project.svelte';
   import TimelineKeyframe from './timeline-keyframe.svelte';
-  import { SvelteMap } from 'svelte/reactivity';
 
   interface Props {
     layer: Layer;
@@ -15,7 +14,8 @@
 
   // Group keyframes by timestamp
   const keyframeGroups = $derived(() => {
-    const groups = new SvelteMap<number, Keyframe[]>();
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
+    const groups = new Map<number, Keyframe[]>();
     for (const keyframe of layer.keyframes) {
       const existing = groups.get(keyframe.time);
       if (existing) {
