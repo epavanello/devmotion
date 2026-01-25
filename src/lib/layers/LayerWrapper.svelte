@@ -1,4 +1,4 @@
-<script lang="ts" generics="T extends Record<string, any> = {}">
+<script lang="ts" generics="T extends Record<string, unknown>">
   import { generateTransformCSS, type BaseLayerProps } from './base';
   import { projectStore } from '$lib/stores/project.svelte';
   import { getAnimatedTransform } from '$lib/engine/interpolation';

@@ -173,18 +173,6 @@
       projectStore.pause();
       projectStore.setCurrentTime(0);
 
-      // Try to restore viewport (may not have been saved yet)
-      try {
-        const zoom = projectStore.viewport.zoom;
-        if (zoom !== 1) {
-          // Viewport was already modified, leave it
-        } else {
-          // Could restore here if we track state differently
-        }
-      } catch (e) {
-        // Ignore
-      }
-
       isExporting = false;
       isRecording = false;
       projectStore.isRecording = false;
@@ -195,7 +183,7 @@
 </script>
 
 <Dialog {open} {onOpenChange}>
-  <DialogContent class="sm:max-w-[425px]">
+  <DialogContent class="sm:max-w-106.25">
     <DialogHeader>
       <DialogTitle>Export Video</DialogTitle>
       <DialogDescription>
@@ -205,7 +193,7 @@
 
     {#if errorMessage}
       <div class="flex items-start gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-        <AlertCircle class="mt-0.5 h-4 w-4 flex-shrink-0" />
+        <AlertCircle class="mt-0.5 h-4 w-4 shrink-0" />
         <div>{errorMessage}</div>
       </div>
     {/if}
