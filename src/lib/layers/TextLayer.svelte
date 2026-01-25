@@ -14,10 +14,7 @@
       .describe('Font weight'),
     autoWidth: z.boolean().default(true).describe('Auto width'),
     width: z.number().min(10).max(5000).default(400).describe('Width (px)'),
-    textAlign: z
-      .enum(['left', 'center', 'right'])
-      .default('center')
-      .describe('Text alignment'),
+    textAlign: z.enum(['left', 'center', 'right']).default('center').describe('Text alignment'),
     color: z.string().default('#ffffff').describe('Text color')
   });
 

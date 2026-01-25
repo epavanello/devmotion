@@ -1,4 +1,4 @@
-import { command, form, getRequestEvent, query } from '$app/server';
+import { form, getRequestEvent, query } from '$app/server';
 import { auth } from '$lib/server/auth';
 import { redirect } from '@sveltejs/kit';
 import { z } from 'zod';

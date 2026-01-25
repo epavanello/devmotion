@@ -16,10 +16,7 @@
       .enum(['normal', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900'])
       .default('bold')
       .describe('Font weight'),
-    style: z
-      .enum(['solid', 'outline', 'ghost'])
-      .default('solid')
-      .describe('Button style variant'),
+    style: z.enum(['solid', 'outline', 'ghost']).default('solid').describe('Button style variant'),
     borderColor: z.string().default('#3b82f6').describe('Border color (for outline/ghost)'),
     shadow: z.boolean().default(true).describe('Show shadow')
   });
@@ -28,7 +25,19 @@
 </script>
 
 <script lang="ts">
-  let { text, width, height, backgroundColor, textColor, fontSize, borderRadius, fontWeight, style, borderColor, shadow }: ButtonLayerProps = $props();
+  let {
+    text,
+    width,
+    height,
+    backgroundColor,
+    textColor,
+    fontSize,
+    borderRadius,
+    fontWeight,
+    style,
+    borderColor,
+    shadow
+  }: ButtonLayerProps = $props();
 
   const buttonClasses = $derived.by(() => {
     let classes = 'flex items-center justify-center font-semibold transition-all active:scale-95';
