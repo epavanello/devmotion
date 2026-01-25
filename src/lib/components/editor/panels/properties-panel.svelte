@@ -579,11 +579,7 @@
                     {@const Icon = option.icon}
                     <DropdownMenu.Item onclick={() => updateAnchor(option.value)}>
                       {#snippet child({ props })}
-                        <Button
-                          variant={isSelected ? 'outline' : 'ghost'}
-                          icon={Icon}
-                          {...props}
-                        />
+                        <Button variant={isSelected ? 'outline' : 'ghost'} icon={Icon} {...props} />
                       {/snippet}
                     </DropdownMenu.Item>
                   {/each}

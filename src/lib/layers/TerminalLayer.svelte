@@ -4,7 +4,7 @@
   /**
    * Schema for Terminal Layer custom properties
    */
-  export const TerminalLayerPropsSchema = z.object({
+  export const schema = z.object({
     title: z.string().default('Terminal').describe('Terminal window title'),
     content: z.string().default('$ Welcome to terminal').describe('Terminal content/text'),
     width: z.number().min(200).max(2000).default(600).describe('Width (px)'),
@@ -16,7 +16,7 @@
     borderColor: z.string().default('#404040').describe('Border color')
   });
 
-  export type TerminalLayerProps = z.infer<typeof TerminalLayerPropsSchema>;
+  export type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">
@@ -30,7 +30,7 @@
     fontSize,
     showBorder,
     borderColor
-  }: TerminalLayerProps = $props();
+  }: Props = $props();
 </script>
 
 <div

@@ -3,7 +3,7 @@
   /**
    * Schema for Image Layer custom properties
    */
-  export const ImageLayerPropsSchema = z.object({
+  export const schema = z.object({
     src: z.string().default('').describe('Image source URL'),
     width: z.number().min(1).max(5000).default(400).describe('Width (px)'),
     height: z.number().min(1).max(5000).default(300).describe('Height (px)'),
@@ -13,11 +13,11 @@
       .describe('Object fit mode')
   });
 
-  export type ImageLayerProps = z.infer<typeof ImageLayerPropsSchema>;
+  export type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">
-  let { src, width, height, objectFit }: ImageLayerProps = $props();
+  let { src, width, height, objectFit }: Props = $props();
 </script>
 
 <div class="overflow-hidden" style:width="{width}px" style:height="{height}px">

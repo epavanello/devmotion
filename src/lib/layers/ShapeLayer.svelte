@@ -4,7 +4,7 @@
   /**
    * Schema for Shape Layer custom properties
    */
-  export const ShapeLayerPropsSchema = z.object({
+  export const schema = z.object({
     shapeType: z
       .enum(['rectangle', 'circle', 'triangle', 'polygon'])
       .default('rectangle')
@@ -24,7 +24,7 @@
     sides: z.number().min(3).max(12).default(6).optional().describe('Number of sides for polygon')
   });
 
-  export type ShapeLayerProps = z.infer<typeof ShapeLayerPropsSchema>;
+  export type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">
@@ -37,7 +37,7 @@
     strokeWidth,
     radius = 100,
     sides = 6
-  }: ShapeLayerProps = $props();
+  }: Props = $props();
 
   /**
    * Generate clip-path for triangle

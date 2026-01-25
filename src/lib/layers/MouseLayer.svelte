@@ -4,7 +4,7 @@
   /**
    * Schema for Mouse Layer custom properties
    */
-  export const MouseLayerPropsSchema = z.object({
+  export const schema = z.object({
     pointerType: z
       .enum(['arrow', 'pointer', 'hand', 'crosshair', 'text'])
       .default('arrow')
@@ -14,13 +14,13 @@
     backgroundColor: z.string().default('#000000').describe('Background circle color')
   });
 
-  export type MouseLayerProps = z.infer<typeof MouseLayerPropsSchema>;
+  export type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">
   import { Hand, Crosshair, Pointer, MousePointer2, TextCursor } from 'lucide-svelte';
 
-  let { pointerType, size, color, backgroundColor }: MouseLayerProps = $props();
+  let { pointerType, size, color, backgroundColor }: Props = $props();
 
   const iconMap = {
     arrow: MousePointer2,

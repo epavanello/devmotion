@@ -4,7 +4,7 @@
   /**
    * Schema for Button Layer custom properties
    */
-  export const ButtonLayerPropsSchema = z.object({
+  export const schema = z.object({
     text: z.string().default('Click me').describe('Button text'),
     width: z.number().min(50).max(500).default(120).describe('Width (px)'),
     height: z.number().min(30).max(150).default(48).describe('Height (px)'),
@@ -21,7 +21,7 @@
     shadow: z.boolean().default(true).describe('Show shadow')
   });
 
-  export type ButtonLayerProps = z.infer<typeof ButtonLayerPropsSchema>;
+  export type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">
@@ -37,7 +37,7 @@
     style,
     borderColor,
     shadow
-  }: ButtonLayerProps = $props();
+  }: Props = $props();
 
   const buttonClasses = $derived.by(() => {
     let classes = 'flex items-center justify-center font-semibold transition-all active:scale-95';

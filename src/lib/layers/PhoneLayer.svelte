@@ -4,7 +4,7 @@
   /**
    * Schema for Phone Layer custom properties
    */
-  export const PhoneLayerPropsSchema = z.object({
+  export const schema = z.object({
     url: z.string().default('https://example.com').describe('URL to display in iframe'),
     width: z.number().min(200).max(600).default(375).describe('Phone width (px)'),
     height: z.number().min(400).max(1200).default(667).describe('Phone height (px)'),
@@ -15,20 +15,12 @@
     bezelWidth: z.number().min(8).max(20).default(12).describe('Bezel width (px)')
   });
 
-  export type PhoneLayerProps = z.infer<typeof PhoneLayerPropsSchema>;
+  export type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">
-  let {
-    url,
-    width,
-    height,
-    phoneColor,
-    borderRadius,
-    notchHeight,
-    showNotch,
-    bezelWidth
-  }: PhoneLayerProps = $props();
+  let { url, width, height, phoneColor, borderRadius, notchHeight, showNotch, bezelWidth }: Props =
+    $props();
 </script>
 
 <div

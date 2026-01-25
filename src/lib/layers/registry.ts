@@ -2,13 +2,13 @@
  * Layer component registry
  * Maps layer types to their Svelte components and Zod schemas
  */
-import TextLayer, { TextLayerPropsSchema } from './TextLayer.svelte';
-import ShapeLayer, { ShapeLayerPropsSchema } from './ShapeLayer.svelte';
-import TerminalLayer, { TerminalLayerPropsSchema } from './TerminalLayer.svelte';
-import MouseLayer, { MouseLayerPropsSchema } from './MouseLayer.svelte';
-import ButtonLayer, { ButtonLayerPropsSchema } from './ButtonLayer.svelte';
-import PhoneLayer, { PhoneLayerPropsSchema } from './PhoneLayer.svelte';
-import BrowserLayer, { BrowserLayerPropsSchema } from './BrowserLayer.svelte';
+import TextLayer, { schema as TextLayerPropsSchema } from './TextLayer.svelte';
+import ShapeLayer, { schema as ShapeLayerPropsSchema } from './ShapeLayer.svelte';
+import TerminalLayer, { schema as TerminalLayerPropsSchema } from './TerminalLayer.svelte';
+import MouseLayer, { schema as MouseLayerPropsSchema } from './MouseLayer.svelte';
+import ButtonLayer, { schema as ButtonLayerPropsSchema } from './ButtonLayer.svelte';
+import PhoneLayer, { schema as PhoneLayerPropsSchema } from './PhoneLayer.svelte';
+import BrowserLayer, { schema as BrowserLayerPropsSchema } from './BrowserLayer.svelte';
 import type { LayerComponentDefinition } from './base';
 
 /**

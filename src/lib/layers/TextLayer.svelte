@@ -42,7 +42,7 @@
   /**
    * Schema for Text Layer custom properties
    */
-  export const TextLayerPropsSchema = z.object({
+  export const schema = z.object({
     content: z.string().default('New Text').describe('Text content'),
     fontSize: z.number().min(8).max(500).default(48).describe('Font size (px)'),
     fontFamily: z.enum(googleFontValues).default('Inter').describe('Font family'),
@@ -56,20 +56,12 @@
     color: z.string().default('#ffffff').describe('Text color')
   });
 
-  export type TextLayerProps = z.infer<typeof TextLayerPropsSchema>;
+  export type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">
-  let {
-    content,
-    fontSize,
-    fontFamily,
-    fontWeight,
-    autoWidth,
-    width,
-    textAlign,
-    color
-  }: TextLayerProps = $props();
+  let { content, fontSize, fontFamily, fontWeight, autoWidth, width, textAlign, color }: Props =
+    $props();
 
   const fontUrl = $derived(getGoogleFontUrl(fontFamily as GoogleFont));
 </script>

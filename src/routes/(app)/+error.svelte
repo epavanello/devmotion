@@ -44,7 +44,7 @@
     </div>
 
     <!-- Error Message -->
-    <div class="max-w-md text-center space-y-2">
+    <div class="max-w-md space-y-2 text-center">
       <h2 class="text-2xl font-semibold tracking-tight">{errorInfo.title}</h2>
       <p class="text-muted-foreground">{errorInfo.description}</p>
     </div>
@@ -63,8 +63,7 @@
         <summary class="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
           Debug Information
         </summary>
-        <pre
-          class="mt-4 rounded-lg bg-muted p-4 text-xs overflow-auto">{JSON.stringify(
+        <pre class="mt-4 overflow-auto rounded-lg bg-muted p-4 text-xs">{JSON.stringify(
             $page.error,
             null,
             2

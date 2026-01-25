@@ -4,7 +4,7 @@
   /**
    * Schema for Browser Layer custom properties
    */
-  export const BrowserLayerPropsSchema = z.object({
+  export const schema = z.object({
     url: z.string().default('https://example.com').describe('URL to display in iframe'),
     width: z.number().min(300).max(2000).default(1024).describe('Browser width (px)'),
     height: z.number().min(300).max(1200).default(600).describe('Browser height (px)'),
@@ -16,7 +16,7 @@
     showTabs: z.boolean().default(true).describe('Show tab bar')
   });
 
-  export type BrowserLayerProps = z.infer<typeof BrowserLayerPropsSchema>;
+  export type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">
@@ -30,7 +30,7 @@
     showDevTools,
     devToolsHeight,
     showTabs
-  }: BrowserLayerProps = $props();
+  }: Props = $props();
 
   const contentHeight = $derived(showDevTools ? height - 90 - devToolsHeight : height - 90);
 </script>
