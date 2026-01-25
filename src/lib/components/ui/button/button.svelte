@@ -2,7 +2,7 @@
   /* eslint-disable svelte/no-navigation-without-resolve */
   import { cn, type WithElementRef } from '$lib/utils.js';
   import { LoaderCircle } from 'lucide-svelte';
-  import { type ComponentType } from 'svelte';
+  import type { ComponentType, Component } from 'svelte';
   import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements';
   import { type VariantProps, tv } from 'tailwind-variants';
 
@@ -41,7 +41,7 @@
     WithElementRef<HTMLAnchorAttributes> & {
       variant?: ButtonVariant;
       size?: ButtonSize;
-      icon?: ComponentType;
+      icon?: ComponentType | Component;
     };
 </script>
 

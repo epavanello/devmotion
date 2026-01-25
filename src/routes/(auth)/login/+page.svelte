@@ -63,8 +63,13 @@
         {/if}
         <Field.Field>
           <Button type="submit" class="w-full" disabled={!!login.pending}>Login</Button>
-          <Button type="button" variant="outline" class="w-full" onclick={handleGoogleLogin}>
-            <GoogleIcon />
+          <Button
+            type="button"
+            variant="outline"
+            class="w-full"
+            onclick={handleGoogleLogin}
+            icon={GoogleIcon}
+          >
             Login with Google
           </Button>
           <Field.Description class="text-center">
