@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { projectStore } from '$lib/stores/project.svelte';
-  import { createTextLayer, createShapeLayer } from '$lib/engine/layer-factory';
+  import { createLayer } from '$lib/engine/layer-factory';
 
   onMount(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -58,7 +58,7 @@
       // T - Add text layer
       if (e.key === 't' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
-        const layer = createTextLayer();
+        const layer = createLayer('text');
         projectStore.addLayer(layer);
         projectStore.selectedLayerId = layer.id;
       }
@@ -66,7 +66,7 @@
       // R - Add rectangle
       if (e.key === 'r' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
-        const layer = createShapeLayer('rectangle');
+        const layer = createLayer('shape');
         projectStore.addLayer(layer);
         projectStore.selectedLayerId = layer.id;
       }

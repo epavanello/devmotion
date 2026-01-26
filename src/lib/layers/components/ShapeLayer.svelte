@@ -1,10 +1,12 @@
 <script module lang="ts">
   import { z } from 'zod';
+  import type { LayerMeta } from '../registry';
+  import { Square } from 'lucide-svelte';
 
   /**
    * Schema for Shape Layer custom properties
    */
-  export const schema = z.object({
+  const schema = z.object({
     shapeType: z
       .enum(['rectangle', 'circle', 'triangle', 'polygon'])
       .default('rectangle')
@@ -24,7 +26,14 @@
     sides: z.number().min(3).max(12).default(6).optional().describe('Number of sides for polygon')
   });
 
-  export type Props = z.infer<typeof schema>;
+  export const meta: LayerMeta = {
+    schema,
+    type: 'shape',
+    label: 'Shape',
+    icon: Square
+  };
+
+  type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">

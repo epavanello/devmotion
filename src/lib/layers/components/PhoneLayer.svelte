@@ -1,10 +1,12 @@
 <script module lang="ts">
   import { z } from 'zod';
+  import type { LayerMeta } from '../registry';
+  import { Smartphone } from 'lucide-svelte';
 
   /**
    * Schema for Phone Layer custom properties
    */
-  export const schema = z.object({
+  const schema = z.object({
     url: z.string().default('https://example.com').describe('URL to display in iframe'),
     width: z.number().min(200).max(600).default(375).describe('Phone width (px)'),
     height: z.number().min(400).max(1200).default(667).describe('Phone height (px)'),
@@ -15,7 +17,14 @@
     bezelWidth: z.number().min(8).max(20).default(12).describe('Bezel width (px)')
   });
 
-  export type Props = z.infer<typeof schema>;
+  export const meta: LayerMeta = {
+    schema,
+    type: 'phone',
+    label: 'Phone',
+    icon: Smartphone
+  };
+
+  type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">

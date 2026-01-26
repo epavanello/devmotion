@@ -1,10 +1,12 @@
 <script module lang="ts">
   import { z } from 'zod';
+  import type { LayerMeta } from '../registry';
+  import { Globe } from 'lucide-svelte';
 
   /**
    * Schema for Browser Layer custom properties
    */
-  export const schema = z.object({
+  const schema = z.object({
     url: z.string().default('https://example.com').describe('URL to display in iframe'),
     width: z.number().min(300).max(2000).default(1024).describe('Browser width (px)'),
     height: z.number().min(300).max(1200).default(600).describe('Browser height (px)'),
@@ -16,7 +18,14 @@
     showTabs: z.boolean().default(true).describe('Show tab bar')
   });
 
-  export type Props = z.infer<typeof schema>;
+  export const meta: LayerMeta = {
+    schema,
+    type: 'browser',
+    label: 'Browser',
+    icon: Globe
+  };
+
+  type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">

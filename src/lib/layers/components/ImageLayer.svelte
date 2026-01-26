@@ -1,9 +1,12 @@
 <script module lang="ts">
   import { z } from 'zod';
+  import type { LayerMeta } from '../registry';
+  import { Image } from 'lucide-svelte';
+
   /**
    * Schema for Image Layer custom properties
    */
-  export const schema = z.object({
+  const schema = z.object({
     src: z.string().default('').describe('Image source URL'),
     width: z.number().min(1).max(5000).default(400).describe('Width (px)'),
     height: z.number().min(1).max(5000).default(300).describe('Height (px)'),
@@ -13,7 +16,14 @@
       .describe('Object fit mode')
   });
 
-  export type Props = z.infer<typeof schema>;
+  export const meta: LayerMeta = {
+    schema,
+    type: 'image',
+    label: 'Image',
+    icon: Image
+  };
+
+  type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">

@@ -1,10 +1,12 @@
 <script module lang="ts">
   import { z } from 'zod';
+  import type { LayerMeta } from '../registry';
+  import { Star } from 'lucide-svelte';
 
   /**
    * Common Lucide icon names for motion graphics
    */
-  export const CommonIcons = {
+  const CommonIcons = {
     // Arrows & Navigation
     ArrowRight: 'arrow-right',
     ArrowLeft: 'arrow-left',
@@ -104,14 +106,14 @@
     Youtube: 'youtube'
   } as const;
 
-  export type CommonIcon = (typeof CommonIcons)[keyof typeof CommonIcons];
+  type CommonIcon = (typeof CommonIcons)[keyof typeof CommonIcons];
 
-  export const commonIconValues = Object.values(CommonIcons) as [CommonIcon, ...CommonIcon[]];
+  const commonIconValues = Object.values(CommonIcons) as [CommonIcon, ...CommonIcon[]];
 
   /**
    * Schema for Icon Layer custom properties
    */
-  export const schema = z.object({
+  const schema = z.object({
     icon: z.enum(commonIconValues).default('star').describe('Icon name (Lucide icon)'),
     size: z.number().min(16).max(512).default(64).describe('Icon size (px)'),
     color: z.string().default('#ffffff').describe('Icon color'),
@@ -122,7 +124,14 @@
     backgroundPadding: z.number().min(0).max(64).default(0).describe('Background padding')
   });
 
-  export type Props = z.infer<typeof schema>;
+  export const meta: LayerMeta = {
+    schema,
+    type: 'icon',
+    label: 'Icon',
+    icon: Star
+  };
+
+  type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">

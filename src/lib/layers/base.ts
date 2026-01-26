@@ -3,6 +3,7 @@
  */
 import { z } from 'zod';
 import type { Component } from 'svelte';
+import type { LayerMeta } from './registry';
 
 /**
  * Anchor point options for layer positioning
@@ -61,35 +62,11 @@ export type BaseLayerProps = z.infer<typeof BaseLayerSchema>;
 /**
  * Layer component definition with schema and component
  */
-export interface LayerComponentDefinition<
-  T extends z.ZodObject<z.ZodRawShape> = z.ZodObject<z.ZodRawShape>
-> {
-  /**
-   * Unique identifier for this layer type
-   */
-  type: string;
-
-  /**
-   * Display name for UI
-   */
-  displayName: string;
-
-  /**
-   * Icon component or name
-   */
-  icon?: string;
-
-  /**
-   * Zod schema for this layer's custom properties
-   * This schema is merged with BaseLayerSchema at runtime
-   */
-  customPropsSchema: T;
-
+export interface LayerComponentDefinition extends LayerMeta {
   /**
    * The Svelte component that renders this layer
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  component: Component<any>;
+  component: Component;
 }
 
 /**

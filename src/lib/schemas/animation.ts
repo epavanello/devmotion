@@ -114,7 +114,6 @@ export const LayerTypeSchema = z.enum([
   'phone',
   'browser',
   'icon',
-  'divider',
   'progress',
   'code'
 ]);

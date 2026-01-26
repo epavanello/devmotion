@@ -1,11 +1,13 @@
 <script module lang="ts">
   import { z } from 'zod';
+  import type { LayerMeta } from '../registry';
+  import { Code } from 'lucide-svelte';
 
   /**
    * Schema for Code Layer custom properties
    * Perfect for showing code snippets in tech videos
    */
-  export const schema = z.object({
+  const schema = z.object({
     code: z.string().default('const hello = "world";').describe('Code content'),
     language: z
       .enum(['javascript', 'typescript', 'python', 'html', 'css', 'json', 'bash', 'text'])
@@ -30,7 +32,14 @@
     headerColor: z.string().default('#2d2d2d').describe('Header background color')
   });
 
-  export type Props = z.infer<typeof schema>;
+  export const meta: LayerMeta = {
+    schema,
+    type: 'code',
+    label: 'Code Block',
+    icon: Code
+  };
+
+  type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">

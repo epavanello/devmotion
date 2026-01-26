@@ -1,10 +1,12 @@
 <script module lang="ts">
   import { z } from 'zod';
+  import type { LayerMeta } from '../registry';
+  import { Zap } from 'lucide-svelte';
 
   /**
    * Schema for Button Layer custom properties
    */
-  export const schema = z.object({
+  const schema = z.object({
     text: z.string().default('Click me').describe('Button text'),
     width: z.number().min(50).max(500).default(120).describe('Width (px)'),
     height: z.number().min(30).max(150).default(48).describe('Height (px)'),
@@ -21,7 +23,14 @@
     shadow: z.boolean().default(true).describe('Show shadow')
   });
 
-  export type Props = z.infer<typeof schema>;
+  export const meta: LayerMeta = {
+    schema,
+    type: 'button',
+    label: 'Button',
+    icon: Zap
+  };
+
+  type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">

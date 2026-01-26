@@ -1,11 +1,13 @@
 <script module lang="ts">
   import { z } from 'zod';
+  import type { LayerMeta } from '../registry';
+  import { Loader } from 'lucide-svelte';
 
   /**
    * Schema for Progress Bar Layer custom properties
    * Great for showing loading states, completion, stats
    */
-  export const schema = z.object({
+  const schema = z.object({
     progress: z.number().min(0).max(100).default(75).describe('Progress percentage (0-100)'),
     width: z.number().min(50).max(1000).default(300).describe('Bar width (px)'),
     height: z.number().min(4).max(60).default(12).describe('Bar height (px)'),
@@ -22,7 +24,14 @@
     gradientEnd: z.string().default('#8b5cf6').describe('Gradient end color')
   });
 
-  export type Props = z.infer<typeof schema>;
+  export const meta: LayerMeta = {
+    schema,
+    type: 'progress',
+    label: 'Progress',
+    icon: Loader
+  };
+
+  type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">

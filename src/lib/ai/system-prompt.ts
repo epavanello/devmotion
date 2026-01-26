@@ -494,8 +494,8 @@ function buildLayerTypesReference(): string {
   return layerTypes
     .map((type) => {
       const definition = layerRegistry[type];
-      const metadata = extractPropertyMetadata(definition.customPropsSchema);
-      const defaults = extractDefaultValues(definition.customPropsSchema);
+      const metadata = extractPropertyMetadata(definition.schema);
+      const defaults = extractDefaultValues(definition.schema);
 
       // Identify required/important props
       const requiredProps = getRequiredPropsForType(type);
@@ -517,7 +517,7 @@ function buildLayerTypesReference(): string {
         })
         .join('\n');
 
-      return `### ${definition.displayName} (type: "${type}")
+      return `### ${definition.label} (type: "${type}")
 ${getLayerUsageHint(type)}
 Props:
 ${propsDesc}`;
@@ -538,7 +538,6 @@ function getRequiredPropsForType(type: LayerType): string[] {
     browser: ['width', 'height'],
     mouse: ['pointerType'],
     icon: ['icon', 'size', 'color'],
-    divider: ['length', 'thickness', 'color'],
     progress: ['progress', 'width', 'progressColor'],
     code: ['code', 'language', 'width']
   };
@@ -559,7 +558,6 @@ function getLayerUsageHint(type: LayerType): string {
     browser: 'Desktop browser mockup. Perfect for website showcases.',
     mouse: 'Cursor animation. Use with position animations to show interactions.',
     icon: 'Lucide icons for visual elements. Perfect for feature icons, social media, UI elements.',
-    divider: 'Lines and separators. Use between sections or as decorative elements.',
     progress: 'Progress bars and loading states. Animate props.progress for loading animations.',
     code: 'Code snippets with syntax highlighting. Perfect for tech/dev tutorials.'
   };

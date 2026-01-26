@@ -8,25 +8,14 @@
     Lock,
     Unlock,
     Trash2,
-    Plus,
-    Type,
-    Square,
-    Terminal,
-    MousePointer,
-    Zap,
-    Smartphone,
-    Globe,
-    Star,
-    Minus,
-    Tag,
-    Loader,
-    Code
+    Plus
   } from 'lucide-svelte';
   import type { Layer } from '$lib/types/animation';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { createLayer } from '$lib/engine/layer-factory';
   import AiChat from '$lib/components/ai/ai-chat.svelte';
   import { toast } from 'svelte-sonner';
+  import { layerRegistry } from '$lib/layers/registry';
 
   function handleAiMessage(message: string, type: 'success' | 'error') {
     if (type === 'success') {
@@ -105,63 +94,14 @@
         </Button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="start" class="max-h-80 overflow-y-auto">
-        <DropdownMenu.Label>Basic</DropdownMenu.Label>
-        <DropdownMenu.Item onclick={() => addLayer('text')}>
-          <Type class="mr-2 h-4 w-4" />
-          Text
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => addLayer('shape')}>
-          <Square class="mr-2 h-4 w-4" />
-          Shape
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => addLayer('icon')}>
-          <Star class="mr-2 h-4 w-4" />
-          Icon
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => addLayer('button')}>
-          <Zap class="mr-2 h-4 w-4" />
-          Button
-        </DropdownMenu.Item>
-
-        <DropdownMenu.Separator />
-        <DropdownMenu.Label>UI Elements</DropdownMenu.Label>
-        <DropdownMenu.Item onclick={() => addLayer('progress')}>
-          <Loader class="mr-2 h-4 w-4" />
-          Progress
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => addLayer('divider')}>
-          <Minus class="mr-2 h-4 w-4" />
-          Divider
-        </DropdownMenu.Item>
-
-        <DropdownMenu.Separator />
-        <DropdownMenu.Label>Code & Terminal</DropdownMenu.Label>
-        <DropdownMenu.Item onclick={() => addLayer('terminal')}>
-          <Terminal class="mr-2 h-4 w-4" />
-          Terminal
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => addLayer('code')}>
-          <Code class="mr-2 h-4 w-4" />
-          Code Block
-        </DropdownMenu.Item>
-
-        <DropdownMenu.Separator />
-        <DropdownMenu.Label>Mockups</DropdownMenu.Label>
-        <DropdownMenu.Item onclick={() => addLayer('phone')}>
-          <Smartphone class="mr-2 h-4 w-4" />
-          Phone
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => addLayer('browser')}>
-          <Globe class="mr-2 h-4 w-4" />
-          Browser
-        </DropdownMenu.Item>
-
-        <DropdownMenu.Separator />
-        <DropdownMenu.Label>Interaction</DropdownMenu.Label>
-        <DropdownMenu.Item onclick={() => addLayer('mouse')}>
-          <MousePointer class="mr-2 h-4 w-4" />
-          Mouse Cursor
-        </DropdownMenu.Item>
+        {#each Object.values(layerRegistry) as layer (layer.type)}
+          <DropdownMenu.Item onclick={() => addLayer(layer.type)}>
+            {#if layer.icon}
+              <svelte:component this={layer.icon} class="mr-2 h-4 w-4" />
+            {/if}
+            {layer.label}
+          </DropdownMenu.Item>
+        {/each}
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   </div>
