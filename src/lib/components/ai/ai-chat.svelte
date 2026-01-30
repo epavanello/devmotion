@@ -1,7 +1,7 @@
 <script lang="ts">
   import { projectStore } from '$lib/stores/project.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Loader2, Sparkles, Send } from 'lucide-svelte';
+  import { Loader2, Sparkles, Send, ChevronDown } from 'lucide-svelte';
   import { generateAnimation } from '$lib/functions/ai.remote';
   import { createLayer } from '$lib/engine/layer-factory';
   import { getPresetById } from '$lib/engine/presets';
@@ -16,10 +16,13 @@
     EditKeyframeTool,
     RemoveKeyframeTool,
     ApplyPresetTool,
-    BatchKeyframesTool
+    BatchKeyframesTool,
+    CreateSceneTool,
+    SetProjectSettingsTool
   } from '$lib/ai/schemas';
   import type { LayerType, Easing, AnimatableProperty } from '$lib/types/animation';
   import { SvelteMap } from 'svelte/reactivity';
+  import { AI_MODELS, DEFAULT_MODEL_ID, type AIModel } from '$lib/ai/models';
 
   interface Props {
     onMessage?: (message: string, type: 'success' | 'error') => void;
@@ -29,6 +32,11 @@
 
   let prompt = $state('');
   let isGenerating = $state(false);
+  let selectedModelId = $state(DEFAULT_MODEL_ID);
+  let showModelSelector = $state(false);
+
+  const models = Object.values(AI_MODELS);
+  const selectedModel = $derived(AI_MODELS[selectedModelId] || AI_MODELS[DEFAULT_MODEL_ID]);
 
   // Track newly created layer IDs for keyframe resolution
   // Maps index (layer_0 = 0, layer_1 = 1) to actual layer ID
@@ -45,7 +53,8 @@
     try {
       const result = await generateAnimation({
         prompt: userPrompt,
-        project: projectStore.project
+        project: projectStore.project,
+        modelId: selectedModelId
       });
 
       if (!result.success) {
@@ -96,6 +105,12 @@
             break;
           case 'batch_keyframes':
             executeBatchKeyframes(op);
+            break;
+          case 'create_scene':
+            executeCreateScene(op);
+            break;
+          case 'set_project':
+            executeSetProject(op);
             break;
         }
       } catch (error) {
@@ -371,6 +386,99 @@
     }
   }
 
+  /**
+   * Create a complete scene with multiple layers and coordinated animations
+   */
+  function executeCreateScene(op: CreateSceneTool) {
+    const sceneStartIndex = newLayerIds.size;
+
+    for (let i = 0; i < op.layers.length; i++) {
+      const layerDef = op.layers[i];
+
+      // Create the layer
+      const layer = createLayer(
+        layerDef.type as LayerType,
+        layerDef.props || {},
+        layerDef.position || { x: 0, y: 0 }
+      );
+
+      if (layerDef.name) {
+        layer.name = layerDef.name;
+      }
+
+      // Track layer ID
+      const layerIndex = sceneStartIndex + i;
+      newLayerIds.set(layerIndex, layer.id);
+
+      projectStore.addLayer(layer);
+
+      // Apply animation if specified
+      if (layerDef.animation) {
+        const animDelay = layerDef.animation.delay || 0;
+        const animDuration = layerDef.animation.duration || 0.5;
+        const animStartTime = op.startTime + animDelay;
+
+        if (layerDef.animation.preset) {
+          // Apply preset animation
+          const preset = getPresetById(layerDef.animation.preset);
+          if (preset) {
+            for (const kf of preset.keyframes) {
+              const scaledTime = animStartTime + kf.time * animDuration;
+              const clampedTime = Math.max(0, Math.min(scaledTime, projectStore.project.duration));
+
+              let value = kf.value;
+              if (kf.property === 'position.x' && typeof kf.value === 'number') {
+                value = layer.transform.x + kf.value;
+              } else if (kf.property === 'position.y' && typeof kf.value === 'number') {
+                value = layer.transform.y + kf.value;
+              }
+
+              projectStore.addKeyframe(layer.id, {
+                id: nanoid(),
+                time: clampedTime,
+                property: kf.property as AnimatableProperty,
+                value,
+                easing: kf.easing
+              });
+            }
+          }
+        }
+
+        if (layerDef.animation.customKeyframes) {
+          // Apply custom keyframes
+          for (const kf of layerDef.animation.customKeyframes) {
+            const scaledTime = animStartTime + kf.time * animDuration;
+            const clampedTime = Math.max(0, Math.min(scaledTime, projectStore.project.duration));
+
+            const easing: Easing = kf.easing
+              ? { type: kf.easing.type as Easing['type'], bezier: kf.easing.bezier }
+              : { type: 'ease-in-out' };
+
+            projectStore.addKeyframe(layer.id, {
+              id: nanoid(),
+              time: clampedTime,
+              property: kf.property as AnimatableProperty,
+              value: kf.value,
+              easing
+            });
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Update project settings
+   */
+  function executeSetProject(op: SetProjectSettingsTool) {
+    if (op.settings.backgroundColor) {
+      projectStore.project.backgroundColor = op.settings.backgroundColor;
+    }
+    if (op.settings.duration && op.settings.duration !== projectStore.project.duration) {
+      projectStore.project.duration = op.settings.duration;
+    }
+  }
+
   function handleKeyDown(e: KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -380,18 +488,60 @@
 </script>
 
 <div class="border-t bg-background p-4">
-  <label for="ai-prompt" class="mb-2 flex items-center gap-2 text-xs font-medium">
-    <Sparkles class="h-3 w-3" />
-    Generate Animation
-  </label>
+  <div class="mb-2 flex items-center justify-between">
+    <label for="ai-prompt" class="flex items-center gap-2 text-xs font-medium">
+      <Sparkles class="h-3 w-3" />
+      AI Animation Generator
+    </label>
+
+    <!-- Model selector -->
+    <div class="relative">
+      <button
+        type="button"
+        class="flex items-center gap-1 rounded-md border border-input bg-background px-2 py-1 text-xs hover:bg-accent"
+        onclick={() => (showModelSelector = !showModelSelector)}
+      >
+        <span class="max-w-24 truncate">{selectedModel.name}</span>
+        <ChevronDown class="h-3 w-3" />
+      </button>
+
+      {#if showModelSelector}
+        <div
+          class="absolute right-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover p-1 shadow-lg"
+        >
+          {#each models as model}
+            <button
+              type="button"
+              class="flex w-full flex-col items-start rounded-sm px-2 py-1.5 text-left text-xs hover:bg-accent"
+              class:bg-accent={model.id === selectedModelId}
+              onclick={() => {
+                selectedModelId = model.id;
+                showModelSelector = false;
+              }}
+            >
+              <div class="flex items-center gap-1">
+                <span class="font-medium">{model.name}</span>
+                {#if model.recommended}
+                  <span class="rounded bg-primary/20 px-1 text-[10px] text-primary">recommended</span>
+                {/if}
+              </div>
+              <span class="text-muted-foreground">{model.description}</span>
+            </button>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  </div>
+
   <textarea
     id="ai-prompt"
     bind:value={prompt}
     onkeydown={handleKeyDown}
-    placeholder="Describe the animation you want to create..."
+    placeholder="Describe your video animation in detail... e.g., 'Create a 5-second promo video for CloudSync app with animated title, features, and CTA button'"
     disabled={isGenerating || projectStore.isRecording}
-    class="mb-3 flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+    class="mb-3 flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
   ></textarea>
+
   <Button
     class="w-full"
     onclick={handleGenerate}
@@ -399,7 +549,7 @@
   >
     {#if isGenerating}
       <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-      Generating...
+      Generating with {selectedModel.name}...
     {:else}
       <Send class="mr-2 h-4 w-4" />
       Generate

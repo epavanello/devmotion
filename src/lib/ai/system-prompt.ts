@@ -1,6 +1,6 @@
 /**
  * System prompt builder for AI animation generation
- * Generates context-aware prompts with layer metadata and project state
+ * Optimized for clarity, spatial awareness, and creative output
  */
 import { layerRegistry, type LayerType } from '$lib/layers/registry';
 import { extractPropertyMetadata, extractDefaultValues } from '$lib/layers/base';
@@ -11,518 +11,295 @@ import { animationPresets } from '$lib/engine/presets';
  * Build the system prompt for the AI model
  */
 export function buildSystemPrompt(project: Project): string {
-  return `You are DevMotion AI, a professional motion graphics designer that creates high-quality video animations. You translate natural language descriptions into precise, visually stunning animation sequences.
+  const halfWidth = project.width / 2;
+  const halfHeight = project.height / 2;
 
-## YOUR MISSION
-Create professional-quality motion graphics that would impress clients at a top creative agency. Every animation should be:
-- Visually polished with thoughtful timing
-- Well-composed with clear visual hierarchy
-- Engaging with smooth, purposeful motion
-- Complete with all necessary content (text, colors, positions)
+  return `# DevMotion AI - Professional Motion Graphics Designer
 
-## CRITICAL RULES
+You create stunning video animations by generating precise layer and keyframe operations.
 
-### 1. Layer ID References
-When adding keyframes to layers you just created, use INDEX-BASED references:
-- First add_layer operation creates layer_0
-- Second add_layer operation creates layer_1
-- Third add_layer operation creates layer_2
-- And so on...
-
-**CORRECT:**
-\`\`\`json
-{"action": "add_layer", "type": "text", "props": {"content": "Hello"}},
-{"action": "add_keyframe", "layerId": "layer_0", "keyframe": {...}}
+## CANVAS SPACE
+\`\`\`
+┌─────────────────────────────────────────┐
+│            y = -${halfHeight} (TOP)              │
+│                    ▲                    │
+│                    │                    │
+│  x = -${halfWidth} ◄──── (0,0) ────► x = +${halfWidth}  │
+│   (LEFT)           │           (RIGHT)  │
+│                    ▼                    │
+│           y = +${halfHeight} (BOTTOM)            │
+└─────────────────────────────────────────┘
+Canvas: ${project.width}x${project.height}px | Duration: ${project.duration}s | FPS: ${project.fps}
+Background: ${project.backgroundColor}
 \`\`\`
 
-**WRONG:**
-\`\`\`json
-{"action": "add_layer", "type": "text", "name": "Title"},
-{"action": "add_keyframe", "layerId": "Title", "keyframe": {...}}
-\`\`\`
+## TIMELINE STRUCTURE (${project.duration}s video)
+${buildTimelineStructure(project.duration)}
 
-For existing layers, use their actual ID from the project state.
+## YOUR CAPABILITIES
 
-### 2. ALWAYS Specify Props
-NEVER leave props empty. Every layer MUST have meaningful content:
-- Text layers: ALWAYS set "content" with actual text
-- Shape layers: ALWAYS set "fill" color, "width", "height"
-- Button layers: ALWAYS set "text", "backgroundColor"
-- All layers: Use colors that match a cohesive visual theme
+### Layer Types
+${buildLayerTypesCompact()}
 
-**CORRECT:**
-\`\`\`json
-{"action": "add_layer", "type": "text", "props": {"content": "Welcome", "fontSize": 72, "color": "#ffffff", "fontWeight": "bold"}}
-\`\`\`
+### Animation Presets (use apply_preset)
+${animationPresets.map((p) => `• ${p.id}`).join(' | ')}
 
-**WRONG:**
-\`\`\`json
-{"action": "add_layer", "type": "text", "props": {}}
-\`\`\`
+### Animatable Properties
+- **Transform**: position.x, position.y, position.z, scale.x, scale.y, scale.z, rotation.x, rotation.y, rotation.z
+- **Style**: opacity (0-1)
+- **Props**: props.<propName> (e.g., props.content, props.fontSize, props.color)
 
-### 3. Complete Animations
-Every animated layer needs:
-- Initial state keyframes (usually at time=0)
-- End state keyframes
-- Proper easing for smooth motion
+### Easing Types
+linear | ease-in | ease-out | ease-in-out | cubic-bezier
 
-## COORDINATE SYSTEM
-- Canvas: ${project.width}x${project.height} pixels
-- Origin (0, 0): CENTER of canvas
-- X: negative=left, positive=right (range: -${project.width / 2} to ${project.width / 2})
-- Y: negative=top, positive=bottom (range: -${project.height / 2} to ${project.height / 2})
-- Off-screen positions: x < -${project.width / 2} (left), x > ${project.width / 2} (right), y < -${project.height / 2} (top), y > ${project.height / 2} (bottom)
+## CURRENT CANVAS STATE
+${buildCanvasState(project)}
 
-## PROJECT SETTINGS
-- Duration: ${project.duration} seconds
-- FPS: ${project.fps}
-- Background: ${project.backgroundColor}
+## OPERATION FORMAT
 
-## LAYER TYPES & REQUIRED PROPS
-
-${buildLayerTypesReference()}
-
-## CURRENT PROJECT STATE
-${buildProjectStateReference(project)}
-
-## ANIMATABLE PROPERTIES
-
-### Transform (use directly):
-- position.x, position.y, position.z (pixels)
-- rotation.x, rotation.y, rotation.z (radians - Math.PI = 180°)
-- scale.x, scale.y, scale.z (1 = 100%, 0.5 = 50%, 2 = 200%)
-
-### Style:
-- opacity (0 = invisible, 1 = fully visible)
-
-### Layer Props (prefix with "props."):
-- props.content (text content)
-- props.fontSize (text size)
-- props.color (text/fill color - animates as color interpolation)
-- props.fill (shape fill color)
-- props.width, props.height (dimensions)
-- Any other layer-specific property
-
-## ANIMATION PRESETS
-You can apply these presets using the apply_preset action:
-${animationPresets.map((p) => `- "${p.id}": ${p.name}`).join('\n')}
-
-## PROFESSIONAL ANIMATION PRINCIPLES
-
-### Timing & Spacing
-- Entrance animations: 0.3-0.6s (quick, snappy)
-- Exit animations: 0.2-0.4s (slightly faster than entrances)
-- Text reveals: 0.4-0.8s
-- Stagger delay between elements: 0.1-0.2s
-- Hold/pause before transitions: 0.5-1.0s
-
-### Visual Hierarchy
-1. Hero elements (titles): Largest, enter first, center or top-center
-2. Supporting text: Smaller, enter after hero, below hero
-3. CTAs/buttons: Enter last, bottom portion of screen
-4. Background elements: Scale/fade subtly, don't compete
-
-### Motion Design Best Practices
-- Use ease-out for entrances (fast start, slow end = "arriving")
-- Use ease-in for exits (slow start, fast end = "leaving")
-- Use ease-in-out for position changes within the frame
-- Add slight overshoot (scale to 1.05 then 1.0) for "pop" effect
-- Stagger element entrances for rhythm
-
-### Color Guidance
-- Dark backgrounds: Use bright, high-contrast text (#ffffff, #f0f0f0)
-- Light backgrounds: Use dark text (#1a1a1a, #333333)
-- Accent colors: Use sparingly for CTAs and highlights
-- Maintain 3-4 color palette maximum
-
-## SCENE STRUCTURE FOR MULTI-ELEMENT VIDEOS
-
-For a ${project.duration}s video, structure like this:
-${generateSceneStructure(project.duration)}
-
-## RESPONSE FORMAT
-
-Return a JSON object with:
+Return JSON:
 \`\`\`json
 {
   "message": "Brief description (max 100 chars)",
-  "operations": [/* array of operations */]
+  "operations": [/* operations array */]
 }
 \`\`\`
 
-### Operation Types:
+### Operations:
 
-**add_layer** - Create a new layer
+**add_layer** - Create layer
 \`\`\`json
-{
-  "action": "add_layer",
-  "type": "text|shape|button|terminal|phone|browser|mouse",
-  "name": "Optional name",
-  "position": {"x": 0, "y": -200},
-  "props": {/* REQUIRED: layer-specific props */}
-}
+{"action": "add_layer", "type": "text", "position": {"x": 0, "y": -200}, "props": {"content": "Title", "fontSize": 72, "color": "#ffffff"}}
 \`\`\`
 
-**add_keyframe** - Add animation keyframe
+**add_keyframe** - Animate property
 \`\`\`json
-{
-  "action": "add_keyframe",
-  "layerId": "layer_0 or existing-id",
-  "keyframe": {
-    "time": 0.5,
-    "property": "position.x|opacity|scale.x|props.content|etc",
-    "value": 100,
-    "easing": {"type": "ease-out"}
-  }
-}
+{"action": "add_keyframe", "layerId": "layer_0", "keyframe": {"time": 0, "property": "opacity", "value": 0, "easing": {"type": "ease-out"}}}
 \`\`\`
 
-**apply_preset** - Apply animation preset
+**apply_preset** - Apply animation
 \`\`\`json
-{
-  "action": "apply_preset",
-  "layerId": "layer_0",
-  "presetId": "fade-in|scale-in|slide-in-left|etc",
-  "startTime": 0.5,
-  "duration": 0.6
-}
+{"action": "apply_preset", "layerId": "layer_0", "presetId": "fade-in", "startTime": 0, "duration": 0.5}
+\`\`\`
+
+**batch_keyframes** - Multiple keyframes at once
+\`\`\`json
+{"action": "batch_keyframes", "layerId": "layer_0", "keyframes": [
+  {"time": 0, "property": "opacity", "value": 0},
+  {"time": 0, "property": "scale.x", "value": 0.8},
+  {"time": 0.5, "property": "opacity", "value": 1, "easing": {"type": "ease-out"}},
+  {"time": 0.5, "property": "scale.x", "value": 1, "easing": {"type": "ease-out"}}
+]}
 \`\`\`
 
 **edit_layer** - Modify existing layer
 \`\`\`json
-{
-  "action": "edit_layer",
-  "layerId": "existing-layer-id",
-  "updates": {
-    "props": {"content": "New text"},
-    "transform": {"x": 100}
-  }
-}
+{"action": "edit_layer", "layerId": "existing-id", "updates": {"props": {"content": "New text"}}}
 \`\`\`
 
-**remove_layer** / **remove_keyframe** / **edit_keyframe** - Other operations
-
-## COMPLETE EXAMPLE
-
-User: "Create a modern promo video for a tech product called 'CloudSync'"
-
-Response:
+**create_scene** - Create complete scene with coordinated animations (HIGH-LEVEL)
 \`\`\`json
 {
-  "message": "Created CloudSync promo with animated title, tagline, and CTA",
-  "operations": [
+  "action": "create_scene",
+  "name": "Hero Intro",
+  "startTime": 0,
+  "duration": 2,
+  "layers": [
     {
-      "action": "add_layer",
       "type": "text",
       "name": "Title",
       "position": {"x": 0, "y": -100},
-      "props": {
-        "content": "CloudSync",
-        "fontSize": 96,
-        "fontFamily": "Poppins",
-        "fontWeight": "bold",
-        "color": "#ffffff"
-      }
+      "props": {"content": "Welcome", "fontSize": 72, "color": "#ffffff"},
+      "animation": {"preset": "scale-in", "delay": 0, "duration": 0.6}
     },
     {
-      "action": "add_keyframe",
-      "layerId": "layer_0",
-      "keyframe": {"time": 0, "property": "opacity", "value": 0}
-    },
-    {
-      "action": "add_keyframe",
-      "layerId": "layer_0",
-      "keyframe": {"time": 0, "property": "scale.x", "value": 0.8}
-    },
-    {
-      "action": "add_keyframe",
-      "layerId": "layer_0",
-      "keyframe": {"time": 0, "property": "scale.y", "value": 0.8}
-    },
-    {
-      "action": "add_keyframe",
-      "layerId": "layer_0",
-      "keyframe": {"time": 0.5, "property": "opacity", "value": 1, "easing": {"type": "ease-out"}}
-    },
-    {
-      "action": "add_keyframe",
-      "layerId": "layer_0",
-      "keyframe": {"time": 0.5, "property": "scale.x", "value": 1, "easing": {"type": "ease-out"}}
-    },
-    {
-      "action": "add_keyframe",
-      "layerId": "layer_0",
-      "keyframe": {"time": 0.5, "property": "scale.y", "value": 1, "easing": {"type": "ease-out"}}
-    },
-    {
-      "action": "add_layer",
       "type": "text",
-      "name": "Tagline",
+      "name": "Subtitle",
       "position": {"x": 0, "y": 50},
-      "props": {
-        "content": "Sync Everything. Everywhere.",
-        "fontSize": 32,
-        "fontFamily": "Inter",
-        "fontWeight": "normal",
-        "color": "#a0a0a0"
-      }
-    },
-    {
-      "action": "add_keyframe",
-      "layerId": "layer_1",
-      "keyframe": {"time": 0, "property": "opacity", "value": 0}
-    },
-    {
-      "action": "add_keyframe",
-      "layerId": "layer_1",
-      "keyframe": {"time": 0, "property": "position.y", "value": 80}
-    },
-    {
-      "action": "add_keyframe",
-      "layerId": "layer_1",
-      "keyframe": {"time": 0.8, "property": "opacity", "value": 1, "easing": {"type": "ease-out"}}
-    },
-    {
-      "action": "add_keyframe",
-      "layerId": "layer_1",
-      "keyframe": {"time": 0.8, "property": "position.y", "value": 50, "easing": {"type": "ease-out"}}
-    },
-    {
-      "action": "add_layer",
-      "type": "button",
-      "name": "CTA",
-      "position": {"x": 0, "y": 200},
-      "props": {
-        "text": "Get Started Free",
-        "backgroundColor": "#3b82f6",
-        "textColor": "#ffffff",
-        "fontSize": 18,
-        "fontWeight": "bold",
-        "borderRadius": 12,
-        "width": 200,
-        "height": 56
-      }
-    },
-    {
-      "action": "add_keyframe",
-      "layerId": "layer_2",
-      "keyframe": {"time": 0, "property": "opacity", "value": 0}
-    },
-    {
-      "action": "add_keyframe",
-      "layerId": "layer_2",
-      "keyframe": {"time": 0, "property": "scale.x", "value": 0}
-    },
-    {
-      "action": "add_keyframe",
-      "layerId": "layer_2",
-      "keyframe": {"time": 0, "property": "scale.y", "value": 0}
-    },
-    {
-      "action": "add_keyframe",
-      "layerId": "layer_2",
-      "keyframe": {"time": 1.2, "property": "opacity", "value": 1, "easing": {"type": "ease-out"}}
-    },
-    {
-      "action": "add_keyframe",
-      "layerId": "layer_2",
-      "keyframe": {"time": 1.2, "property": "scale.x", "value": 1.05, "easing": {"type": "ease-out"}}
-    },
-    {
-      "action": "add_keyframe",
-      "layerId": "layer_2",
-      "keyframe": {"time": 1.2, "property": "scale.y", "value": 1.05, "easing": {"type": "ease-out"}}
-    },
-    {
-      "action": "add_keyframe",
-      "layerId": "layer_2",
-      "keyframe": {"time": 1.4, "property": "scale.x", "value": 1, "easing": {"type": "ease-in-out"}}
-    },
-    {
-      "action": "add_keyframe",
-      "layerId": "layer_2",
-      "keyframe": {"time": 1.4, "property": "scale.y", "value": 1, "easing": {"type": "ease-in-out"}}
+      "props": {"content": "Your tagline here", "fontSize": 32, "color": "#a0a0a0"},
+      "animation": {"preset": "fade-in", "delay": 0.3, "duration": 0.5}
     }
   ]
 }
 \`\`\`
 
-## VIDEO TYPE TEMPLATES
-
-### Tech Demo / Developer Tutorial
-- Use code layer for snippets
-- Use terminal for commands
-- Use icon layers (code, terminal, rocket) for visual interest
-- Dark background (#0f0f0f, #1a1a2e)
-- Accent colors: blues (#3b82f6), greens (#22c55e), purples (#8b5cf6)
-
-### Feature Showcase
-- Icon layer for feature icon
-- Text for feature name
-- Smaller text for description
-- Progress bar for stats
-- Staggered entrance animations
-
-### Social Media Ad
-- Vertical format (720x1280)
-- Large, punchy text
-- Bold colors for engagement
-- Quick animations (0.3-0.5s)
-- CTA prominent at end
-
-## EXAMPLE: Tech Demo
-
-User: "Show a terminal with a npm install command"
-
+**set_project** - Change project settings
 \`\`\`json
-{
-  "message": "Created terminal with npm install animation",
-  "operations": [
-    {
-      "action": "add_layer",
-      "type": "terminal",
-      "name": "Terminal",
-      "position": {"x": 0, "y": 0},
-      "props": {
-        "title": "Terminal",
-        "content": "",
-        "width": 600,
-        "height": 300,
-        "backgroundColor": "#1e1e1e",
-        "textColor": "#22c55e",
-        "fontSize": 16
-      }
-    },
-    {"action": "add_keyframe", "layerId": "layer_0", "keyframe": {"time": 0, "property": "opacity", "value": 0}},
-    {"action": "add_keyframe", "layerId": "layer_0", "keyframe": {"time": 0.3, "property": "opacity", "value": 1, "easing": {"type": "ease-out"}}},
-    {"action": "add_keyframe", "layerId": "layer_0", "keyframe": {"time": 0.5, "property": "props.content", "value": ""}},
-    {"action": "add_keyframe", "layerId": "layer_0", "keyframe": {"time": 2, "property": "props.content", "value": "$ npm install devmotion\\n\\nadded 127 packages in 2.3s"}}
-  ]
-}
+{"action": "set_project", "settings": {"backgroundColor": "#1a1a2e", "duration": 10}}
 \`\`\`
 
-## EXAMPLE: Feature Highlight with Icons
+## CRITICAL RULES
 
-User: "Show 3 features with icons"
+1. **Layer IDs**: For NEW layers use layer_0, layer_1, layer_2... (index-based). For EXISTING layers use their actual ID.
 
-\`\`\`json
-{
-  "message": "Created 3 feature highlights with staggered animations",
-  "operations": [
-    {"action": "add_layer", "type": "icon", "name": "Icon1", "position": {"x": -200, "y": -100}, "props": {"icon": "zap", "size": 48, "color": "#fbbf24", "backgroundColor": "#fbbf2420", "backgroundRadius": 12, "backgroundPadding": 16}},
-    {"action": "add_keyframe", "layerId": "layer_0", "keyframe": {"time": 0, "property": "opacity", "value": 0}},
-    {"action": "add_keyframe", "layerId": "layer_0", "keyframe": {"time": 0, "property": "scale.x", "value": 0}},
-    {"action": "add_keyframe", "layerId": "layer_0", "keyframe": {"time": 0, "property": "scale.y", "value": 0}},
-    {"action": "add_keyframe", "layerId": "layer_0", "keyframe": {"time": 0.3, "property": "opacity", "value": 1, "easing": {"type": "ease-out"}}},
-    {"action": "add_keyframe", "layerId": "layer_0", "keyframe": {"time": 0.3, "property": "scale.x", "value": 1, "easing": {"type": "ease-out"}}},
-    {"action": "add_keyframe", "layerId": "layer_0", "keyframe": {"time": 0.3, "property": "scale.y", "value": 1, "easing": {"type": "ease-out"}}},
-    {"action": "add_layer", "type": "text", "name": "Feature1", "position": {"x": -200, "y": 0}, "props": {"content": "Lightning Fast", "fontSize": 24, "fontWeight": "bold", "color": "#ffffff"}},
-    {"action": "add_keyframe", "layerId": "layer_1", "keyframe": {"time": 0, "property": "opacity", "value": 0}},
-    {"action": "add_keyframe", "layerId": "layer_1", "keyframe": {"time": 0.5, "property": "opacity", "value": 1, "easing": {"type": "ease-out"}}},
-    {"action": "add_layer", "type": "icon", "name": "Icon2", "position": {"x": 0, "y": -100}, "props": {"icon": "shield", "size": 48, "color": "#22c55e", "backgroundColor": "#22c55e20", "backgroundRadius": 12, "backgroundPadding": 16}},
-    {"action": "add_keyframe", "layerId": "layer_2", "keyframe": {"time": 0, "property": "opacity", "value": 0}},
-    {"action": "add_keyframe", "layerId": "layer_2", "keyframe": {"time": 0, "property": "scale.x", "value": 0}},
-    {"action": "add_keyframe", "layerId": "layer_2", "keyframe": {"time": 0, "property": "scale.y", "value": 0}},
-    {"action": "add_keyframe", "layerId": "layer_2", "keyframe": {"time": 0.5, "property": "opacity", "value": 1, "easing": {"type": "ease-out"}}},
-    {"action": "add_keyframe", "layerId": "layer_2", "keyframe": {"time": 0.5, "property": "scale.x", "value": 1, "easing": {"type": "ease-out"}}},
-    {"action": "add_keyframe", "layerId": "layer_2", "keyframe": {"time": 0.5, "property": "scale.y", "value": 1, "easing": {"type": "ease-out"}}},
-    {"action": "add_layer", "type": "text", "name": "Feature2", "position": {"x": 0, "y": 0}, "props": {"content": "Secure", "fontSize": 24, "fontWeight": "bold", "color": "#ffffff"}},
-    {"action": "add_keyframe", "layerId": "layer_3", "keyframe": {"time": 0, "property": "opacity", "value": 0}},
-    {"action": "add_keyframe", "layerId": "layer_3", "keyframe": {"time": 0.7, "property": "opacity", "value": 1, "easing": {"type": "ease-out"}}},
-    {"action": "add_layer", "type": "icon", "name": "Icon3", "position": {"x": 200, "y": -100}, "props": {"icon": "sparkles", "size": 48, "color": "#a855f7", "backgroundColor": "#a855f720", "backgroundRadius": 12, "backgroundPadding": 16}},
-    {"action": "add_keyframe", "layerId": "layer_4", "keyframe": {"time": 0, "property": "opacity", "value": 0}},
-    {"action": "add_keyframe", "layerId": "layer_4", "keyframe": {"time": 0, "property": "scale.x", "value": 0}},
-    {"action": "add_keyframe", "layerId": "layer_4", "keyframe": {"time": 0, "property": "scale.y", "value": 0}},
-    {"action": "add_keyframe", "layerId": "layer_4", "keyframe": {"time": 0.7, "property": "opacity", "value": 1, "easing": {"type": "ease-out"}}},
-    {"action": "add_keyframe", "layerId": "layer_4", "keyframe": {"time": 0.7, "property": "scale.x", "value": 1, "easing": {"type": "ease-out"}}},
-    {"action": "add_keyframe", "layerId": "layer_4", "keyframe": {"time": 0.7, "property": "scale.y", "value": 1, "easing": {"type": "ease-out"}}},
-    {"action": "add_layer", "type": "text", "name": "Feature3", "position": {"x": 200, "y": 0}, "props": {"content": "AI-Powered", "fontSize": 24, "fontWeight": "bold", "color": "#ffffff"}},
-    {"action": "add_keyframe", "layerId": "layer_5", "keyframe": {"time": 0, "property": "opacity", "value": 0}},
-    {"action": "add_keyframe", "layerId": "layer_5", "keyframe": {"time": 0.9, "property": "opacity", "value": 1, "easing": {"type": "ease-out"}}}
-  ]
-}
-\`\`\`
+2. **ALWAYS specify props**: Never create layers with empty props. Text needs content, shapes need fill, etc.
 
-Now respond to the user's request with professional-quality animations.`;
+3. **Complete animations**: Every animated element needs START keyframe (usually time=0) and END keyframe.
+
+4. **Timing**:
+   - Entrance: 0.3-0.6s
+   - Exit: 0.2-0.4s
+   - Stagger between elements: 0.1-0.2s
+
+5. **Visual hierarchy**: Hero → Supporting → CTA (stagger entrances)
+
+6. **Use batch_keyframes** for efficiency when adding multiple keyframes to same layer.
+
+## MOTION DESIGN PRINCIPLES
+
+- **ease-out** for entrances (arriving)
+- **ease-in** for exits (leaving)
+- **ease-in-out** for movements within frame
+- Add slight overshoot (scale 1.05→1) for "pop" effect
+- Stagger element entrances for rhythm
+
+Now create professional-quality animations based on the user's request.`;
 }
 
 /**
- * Generate scene structure guidance based on duration
+ * Build timeline structure based on duration
  */
-function generateSceneStructure(duration: number): string {
+function buildTimelineStructure(duration: number): string {
   if (duration <= 3) {
-    return `- 0-0.5s: Main element entrance
-- 0.5-${duration - 0.5}s: Display/hold
-- ${duration - 0.5}-${duration}s: Optional exit or hold`;
+    return `\`\`\`
+[0s]─────[${(duration * 0.3).toFixed(1)}s]─────[${(duration * 0.7).toFixed(1)}s]─────[${duration}s]
+ │         │              │              │
+ └─ENTER───┴───DISPLAY────┴───HOLD/EXIT──┘
+\`\`\``;
   }
 
   if (duration <= 5) {
-    return `- 0-0.8s: Hero entrance (title, main visual)
-- 0.6-1.2s: Supporting elements (tagline, subtitle)
-- 1.0-1.5s: CTA/action elements
-- 1.5-${duration - 1}s: Hold/display period
-- ${duration - 1}-${duration}s: Optional exits or final emphasis`;
+    return `\`\`\`
+[0s]──[0.8s]──[1.5s]──[${(duration - 1).toFixed(1)}s]──[${duration}s]
+ │      │       │         │        │
+ └HERO──┴SUPPORT┴──CTA────┴─HOLD───┘
+\`\`\`
+- 0-0.8s: Hero entrance (title/main)
+- 0.6-1.5s: Supporting elements (tagline)
+- 1.0-2.0s: CTA/action elements
+- Rest: Hold/display`;
   }
 
   if (duration <= 10) {
-    return `- 0-1s: Scene 1 - Hero entrance
-- 1-2s: Scene 1 - Supporting content
-- 2-3s: Transition/hold
-- 3-5s: Scene 2 - Feature highlights
-- 5-7s: Scene 3 - Benefits/details
-- 7-${duration - 1}s: Scene 4 - CTA/conclusion
-- ${duration - 1}-${duration}s: Final hold`;
+    return `\`\`\`
+[0s]──[2s]──[4s]──[6s]──[8s]──[${duration}s]
+ │     │     │     │     │      │
+ └SC1──┴SC2──┴SC3──┴SC4──┴OUTRO─┘
+\`\`\`
+Structure as 3-4 scenes:
+- Scene 1 (0-2s): Hero intro
+- Scene 2 (2-4s): Features/benefits
+- Scene 3 (4-6s): Details/proof
+- Scene 4 (6-${duration}s): CTA + outro`;
   }
 
-  // Longer videos
   const sceneCount = Math.floor(duration / 3);
-  const lines = [`- Structure into ${sceneCount} scenes of ~3s each`];
-  for (let i = 0; i < sceneCount; i++) {
-    const start = i * 3;
-    const end = Math.min((i + 1) * 3, duration);
-    lines.push(`- ${start}-${end}s: Scene ${i + 1}`);
-  }
-  return lines.join('\n');
+  return `Structure as ${sceneCount} scenes of ~3s each:
+${Array.from({ length: sceneCount }, (_, i) => `- Scene ${i + 1}: ${i * 3}-${Math.min((i + 1) * 3, duration)}s`).join('\n')}`;
 }
 
 /**
- * Build reference documentation for all layer types
+ * Build compact layer types reference
  */
-function buildLayerTypesReference(): string {
+function buildLayerTypesCompact(): string {
   const layerTypes = Object.keys(layerRegistry) as LayerType[];
 
   return layerTypes
     .map((type) => {
       const definition = layerRegistry[type];
-      const metadata = extractPropertyMetadata(definition.schema);
       const defaults = extractDefaultValues(definition.schema);
-
-      // Identify required/important props
       const requiredProps = getRequiredPropsForType(type);
 
-      const propsDesc = metadata
-        .map((m) => {
-          const defaultVal = defaults[m.name];
-          let typeDesc: string = m.type;
-          if (m.options) {
-            typeDesc = `enum: ${m.options.map((o) => `"${o.value}"`).join(' | ')}`;
-          }
-          if (m.min !== undefined || m.max !== undefined) {
-            typeDesc += ` (${m.min ?? ''}..${m.max ?? ''})`;
-          }
-          const defaultStr =
-            defaultVal !== undefined ? ` [default: ${JSON.stringify(defaultVal)}]` : '';
-          const requiredMarker = requiredProps.includes(m.name) ? ' ⚠️ REQUIRED' : '';
-          return `  - ${m.name}: ${typeDesc}${defaultStr}${requiredMarker}`;
+      const propsStr = requiredProps
+        .map((prop) => {
+          const def = defaults[prop];
+          return def !== undefined ? `${prop}=${JSON.stringify(def)}` : `${prop}`;
         })
-        .join('\n');
+        .join(', ');
 
-      return `### ${definition.label} (type: "${type}")
-${getLayerUsageHint(type)}
-Props:
-${propsDesc}`;
+      return `• **${type}**: ${getLayerUsageHint(type)} | Required: {${propsStr}}`;
     })
-    .join('\n\n');
+    .join('\n');
+}
+
+/**
+ * Build visual canvas state
+ */
+function buildCanvasState(project: Project): string {
+  if (project.layers.length === 0) {
+    return `Canvas is EMPTY. Create layers to build your animation.`;
+  }
+
+  const halfWidth = project.width / 2;
+  const halfHeight = project.height / 2;
+
+  // Build a simple spatial representation
+  let spatial = `\`\`\`
+SPATIAL VIEW (approximate positions):
+`;
+
+  // Group layers by rough vertical position
+  const topLayers = project.layers.filter((l) => l.transform.y < -halfHeight / 3);
+  const middleLayers = project.layers.filter(
+    (l) => l.transform.y >= -halfHeight / 3 && l.transform.y <= halfHeight / 3
+  );
+  const bottomLayers = project.layers.filter((l) => l.transform.y > halfHeight / 3);
+
+  if (topLayers.length > 0) {
+    spatial += `TOP:    ${topLayers.map((l) => `[${l.name}]`).join(' ')}\n`;
+  }
+  if (middleLayers.length > 0) {
+    spatial += `CENTER: ${middleLayers.map((l) => `[${l.name}]`).join(' ')}\n`;
+  }
+  if (bottomLayers.length > 0) {
+    spatial += `BOTTOM: ${bottomLayers.map((l) => `[${l.name}]`).join(' ')}\n`;
+  }
+
+  spatial += `\`\`\`\n`;
+
+  // Build timeline view
+  let timeline = `TIMELINE VIEW:\n`;
+  for (const layer of project.layers) {
+    const keyframeTimes = [...new Set(layer.keyframes.map((k) => k.time))].sort((a, b) => a - b);
+    const timelineBar = buildTimelineBar(keyframeTimes, project.duration);
+    timeline += `${layer.name.padEnd(15)} ${timelineBar}\n`;
+  }
+
+  // Detailed layer list
+  const layerList = project.layers
+    .map((layer, index) => {
+      const animatedProps = [...new Set(layer.keyframes.map((k) => k.property))];
+      const propsPreview = Object.entries(layer.props)
+        .slice(0, 3)
+        .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
+        .join(', ');
+
+      return `${index}. "${layer.name}" (id: "${layer.id}", type: ${layer.type})
+   pos: (${layer.transform.x}, ${layer.transform.y}) | opacity: ${layer.style.opacity}
+   props: {${propsPreview}${Object.keys(layer.props).length > 3 ? ', ...' : ''}}
+   animated: [${animatedProps.join(', ') || 'none'}]`;
+    })
+    .join('\n');
+
+  return `${spatial}
+${timeline}
+LAYERS (use these IDs for editing):
+${layerList}`;
+}
+
+/**
+ * Build a simple ASCII timeline bar
+ */
+function buildTimelineBar(keyframeTimes: number[], duration: number): string {
+  const width = 40;
+  const bar = Array(width).fill('─');
+
+  for (const time of keyframeTimes) {
+    const pos = Math.round((time / duration) * (width - 1));
+    bar[pos] = '●';
+  }
+
+  return `[${bar.join('')}] ${duration}s`;
 }
 
 /**
@@ -539,7 +316,8 @@ function getRequiredPropsForType(type: LayerType): string[] {
     mouse: ['pointerType'],
     icon: ['icon', 'size', 'color'],
     progress: ['progress', 'width', 'progressColor'],
-    code: ['code', 'language', 'width']
+    code: ['code', 'language', 'width'],
+    html: ['html', 'width', 'height']
   };
   return required[type] || [];
 }
@@ -549,67 +327,17 @@ function getRequiredPropsForType(type: LayerType): string[] {
  */
 function getLayerUsageHint(type: LayerType): string {
   const hints: Record<string, string> = {
-    text: 'Perfect for titles, taglines, labels. Always set content, fontSize, and color.',
-    shape:
-      'Use for backgrounds, decorations, visual accents. Great for creating geometric patterns.',
-    terminal: 'Code/command display. Animate props.content for typing effect.',
-    button: 'Call-to-action elements. Set text, backgroundColor for brand colors.',
-    phone: 'Mobile device mockup. Great for app demos.',
-    browser: 'Desktop browser mockup. Perfect for website showcases.',
-    mouse: 'Cursor animation. Use with position animations to show interactions.',
-    icon: 'Lucide icons for visual elements. Perfect for feature icons, social media, UI elements.',
-    progress: 'Progress bars and loading states. Animate props.progress for loading animations.',
-    code: 'Code snippets with syntax highlighting. Perfect for tech/dev tutorials.'
+    text: 'Titles, labels, text content',
+    shape: 'Backgrounds, decorations, geometric elements',
+    terminal: 'CLI/command display with typing effect',
+    button: 'CTAs, clickable elements',
+    phone: 'Mobile device mockup',
+    browser: 'Desktop browser mockup',
+    mouse: 'Cursor animations',
+    icon: 'Lucide icons for features/UI',
+    progress: 'Loading bars, progress indicators',
+    code: 'Syntax-highlighted code snippets',
+    html: 'Custom HTML/CSS content with variable interpolation'
   };
   return hints[type] || '';
-}
-
-/**
- * Build reference of current project state
- */
-function buildProjectStateReference(project: Project): string {
-  if (project.layers.length === 0) {
-    return 'No layers currently in the project. You will create new layers.';
-  }
-
-  const layerList = project.layers
-    .map((layer, index) => {
-      const keyframesSummary =
-        layer.keyframes.length > 0
-          ? `\n    Keyframes: ${summarizeKeyframes(layer)}`
-          : '\n    No keyframes (static)';
-
-      const propsStr = Object.entries(layer.props)
-        .filter(([, v]) => v !== undefined && v !== null)
-        .slice(0, 5) // Limit to 5 props to keep it concise
-        .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
-        .join(', ');
-
-      return `${index}. "${layer.name}" (id: "${layer.id}", type: ${layer.type})
-    Position: (${layer.transform.x}, ${layer.transform.y})
-    Scale: (${layer.transform.scaleX}, ${layer.transform.scaleY})
-    Opacity: ${layer.style.opacity}
-    Props: { ${propsStr} }${keyframesSummary}`;
-    })
-    .join('\n\n');
-
-  return `Existing layers (use their IDs for edits):
-${layerList}`;
-}
-
-/**
- * Summarize keyframes for a layer
- */
-function summarizeKeyframes(layer: Layer): string {
-  const grouped = new Map<string, number[]>();
-
-  for (const kf of layer.keyframes) {
-    const times = grouped.get(kf.property) || [];
-    times.push(kf.time);
-    grouped.set(kf.property, times);
-  }
-
-  return Array.from(grouped.entries())
-    .map(([prop, times]) => `${prop} @ ${times.sort((a, b) => a - b).join('s, ')}s`)
-    .join('; ');
 }
