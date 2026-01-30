@@ -1,6 +1,7 @@
 /**
  * Global project store using Svelte 5 runes
  */
+import { getPresetById } from '$lib/engine/presets';
 import type { Project, Layer, Keyframe, ViewportSettings } from '$lib/types/animation';
 import { nanoid } from 'nanoid';
 
@@ -176,6 +177,55 @@ class ProjectStore {
       }
       return layer;
     });
+  }
+
+  /**
+   * Apply an animation preset to a layer
+   * @param layerId - ID of the layer to apply the preset to
+   * @param presetId - ID of the preset to apply
+   * @param startTime - Time to start the animation (defaults to current time)
+   * @param duration - Duration of the animation in seconds
+   */
+  applyPreset(layerId: string, presetId: string, startTime?: number, duration: number = 1) {
+    const layer = this.project.layers.find((l) => l.id === layerId);
+    if (!layer) {
+      console.warn(`Layer not found: ${layerId}`);
+      return;
+    }
+
+    // Import preset function dynamically to avoid circular dependencies
+    const preset = getPresetById(presetId);
+
+    if (!preset) {
+      console.warn(`Preset not found: ${presetId}`);
+      return;
+    }
+
+    const actualStartTime = startTime ?? this.project.currentTime;
+
+    // Apply each keyframe from the preset, scaling time
+    for (const kf of preset.keyframes) {
+      const scaledTime = actualStartTime + kf.time * duration;
+
+      // Clamp to project duration
+      const clampedTime = Math.max(0, Math.min(scaledTime, this.project.duration));
+
+      // Get the base position from the layer's transform if it's a position property
+      let value = kf.value;
+      if (kf.property === 'position.x' && typeof kf.value === 'number') {
+        value = layer.transform.x + kf.value;
+      } else if (kf.property === 'position.y' && typeof kf.value === 'number') {
+        value = layer.transform.y + kf.value;
+      }
+
+      this.addKeyframe(layerId, {
+        id: nanoid(),
+        time: clampedTime,
+        property: kf.property,
+        value,
+        easing: kf.easing
+      });
+    }
   }
 
   // Timeline operations
