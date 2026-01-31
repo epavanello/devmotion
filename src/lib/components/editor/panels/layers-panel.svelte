@@ -7,17 +7,8 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { createLayer } from '$lib/engine/layer-factory';
   import AiChat from '$lib/components/ai/ai-chat.svelte';
-  import { toast } from 'svelte-sonner';
   import { getLayerDefinition, layerRegistry } from '$lib/layers/registry';
   import { cn } from '$lib/utils';
-
-  function handleAiMessage(message: string, type: 'success' | 'error') {
-    if (type === 'success') {
-      toast.success(message);
-    } else {
-      toast.error(message);
-    }
-  }
 
   // Note: Coordinate system has (0, 0) at canvas center
   function addLayer(type: string) {
@@ -181,5 +172,5 @@
   </ScrollArea>
 
   <!-- AI Generation Section -->
-  <AiChat onMessage={handleAiMessage} />
+  <AiChat />
 </div>
