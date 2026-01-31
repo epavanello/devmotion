@@ -48,7 +48,9 @@
 
           <!-- Timeline -->
           <ResizablePane defaultSize={30} minSize={20}>
-            <Timeline />
+            {#if !projectStore.isRecording}
+              <Timeline />
+            {/if}
           </ResizablePane>
         </ResizablePaneGroup>
       </ResizablePane>
@@ -57,7 +59,9 @@
 
       <!-- Right Panel - Properties -->
       <ResizablePane defaultSize={20} minSize={15} maxSize={30}>
-        <PropertiesPanel />
+        {#if !projectStore.isRecording}
+          <PropertiesPanel />
+        {/if}
       </ResizablePane>
     </ResizablePaneGroup>
   </div>
