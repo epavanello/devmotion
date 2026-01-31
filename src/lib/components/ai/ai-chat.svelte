@@ -471,11 +471,23 @@
    * Update project settings
    */
   function executeSetProject(op: SetProjectSettingsTool) {
-    if (op.settings.backgroundColor) {
-      projectStore.project.backgroundColor = op.settings.backgroundColor;
+    if (op.settings.name !== undefined) {
+      projectStore.project.name = op.settings.name;
     }
-    if (op.settings.duration && op.settings.duration !== projectStore.project.duration) {
+    if (op.settings.width !== undefined) {
+      projectStore.project.width = op.settings.width;
+    }
+    if (op.settings.height !== undefined) {
+      projectStore.project.height = op.settings.height;
+    }
+    if (
+      op.settings.duration !== undefined &&
+      op.settings.duration !== projectStore.project.duration
+    ) {
       projectStore.project.duration = op.settings.duration;
+    }
+    if (op.settings.backgroundColor !== undefined) {
+      projectStore.project.backgroundColor = op.settings.backgroundColor;
     }
   }
 

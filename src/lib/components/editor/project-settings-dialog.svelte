@@ -1,3 +1,14 @@
+<script module lang="ts">
+  export const commonResolutions = [
+    { label: 'Full HD (1920x1080)', width: 1920, height: 1080 },
+    { label: 'HD (1280x720)', width: 1280, height: 720 },
+    { label: '4K (3840x2160)', width: 3840, height: 2160 },
+    { label: 'Square (1080x1080)', width: 1080, height: 1080 },
+    { label: 'Mobile (720x1280)', width: 720, height: 1280 },
+    { label: 'Custom', width: 0, height: 0 }
+  ];
+</script>
+
 <script lang="ts">
   import {
     Dialog,
@@ -28,15 +39,6 @@
     duration: projectStore.project.duration,
     backgroundColor: projectStore.project.backgroundColor
   });
-
-  const commonResolutions = [
-    { label: 'Full HD (1920x1080)', width: 1920, height: 1080 },
-    { label: 'HD (1280x720)', width: 1280, height: 720 },
-    { label: '4K (3840x2160)', width: 3840, height: 2160 },
-    { label: 'Square (1080x1080)', width: 1080, height: 1080 },
-    { label: 'Mobile (720x1280)', width: 720, height: 1280 },
-    { label: 'Custom', width: 0, height: 0 }
-  ];
 
   let selectedResolution = $derived.by(() => {
     const res = commonResolutions.find(

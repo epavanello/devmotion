@@ -2,6 +2,7 @@
  * Zod schemas for animation types
  * Single source of truth - TypeScript types are inferred from these schemas
  */
+import { getAvailableLayerTypes } from '$lib/layers/registry';
 import { z } from 'zod';
 
 // ============================================
@@ -105,19 +106,7 @@ export const KeyframeSchema = z.object({
 // Layer Types
 // ============================================
 
-export const LayerTypeSchema = z.enum([
-  'text',
-  'shape',
-  'terminal',
-  'mouse',
-  'button',
-  'phone',
-  'browser',
-  'icon',
-  'progress',
-  'code',
-  'html'
-]);
+export const LayerTypeSchema = z.enum(getAvailableLayerTypes());
 
 // ============================================
 // Layer

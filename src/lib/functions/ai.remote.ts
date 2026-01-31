@@ -12,6 +12,8 @@ import { buildSystemPrompt } from '$lib/ai/system-prompt';
 import { env } from '$env/dynamic/private';
 import { ProjectSchema } from '$lib/schemas/animation';
 import { getModel, DEFAULT_MODEL_ID, AI_MODELS } from '$lib/ai/models';
+import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { join } from 'path';
 
 /**
  * Request schema for AI generation
@@ -21,6 +23,38 @@ const GenerateRequestSchema = z.object({
   project: ProjectSchema,
   modelId: z.string().optional().describe('Model ID to use for generation')
 });
+
+/**
+ * Log AI request and response to filesystem for debugging
+ */
+function logAIInteraction(data: {
+  timestamp: string;
+  prompt: string;
+  project: z.infer<typeof ProjectSchema>;
+  modelId: string;
+  systemPromptLength: number;
+  request: unknown;
+  output: z.infer<typeof AIResponseSchema>;
+}) {
+  try {
+    const logsDir = join(process.cwd(), 'logs', 'ai-requests');
+
+    // Create logs directory if it doesn't exist
+    if (!existsSync(logsDir)) {
+      mkdirSync(logsDir, { recursive: true });
+    }
+
+    // Create filename with timestamp
+    const filename = `${data.timestamp.replace(/[:.]/g, '-')}.json`;
+    const filepath = join(logsDir, filename);
+
+    // Write log file
+    writeFileSync(filepath, JSON.stringify(data, null, 2), 'utf-8');
+    console.log(`[AI] Logged interaction to: ${filepath}`);
+  } catch (error) {
+    console.error('[AI] Failed to log interaction:', error);
+  }
+}
 
 /**
  * Create OpenRouter-compatible client
@@ -58,7 +92,7 @@ export const generateAnimation = command(
     console.log(`[AI] Using model: ${model.name} (${model.id})`);
     console.log(`[AI] System prompt length: ${systemPrompt.length} chars`);
 
-    const { output } = await generateText({
+    const { output, request } = await generateText({
       model: openrouter(model.id),
       output: Output.object({
         schema: AIResponseSchema
@@ -71,7 +105,17 @@ export const generateAnimation = command(
       maxRetries: 2
     });
 
-    console.log('AI Output:', JSON.stringify(output, null, 2));
+    // Log the interaction to filesystem for debugging
+    const timestamp = new Date().toISOString();
+    logAIInteraction({
+      timestamp,
+      prompt,
+      project,
+      modelId: selectedModelId,
+      systemPromptLength: systemPrompt.length,
+      request: request.body,
+      output
+    });
 
     return {
       message: output.message,

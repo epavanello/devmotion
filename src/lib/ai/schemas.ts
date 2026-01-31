@@ -5,124 +5,8 @@
  */
 import { z } from 'zod';
 import { LayerTypeSchema, EasingSchema, AnchorPointSchema } from '$lib/schemas/animation';
-
-// ============================================
-// Layer Props Schemas (for better AI guidance)
-// ============================================
-
-/**
- * Text layer props
- */
-export const TextLayerPropsSchema = z.object({
-  content: z.string().describe('The text content to display'),
-  fontSize: z.number().min(8).max(500).describe('Font size in pixels (typical: 24-96)'),
-  fontFamily: z.string().describe('Font family (e.g., Inter, Poppins, Roboto)'),
-  fontWeight: z
-    .enum(['normal', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900'])
-    .optional()
-    .describe('Font weight'),
-  color: z.string().describe('Text color as hex (e.g., #ffffff)'),
-  textAlign: z.enum(['left', 'center', 'right']).optional().describe('Text alignment')
-});
-
-/**
- * Shape layer props
- */
-export const ShapeLayerPropsSchema = z.object({
-  shapeType: z.enum(['rect', 'circle', 'triangle']).describe('Type of shape'),
-  width: z.number().describe('Width in pixels'),
-  height: z.number().describe('Height in pixels'),
-  fill: z.string().describe('Fill color as hex'),
-  stroke: z.string().optional().describe('Stroke color as hex'),
-  strokeWidth: z.number().optional().describe('Stroke width in pixels'),
-  borderRadius: z.number().optional().describe('Border radius for rect shapes')
-});
-
-/**
- * Button layer props
- */
-export const ButtonLayerPropsSchema = z.object({
-  text: z.string().describe('Button text'),
-  backgroundColor: z.string().describe('Background color as hex'),
-  textColor: z.string().optional().describe('Text color as hex'),
-  width: z.number().describe('Width in pixels'),
-  height: z.number().describe('Height in pixels'),
-  borderRadius: z.number().optional().describe('Border radius'),
-  fontSize: z.number().optional().describe('Font size')
-});
-
-/**
- * Icon layer props
- */
-export const IconLayerPropsSchema = z.object({
-  icon: z
-    .string()
-    .describe(
-      'Lucide icon name (e.g., zap, shield, star, heart, check, x, arrow-right, sparkles, rocket, code, terminal, globe, mail, phone, user, settings, search, home, play, pause)'
-    ),
-  size: z.number().describe('Icon size in pixels'),
-  color: z.string().describe('Icon color as hex'),
-  backgroundColor: z.string().optional().describe('Background color for icon container'),
-  backgroundRadius: z.number().optional().describe('Background border radius'),
-  backgroundPadding: z.number().optional().describe('Padding around icon')
-});
-
-/**
- * Terminal layer props
- */
-export const TerminalLayerPropsSchema = z.object({
-  content: z.string().describe('Terminal content (can animate for typing effect)'),
-  width: z.number().describe('Width in pixels'),
-  height: z.number().describe('Height in pixels'),
-  backgroundColor: z.string().optional().describe('Background color'),
-  textColor: z.string().optional().describe('Text color'),
-  title: z.string().optional().describe('Terminal window title')
-});
-
-/**
- * Code layer props
- */
-export const CodeLayerPropsSchema = z.object({
-  code: z.string().describe('Code content'),
-  language: z
-    .string()
-    .describe('Programming language (javascript, typescript, python, rust, go, etc.)'),
-  width: z.number().describe('Width in pixels'),
-  fontSize: z.number().optional().describe('Font size'),
-  showLineNumbers: z.boolean().optional().describe('Show line numbers')
-});
-
-/**
- * Progress layer props
- */
-export const ProgressLayerPropsSchema = z.object({
-  progress: z.number().min(0).max(100).describe('Progress value 0-100 (can animate)'),
-  width: z.number().describe('Width in pixels'),
-  progressColor: z.string().describe('Progress bar color'),
-  backgroundColor: z.string().optional().describe('Background color'),
-  height: z.number().optional().describe('Height in pixels')
-});
-
-/**
- * HTML layer props - for custom HTML/CSS content
- */
-export const HtmlLayerPropsSchema = z.object({
-  html: z
-    .string()
-    .describe(
-      'HTML content - use {{var1}}, {{var2}}, etc. for variable interpolation that can be animated'
-    ),
-  css: z.string().describe('CSS styles for the HTML content'),
-  width: z.number().describe('Container width'),
-  height: z.number().describe('Container height'),
-  var1: z.string().optional().describe('Variable for interpolation in HTML'),
-  var2: z.string().optional().describe('Variable for interpolation in HTML'),
-  var3: z.string().optional().describe('Variable for interpolation in HTML'),
-  num1: z.number().optional().describe('Numeric variable for animations'),
-  num2: z.number().optional().describe('Numeric variable for animations'),
-  color1: z.string().optional().describe('Color variable for dynamic colors'),
-  color2: z.string().optional().describe('Color variable for dynamic colors')
-});
+import { getPresetIds } from '$lib/engine/presets';
+import { commonResolutions } from '$lib/components/editor/project-settings-dialog.svelte';
 
 // ============================================
 // Layer Operations
@@ -316,7 +200,7 @@ export const CreateSceneToolSchema = z.object({
             preset: z
               .string()
               .optional()
-              .describe('Animation preset (fade-in, slide-in-left, scale-in, pop, bounce, etc.)'),
+              .describe(`Animation preset (${getPresetIds().join(', ')})`),
             delay: z
               .number()
               .min(0)
@@ -347,10 +231,20 @@ export const CreateSceneToolSchema = z.object({
  */
 export const SetProjectSettingsToolSchema = z.object({
   action: z.literal('set_project'),
-  settings: z.object({
-    backgroundColor: z.string().optional().describe('Background color as hex'),
-    duration: z.number().min(1).max(120).optional().describe('Video duration in seconds')
-  })
+  settings: z
+    .object({
+      name: z.string().optional().describe('Project name'),
+      width: z.number().min(100).max(8192).optional().describe('Video width in pixels'),
+      height: z.number().min(100).max(8192).optional().describe('Video height in pixels'),
+      duration: z.number().min(1).max(60).optional().describe('Video duration in seconds'),
+      backgroundColor: z.string().optional().describe('Background color as hex (e.g., #000000)')
+    })
+    .describe(
+      `Project settings. Common supported resolutions: ${commonResolutions
+        .filter((r) => r.width > 0)
+        .map((r) => r.label)
+        .join(', ')}`
+    )
 });
 
 // ============================================
