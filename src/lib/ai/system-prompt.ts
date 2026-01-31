@@ -3,8 +3,8 @@
  * Optimized for clarity, spatial awareness, and creative output
  */
 import { layerRegistry, type LayerType } from '$lib/layers/registry';
-import { extractPropertyMetadata, extractDefaultValues } from '$lib/layers/base';
-import type { Project, Layer } from '$lib/types/animation';
+import { extractDefaultValues } from '$lib/layers/base';
+import type { Project } from '$lib/types/animation';
 import { animationPresets } from '$lib/engine/presets';
 
 /**
@@ -230,7 +230,6 @@ function buildCanvasState(project: Project): string {
     return `Canvas is EMPTY. Create layers to build your animation.`;
   }
 
-  const halfWidth = project.width / 2;
   const halfHeight = project.height / 2;
 
   // Build a simple spatial representation

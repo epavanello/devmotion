@@ -1,4 +1,5 @@
 <script lang="ts">
+  /* eslint-disable svelte/no-navigation-without-resolve */
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
   import type { Component, ComponentProps } from 'svelte';
 

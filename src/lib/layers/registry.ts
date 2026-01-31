@@ -27,8 +27,6 @@ const layers: Layer[] = (Object.values(staticLayers) as LayerModule[]).map((modu
   meta: module.meta
 }));
 
-console.log(layers);
-
 /**
  * Registry of all available layer types
  */

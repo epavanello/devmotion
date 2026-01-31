@@ -22,7 +22,7 @@
 
   <!-- Time markers -->
   <div class="relative flex-1">
-    {#each markers() as second}
+    {#each markers() as second, index (index)}
       <div
         class="absolute h-full border-l border-muted-foreground/20"
         style="left: {second * pixelsPerSecond}px"

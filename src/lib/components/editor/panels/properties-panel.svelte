@@ -321,9 +321,7 @@
 
   interface PropertyFieldProps {
     id: string;
-    label: string;
     value: number;
-    property: AnimatableProperty;
     step?: string;
     min?: string;
     max?: string;
@@ -351,18 +349,7 @@
   }
 </script>
 
-{#snippet propertyField({
-  id,
-  label,
-  value,
-  property,
-  step,
-  min,
-  max,
-  onInput
-}: PropertyFieldProps)}
-  {@const hasKeyframes = selectedLayer?.keyframes.some((k) => k.property === property)}
-
+{#snippet propertyField({ id, value, step, min, max, onInput }: PropertyFieldProps)}
   <Input
     {id}
     type="number"

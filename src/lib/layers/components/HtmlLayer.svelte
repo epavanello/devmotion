@@ -1,4 +1,5 @@
 <script module lang="ts">
+  /* eslint-disable svelte/no-at-html-tags */
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
   import { Code2 } from 'lucide-svelte';
@@ -105,20 +106,17 @@
    */
   function scopeCSS(cssContent: string): string {
     // Add scope ID to all selectors
-    return cssContent.replace(
-      /([^\{\}]+)\{/g,
-      (match, selector) => {
-        const scopedSelectors = selector
-          .split(',')
-          .map((s: string) => {
-            s = s.trim();
-            if (s.startsWith('@') || s.startsWith(':root')) return s;
-            return `#${scopeId} ${s}`;
-          })
-          .join(', ');
-        return `${scopedSelectors} {`;
-      }
-    );
+    return cssContent.replace(/([^{}]+)\{/g, (_match, selector) => {
+      const scopedSelectors = selector
+        .split(',')
+        .map((s: string) => {
+          s = s.trim();
+          if (s.startsWith('@') || s.startsWith(':root')) return s;
+          return `#${scopeId} ${s}`;
+        })
+        .join(', ');
+      return `${scopedSelectors} {`;
+    });
   }
 
   // Sanitize and process HTML
@@ -127,20 +125,89 @@
     // Sanitize HTML to prevent XSS
     return DOMPurify.sanitize(interpolated, {
       ALLOWED_TAGS: [
-        'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'strong', 'em', 'b', 'i', 'u', 'br', 'hr',
-        'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'thead', 'tbody',
-        'img', 'svg', 'path', 'circle', 'rect', 'line', 'polygon',
-        'a', 'button', 'input', 'label', 'form',
-        'header', 'footer', 'nav', 'main', 'section', 'article', 'aside',
-        'figure', 'figcaption', 'blockquote', 'pre', 'code'
+        'div',
+        'span',
+        'p',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'strong',
+        'em',
+        'b',
+        'i',
+        'u',
+        'br',
+        'hr',
+        'ul',
+        'ol',
+        'li',
+        'table',
+        'tr',
+        'td',
+        'th',
+        'thead',
+        'tbody',
+        'img',
+        'svg',
+        'path',
+        'circle',
+        'rect',
+        'line',
+        'polygon',
+        'a',
+        'button',
+        'input',
+        'label',
+        'form',
+        'header',
+        'footer',
+        'nav',
+        'main',
+        'section',
+        'article',
+        'aside',
+        'figure',
+        'figcaption',
+        'blockquote',
+        'pre',
+        'code'
       ],
       ALLOWED_ATTR: [
-        'class', 'id', 'style', 'src', 'alt', 'href', 'target',
-        'width', 'height', 'viewBox', 'd', 'fill', 'stroke', 'stroke-width',
-        'cx', 'cy', 'r', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'points',
-        'type', 'value', 'placeholder', 'disabled', 'readonly',
-        'data-*', 'aria-*', 'role'
+        'class',
+        'id',
+        'style',
+        'src',
+        'alt',
+        'href',
+        'target',
+        'width',
+        'height',
+        'viewBox',
+        'd',
+        'fill',
+        'stroke',
+        'stroke-width',
+        'cx',
+        'cy',
+        'r',
+        'x',
+        'y',
+        'x1',
+        'y1',
+        'x2',
+        'y2',
+        'points',
+        'type',
+        'value',
+        'placeholder',
+        'disabled',
+        'readonly',
+        'data-*',
+        'aria-*',
+        'role'
       ]
     });
   });
@@ -153,17 +220,11 @@
 </script>
 
 <svelte:head>
-  <style>
-    {@html processedCSS}
-  </style>
+  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+  {@html `${'<'}style>${processedCSS}</style>`}
 </svelte:head>
 
-<div
-  id={scopeId}
-  class="html-layer-container"
-  style:width="{width}px"
-  style:height="{height}px"
->
+<div id={scopeId} class="html-layer-container" style:width="{width}px" style:height="{height}px">
   {@html processedHtml}
 </div>
 

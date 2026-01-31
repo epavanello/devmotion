@@ -24,8 +24,8 @@ export interface AIModel {
  */
 export const AI_MODELS: Record<string, AIModel> = {
   // Kimi K2.5 - Excellent for creative tasks, long context
-  'moonshotai/kimi-k2': {
-    id: 'moonshotai/kimi-k2',
+  'moonshotai/kimi-k2.5': {
+    id: 'moonshotai/kimi-k2.5',
     name: 'Kimi K2.5',
     provider: 'Moonshot AI',
     description: 'Excellent for creative and complex tasks with 128K context',
@@ -35,10 +35,10 @@ export const AI_MODELS: Record<string, AIModel> = {
     costTier: 'medium'
   },
 
-  // Claude 3.5 Sonnet - Great reasoning and creativity
-  'anthropic/claude-sonnet-4': {
-    id: 'anthropic/claude-sonnet-4',
-    name: 'Claude Sonnet 4',
+  // Claude 4.5 Sonnet - Great reasoning and creativity
+  'anthropic/claude-sonnet-4.5': {
+    id: 'anthropic/claude-sonnet-4.5',
+    name: 'Claude Sonnet 4.5',
     provider: 'Anthropic',
     description: 'Excellent reasoning and creative capabilities',
     recommended: true,
@@ -47,10 +47,10 @@ export const AI_MODELS: Record<string, AIModel> = {
     costTier: 'medium'
   },
 
-  // GPT-4o - Strong all-rounder
-  'openai/gpt-4o': {
-    id: 'openai/gpt-4o',
-    name: 'GPT-4o',
+  // GPT-5.1 - Strong all-rounder
+  'openai/gpt-5.1': {
+    id: 'openai/gpt-5.1',
+    name: 'GPT-5.1',
     provider: 'OpenAI',
     description: 'Fast and capable multimodal model',
     structuredOutput: true,
@@ -58,66 +58,22 @@ export const AI_MODELS: Record<string, AIModel> = {
     costTier: 'medium'
   },
 
-  // GPT-4.1 - Latest OpenAI
-  'openai/gpt-4.1': {
-    id: 'openai/gpt-4.1',
-    name: 'GPT-4.1',
-    provider: 'OpenAI',
-    description: 'Latest GPT model with improved capabilities',
-    structuredOutput: true,
-    contextWindow: 128000,
-    costTier: 'high'
-  },
-
-  // Gemini 2.5 Pro - Good for structured output
-  'google/gemini-2.5-pro-preview': {
-    id: 'google/gemini-2.5-pro-preview',
-    name: 'Gemini 2.5 Pro',
+  // Gemini 3 Pro - Good for structured output
+  'google/gemini-3-pro-preview': {
+    id: 'google/gemini-3-pro-preview',
+    name: 'Gemini 3 Pro',
     provider: 'Google',
     description: 'Strong structured output and reasoning',
     structuredOutput: true,
     contextWindow: 1000000,
     costTier: 'medium'
-  },
-
-  // DeepSeek V3 - Cost effective, good quality
-  'deepseek/deepseek-chat-v3-0324': {
-    id: 'deepseek/deepseek-chat-v3-0324',
-    name: 'DeepSeek V3',
-    provider: 'DeepSeek',
-    description: 'Cost-effective with strong capabilities',
-    structuredOutput: true,
-    contextWindow: 64000,
-    costTier: 'low'
-  },
-
-  // Qwen 2.5 72B - Good for creative tasks
-  'qwen/qwen-2.5-72b-instruct': {
-    id: 'qwen/qwen-2.5-72b-instruct',
-    name: 'Qwen 2.5 72B',
-    provider: 'Alibaba',
-    description: 'Strong multilingual and creative capabilities',
-    structuredOutput: true,
-    contextWindow: 32000,
-    costTier: 'low'
-  },
-
-  // Llama 3.3 70B - Open source option
-  'meta-llama/llama-3.3-70b-instruct': {
-    id: 'meta-llama/llama-3.3-70b-instruct',
-    name: 'Llama 3.3 70B',
-    provider: 'Meta',
-    description: 'Open source, good general capabilities',
-    structuredOutput: true,
-    contextWindow: 128000,
-    costTier: 'low'
   }
 } as const;
 
 /**
  * Default model to use
  */
-export const DEFAULT_MODEL_ID = 'moonshotai/kimi-k2';
+export const DEFAULT_MODEL_ID = 'moonshotai/kimi-k2.5';
 
 /**
  * Get model by ID with fallback to default

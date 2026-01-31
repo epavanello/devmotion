@@ -22,7 +22,7 @@
   } from '$lib/ai/schemas';
   import type { LayerType, Easing, AnimatableProperty } from '$lib/types/animation';
   import { SvelteMap } from 'svelte/reactivity';
-  import { AI_MODELS, DEFAULT_MODEL_ID, type AIModel } from '$lib/ai/models';
+  import { AI_MODELS, DEFAULT_MODEL_ID } from '$lib/ai/models';
 
   interface Props {
     onMessage?: (message: string, type: 'success' | 'error') => void;
@@ -507,9 +507,9 @@
 
       {#if showModelSelector}
         <div
-          class="absolute right-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover p-1 shadow-lg"
+          class="absolute top-full right-0 z-50 mt-1 w-64 rounded-md border bg-popover p-1 shadow-lg"
         >
-          {#each models as model}
+          {#each models as model (model.id)}
             <button
               type="button"
               class="flex w-full flex-col items-start rounded-sm px-2 py-1.5 text-left text-xs hover:bg-accent"
@@ -522,7 +522,9 @@
               <div class="flex items-center gap-1">
                 <span class="font-medium">{model.name}</span>
                 {#if model.recommended}
-                  <span class="rounded bg-primary/20 px-1 text-[10px] text-primary">recommended</span>
+                  <span class="rounded bg-primary/20 px-1 text-[10px] text-primary"
+                    >recommended</span
+                  >
                 {/if}
               </div>
               <span class="text-muted-foreground">{model.description}</span>

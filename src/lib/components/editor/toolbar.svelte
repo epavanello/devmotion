@@ -13,7 +13,6 @@
     Lock,
     Unlock,
     GitFork,
-    Loader2,
     FileDown,
     Trash
   } from 'lucide-svelte';

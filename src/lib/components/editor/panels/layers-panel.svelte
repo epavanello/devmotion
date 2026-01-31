@@ -2,14 +2,7 @@
   import { projectStore } from '$lib/stores/project.svelte';
   import { Button } from '$lib/components/ui/button';
   import { ScrollArea } from '$lib/components/ui/scroll-area';
-  import {
-    Eye,
-    EyeOff,
-    Lock,
-    Unlock,
-    Trash2,
-    Plus
-  } from 'lucide-svelte';
+  import { Eye, EyeOff, Lock, Unlock, Trash2, Plus } from 'lucide-svelte';
   import type { Layer } from '$lib/types/animation';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { createLayer } from '$lib/engine/layer-factory';

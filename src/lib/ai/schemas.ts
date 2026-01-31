@@ -285,7 +285,9 @@ export const BatchKeyframesToolSchema = z.object({
         easing: EasingSchema.optional().describe('Easing type')
       })
     )
-    .describe('Array of keyframes to add at once - more efficient than individual add_keyframe calls')
+    .describe(
+      'Array of keyframes to add at once - more efficient than individual add_keyframe calls'
+    )
 });
 
 /**
@@ -315,7 +317,11 @@ export const CreateSceneToolSchema = z.object({
               .string()
               .optional()
               .describe('Animation preset (fade-in, slide-in-left, scale-in, pop, bounce, etc.)'),
-            delay: z.number().min(0).optional().describe('Delay before animation starts (relative to scene start)'),
+            delay: z
+              .number()
+              .min(0)
+              .optional()
+              .describe('Delay before animation starts (relative to scene start)'),
             duration: z.number().min(0.1).optional().describe('Animation duration'),
             customKeyframes: z
               .array(
