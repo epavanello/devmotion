@@ -1,17 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { projectStore } from '$lib/stores/project.svelte';
-  import {
-    getAnimatedTransform,
-    getAnimatedStyle,
-    getAnimatedProps
-  } from '$lib/engine/interpolation';
+  import { getLayerTransform, getLayerStyle, getLayerProps } from '$lib/engine/layer-rendering';
   import CanvasControls from './canvas-controls.svelte';
   import PlaybackControls from './playback-controls.svelte';
   import LayerWrapper from '$lib/layers/LayerWrapper.svelte';
-  import { getLayerComponent, getLayerSchema } from '$lib/layers/registry';
-  import { extractPropertyMetadata } from '$lib/layers/base';
-  import type { Layer, Transform } from '$lib/types/animation';
+  import { getLayerComponent } from '$lib/layers/registry';
+  import type { Layer } from '$lib/types/animation';
 
   let canvasContainer: HTMLDivElement | undefined = $state();
 
@@ -141,43 +136,24 @@
   }
 
   /**
-   * Get animated transform for a layer, merging base transform with animated values
+   * Unified function to get all layer rendering data (transform, style, props)
+   * Uses cached data during recording if available, otherwise computes on-demand
    */
-  function getLayerTransform(layer: Layer): Transform {
-    const animatedTransform = getAnimatedTransform(layer.keyframes, projectStore.currentTime);
-
+  function getLayerRenderData(layer: Layer) {
+    // Use cached data during recording if available
+    if (projectStore.isRecording) {
+      const cachedFrame = projectStore.getCachedFrame(projectStore.currentTime);
+      if (cachedFrame?.[layer.id]) {
+        return cachedFrame[layer.id];
+      }
+    }
+    // Otherwise compute using shared rendering functions
+    const currentTime = projectStore.currentTime;
     return {
-      x: animatedTransform.position?.x ?? layer.transform.x,
-      y: animatedTransform.position?.y ?? layer.transform.y,
-      z: animatedTransform.position?.z ?? layer.transform.z,
-      rotationX: animatedTransform.rotation?.x ?? layer.transform.rotationX,
-      rotationY: animatedTransform.rotation?.y ?? layer.transform.rotationY,
-      rotationZ: animatedTransform.rotation?.z ?? layer.transform.rotationZ,
-      scaleX: animatedTransform.scale?.x ?? layer.transform.scaleX,
-      scaleY: animatedTransform.scale?.y ?? layer.transform.scaleY,
-      scaleZ: animatedTransform.scale?.z ?? layer.transform.scaleZ,
-      anchor: layer.transform.anchor ?? 'center'
+      transform: getLayerTransform(layer, currentTime),
+      style: getLayerStyle(layer, currentTime),
+      customProps: getLayerProps(layer, currentTime)
     };
-  }
-
-  /**
-   * Get animated style for a layer
-   */
-  function getLayerStyle(layer: Layer) {
-    const animatedStyle = getAnimatedStyle(layer.keyframes, projectStore.currentTime);
-
-    return {
-      opacity: animatedStyle.opacity ?? layer.style.opacity
-    };
-  }
-
-  /**
-   * Get animated props for a layer, merging base props with animated values
-   */
-  function getLayerProps(layer: Layer): Record<string, unknown> {
-    const schema = getLayerSchema(layer.type);
-    const propsMetadata = extractPropertyMetadata(schema);
-    return getAnimatedProps(layer.keyframes, layer.props, propsMetadata, projectStore.currentTime);
   }
 
   // Calculate scale factor to fit project dimensions in viewport
@@ -211,7 +187,7 @@
   <div
     bind:this={canvasContainer}
     class="canvas-viewport absolute inset-0"
-    style:cursor={projectStore.isRecording ? 'none' : isPanning ? 'grabbing' : 'default'}
+    style:cursor={isPanning ? 'grabbing' : 'default'}
     onmousedown={onCanvasMouseDown}
     onmousemove={onCanvasMouseMove}
     onmouseup={onCanvasMouseUp}
@@ -253,13 +229,16 @@
         style:transform-style="preserve-3d"
         style:isolation="isolate"
         style:background-color={projectStore.project.backgroundColor}
+        style:cursor={projectStore.isRecording ? 'none' : undefined}
       >
         <!-- Layers -->
-        <div class="layers-container absolute inset-0" style:transform-style="preserve-3d">
+        <div
+          class="layers-container absolute inset-0"
+          style:transform-style="preserve-3d"
+          style:pointer-events={projectStore.isRecording ? 'none' : undefined}
+        >
           {#each projectStore.project.layers as layer (layer.id)}
-            {@const transform = getLayerTransform(layer)}
-            {@const style = getLayerStyle(layer)}
-            {@const props = getLayerProps(layer)}
+            {@const { transform, style, customProps } = getLayerRenderData(layer)}
             {@const component = getLayerComponent(layer.type)}
             {@const isSelected = projectStore.selectedLayerId === layer.id}
 
@@ -272,7 +251,7 @@
               {transform}
               {style}
               {component}
-              customProps={props}
+              {customProps}
             />
           {/each}
         </div>

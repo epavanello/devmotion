@@ -2,12 +2,31 @@
  * Global project store using Svelte 5 runes
  */
 import { getPresetById } from '$lib/engine/presets';
-import type { Project, Layer, Keyframe, ViewportSettings } from '$lib/types/animation';
+import type { Project, Layer, Keyframe, ViewportSettings, Transform } from '$lib/types/animation';
 import { nanoid } from 'nanoid';
 import { watch } from 'runed';
+import { getLayerTransform, getLayerStyle, getLayerProps } from '$lib/engine/layer-rendering';
 
 const STORAGE_KEY = 'devmotion_store';
 const DEBOUNCE_MS = 500;
+
+/**
+ * Cached layer data for a single frame
+ */
+interface LayerFrameCache {
+  transform: Transform;
+  style: {
+    opacity: number;
+  };
+  customProps: Record<string, unknown>;
+}
+
+/**
+ * Cache for all layers in a single frame
+ */
+interface FrameCache {
+  [layerId: string]: LayerFrameCache;
+}
 
 class ProjectStore {
   project = $state<Project>(undefined!);
@@ -18,6 +37,10 @@ class ProjectStore {
   isPlaying = $state(false);
   isRecording = $state(false);
   currentTime = $state(0);
+
+  // Frame cache for optimized recording
+  frameCache = $state<Map<number, FrameCache> | null>(null);
+  preparingProgress = $state(0);
 
   // DB context state
   dbProjectId = $state<string | null>(null);
@@ -289,6 +312,62 @@ class ProjectStore {
   get selectedLayer(): Layer | null {
     if (!this.selectedLayerId) return null;
     return this.project.layers.find((l) => l.id === this.selectedLayerId) || null;
+  }
+
+  /**
+   * Pre-calculate all frames for optimized recording
+   * Uses the same rendering functions as canvas for consistency
+   * @returns Promise that resolves when preparation is complete
+   */
+  async prepareRecording(): Promise<void> {
+    const totalFrames = Math.ceil(this.project.fps * this.project.duration);
+    this.frameCache = new Map();
+    this.preparingProgress = 0;
+
+    for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
+      const time = frameIndex / this.project.fps;
+      const frameData: FrameCache = {};
+
+      // Pre-calculate values for all layers using shared rendering functions
+      for (const layer of this.project.layers) {
+        frameData[layer.id] = {
+          transform: getLayerTransform(layer, time),
+          style: getLayerStyle(layer, time),
+          customProps: getLayerProps(layer, time)
+        };
+      }
+
+      this.frameCache.set(frameIndex, frameData);
+
+      // Update progress
+      this.preparingProgress = ((frameIndex + 1) / totalFrames) * 100;
+
+      // Yield to UI every 10 frames to prevent blocking
+      if (frameIndex % 10 === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+    }
+
+    this.preparingProgress = 100;
+  }
+
+  /**
+   * Clear the frame cache and free memory
+   */
+  clearFrameCache(): void {
+    this.frameCache = null;
+    this.preparingProgress = 0;
+  }
+
+  /**
+   * Get cached frame data for a specific time
+   * @param time Current time in seconds
+   * @returns Cached frame data or null if not cached
+   */
+  getCachedFrame(time: number): FrameCache | null {
+    if (!this.frameCache) return null;
+    const frameIndex = Math.floor(time * this.project.fps);
+    return this.frameCache.get(frameIndex) ?? null;
   }
 }
 
