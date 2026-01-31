@@ -130,7 +130,9 @@
           </div>
 
           <!-- Layer Controls -->
-          <div class="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <div
+            class="flex max-w-0 items-center gap-1 overflow-hidden opacity-0 transition-all duration-200 group-hover:max-w-40 group-hover:opacity-100 [@media(hover:none)]:max-w-40 [@media(hover:none)]:opacity-100"
+          >
             <Button
               variant="ghost"
               size="sm"
