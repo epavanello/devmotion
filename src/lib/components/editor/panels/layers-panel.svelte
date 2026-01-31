@@ -80,7 +80,7 @@
 >
   <!-- Panel Header -->
   <div class="flex items-center justify-between border-b bg-muted/50 px-4 py-3">
-    <h2 class="text-sm font-semibold">Layers</h2>
+    <h2 class="text-sm font-semibold">Layers ({projectStore.project.layers.length})</h2>
     <DropdownMenu.Root>
       <DropdownMenu.Trigger disabled={projectStore.isRecording}>
         <Button variant="outline" size="icon" disabled={projectStore.isRecording}>

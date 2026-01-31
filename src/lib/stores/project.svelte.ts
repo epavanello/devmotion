@@ -4,6 +4,7 @@
 import { getPresetById } from '$lib/engine/presets';
 import type { Project, Layer, Keyframe, ViewportSettings } from '$lib/types/animation';
 import { nanoid } from 'nanoid';
+import { watch } from 'runed';
 
 const STORAGE_KEY = 'devmotion_store';
 const DEBOUNCE_MS = 500;
@@ -16,6 +17,7 @@ class ProjectStore {
   selectedLayerId = $state<string | null>(null);
   isPlaying = $state(false);
   isRecording = $state(false);
+  currentTime = $state(0);
 
   // DB context state
   dbProjectId = $state<string | null>(null);
@@ -30,21 +32,21 @@ class ProjectStore {
     this.#initialized = true;
 
     $effect.root(() => {
-      $effect(() => {
-        // Access all nested properties via JSON.stringify to create deep dependencies
-        void JSON.stringify(this.project);
+      watch(
+        () => $state.snapshot(this.project),
+        () => {
+          // Skip saving during initial load
+          if (!this.#initialized) return;
 
-        // Skip saving during initial load
-        if (!this.#initialized) return;
-
-        // Debounced save
-        if (this.#saveTimeout) {
-          clearTimeout(this.#saveTimeout);
+          // Debounced save
+          if (this.#saveTimeout) {
+            clearTimeout(this.#saveTimeout);
+          }
+          this.#saveTimeout = setTimeout(() => {
+            this.saveToLocalStorage();
+          }, DEBOUNCE_MS);
         }
-        this.#saveTimeout = setTimeout(() => {
-          this.saveToLocalStorage();
-        }, DEBOUNCE_MS);
-      });
+      );
     });
   }
 
@@ -75,8 +77,7 @@ class ProjectStore {
       duration: 5,
       fps: 30,
       backgroundColor: '#000000',
-      layers: [],
-      currentTime: 0
+      layers: []
     };
   }
 
@@ -201,7 +202,7 @@ class ProjectStore {
       return;
     }
 
-    const actualStartTime = startTime ?? this.project.currentTime;
+    const actualStartTime = startTime ?? this.currentTime;
 
     // Apply each keyframe from the preset, scaling time
     for (const kf of preset.keyframes) {
@@ -230,7 +231,7 @@ class ProjectStore {
 
   // Timeline operations
   setCurrentTime(time: number) {
-    this.project.currentTime = Math.max(0, Math.min(time, this.project.duration));
+    this.currentTime = Math.max(0, Math.min(time, this.project.duration));
   }
 
   play() {
@@ -267,6 +268,7 @@ class ProjectStore {
 
   newProject() {
     this.project = this.getDefaultProject();
+    this.currentTime = 0;
     this.selectedLayerId = null;
     this.isPlaying = false;
   }

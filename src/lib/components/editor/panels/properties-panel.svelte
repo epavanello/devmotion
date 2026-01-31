@@ -40,6 +40,7 @@
   import { getLayerSchema } from '$lib/layers/registry';
   import { extractPropertyMetadata, type PropertyMetadata } from '$lib/layers/base';
   import { animationPresets } from '$lib/engine/presets';
+  import InputWrapper from './input-wrapper.svelte';
 
   const selectedLayer = $derived(projectStore.selectedLayer);
 
@@ -48,7 +49,7 @@
     if (!selectedLayer) return null;
     const animatedTransform = getAnimatedTransform(
       selectedLayer.keyframes,
-      projectStore.project.currentTime
+      projectStore.currentTime
     );
     return {
       x: animatedTransform.position.x ?? selectedLayer.transform.x,
@@ -65,10 +66,7 @@
 
   const currentStyle = $derived.by(() => {
     if (!selectedLayer) return null;
-    const animatedStyle = getAnimatedStyle(
-      selectedLayer.keyframes,
-      projectStore.project.currentTime
-    );
+    const animatedStyle = getAnimatedStyle(selectedLayer.keyframes, projectStore.currentTime);
     return {
       opacity: animatedStyle.opacity ?? selectedLayer.style.opacity
     };
@@ -93,7 +91,7 @@
       selectedLayer.keyframes,
       selectedLayer.props,
       layerPropertyMetadata,
-      projectStore.project.currentTime
+      projectStore.currentTime
     );
   });
 
@@ -236,7 +234,7 @@
     value: number | string | boolean,
     updateBase?: () => void
   ) {
-    const currentTime = projectStore.project.currentTime;
+    const currentTime = projectStore.currentTime;
     const hasKeyframes = layer.keyframes.some((k) => k.property === animatableProperty);
 
     if (hasKeyframes || !updateBase) {
@@ -340,7 +338,7 @@
   function applyPreset() {
     if (!selectedLayer || !selectedPresetId) return;
 
-    const startTime = projectStore.project.currentTime;
+    const startTime = projectStore.currentTime;
     projectStore.applyPreset(selectedLayer.id, selectedPresetId, startTime, presetDuration);
 
     // Reset selection after applying
@@ -486,23 +484,17 @@
             <ButtonGroup.Root>
               {@render propertyField({
                 id: 'pos-x',
-                label: 'X',
                 value: currentTransform?.x ?? 0,
-                property: 'position.x',
                 onInput: (v) => updateTransformProperty('x', v)
               })}
               {@render propertyField({
                 id: 'pos-y',
-                label: 'Y',
                 value: currentTransform?.y ?? 0,
-                property: 'position.y',
                 onInput: (v) => updateTransformProperty('y', v)
               })}
               {@render propertyField({
                 id: 'pos-z',
-                label: 'Z',
                 value: currentTransform?.z ?? 0,
-                property: 'position.z',
                 onInput: (v) => updateTransformProperty('z', v)
               })}
             </ButtonGroup.Root>
@@ -531,25 +523,19 @@
             <ButtonGroup.Root>
               {@render propertyField({
                 id: 'scale-x',
-                label: 'X',
                 value: currentTransform?.scaleX ?? 1,
-                property: 'scale.x',
                 step: '0.1',
                 onInput: (v) => updateTransformProperty('scaleX', v || 1)
               })}
               {@render propertyField({
                 id: 'scale-y',
-                label: 'Y',
                 value: currentTransform?.scaleY ?? 1,
-                property: 'scale.y',
                 step: '0.1',
                 onInput: (v) => updateTransformProperty('scaleY', v || 1)
               })}
               {@render propertyField({
                 id: 'scale-z',
-                label: 'Z',
                 value: currentTransform?.scaleZ ?? 1,
-                property: 'scale.z',
                 step: '0.1',
                 onInput: (v) => updateTransformProperty('scaleZ', v || 1)
               })}
@@ -579,25 +565,19 @@
             <ButtonGroup.Root>
               {@render propertyField({
                 id: 'rot-x',
-                label: 'X',
                 value: currentTransform?.rotationX ?? 0,
-                property: 'rotation.x',
                 step: '0.1',
                 onInput: (v) => updateTransformProperty('rotationX', v)
               })}
               {@render propertyField({
                 id: 'rot-y',
-                label: 'Y',
                 value: currentTransform?.rotationY ?? 0,
-                property: 'rotation.y',
                 step: '0.1',
                 onInput: (v) => updateTransformProperty('rotationY', v)
               })}
               {@render propertyField({
                 id: 'rot-z',
-                label: 'Z',
                 value: currentTransform?.rotationZ ?? 0,
-                property: 'rotation.z',
                 step: '0.1',
                 onInput: (v) => updateTransformProperty('rotationZ', v)
               })}
@@ -638,17 +618,16 @@
         <!-- Style -->
         <div class="space-y-3">
           <Label class="font-semibold">Style</Label>
-
-          {@render propertyField({
-            id: 'opacity',
-            label: 'Opacity',
-            value: currentStyle?.opacity ?? 1,
-            property: 'opacity',
-            step: '0.1',
-            min: '0',
-            max: '1',
-            onInput: (v) => updateStyle('opacity', v || 0)
-          })}
+          <InputWrapper id="opacity" label="Opacity" property="opacity" {addKeyframe}>
+            {@render propertyField({
+              id: 'opacity',
+              value: currentStyle?.opacity ?? 1,
+              step: '0.1',
+              min: '0',
+              max: '1',
+              onInput: (v) => updateStyle('opacity', v || 0)
+            })}
+          </InputWrapper>
         </div>
 
         <!-- Layer-specific properties (dynamic based on schema) -->

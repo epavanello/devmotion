@@ -68,7 +68,7 @@
       const deltaTime = (timestamp - lastFrameTime) / 1000;
       lastFrameTime = timestamp;
 
-      const newTime = projectStore.project.currentTime + deltaTime;
+      const newTime = projectStore.currentTime + deltaTime;
 
       if (newTime >= projectStore.project.duration) {
         // When recording, stop at the end instead of looping
@@ -144,10 +144,7 @@
    * Get animated transform for a layer, merging base transform with animated values
    */
   function getLayerTransform(layer: Layer): Transform {
-    const animatedTransform = getAnimatedTransform(
-      layer.keyframes,
-      projectStore.project.currentTime
-    );
+    const animatedTransform = getAnimatedTransform(layer.keyframes, projectStore.currentTime);
 
     return {
       x: animatedTransform.position?.x ?? layer.transform.x,
@@ -167,7 +164,7 @@
    * Get animated style for a layer
    */
   function getLayerStyle(layer: Layer) {
-    const animatedStyle = getAnimatedStyle(layer.keyframes, projectStore.project.currentTime);
+    const animatedStyle = getAnimatedStyle(layer.keyframes, projectStore.currentTime);
 
     return {
       opacity: animatedStyle.opacity ?? layer.style.opacity
@@ -180,12 +177,7 @@
   function getLayerProps(layer: Layer): Record<string, unknown> {
     const schema = getLayerSchema(layer.type);
     const propsMetadata = extractPropertyMetadata(schema);
-    return getAnimatedProps(
-      layer.keyframes,
-      layer.props,
-      propsMetadata,
-      projectStore.project.currentTime
-    );
+    return getAnimatedProps(layer.keyframes, layer.props, propsMetadata, projectStore.currentTime);
   }
 
   // Calculate scale factor to fit project dimensions in viewport

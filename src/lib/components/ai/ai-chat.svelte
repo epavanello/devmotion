@@ -1,7 +1,7 @@
 <script lang="ts">
   import { projectStore } from '$lib/stores/project.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Loader2, Sparkles, Send, ChevronDown } from 'lucide-svelte';
+  import { Sparkles, ChevronDown } from 'lucide-svelte';
   import { generateAnimation } from '$lib/functions/ai.remote';
   import { createLayer } from '$lib/engine/layer-factory';
   import { getPresetById } from '$lib/engine/presets';

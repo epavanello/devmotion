@@ -97,7 +97,7 @@
   <div class="flex items-center justify-between border-b bg-muted/50 px-4 py-2">
     <div class="text-sm font-medium">Timeline</div>
     <div class="text-xs text-muted-foreground">
-      {projectStore.project.currentTime.toFixed(2)}s / {projectStore.project.duration}s
+      {projectStore.currentTime.toFixed(2)}s / {projectStore.project.duration}s
     </div>
   </div>
 
@@ -133,7 +133,7 @@
 
         <!-- Playhead -->
         <TimelinePlayhead
-          currentTime={projectStore.project.currentTime}
+          currentTime={projectStore.currentTime}
           {pixelsPerSecond}
           onDragStart={startDragPlayhead}
         />

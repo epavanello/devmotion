@@ -151,8 +151,7 @@ export const ProjectSchema = z.object({
   duration: z.number().positive(),
   fps: z.number().positive(),
   backgroundColor: z.string(),
-  layers: z.array(LayerSchema),
-  currentTime: z.number().min(0)
+  layers: z.array(LayerSchema)
 });
 
 // ============================================

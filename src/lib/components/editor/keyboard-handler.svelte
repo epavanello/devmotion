@@ -86,14 +86,14 @@
       // Arrow Left - Step backward
       if (e.code === 'ArrowLeft' && !projectStore.isPlaying) {
         e.preventDefault();
-        const newTime = projectStore.project.currentTime - 1 / projectStore.project.fps;
+        const newTime = projectStore.currentTime - 1 / projectStore.project.fps;
         projectStore.setCurrentTime(Math.max(0, newTime));
       }
 
       // Arrow Right - Step forward
       if (e.code === 'ArrowRight' && !projectStore.isPlaying) {
         e.preventDefault();
-        const newTime = projectStore.project.currentTime + 1 / projectStore.project.fps;
+        const newTime = projectStore.currentTime + 1 / projectStore.project.fps;
         projectStore.setCurrentTime(Math.min(newTime, projectStore.project.duration));
       }
 
