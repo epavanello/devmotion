@@ -8,7 +8,8 @@
   import { createLayer } from '$lib/engine/layer-factory';
   import AiChat from '$lib/components/ai/ai-chat.svelte';
   import { toast } from 'svelte-sonner';
-  import { layerRegistry } from '$lib/layers/registry';
+  import { getLayerDefinition, layerRegistry } from '$lib/layers/registry';
+  import { cn } from '$lib/utils';
 
   function handleAiMessage(message: string, type: 'success' | 'error') {
     if (type === 'success') {
@@ -103,6 +104,7 @@
   <ScrollArea class="flex-1">
     <div class="space-y-1 p-2">
       {#each projectStore.project.layers as layer, index (layer.id)}
+        {@const Icon = getLayerDefinition(layer.type).icon}
         <div
           class="group flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 transition-colors hover:bg-muted/50"
           class:bg-muted={projectStore.selectedLayerId === layer.id}
@@ -116,14 +118,14 @@
           tabindex="0"
         >
           <!-- Layer Icon/Type -->
-          <div
-            class="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary/10 text-xs font-semibold"
-          >
-            {layer.name.charAt(0).toUpperCase()}
-          </div>
+          <Icon class="size-4" />
 
           <!-- Layer Name -->
-          <div class="flex-1 truncate text-sm">
+          <div
+            class={cn('flex-1 truncate text-sm', {
+              'opacity-30': !layer.visible
+            })}
+          >
             {layer.name}
           </div>
 
@@ -136,9 +138,9 @@
               onclick={(e) => toggleLayerVisibility(layer, e)}
             >
               {#if layer.visible}
-                <Eye class="h-3 w-3" />
+                <Eye class="size-3" />
               {:else}
-                <EyeOff class="h-3 w-3" />
+                <EyeOff class="size-3" />
               {/if}
             </Button>
 
@@ -149,9 +151,9 @@
               onclick={(e) => toggleLayerLock(layer, e)}
             >
               {#if layer.locked}
-                <Lock class="h-3 w-3" />
+                <Lock class="size-3" />
               {:else}
-                <Unlock class="h-3 w-3" />
+                <Unlock class="size-3" />
               {/if}
             </Button>
 
@@ -161,7 +163,7 @@
               class="h-6 w-6 p-0 text-destructive"
               onclick={(e) => deleteLayer(layer, e)}
             >
-              <Trash2 class="h-3 w-3" />
+              <Trash2 class="size-3" />
             </Button>
           </div>
         </div>

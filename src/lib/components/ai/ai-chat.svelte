@@ -550,10 +550,8 @@
     disabled={!prompt.trim() || isGenerating || projectStore.isRecording}
   >
     {#if isGenerating}
-      <Loader2 class="mr-2 h-4 w-4 animate-spin" />
       Generating with {selectedModel.name}...
     {:else}
-      <Send class="mr-2 h-4 w-4" />
       Generate
     {/if}
   </Button>
