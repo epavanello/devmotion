@@ -16,14 +16,16 @@
     resetLayerTracking
   } from '$lib/ai/ai-operations.svelte';
   import {
-    type CreateLayerInput,
     type AnimateLayerInput,
     type EditLayerInput,
     type RemoveLayerInput,
     type ConfigureProjectInput,
     type AnimationUITools,
-    type ToolIDs
+    isLayerCreationTool,
+    getLayerTypeFromToolName
   } from '$lib/ai/schemas';
+  import { toast } from 'svelte-sonner';
+  import { parseErrorMessage } from '$lib/utils';
 
   let prompt = $state('');
   let showModelSelector = $state(false);
@@ -44,45 +46,58 @@
         } satisfies Omit<GenerateRequest, 'messages'>;
       }
     }),
+    onError(error) {
+      toast.error(parseErrorMessage(error));
+    },
     onToolCall({ toolCall }) {
       if (toolCall.dynamic) {
         return;
       }
-
-      console.log(toolCall.toolName);
-
-      // get_layer_info is executed server-side, no need for client execution
-      if (toolCall.toolName === 'get_layer_info') {
-        return;
-      }
-
-      const toolName = toolCall.toolName as ToolIDs;
+      const toolName = toolCall.toolName;
       let result: unknown;
 
-      switch (toolName) {
-        case 'create_layer':
-          result = executeCreateLayer(toolCall.input as CreateLayerInput);
-          break;
-        case 'animate_layer':
-          result = executeAnimateLayer(toolCall.input as AnimateLayerInput);
-          break;
-        case 'edit_layer':
-          result = executeEditLayer(toolCall.input as EditLayerInput);
-          break;
-        case 'remove_layer':
-          result = executeRemoveLayer(toolCall.input as RemoveLayerInput);
-          break;
-        case 'configure_project':
-          result = executeConfigureProject(toolCall.input as ConfigureProjectInput);
-          break;
-        default:
-          result = { success: false, error: `Unknown tool: ${toolCall.toolName}` };
+      // Handle layer creation tools (create_text_layer, create_icon_layer, etc.)
+      if (isLayerCreationTool(toolName)) {
+        const layerType = getLayerTypeFromToolName(toolName);
+        if (layerType) {
+          const input = toolCall.input as {
+            name?: string;
+            position?: { x: number; y: number };
+            props: Record<string, unknown>;
+            animation?: { preset: string; startTime?: number; duration?: number };
+          };
+          result = executeCreateLayer({
+            type: layerType,
+            name: input.name,
+            position: input.position,
+            props: input.props || {},
+            animation: input.animation
+          });
+        } else {
+          result = { success: false, error: `Invalid layer creation tool: ${toolName}` };
+        }
+      } else {
+        // Handle other tools
+        switch (toolName) {
+          case 'animate_layer':
+            result = executeAnimateLayer(toolCall.input as AnimateLayerInput);
+            break;
+          case 'edit_layer':
+            result = executeEditLayer(toolCall.input as EditLayerInput);
+            break;
+          case 'remove_layer':
+            result = executeRemoveLayer(toolCall.input as RemoveLayerInput);
+            break;
+          case 'configure_project':
+            result = executeConfigureProject(toolCall.input as ConfigureProjectInput);
+            break;
+          default:
+            result = { success: false, error: `Unknown tool: ${toolName}` };
+        }
       }
 
-      console.log(result);
-
       chat.addToolOutput({
-        tool: toolCall.toolName,
+        tool: toolName,
         toolCallId: toolCall.toolCallId,
         output: result
       });
@@ -194,7 +209,26 @@
                 {#if part.type === 'text' && part.text.trim()}
                   <p class="text-sm whitespace-pre-wrap">{part.text}</p>
                 {:else if isToolUIPart(part)}
-                  TOOL: {part.type}
+                  <details class="rounded border bg-muted/50 px-2 py-1 text-xs">
+                    <summary class="cursor-pointer font-mono font-medium text-primary">
+                      🔧 {part.type.replace('tool-', '')}
+                      <span class="text-muted-foreground">({part.state || 'pending'})</span>
+                    </summary>
+                    <div class="mt-2 space-y-1 font-mono text-[10px]">
+                      {#if part.input}
+                        <div>
+                          <span class="font-semibold">Input:</span>
+                          {JSON.stringify(part.input, null, 2)}
+                        </div>
+                      {/if}
+                      {#if part.output}
+                        <div>
+                          <span class="font-semibold">Output:</span>
+                          {JSON.stringify(part.output, null, 2)}
+                        </div>
+                      {/if}
+                    </div>
+                  </details>
                   <!-- <ToolCallDisplay
                     toolName={part.type.replace('tool-', '')}
                     input={part.input}

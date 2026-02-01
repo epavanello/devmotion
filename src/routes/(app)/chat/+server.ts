@@ -14,6 +14,7 @@ import { getModel } from '$lib/ai/models';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import type { RequestHandler } from './$types';
+import { dev } from '$app/environment';
 
 /**
  * Request schema for AI generation
@@ -132,6 +133,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       error(401, 'Authentication required');
     }
 
+    if (!dev) {
+      error(503, 'AI animation generation is not ready for production yet');
+    }
+
     const body = await request.json();
     const { project, modelId, messages } = GenerateRequestSchema.parse(body);
 
@@ -146,6 +151,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       model: openrouter(model.id),
       instructions: systemPrompt,
       tools: animationTools,
+
       onFinish(event) {
         logAIInteraction({
           timestamp: new Date().toISOString(),

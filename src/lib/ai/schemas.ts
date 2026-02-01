@@ -1,110 +1,174 @@
 /**
  * AI Tool Schemas for Progressive Animation Generation
  *
- * Tools are executed client-side, allowing the AI to see results and iterate.
- * Uses dynamic schema discovery via get_layer_info to avoid context bloat.
+ * Uses static layer-specific tools with explicit schemas from the layer registry.
+ * Each layer type has its own creation tool (create_text_layer, create_icon_layer, etc.)
  */
 import { z } from 'zod';
 import { EasingSchema } from '$lib/schemas/animation';
 import { getPresetIds } from '$lib/engine/presets';
-import { tool, type InferUITools } from 'ai';
-import { layerRegistry, type LayerType } from '$lib/layers/registry';
-import { extractPropertyMetadata, extractDefaultValues } from '$lib/layers/base';
+import { tool, type InferUITools, type Tool } from 'ai';
+import { layerRegistry, getAvailableLayerTypes, type LayerType } from '$lib/layers/registry';
+import { extractDefaultValues } from '$lib/layers/base';
 
 // ============================================
-// Tool: get_layer_info
-// Discover layer schema dynamically
+// Helper Functions
 // ============================================
 
-export const GetLayerInfoInputSchema = z.object({
-  layerType: z
-    .string()
-    .describe('The layer type to get info about (see available types in system prompt)')
-});
-
-export type GetLayerInfoInput = z.infer<typeof GetLayerInfoInputSchema>;
-
-export interface GetLayerInfoOutput {
-  success: boolean;
-  layerType?: string;
-  label?: string;
-  properties?: Array<{
-    name: string;
-    type: string;
-    description?: string;
-    required: boolean;
-    defaultValue?: unknown;
-    options?: Array<{ value: string | number; label: string }>;
-    min?: number;
-    max?: number;
-  }>;
-  error?: string;
+/**
+ * Check if a tool name is a layer creation tool
+ */
+export function isLayerCreationTool(toolName: string): boolean {
+  return toolName.startsWith('create_') && toolName.endsWith('_layer');
 }
 
 /**
- * Get layer info from registry - executed server-side
+ * Extract layer type from tool name
+ * e.g., "create_text_layer" → "text"
  */
-export function getLayerInfo(input: GetLayerInfoInput): GetLayerInfoOutput {
-  const type = input.layerType as LayerType;
-
-  if (!layerRegistry[type]) {
-    return {
-      success: false,
-      error: `Unknown layer type: ${input.layerType}. Check the available layer types in the system prompt.`
-    };
-  }
-
-  const definition = layerRegistry[type];
-  const metadata = extractPropertyMetadata(definition.schema);
-  const defaults = extractDefaultValues(definition.schema);
-
-  // Determine which properties are required (no default value)
-  const properties = metadata.map((prop) => ({
-    name: prop.name,
-    type: prop.type,
-    description: prop.description,
-    required: defaults[prop.name] === undefined,
-    defaultValue: defaults[prop.name],
-    options: prop.options,
-    min: prop.min,
-    max: prop.max
-  }));
-
-  return {
-    success: true,
-    layerType: type,
-    label: definition.label,
-    properties
-  };
+export function getLayerTypeFromToolName(toolName: string): string | null {
+  const match = toolName.match(/^create_(.+)_layer$/);
+  return match ? match[1] : null;
 }
 
 // ============================================
-// Tool: create_layer
+// Shared Schemas for Layer Creation
 // ============================================
 
-export const CreateLayerInputSchema = z.object({
-  type: z.string().describe('Layer type (use get_layer_info first to see available props)'),
-  name: z.string().optional().describe('Layer name for identification'),
-  position: z
-    .object({
-      x: z.number().default(0).describe('X position (0=center)'),
-      y: z.number().default(0).describe('Y position (0=center)')
-    })
-    .optional(),
-  props: z
-    .record(z.string(), z.unknown())
-    .describe('Layer-specific properties from get_layer_info'),
-  animation: z
-    .object({
-      preset: z.string().optional().describe('Animation preset ID'),
-      startTime: z.number().min(0).default(0),
-      duration: z.number().min(0.1).default(0.5)
-    })
-    .optional()
-    .describe('Optional immediate animation')
-});
+const PositionSchema = z
+  .object({
+    x: z.number().default(0).describe('X position (0=center)'),
+    y: z.number().default(0).describe('Y position (0=center)')
+  })
+  .optional()
+  .describe('Position on canvas - ALWAYS specify to avoid stacking at center');
 
-export type CreateLayerInput = z.infer<typeof CreateLayerInputSchema>;
+const AnimationSchema = z
+  .object({
+    preset: z
+      .string()
+      .describe(
+        'Animation preset ID (REQUIRED): fade-in, slide-in-left, scale-in, pop, bounce-in, zoom-in, etc.'
+      ),
+    startTime: z.number().min(0).default(0).describe('Start time in seconds'),
+    duration: z.number().min(0.1).default(0.5).describe('Duration in seconds')
+  })
+  .optional()
+  .describe('Animation to apply immediately when layer is created');
+
+// ============================================
+// Layer Creation Tool Generator
+// ============================================
+
+/**
+ * Get key props for each layer type for the description
+ */
+function getKeyPropsForLayerType(type: string): string[] {
+  const keyProps: Record<string, string[]> = {
+    text: ['content', 'fontSize', 'color', 'fontFamily'],
+    icon: ['icon', 'size', 'color'],
+    shape: ['shapeType', 'fill', 'width', 'height'],
+    code: ['code', 'language'],
+    image: ['src', 'width', 'height'],
+    button: ['text', 'backgroundColor', 'textColor'],
+    terminal: ['title', 'content'],
+    progress: ['progress', 'progressColor'],
+    mouse: ['pointerType', 'size'],
+    phone: ['url'],
+    browser: ['url'],
+    html: ['html', 'css']
+  };
+  return keyProps[type] || [];
+}
+
+/**
+ * Get example props for each layer type
+ */
+function getExampleProps(type: string): string {
+  const examples: Record<string, string> = {
+    text: '"content": "Hello World", "fontSize": 48, "color": "#ffffff"',
+    icon: '"icon": "star", "size": 64, "color": "#ffffff"',
+    shape: '"shapeType": "rectangle", "fill": "#3b82f6", "width": 200, "height": 100"',
+    code: '"code": "const x = 1;", "language": "typescript"',
+    image: '"src": "https://example.com/image.jpg", "width": 400',
+    button: '"text": "Click Me", "backgroundColor": "#3b82f6"',
+    terminal: '"content": "$ npm install", "title": "Terminal"',
+    progress: '"progress": 75, "progressColor": "#22c55e"',
+    mouse: '"pointerType": "arrow", "size": 32',
+    phone: '"url": "https://example.com"',
+    browser: '"url": "https://example.com"',
+    html: '"html": "<div>Content</div>", "css": ".container { color: white; }"'
+  };
+  return examples[type] || '';
+}
+
+/**
+ * Generate tool definitions for all layer types from the registry
+ */
+function generateLayerCreationTools(): Record<string, Tool> {
+  const tools: Record<string, Tool> = {};
+
+  for (const layerType of getAvailableLayerTypes()) {
+    const definition = layerRegistry[layerType as LayerType];
+    if (!definition) continue;
+
+    const toolName = `create_${layerType}_layer`;
+    const keyProps = getKeyPropsForLayerType(layerType);
+    const exampleProps = getExampleProps(layerType);
+    const defaults = extractDefaultValues(definition.schema);
+
+    // Build key props description with defaults
+    const keyPropsDescription = keyProps
+      .map((prop) => {
+        const defaultVal = defaults[prop];
+        return defaultVal !== undefined ? `${prop} (default: ${JSON.stringify(defaultVal)})` : prop;
+      })
+      .join(', ');
+
+    // Build the input schema with shared fields + layer-specific props
+    const inputSchema = z.object({
+      name: z.string().optional().describe('Layer name for identification'),
+      position: PositionSchema,
+      props: definition.schema.describe(`Properties for ${definition.label} layer`),
+      animation: AnimationSchema
+    });
+
+    const description = `Create a ${definition.label} layer. ${definition.description}
+
+Key props: ${keyPropsDescription}
+
+Example:
+{
+  "name": "My ${definition.label}",
+  "position": { "x": 0, "y": 0 },
+  "props": { ${exampleProps} },
+  "animation": { "preset": "fade-in", "startTime": 0, "duration": 0.5 }
+}`;
+
+    tools[toolName] = tool({
+      description,
+      inputSchema
+    });
+  }
+
+  return tools;
+}
+
+// ============================================
+// Input/Output Types for Layer Creation
+// ============================================
+
+export interface CreateLayerInput {
+  type: string;
+  name?: string;
+  position?: { x: number; y: number };
+  props: Record<string, unknown>;
+  animation?: {
+    preset: string;
+    startTime?: number;
+    duration?: number;
+  };
+}
 
 export interface CreateLayerOutput {
   success: boolean;
@@ -233,37 +297,22 @@ export interface ConfigureProjectOutput {
 // Tool Definitions for AI SDK
 // ============================================
 
+// Generate layer creation tools from registry
+const layerCreationTools = generateLayerCreationTools();
+
 export const animationTools = {
-  get_layer_info: tool({
-    description: `REQUIRED before creating a new layer type. Returns all available properties with types, defaults, and constraints.
+  // Layer creation tools (dynamically generated from registry)
+  ...layerCreationTools,
 
-Output: { success, layerType, label, properties: [{ name, type, description, required, defaultValue, options, min, max }] }
-
-Example: get_layer_info({ layerType: "text" }) → shows content, fontSize, fontFamily, color, etc.`,
-    inputSchema: GetLayerInfoInputSchema,
-    execute: async (input) => {
-      console.log('get_layer_info');
-      return getLayerInfo(input);
-    }
-  }),
-
-  create_layer: tool({
-    description: `Create a new layer. MUST call get_layer_info first to know valid props.
-
-Output: { success, layerId, layerIndex, layerName, message } or { success: false, error }
-
-The layerIndex (0, 1, 2...) lets you reference this layer as "layer_0", "layer_1", etc. in subsequent calls.
-Position (0,0) = canvas center. Only pass props that exist in get_layer_info output.`,
-    inputSchema: CreateLayerInputSchema
-  }),
-
+  // Animation and editing tools
   animate_layer: tool({
-    description: `Add animation to a layer using presets or custom keyframes.
+    description: `Add animation to a layer. Use when you need to animate an existing layer or add complex keyframes.
 
-Output: { success, layerId, keyframesAdded, message } or { success: false, error }
+Presets: fade-in, slide-in-left, slide-in-right, slide-in-top, slide-in-bottom, scale-in, pop, bounce-in, zoom-in, rotate-in, pulse, float
 
-Layer reference: Use "layer_0" for layers you created, or the ID/name from PROJECT STATE for existing layers.
-Animatable: position.x, position.y, scale.x, scale.y, rotation.z, opacity, props.* (any layer prop)`,
+Example: { layerId: "layer_0", preset: { id: "pop", startTime: 0.3, duration: 0.6 } }
+
+Output: { success, keyframesAdded, message }`,
     inputSchema: AnimateLayerInputSchema
   }),
 
@@ -272,8 +321,7 @@ Animatable: position.x, position.y, scale.x, scale.y, rotation.z, opacity, props
 
 Output: { success, layerId, message } or { success: false, error }
 
-Layer reference: Use "layer_0" for layers you created, or the ID/name from PROJECT STATE.
-Only update props that exist for this layer type (use get_layer_info if unsure).`,
+Layer reference: Use "layer_0" for layers you created, or the ID/name from PROJECT STATE.`,
     inputSchema: EditLayerInputSchema
   }),
 

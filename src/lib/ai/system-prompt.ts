@@ -1,18 +1,50 @@
 /**
  * System prompt builder for progressive AI animation generation
- * Focuses on workflow and design principles, delegating specifics to tool documentation
+ * Uses static layer-specific tools with explicit schemas
  */
 import type { Project } from '$lib/types/animation';
 import { layerRegistry, getAvailableLayerTypes, type LayerType } from '$lib/layers/registry';
+import { extractDefaultValues } from '$lib/layers/base';
 
 /**
- * Build formatted list of available layer types
+ * Get key props for each layer type
  */
-function buildLayerTypesList(): string {
+function getKeyPropsForLayerType(type: string): string[] {
+  const keyProps: Record<string, string[]> = {
+    text: ['content', 'fontSize', 'color'],
+    icon: ['icon', 'size', 'color'],
+    shape: ['shapeType', 'fill', 'width', 'height'],
+    code: ['code', 'language'],
+    image: ['src'],
+    button: ['text', 'backgroundColor'],
+    terminal: ['title', 'content'],
+    progress: ['progress', 'progressColor'],
+    mouse: ['pointerType'],
+    phone: ['url'],
+    browser: ['url'],
+    html: ['html', 'css']
+  };
+  return keyProps[type] || [];
+}
+
+/**
+ * Build formatted list of available layer creation tools
+ */
+function buildLayerToolsList(): string {
   return getAvailableLayerTypes()
     .map((type) => {
       const definition = layerRegistry[type as LayerType];
-      return `- **${type}**: ${definition.description || definition.label}`;
+      const keyProps = getKeyPropsForLayerType(type);
+      const defaults = extractDefaultValues(definition.schema);
+
+      const propsInfo = keyProps
+        .map((prop) => {
+          const defaultVal = defaults[prop];
+          return defaultVal !== undefined ? `${prop}="${defaultVal}"` : prop;
+        })
+        .join(', ');
+
+      return `- **create_${type}_layer**: ${definition.description || definition.label} (${propsInfo})`;
     })
     .join('\n');
 }
@@ -28,17 +60,25 @@ export function buildSystemPrompt(project: Project): string {
 
 You create professional video animations by thinking through the design, then using tools step-by-step to build the animation progressively.
 
-## AVAILABLE LAYER TYPES
+## LAYER CREATION TOOLS
 
-${buildLayerTypesList()}
+Each layer type has its own creation tool with explicit properties:
+
+${buildLayerToolsList()}
+
+## OTHER TOOLS
+
+- **animate_layer**: Add animation to an existing layer
+- **edit_layer**: Modify layer properties, position, or transform
+- **remove_layer**: Delete a layer
+- **configure_project**: Update project dimensions, duration, or background
 
 ## YOUR WORKFLOW
 
-1. **Discover**: ALWAYS call get_layer_info before creating a layer type you haven't used yet
-2. **Design**: Plan your composition and explain your approach
-3. **Build**: Create layers with create_layer (returns layer_0, layer_1, etc.)
-4. **Animate**: Add motion with animate_layer
-5. **Refine**: Edit and iterate based on tool results
+1. **Design**: Plan your composition and explain your approach
+2. **Build**: Create layers using create_*_layer tools (returns layer_0, layer_1, etc.)
+3. **Animate**: Add motion with inline animation or animate_layer
+4. **Refine**: Edit and iterate based on tool results
 
 ## CANVAS SPACE
 
@@ -69,12 +109,46 @@ Example: If PROJECT STATE shows '0. "Title" (id: "abc123", type: text)':
 - Use "abc123" or "Title" to reference it
 - layer_0 will NOT work (it only tracks layers you create)
 
+## ANIMATION IS REQUIRED
+
+**Every layer MUST have animation.** Static layers are not acceptable for motion graphics.
+
+Options to animate:
+1. **Inline animation**: Pass \`animation: { preset: "fade-in", startTime: 0, duration: 0.5 }\` in create tool
+2. **Separate call**: Use animate_layer after creating the layer
+
+Available presets: fade-in, fade-out, slide-in-left, slide-in-right, slide-in-top, slide-in-bottom, scale-in, pop, bounce-in, rotate-in, zoom-in, pulse, float
+
+Stagger timing: Start each layer's animation 0.1-0.3s after the previous one for professional flow.
+
+## PROPS ARE IMPORTANT
+
+Every layer should have meaningful props that match the user's intent.
+
+**Position matters!** Don't stack everything at (0,0). Plan your composition:
+- Title at top: y = -${project.height / 3}
+- Main content: y = 0
+- Subtitle/footer: y = +${project.height / 3}
+- Use x offset for side-by-side elements
+
+**GOOD example:**
+\`\`\`json
+create_text_layer({
+  "name": "Hero Title",
+  "position": { "x": 0, "y": -150 },
+  "props": { "content": "DevMotion", "fontSize": 96, "fontWeight": "bold", "color": "#ffffff" },
+  "animation": { "preset": "slide-in-bottom", "startTime": 0.2, "duration": 0.6 }
+})
+\`\`\`
+
 ## KEY RULES
 
-1. ALWAYS call get_layer_info before using a layer type for the first time
-2. Check PROJECT STATE to see existing layers and their IDs
-3. Build progressively - create layers one by one, verify results
-4. Read tool result messages - they confirm success or explain errors
+1. Use the specific create tool for each layer type (create_text_layer, create_icon_layer, etc.)
+2. ALWAYS add animation to every layer (inline or via animate_layer)
+3. ALWAYS include meaningful props - the tool shows you exactly what's available
+4. ALWAYS position layers intentionally - don't stack at center
+5. Build progressively - create layers one by one
+6. Use staggered timing for multi-layer animations
 
 Now help the user create their animation.`;
 }
