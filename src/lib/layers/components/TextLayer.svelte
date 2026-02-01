@@ -1,10 +1,12 @@
 <script module lang="ts">
   import { z } from 'zod';
+  import type { LayerMeta } from '../registry';
+  import { Type } from 'lucide-svelte';
 
   /**
    * Popular Google Fonts enum
    */
-  export const GoogleFonts = {
+  const GoogleFonts = {
     Inter: 'Inter',
     Roboto: 'Roboto',
     Poppins: 'Poppins',
@@ -42,7 +44,7 @@
   /**
    * Schema for Text Layer custom properties
    */
-  export const schema = z.object({
+  const schema = z.object({
     content: z.string().default('New Text').describe('Text content'),
     fontSize: z.number().min(8).max(500).default(48).describe('Font size (px)'),
     fontFamily: z.enum(googleFontValues).default('Inter').describe('Font family'),
@@ -56,7 +58,15 @@
     color: z.string().default('#ffffff').describe('Text color')
   });
 
-  export type Props = z.infer<typeof schema>;
+  export const meta: LayerMeta = {
+    schema,
+    type: 'text',
+    label: 'Text',
+    icon: Type,
+    description: 'Styled text with Google Fonts, customizable size, weight, color, and alignment'
+  };
+
+  type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">

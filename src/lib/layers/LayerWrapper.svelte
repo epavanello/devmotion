@@ -101,7 +101,7 @@
       const movementX = canvasPos.x - dragStart.x;
       const movementY = canvasPos.y - dragStart.y;
 
-      const currentTime = projectStore.project.currentTime;
+      const currentTime = projectStore.currentTime;
 
       // Check if there are ANY keyframes for position.x or position.y
       const hasXKeyframes = layer.keyframes.some((k) => k.property === 'position.x');

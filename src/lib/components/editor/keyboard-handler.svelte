@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { projectStore } from '$lib/stores/project.svelte';
-  import { createTextLayer, createShapeLayer } from '$lib/engine/layer-factory';
+  import { createLayer } from '$lib/engine/layer-factory';
 
   onMount(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -58,7 +58,7 @@
       // T - Add text layer
       if (e.key === 't' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
-        const layer = createTextLayer(0, 0);
+        const layer = createLayer('text');
         projectStore.addLayer(layer);
         projectStore.selectedLayerId = layer.id;
       }
@@ -66,7 +66,7 @@
       // R - Add rectangle
       if (e.key === 'r' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
-        const layer = createShapeLayer(0, 0);
+        const layer = createLayer('shape');
         projectStore.addLayer(layer);
         projectStore.selectedLayerId = layer.id;
       }
@@ -86,14 +86,14 @@
       // Arrow Left - Step backward
       if (e.code === 'ArrowLeft' && !projectStore.isPlaying) {
         e.preventDefault();
-        const newTime = projectStore.project.currentTime - 1 / projectStore.project.fps;
+        const newTime = projectStore.currentTime - 1 / projectStore.project.fps;
         projectStore.setCurrentTime(Math.max(0, newTime));
       }
 
       // Arrow Right - Step forward
       if (e.code === 'ArrowRight' && !projectStore.isPlaying) {
         e.preventDefault();
-        const newTime = projectStore.project.currentTime + 1 / projectStore.project.fps;
+        const newTime = projectStore.currentTime + 1 / projectStore.project.fps;
         projectStore.setCurrentTime(Math.min(newTime, projectStore.project.duration));
       }
 

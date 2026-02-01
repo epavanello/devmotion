@@ -3,6 +3,7 @@
   import { PUBLIC_BASE_URL } from '$env/static/public';
   import { asset } from '$app/paths';
   import JsonLd from '$lib/components/json-ld.svelte';
+  import { Toaster } from 'svelte-sonner';
 
   // SEO Configuration for DevMotion
   const baseUrl = PUBLIC_BASE_URL;
@@ -98,4 +99,5 @@
   }}
 />
 
+<Toaster richColors position="top-right" />
 {@render children?.()}

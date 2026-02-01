@@ -2,70 +2,17 @@
   import { projectStore } from '$lib/stores/project.svelte';
   import { Button } from '$lib/components/ui/button';
   import { ScrollArea } from '$lib/components/ui/scroll-area';
-  import {
-    Eye,
-    EyeOff,
-    Lock,
-    Unlock,
-    Trash2,
-    Plus,
-    Type,
-    Square,
-    Terminal,
-    MousePointer,
-    Zap,
-    Smartphone,
-    Globe,
-    Image
-  } from 'lucide-svelte';
+  import { Eye, EyeOff, Lock, Unlock, Trash2, Plus } from 'lucide-svelte';
   import type { Layer } from '$lib/types/animation';
-  import Tooltip from '$lib/components/ui/tooltip';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-  import { createTextLayer, createShapeLayer, createLayer } from '$lib/engine/layer-factory';
-
-  let prompt = '';
-
-  const readonlyItems = [{ label: 'Image', icon: Image }];
+  import { createLayer } from '$lib/engine/layer-factory';
+  import AiChat from '$lib/components/ai/ai-chat.svelte';
+  import { getLayerDefinition, layerRegistry } from '$lib/layers/registry';
+  import { cn } from '$lib/utils';
 
   // Note: Coordinate system has (0, 0) at canvas center
-  function addTextLayer() {
-    const layer = createTextLayer(0, 0);
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addShapeLayer() {
-    const layer = createShapeLayer(0, 0);
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addTerminalLayer() {
-    const layer = createLayer('terminal', {}, { x: 0, y: 0 });
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addMouseLayer() {
-    const layer = createLayer('mouse', {}, { x: 0, y: 0 });
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addButtonLayer() {
-    const layer = createLayer('button', {}, { x: 0, y: 0 });
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addPhoneLayer() {
-    const layer = createLayer('phone', {}, { x: 0, y: 0 });
-    projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
-  }
-
-  function addBrowserLayer() {
-    const layer = createLayer('browser', {}, { x: 0, y: 0 });
+  function addLayer(type: string) {
+    const layer = createLayer(type as import('$lib/types/animation').LayerType, {}, { x: 0, y: 0 });
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }
@@ -124,48 +71,20 @@
 >
   <!-- Panel Header -->
   <div class="flex items-center justify-between border-b bg-muted/50 px-4 py-3">
-    <h2 class="text-sm font-semibold">Layers</h2>
+    <h2 class="text-sm font-semibold">Layers ({projectStore.project.layers.length})</h2>
     <DropdownMenu.Root>
       <DropdownMenu.Trigger disabled={projectStore.isRecording}>
         <Button variant="outline" size="icon" disabled={projectStore.isRecording}>
           <Plus />
         </Button>
       </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="start">
-        <DropdownMenu.Item onclick={addTextLayer}>
-          <Type class="mr-2 h-4 w-4" />
-          Text
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => addShapeLayer()}>
-          <Square class="mr-2 h-4 w-4" />
-          Shape
-        </DropdownMenu.Item>
-        <DropdownMenu.Separator />
-        <DropdownMenu.Item onclick={addTerminalLayer}>
-          <Terminal class="mr-2 h-4 w-4" />
-          Terminal GUI
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={addMouseLayer}>
-          <MousePointer class="mr-2 h-4 w-4" />
-          Mouse Pointer
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={addButtonLayer}>
-          <Zap class="mr-2 h-4 w-4" />
-          Button
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={addPhoneLayer}>
-          <Smartphone class="mr-2 h-4 w-4" />
-          Phone
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={addBrowserLayer}>
-          <Globe class="mr-2 h-4 w-4" />
-          Browser
-        </DropdownMenu.Item>
-        {#each readonlyItems as item (item.label)}
-          <DropdownMenu.Item disabled>
-            {@const Icon = item.icon}
-            <Icon class="mr-2 h-4 w-4" />
-            {item.label}
+      <DropdownMenu.Content align="start" class="max-h-80 overflow-y-auto">
+        {#each Object.values(layerRegistry) as layer (layer.type)}
+          <DropdownMenu.Item onclick={() => addLayer(layer.type)}>
+            {#if layer.icon}
+              <svelte:component this={layer.icon} class="mr-2 h-4 w-4" />
+            {/if}
+            {layer.label}
           </DropdownMenu.Item>
         {/each}
       </DropdownMenu.Content>
@@ -176,6 +95,7 @@
   <ScrollArea class="flex-1">
     <div class="space-y-1 p-2">
       {#each projectStore.project.layers as layer, index (layer.id)}
+        {@const Icon = getLayerDefinition(layer.type).icon}
         <div
           class="group flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 transition-colors hover:bg-muted/50"
           class:bg-muted={projectStore.selectedLayerId === layer.id}
@@ -189,19 +109,21 @@
           tabindex="0"
         >
           <!-- Layer Icon/Type -->
-          <div
-            class="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary/10 text-xs font-semibold"
-          >
-            {layer.name.charAt(0).toUpperCase()}
-          </div>
+          <Icon class="size-4" />
 
           <!-- Layer Name -->
-          <div class="flex-1 truncate text-sm">
+          <div
+            class={cn('flex-1 truncate text-sm', {
+              'opacity-30': !layer.visible
+            })}
+          >
             {layer.name}
           </div>
 
           <!-- Layer Controls -->
-          <div class="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <div
+            class="flex max-w-0 items-center gap-1 overflow-hidden opacity-0 transition-all duration-200 group-hover:max-w-40 group-hover:opacity-100 [@media(hover:none)]:max-w-40 [@media(hover:none)]:opacity-100"
+          >
             <Button
               variant="ghost"
               size="sm"
@@ -209,9 +131,9 @@
               onclick={(e) => toggleLayerVisibility(layer, e)}
             >
               {#if layer.visible}
-                <Eye class="h-3 w-3" />
+                <Eye class="size-3" />
               {:else}
-                <EyeOff class="h-3 w-3" />
+                <EyeOff class="size-3" />
               {/if}
             </Button>
 
@@ -222,9 +144,9 @@
               onclick={(e) => toggleLayerLock(layer, e)}
             >
               {#if layer.locked}
-                <Lock class="h-3 w-3" />
+                <Lock class="size-3" />
               {:else}
-                <Unlock class="h-3 w-3" />
+                <Unlock class="size-3" />
               {/if}
             </Button>
 
@@ -234,7 +156,7 @@
               class="h-6 w-6 p-0 text-destructive"
               onclick={(e) => deleteLayer(layer, e)}
             >
-              <Trash2 class="h-3 w-3" />
+              <Trash2 class="size-3" />
             </Button>
           </div>
         </div>
@@ -249,17 +171,6 @@
     </div>
   </ScrollArea>
 
-  <!-- Prompt Input Section -->
-  <div class="border-b bg-background p-4">
-    <label for="prompt" class="mb-2 block text-xs font-medium">Generate Animation</label>
-    <textarea
-      id="prompt"
-      bind:value={prompt}
-      placeholder="Describe the animation you want to generate..."
-      class="mb-3 flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-    ></textarea>
-    <Tooltip content="AI generation is coming soon!">
-      <Button class="w-full">Generate</Button>
-    </Tooltip>
-  </div>
+  <!-- AI Generation Section -->
+  <AiChat />
 </div>

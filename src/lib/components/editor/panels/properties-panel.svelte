@@ -6,6 +6,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+  import * as ButtonGroup from '$lib/components/ui/button-group';
   import {
     Pin,
     Trash2,
@@ -18,7 +19,8 @@
     ArrowDownLeft,
     ArrowDown,
     ArrowDownRight,
-    ChevronDown
+    ChevronDown,
+    Sparkles
   } from 'lucide-svelte';
   import { nanoid } from 'nanoid';
   import type {
@@ -37,6 +39,8 @@
   } from '$lib/engine/interpolation';
   import { getLayerSchema } from '$lib/layers/registry';
   import { extractPropertyMetadata, type PropertyMetadata } from '$lib/layers/base';
+  import { animationPresets } from '$lib/engine/presets';
+  import InputWrapper from './input-wrapper.svelte';
 
   const selectedLayer = $derived(projectStore.selectedLayer);
 
@@ -45,7 +49,7 @@
     if (!selectedLayer) return null;
     const animatedTransform = getAnimatedTransform(
       selectedLayer.keyframes,
-      projectStore.project.currentTime
+      projectStore.currentTime
     );
     return {
       x: animatedTransform.position.x ?? selectedLayer.transform.x,
@@ -62,10 +66,7 @@
 
   const currentStyle = $derived.by(() => {
     if (!selectedLayer) return null;
-    const animatedStyle = getAnimatedStyle(
-      selectedLayer.keyframes,
-      projectStore.project.currentTime
-    );
+    const animatedStyle = getAnimatedStyle(selectedLayer.keyframes, projectStore.currentTime);
     return {
       opacity: animatedStyle.opacity ?? selectedLayer.style.opacity
     };
@@ -90,7 +91,7 @@
       selectedLayer.keyframes,
       selectedLayer.props,
       layerPropertyMetadata,
-      projectStore.project.currentTime
+      projectStore.currentTime
     );
   });
 
@@ -233,7 +234,7 @@
     value: number | string | boolean,
     updateBase?: () => void
   ) {
-    const currentTime = projectStore.project.currentTime;
+    const currentTime = projectStore.currentTime;
     const hasKeyframes = layer.keyframes.some((k) => k.property === animatableProperty);
 
     if (hasKeyframes || !updateBase) {
@@ -318,9 +319,7 @@
 
   interface PropertyFieldProps {
     id: string;
-    label: string;
     value: number;
-    property: AnimatableProperty;
     step?: string;
     min?: string;
     max?: string;
@@ -331,42 +330,34 @@
     metadata: PropertyMetadata;
     value: unknown;
   }
+
+  // Preset application state
+  let selectedPresetId = $state<string>('');
+  let presetDuration = $state<number>(1);
+
+  function applyPreset() {
+    if (!selectedLayer || !selectedPresetId) return;
+
+    const startTime = projectStore.currentTime;
+    projectStore.applyPreset(selectedLayer.id, selectedPresetId, startTime, presetDuration);
+
+    // Reset selection after applying
+    selectedPresetId = '';
+    presetDuration = 1;
+  }
 </script>
 
-{#snippet propertyField({
-  id,
-  label,
-  value,
-  property,
-  step,
-  min,
-  max,
-  onInput
-}: PropertyFieldProps)}
-  {@const hasKeyframes = selectedLayer?.keyframes.some((k) => k.property === property)}
-  <div>
-    <div class="mb-1 flex items-center justify-between">
-      <Label for={id} class="text-xs">{label}</Label>
-      <Button
-        variant="ghost"
-        size="sm"
-        class="h-5 w-5 p-0"
-        onclick={() => addKeyframe(property)}
-        title="Add keyframe for {label}"
-      >
-        <Pin class="size-3" fill={hasKeyframes ? 'currentColor' : 'none'} />
-      </Button>
-    </div>
-    <Input
-      {id}
-      type="number"
-      {value}
-      {step}
-      {min}
-      {max}
-      oninput={(e) => onInput(parseFloat(e.currentTarget.value) || 0)}
-    />
-  </div>
+{#snippet propertyField({ id, value, step, min, max, onInput }: PropertyFieldProps)}
+  <Input
+    {id}
+    type="number"
+    {value}
+    {step}
+    {min}
+    {max}
+    oninput={(e) => onInput(parseFloat(e.currentTarget.value) || 0)}
+    class="h-8 text-xs"
+  />
 {/snippet}
 
 {#snippet dynamicPropertyField({ metadata, value }: DynamicPropertyFieldProps)}
@@ -471,93 +462,126 @@
           <Label class="font-semibold">Transform</Label>
 
           <!-- Position -->
-          <div class="space-y-2">
-            <Label class="text-xs text-muted-foreground">Position</Label>
-            <div class="grid grid-cols-3 gap-2">
+          <div class="space-y-1">
+            <Label class="mb-1 text-xs text-muted-foreground">Position</Label>
+            <div class="flex gap-1">
+              {#each [{ prop: 'position.x' as AnimatableProperty, label: 'X' }, { prop: 'position.y' as AnimatableProperty, label: 'Y' }, { prop: 'position.z' as AnimatableProperty, label: 'Z' }] as { prop, label } (prop)}
+                {@const hasKeyframes = selectedLayer?.keyframes.some((k) => k.property === prop)}
+                <div class="flex flex-1 items-center gap-1">
+                  <span class="ml-2 text-[10px] text-muted-foreground">{label}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="h-3 w-3 p-0"
+                    onclick={() => addKeyframe(prop)}
+                    title="Add keyframe for {label}"
+                  >
+                    <Pin class="size-2.5" fill={hasKeyframes ? 'currentColor' : 'none'} />
+                  </Button>
+                </div>
+              {/each}
+            </div>
+            <ButtonGroup.Root>
               {@render propertyField({
                 id: 'pos-x',
-                label: 'X',
                 value: currentTransform?.x ?? 0,
-                property: 'position.x',
                 onInput: (v) => updateTransformProperty('x', v)
               })}
               {@render propertyField({
                 id: 'pos-y',
-                label: 'Y',
                 value: currentTransform?.y ?? 0,
-                property: 'position.y',
                 onInput: (v) => updateTransformProperty('y', v)
               })}
               {@render propertyField({
                 id: 'pos-z',
-                label: 'Z',
                 value: currentTransform?.z ?? 0,
-                property: 'position.z',
                 onInput: (v) => updateTransformProperty('z', v)
               })}
-            </div>
+            </ButtonGroup.Root>
           </div>
 
           <!-- Scale -->
-          <div class="space-y-2">
-            <Label class="text-xs text-muted-foreground">Scale</Label>
-            <div class="grid grid-cols-3 gap-2">
+          <div class="space-y-1">
+            <Label class="mb-1 text-xs text-muted-foreground">Scale</Label>
+            <div class="flex gap-1">
+              {#each [{ prop: 'scale.x' as AnimatableProperty, label: 'X' }, { prop: 'scale.y' as AnimatableProperty, label: 'Y' }, { prop: 'scale.z' as AnimatableProperty, label: 'Z' }] as { prop, label } (prop)}
+                {@const hasKeyframes = selectedLayer?.keyframes.some((k) => k.property === prop)}
+                <div class="flex flex-1 items-center gap-1">
+                  <span class="ml-2 text-[10px] text-muted-foreground">{label}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="h-3 w-3 p-0"
+                    onclick={() => addKeyframe(prop)}
+                    title="Add keyframe for {label}"
+                  >
+                    <Pin class="size-2.5" fill={hasKeyframes ? 'currentColor' : 'none'} />
+                  </Button>
+                </div>
+              {/each}
+            </div>
+            <ButtonGroup.Root>
               {@render propertyField({
                 id: 'scale-x',
-                label: 'X',
                 value: currentTransform?.scaleX ?? 1,
-                property: 'scale.x',
                 step: '0.1',
                 onInput: (v) => updateTransformProperty('scaleX', v || 1)
               })}
               {@render propertyField({
                 id: 'scale-y',
-                label: 'Y',
                 value: currentTransform?.scaleY ?? 1,
-                property: 'scale.y',
                 step: '0.1',
                 onInput: (v) => updateTransformProperty('scaleY', v || 1)
               })}
               {@render propertyField({
                 id: 'scale-z',
-                label: 'Z',
                 value: currentTransform?.scaleZ ?? 1,
-                property: 'scale.z',
                 step: '0.1',
                 onInput: (v) => updateTransformProperty('scaleZ', v || 1)
               })}
-            </div>
+            </ButtonGroup.Root>
           </div>
 
           <!-- Rotation -->
-          <div class="space-y-2">
-            <Label class="text-xs text-muted-foreground">Rotation (radians)</Label>
-            <div class="grid grid-cols-3 gap-2">
+          <div class="space-y-1">
+            <Label class="mb-1 text-xs text-muted-foreground">Rotation (radians)</Label>
+            <div class="flex gap-1">
+              {#each [{ prop: 'rotation.x' as AnimatableProperty, label: 'X' }, { prop: 'rotation.y' as AnimatableProperty, label: 'Y' }, { prop: 'rotation.z' as AnimatableProperty, label: 'Z' }] as { prop, label } (prop)}
+                {@const hasKeyframes = selectedLayer?.keyframes.some((k) => k.property === prop)}
+                <div class="flex flex-1 items-center gap-1">
+                  <span class="ml-2 text-[10px] text-muted-foreground">{label}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="h-3 w-3 p-0"
+                    onclick={() => addKeyframe(prop)}
+                    title="Add keyframe for {label}"
+                  >
+                    <Pin class="size-2.5" fill={hasKeyframes ? 'currentColor' : 'none'} />
+                  </Button>
+                </div>
+              {/each}
+            </div>
+            <ButtonGroup.Root>
               {@render propertyField({
                 id: 'rot-x',
-                label: 'X',
                 value: currentTransform?.rotationX ?? 0,
-                property: 'rotation.x',
                 step: '0.1',
                 onInput: (v) => updateTransformProperty('rotationX', v)
               })}
               {@render propertyField({
                 id: 'rot-y',
-                label: 'Y',
                 value: currentTransform?.rotationY ?? 0,
-                property: 'rotation.y',
                 step: '0.1',
                 onInput: (v) => updateTransformProperty('rotationY', v)
               })}
               {@render propertyField({
                 id: 'rot-z',
-                label: 'Z',
                 value: currentTransform?.rotationZ ?? 0,
-                property: 'rotation.z',
                 step: '0.1',
                 onInput: (v) => updateTransformProperty('rotationZ', v)
               })}
-            </div>
+            </ButtonGroup.Root>
           </div>
 
           <!-- Anchor Point -->
@@ -594,17 +618,16 @@
         <!-- Style -->
         <div class="space-y-3">
           <Label class="font-semibold">Style</Label>
-
-          {@render propertyField({
-            id: 'opacity',
-            label: 'Opacity',
-            value: currentStyle?.opacity ?? 1,
-            property: 'opacity',
-            step: '0.1',
-            min: '0',
-            max: '1',
-            onInput: (v) => updateStyle('opacity', v || 0)
-          })}
+          <InputWrapper id="opacity" label="Opacity" property="opacity" {addKeyframe}>
+            {@render propertyField({
+              id: 'opacity',
+              value: currentStyle?.opacity ?? 1,
+              step: '0.1',
+              min: '0',
+              max: '1',
+              onInput: (v) => updateStyle('opacity', v || 0)
+            })}
+          </InputWrapper>
         </div>
 
         <!-- Layer-specific properties (dynamic based on schema) -->
@@ -621,6 +644,50 @@
             {/each}
           </div>
         {/if}
+
+        <Separator />
+
+        <!-- Animation Presets -->
+        <div class="space-y-3">
+          <Label class="font-semibold">Animation Presets</Label>
+
+          <div class="grid grid-cols-3 gap-2">
+            <div class="col-span-2 space-y-2">
+              <Label class="text-xs text-muted-foreground">Preset</Label>
+              <select
+                bind:value={selectedPresetId}
+                class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+              >
+                <option value="">Select...</option>
+                {#each animationPresets as preset (preset.id)}
+                  <option value={preset.id}>{preset.name}</option>
+                {/each}
+              </select>
+            </div>
+
+            <div class="space-y-2">
+              <Label for="preset-duration" class="text-xs text-muted-foreground">Duration (s)</Label
+              >
+              <Input
+                id="preset-duration"
+                type="number"
+                bind:value={presetDuration}
+                min="0.1"
+                step="0.1"
+              />
+            </div>
+          </div>
+
+          <Button
+            variant="default"
+            class="w-full"
+            onclick={applyPreset}
+            disabled={!selectedPresetId}
+          >
+            <Sparkles class="mr-2 h-4 w-4" />
+            Apply Preset
+          </Button>
+        </div>
 
         <Separator />
 

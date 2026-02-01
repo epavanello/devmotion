@@ -21,6 +21,7 @@ const config = {
   extensions: ['.svelte', '.svx'],
   vitePlugin: {
     inspector: {
+      toggleKeyCombo: 'meta-x',
       showToggleButton: 'always',
       toggleButtonPos: 'bottom-right'
     }

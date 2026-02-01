@@ -7,6 +7,11 @@ import { getLayerDefinition } from '$lib/layers/registry';
 import { extractDefaultValues } from '$lib/layers/base';
 
 /**
+ * Default easing for initial keyframes
+ */
+const defaultEasing: Easing = { type: 'ease-in-out' };
+
+/**
  * Create a new layer of the specified type
  * @param type - The layer type from the registry
  * @param propsOverrides - Optional props to override defaults
@@ -21,9 +26,7 @@ export function createLayer(
   const definition = getLayerDefinition(type);
 
   // Extract default values from the Zod schema
-  const defaultProps = extractDefaultValues(definition.customPropsSchema);
-
-  const defaultEasing: Easing = { type: 'ease-in-out' };
+  const defaultProps = extractDefaultValues(definition.schema);
 
   // Create initial keyframes for position properties
   const initialKeyframes: Keyframe[] = [
@@ -45,7 +48,7 @@ export function createLayer(
 
   return {
     id: nanoid(),
-    name: `${definition.displayName} Layer`,
+    name: definition.label,
     type,
     transform: {
       x,
@@ -70,25 +73,4 @@ export function createLayer(
       ...propsOverrides
     }
   };
-}
-
-/**
- * Convenience function for creating text layers
- */
-export function createTextLayer(x = 0, y = 0): Layer {
-  return createLayer('text', {}, { x, y });
-}
-
-/**
- * Convenience function for creating shape layers
- */
-export function createShapeLayer(x = 0, y = 0): Layer {
-  return createLayer('shape', {}, { x, y });
-}
-
-/**
- * Convenience function for creating image layers
- */
-export function createImageLayer(src: string, x = 0, y = 0): Layer {
-  return createLayer('image', { src }, { x, y });
 }

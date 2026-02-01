@@ -1,76 +1,50 @@
-/**
- * Layer component registry
- * Maps layer types to their Svelte components and Zod schemas
- */
-import TextLayer, { schema as TextLayerPropsSchema } from './TextLayer.svelte';
-import ShapeLayer, { schema as ShapeLayerPropsSchema } from './ShapeLayer.svelte';
-import TerminalLayer, { schema as TerminalLayerPropsSchema } from './TerminalLayer.svelte';
-import MouseLayer, { schema as MouseLayerPropsSchema } from './MouseLayer.svelte';
-import ButtonLayer, { schema as ButtonLayerPropsSchema } from './ButtonLayer.svelte';
-import PhoneLayer, { schema as PhoneLayerPropsSchema } from './PhoneLayer.svelte';
-import BrowserLayer, { schema as BrowserLayerPropsSchema } from './BrowserLayer.svelte';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const staticLayers = import.meta.glob('./components/*.svelte', { eager: true });
+
 import type { LayerComponentDefinition } from './base';
+import type { Component, ComponentType } from 'svelte';
+import type z from 'zod';
+
+export type LayerMeta = {
+  schema: z.ZodObject<z.ZodRawShape>;
+  type: string;
+  label: string;
+  description: string;
+  icon: Component | ComponentType;
+};
+
+type Layer = {
+  component: Component<any>;
+  meta: LayerMeta;
+};
+
+type LayerModule = {
+  default: Component<any>;
+  meta: LayerMeta;
+};
+
+const layers: Layer[] = (Object.values(staticLayers) as LayerModule[]).map((module) => ({
+  component: module.default,
+  meta: module.meta
+}));
 
 /**
  * Registry of all available layer types
  */
-export const layerRegistry: Record<string, LayerComponentDefinition> = {
-  text: {
-    type: 'text',
-    displayName: 'Text',
-    icon: 'Type',
-    customPropsSchema: TextLayerPropsSchema,
-    component: TextLayer
+export const layerRegistry: Record<string, LayerComponentDefinition> = layers.reduce(
+  (registry, layer) => {
+    registry[layer.meta.type] = {
+      type: layer.meta.type,
+      label: layer.meta.label,
+      description: layer.meta.description,
+      schema: layer.meta.schema,
+      component: layer.component,
+      icon: layer.meta.icon
+    };
+    return registry;
   },
-
-  shape: {
-    type: 'shape',
-    displayName: 'Shape',
-    icon: 'Square',
-    customPropsSchema: ShapeLayerPropsSchema,
-    component: ShapeLayer
-  },
-
-  terminal: {
-    type: 'terminal',
-    displayName: 'Terminal',
-    icon: 'Terminal',
-    customPropsSchema: TerminalLayerPropsSchema,
-    component: TerminalLayer
-  },
-
-  mouse: {
-    type: 'mouse',
-    displayName: 'Mouse',
-    icon: 'Pointer',
-    customPropsSchema: MouseLayerPropsSchema,
-    component: MouseLayer
-  },
-
-  button: {
-    type: 'button',
-    displayName: 'Button',
-    icon: 'ClickSquare',
-    customPropsSchema: ButtonLayerPropsSchema,
-    component: ButtonLayer
-  },
-
-  phone: {
-    type: 'phone',
-    displayName: 'Phone',
-    icon: 'Smartphone',
-    customPropsSchema: PhoneLayerPropsSchema,
-    component: PhoneLayer
-  },
-
-  browser: {
-    type: 'browser',
-    displayName: 'Browser',
-    icon: 'Globe',
-    customPropsSchema: BrowserLayerPropsSchema,
-    component: BrowserLayer
-  }
-} as const;
+  {} as Record<string, LayerComponentDefinition>
+);
 
 /**
  * Layer type derived from registry keys
@@ -106,5 +80,5 @@ export function getLayerComponent(type: LayerType) {
  * Get layer schema by type
  */
 export function getLayerSchema(type: LayerType) {
-  return getLayerDefinition(type).customPropsSchema;
+  return getLayerDefinition(type).schema;
 }

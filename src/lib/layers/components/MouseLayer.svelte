@@ -1,10 +1,12 @@
 <script module lang="ts">
   import { z } from 'zod';
+  import type { LayerMeta } from '../registry';
+  import { MousePointer } from 'lucide-svelte';
 
   /**
    * Schema for Mouse Layer custom properties
    */
-  export const schema = z.object({
+  const schema = z.object({
     pointerType: z
       .enum(['arrow', 'pointer', 'hand', 'crosshair', 'text'])
       .default('arrow')
@@ -14,7 +16,15 @@
     backgroundColor: z.string().default('#000000').describe('Background circle color')
   });
 
-  export type Props = z.infer<typeof schema>;
+  export const meta: LayerMeta = {
+    schema,
+    type: 'mouse',
+    label: 'Mouse Cursor',
+    icon: MousePointer,
+    description: 'Mouse cursor pointer (arrow, hand, crosshair, text) for UI demonstrations'
+  };
+
+  type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">

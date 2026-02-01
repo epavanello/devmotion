@@ -1,10 +1,12 @@
 <script module lang="ts">
   import { z } from 'zod';
+  import type { LayerMeta } from '../registry';
+  import { Terminal } from 'lucide-svelte';
 
   /**
    * Schema for Terminal Layer custom properties
    */
-  export const schema = z.object({
+  const schema = z.object({
     title: z.string().default('Terminal').describe('Terminal window title'),
     content: z.string().default('$ Welcome to terminal').describe('Terminal content/text'),
     width: z.number().min(200).max(2000).default(600).describe('Width (px)'),
@@ -16,7 +18,15 @@
     borderColor: z.string().default('#404040').describe('Border color')
   });
 
-  export type Props = z.infer<typeof schema>;
+  export const meta: LayerMeta = {
+    schema,
+    type: 'terminal',
+    label: 'Terminal',
+    icon: Terminal,
+    description: 'Terminal window with customizable content, colors, and monospace font display'
+  };
+
+  type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">

@@ -8,21 +8,7 @@ import {
   type AnyPgColumn
 } from 'drizzle-orm/pg-core';
 import { user } from './auth';
-import z from 'zod';
-import type { Layer } from '$lib/types/animation';
-
-export const projectDataSchema = z.object({
-  name: z.string().min(1),
-  width: z.number().positive(),
-  height: z.number().positive(),
-  duration: z.number().positive(),
-  fps: z.number().positive(),
-  backgroundColor: z.string(),
-  layers: z.custom<Layer[]>(),
-  currentTime: z.number()
-});
-
-export type ProjectData = z.infer<typeof projectDataSchema>;
+import { type ProjectData } from '$lib/schemas/animation';
 
 export const project = pgTable(
   'project',

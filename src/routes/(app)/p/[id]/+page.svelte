@@ -17,8 +17,7 @@
       duration: projectData.duration,
       fps: projectData.fps,
       backgroundColor: projectData.backgroundColor,
-      layers: projectData.layers,
-      currentTime: projectData.currentTime
+      layers: projectData.layers
     });
 
     projectStore.setDbContext(data.project.id, data.isOwner, data.canEdit, data.project.isPublic);

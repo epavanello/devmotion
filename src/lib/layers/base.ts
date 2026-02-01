@@ -3,6 +3,7 @@
  */
 import { z } from 'zod';
 import type { Component } from 'svelte';
+import type { LayerMeta } from './registry';
 
 /**
  * Anchor point options for layer positioning
@@ -61,35 +62,11 @@ export type BaseLayerProps = z.infer<typeof BaseLayerSchema>;
 /**
  * Layer component definition with schema and component
  */
-export interface LayerComponentDefinition<
-  T extends z.ZodObject<z.ZodRawShape> = z.ZodObject<z.ZodRawShape>
-> {
-  /**
-   * Unique identifier for this layer type
-   */
-  type: string;
-
-  /**
-   * Display name for UI
-   */
-  displayName: string;
-
-  /**
-   * Icon component or name
-   */
-  icon?: string;
-
-  /**
-   * Zod schema for this layer's custom properties
-   * This schema is merged with BaseLayerSchema at runtime
-   */
-  customPropsSchema: T;
-
+export interface LayerComponentDefinition extends LayerMeta {
   /**
    * The Svelte component that renders this layer
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  component: Component<any>;
+  component: Component;
 }
 
 /**
@@ -113,32 +90,15 @@ export interface PropertyMetadata {
   interpolationType: 'number' | 'color' | 'text' | 'discrete';
 }
 
-// Type helpers for accessing Zod 4 internals in a type-safe way
-// Note: In Zod 4, internals moved from _def to _zod.def
-// Reference: https://zod.dev/v4/changelog
-interface ZodInternals {
-  def: {
-    innerType?: z.ZodType;
-    description?: string;
-    checks?: Array<{ kind: string; value?: number }>;
-    entries?: Record<string, string | number>; // Zod 4 enum entries
-    defaultValue?: () => unknown;
-  };
-}
-
 /**
  * Unwrap ZodDefault and ZodOptional to get the inner type
  */
 function unwrapZodType(zodType: z.ZodType): z.ZodType {
   let current = zodType;
+
   // Unwrap ZodDefault and ZodOptional to get to the base type
   while (current instanceof z.ZodDefault || current instanceof z.ZodOptional) {
-    const internals = (current as unknown as { _zod: ZodInternals })._zod;
-    if (internals.def.innerType) {
-      current = internals.def.innerType;
-    } else {
-      break;
-    }
+    current = current.unwrap() as z.ZodType;
   }
   return current;
 }
@@ -160,28 +120,23 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
       const meta: PropertyMetadata = {
         name: key,
         type: 'string',
-        interpolationType: 'discrete' // Default to discrete (no interpolation)
+        interpolationType: 'discrete', // Default to discrete (no interpolation),
+        // THis is ok, dont change zodType.meta()?.description
+        description: zodType.meta()?.description
       };
-
-      // Extract description from Zod 4 internals
-      const internals = unwrapped as unknown as { _zod: ZodInternals };
-      if (internals._zod?.def.description) {
-        meta.description = internals._zod.def.description;
-      }
 
       // Determine type and interpolation type
       if (unwrapped instanceof z.ZodNumber) {
         meta.type = 'number';
         meta.interpolationType = 'number'; // Numbers can be interpolated
 
-        // Extract min/max from checks in Zod 4
-        const checks = internals._zod?.def.checks || [];
-        for (const check of checks) {
-          if (check.kind === 'min' && check.value !== undefined) {
-            meta.min = check.value;
-          } else if (check.kind === 'max' && check.value !== undefined) {
-            meta.max = check.value;
-          }
+        const min = unwrapped.def.checks?.find((check) => check._zod.def.check === 'greater_than');
+        if (min && 'value' in min._zod.def) {
+          meta.min = min._zod.def.value as number;
+        }
+        const max = unwrapped.def.checks?.find((check) => check._zod.def.check === 'less_than');
+        if (max && 'value' in max._zod.def) {
+          meta.max = max._zod.def.value as number;
         }
       } else if (unwrapped instanceof z.ZodBoolean) {
         meta.type = 'boolean';
@@ -207,7 +162,7 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
         meta.type = 'select';
         meta.interpolationType = 'discrete'; // Enums jump between values
         // Extract enum values from Zod 4 - uses 'entries' object or 'options' array
-        const enumEntries = internals._zod?.def?.entries;
+        const enumEntries = unwrapped._zod?.def?.entries;
         if (enumEntries && typeof enumEntries === 'object') {
           meta.options = Object.keys(enumEntries).map((v) => ({
             value: v,

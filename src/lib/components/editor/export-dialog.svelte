@@ -26,6 +26,7 @@
 
   let isExporting = $state(false);
   let isConverting = $state(false);
+  let isPreparing = $state(false);
   let exportProgress = $state(0);
   let errorMessage = $state<string | null>(null);
   let videoCapture = new VideoCapture();
@@ -72,8 +73,15 @@
       projectStore.setZoom(1);
       projectStore.setPan(0, 0);
 
+      // Prepare frame cache for optimized recording
+      isPreparing = true;
+
       // Wait for the UI to update with new viewport
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await Promise.all([
+        new Promise((resolve) => setTimeout(resolve, 300)),
+        projectStore.prepareRecording()
+      ]);
+      isPreparing = false;
 
       // Close the dialog and enable recording mode
       onOpenChange(false);
@@ -126,11 +134,12 @@
           projectStore.setZoom(originalZoom);
           projectStore.setPan(originalPan.x, originalPan.y);
 
-          // Reset state
+          // Reset state and clear cache
           isExporting = false;
           isConverting = false;
           isRecording = false;
           projectStore.isRecording = false;
+          projectStore.clearFrameCache();
           exportProgress = 0;
         },
         onError: (error) => {
@@ -143,6 +152,7 @@
           isExporting = false;
           isRecording = false;
           projectStore.isRecording = false;
+          projectStore.clearFrameCache();
           exportProgress = 0;
           onOpenChange(true);
         }
@@ -158,8 +168,10 @@
       projectStore.setPan(originalPan.x, originalPan.y);
 
       isExporting = false;
+      isPreparing = false;
       isRecording = false;
       projectStore.isRecording = false;
+      projectStore.clearFrameCache();
       exportProgress = 0;
 
       // Reopen dialog to show error
@@ -174,8 +186,10 @@
       projectStore.setCurrentTime(0);
 
       isExporting = false;
+      isPreparing = false;
       isRecording = false;
       projectStore.isRecording = false;
+      projectStore.clearFrameCache();
       exportProgress = 0;
     }
     onOpenChange(false);
@@ -268,11 +282,18 @@
         </div>
         <div class="space-y-2">
           <div class="text-center text-sm text-muted-foreground">
-            Recording video... Please wait.
+            {#if isPreparing}
+              Preparing frames for recording...
+            {:else}
+              Recording video... Please wait.
+            {/if}
           </div>
-          <Progress value={exportProgress} class="w-full" />
+          <Progress
+            value={isPreparing ? projectStore.preparingProgress : exportProgress}
+            class="w-full"
+          />
           <div class="text-center text-xs text-muted-foreground">
-            {Math.round(exportProgress)}%
+            {Math.round(isPreparing ? projectStore.preparingProgress : exportProgress)}%
           </div>
         </div>
         <div class="text-center">
