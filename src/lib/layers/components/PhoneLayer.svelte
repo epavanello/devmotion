@@ -21,7 +21,8 @@
     schema,
     type: 'phone',
     label: 'Phone',
-    icon: Smartphone
+    icon: Smartphone,
+    description: 'Mobile phone mockup with notch, bezel, and iframe for app/website previews'
   };
 
   type Props = z.infer<typeof schema>;

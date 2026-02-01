@@ -30,7 +30,8 @@
     schema,
     type: 'shape',
     label: 'Shape',
-    icon: Square
+    icon: Square,
+    description: 'Geometric shapes (rectangle, circle, triangle, polygon) with fill and stroke'
   };
 
   type Props = z.infer<typeof schema>;

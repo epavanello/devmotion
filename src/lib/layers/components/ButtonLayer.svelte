@@ -27,7 +27,9 @@
     schema,
     type: 'button',
     label: 'Button',
-    icon: Zap
+    icon: Zap,
+    description:
+      'Interactive button with solid, outline, or ghost styles and customizable appearance'
   };
 
   type Props = z.infer<typeof schema>;

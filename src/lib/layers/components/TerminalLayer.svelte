@@ -22,7 +22,8 @@
     schema,
     type: 'terminal',
     label: 'Terminal',
-    icon: Terminal
+    icon: Terminal,
+    description: 'Terminal window with customizable content, colors, and monospace font display'
   };
 
   type Props = z.infer<typeof schema>;

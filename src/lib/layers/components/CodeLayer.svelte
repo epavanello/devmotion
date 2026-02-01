@@ -36,7 +36,9 @@
     schema,
     type: 'code',
     label: 'Code Block',
-    icon: Code
+    icon: Code,
+    description:
+      'Code editor window with syntax highlighting for multiple languages and line numbers'
   };
 
   type Props = z.infer<typeof schema>;

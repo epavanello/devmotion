@@ -1,296 +1,301 @@
 /**
- * Zod schemas for AI tool calls
- * Defines the structured operations the AI can perform
- * Enhanced with detailed descriptions for better AI understanding
+ * AI Tool Schemas for Progressive Animation Generation
+ *
+ * Tools are executed client-side, allowing the AI to see results and iterate.
+ * Uses dynamic schema discovery via get_layer_info to avoid context bloat.
  */
 import { z } from 'zod';
-import { LayerTypeSchema, EasingSchema, AnchorPointSchema } from '$lib/schemas/animation';
+import { EasingSchema } from '$lib/schemas/animation';
 import { getPresetIds } from '$lib/engine/presets';
-import { commonResolutions } from '$lib/components/editor/project-settings-dialog.svelte';
+import { tool, type InferUITools } from 'ai';
+import { layerRegistry, type LayerType } from '$lib/layers/registry';
+import { extractPropertyMetadata, extractDefaultValues } from '$lib/layers/base';
 
 // ============================================
-// Layer Operations
+// Tool: get_layer_info
+// Discover layer schema dynamically
 // ============================================
+
+export const GetLayerInfoInputSchema = z.object({
+  layerType: z
+    .string()
+    .describe('The layer type to get info about (see available types in system prompt)')
+});
+
+export type GetLayerInfoInput = z.infer<typeof GetLayerInfoInputSchema>;
+
+export interface GetLayerInfoOutput {
+  success: boolean;
+  layerType?: string;
+  label?: string;
+  properties?: Array<{
+    name: string;
+    type: string;
+    description?: string;
+    required: boolean;
+    defaultValue?: unknown;
+    options?: Array<{ value: string | number; label: string }>;
+    min?: number;
+    max?: number;
+  }>;
+  error?: string;
+}
 
 /**
- * Add a new layer - props should ALWAYS be specified with meaningful content
+ * Get layer info from registry - executed server-side
  */
-export const AddLayerToolSchema = z.object({
-  action: z.literal('add_layer'),
-  type: LayerTypeSchema.describe(
-    'Layer type: text (titles/labels), shape (backgrounds/decorations), button (CTAs), icon (feature icons), terminal (CLI display), code (syntax-highlighted code), progress (loading bars), phone/browser (device mockups), mouse (cursor), html (custom HTML/CSS)'
-  ),
+export function getLayerInfo(input: GetLayerInfoInput): GetLayerInfoOutput {
+  const type = input.layerType as LayerType;
+
+  if (!layerRegistry[type]) {
+    return {
+      success: false,
+      error: `Unknown layer type: ${input.layerType}. Check the available layer types in the system prompt.`
+    };
+  }
+
+  const definition = layerRegistry[type];
+  const metadata = extractPropertyMetadata(definition.schema);
+  const defaults = extractDefaultValues(definition.schema);
+
+  // Determine which properties are required (no default value)
+  const properties = metadata.map((prop) => ({
+    name: prop.name,
+    type: prop.type,
+    description: prop.description,
+    required: defaults[prop.name] === undefined,
+    defaultValue: defaults[prop.name],
+    options: prop.options,
+    min: prop.min,
+    max: prop.max
+  }));
+
+  return {
+    success: true,
+    layerType: type,
+    label: definition.label,
+    properties
+  };
+}
+
+// ============================================
+// Tool: create_layer
+// ============================================
+
+export const CreateLayerInputSchema = z.object({
+  type: z.string().describe('Layer type (use get_layer_info first to see available props)'),
   name: z.string().optional().describe('Layer name for identification'),
   position: z
     .object({
-      x: z.number().default(0).describe('X position (0=center, negative=left, positive=right)'),
-      y: z.number().default(0).describe('Y position (0=center, negative=top, positive=bottom)')
+      x: z.number().default(0).describe('X position (0=center)'),
+      y: z.number().default(0).describe('Y position (0=center)')
     })
-    .optional()
-    .describe('Initial position on canvas'),
+    .optional(),
   props: z
     .record(z.string(), z.unknown())
-    .describe(
-      'REQUIRED layer properties. For text: {content, fontSize, color}. For shape: {shapeType, width, height, fill}. For button: {text, backgroundColor, width, height}. For icon: {icon, size, color}. NEVER leave empty!'
-    )
+    .describe('Layer-specific properties from get_layer_info'),
+  animation: z
+    .object({
+      preset: z.string().optional().describe('Animation preset ID'),
+      startTime: z.number().min(0).default(0),
+      duration: z.number().min(0.1).default(0.5)
+    })
+    .optional()
+    .describe('Optional immediate animation')
 });
 
-/**
- * Edit an existing layer
- */
-export const EditLayerToolSchema = z.object({
-  action: z.literal('edit_layer'),
-  layerId: z.string().describe('ID of the layer to edit (use actual ID from project state)'),
-  updates: z.object({
-    name: z.string().optional(),
-    visible: z.boolean().optional(),
-    locked: z.boolean().optional(),
-    transform: z
-      .object({
-        x: z.number().optional(),
-        y: z.number().optional(),
-        z: z.number().optional(),
-        rotationX: z.number().optional(),
-        rotationY: z.number().optional(),
-        rotationZ: z.number().optional(),
-        scaleX: z.number().optional(),
-        scaleY: z.number().optional(),
-        scaleZ: z.number().optional(),
-        anchor: AnchorPointSchema.optional()
-      })
-      .optional(),
-    style: z
-      .object({
-        opacity: z.number().min(0).max(1).optional()
-      })
-      .optional(),
-    props: z.record(z.string(), z.unknown()).optional()
-  })
-});
+export type CreateLayerInput = z.infer<typeof CreateLayerInputSchema>;
 
-/**
- * Remove a layer
- */
-export const RemoveLayerToolSchema = z.object({
-  action: z.literal('remove_layer'),
-  layerId: z.string().describe('ID of the layer to remove')
-});
+export interface CreateLayerOutput {
+  success: boolean;
+  layerId?: string;
+  layerIndex?: number;
+  layerName?: string;
+  message: string;
+  error?: string;
+}
 
 // ============================================
-// Keyframe Operations
+// Tool: animate_layer
 // ============================================
 
-/**
- * Add a keyframe to a layer
- */
-export const AddKeyframeToolSchema = z.object({
-  action: z.literal('add_keyframe'),
-  layerId: z
-    .string()
-    .describe(
-      'ID of the layer - use "layer_0", "layer_1", etc. for newly created layers, or actual ID for existing layers'
-    ),
-  keyframe: z.object({
-    time: z.number().min(0).describe('Time in seconds'),
-    property: z
-      .string()
-      .describe(
-        'Property path: position.x, position.y, position.z, scale.x, scale.y, scale.z, rotation.x, rotation.y, rotation.z, opacity, or props.<propName>'
-      ),
-    value: z.union([z.number(), z.string(), z.boolean()]).describe('Value at this keyframe'),
-    easing: EasingSchema.optional().describe('Easing function (defaults to ease-in-out)')
-  })
-});
-
-/**
- * Edit an existing keyframe
- */
-export const EditKeyframeToolSchema = z.object({
-  action: z.literal('edit_keyframe'),
-  layerId: z.string().describe('ID of the layer'),
-  keyframeId: z.string().describe('ID of the keyframe to edit'),
-  updates: z.object({
-    time: z.number().min(0).optional(),
-    value: z.union([z.number(), z.string(), z.boolean()]).optional(),
-    easing: EasingSchema.optional()
-  })
-});
-
-/**
- * Remove a keyframe
- */
-export const RemoveKeyframeToolSchema = z.object({
-  action: z.literal('remove_keyframe'),
-  layerId: z.string().describe('ID of the layer'),
-  keyframeId: z.string().describe('ID of the keyframe to remove')
-});
-
-// ============================================
-// Animation Preset Operations
-// ============================================
-
-/**
- * Apply an animation preset to a layer
- */
-export const ApplyPresetToolSchema = z.object({
-  action: z.literal('apply_preset'),
-  layerId: z
-    .string()
-    .describe(
-      'ID of the layer - use "layer_0", "layer_1", etc. for newly created layers, or actual ID for existing layers'
-    ),
-  presetId: z
-    .string()
-    .describe(
-      'ID of the preset to apply: fade-in, fade-out, slide-in-left, slide-in-right, slide-in-top, slide-in-bottom, scale-in, scale-out, bounce, rotate-in, pop, typewriter, pulse, shake, float'
-    ),
-  startTime: z.number().min(0).default(0).describe('Time to start the animation (seconds)'),
-  duration: z.number().min(0.1).default(1).describe('Duration of the animation (seconds)')
-});
-
-/**
- * Add multiple keyframes at once (batch operation)
- */
-export const BatchKeyframesToolSchema = z.object({
-  action: z.literal('batch_keyframes'),
-  layerId: z
-    .string()
-    .describe(
-      'ID of the layer - use layer_0, layer_1, etc. for newly created layers, or actual ID for existing'
-    ),
+export const AnimateLayerInputSchema = z.object({
+  layerId: z.string().describe('Layer ID or reference (layer_0, layer_1, or actual ID)'),
+  preset: z
+    .object({
+      id: z.string().describe('Preset ID: ' + getPresetIds().join(', ')),
+      startTime: z.number().min(0).default(0),
+      duration: z.number().min(0.1).default(0.5)
+    })
+    .optional()
+    .describe('Apply animation preset'),
   keyframes: z
     .array(
       z.object({
         time: z.number().min(0).describe('Time in seconds'),
         property: z
           .string()
-          .describe('Property to animate (position.x, opacity, scale.x, props.content, etc.)'),
-        value: z.union([z.number(), z.string(), z.boolean()]).describe('Target value'),
-        easing: EasingSchema.optional().describe('Easing type')
+          .describe(
+            'Property: position.x, position.y, scale.x, scale.y, rotation.z, opacity, props.*'
+          ),
+        value: z.union([z.number(), z.string(), z.boolean()]),
+        easing: EasingSchema.optional()
       })
     )
-    .describe(
-      'Array of keyframes to add at once - more efficient than individual add_keyframe calls'
-    )
+    .optional()
+    .describe('Custom keyframes (alternative to preset)')
 });
 
-/**
- * Create a complete animated scene with multiple layers
- * This is a high-level operation that creates layers with coordinated animations
- */
-export const CreateSceneToolSchema = z.object({
-  action: z.literal('create_scene'),
-  name: z.string().describe('Scene name for identification'),
-  startTime: z.number().min(0).describe('When the scene starts (seconds)'),
-  duration: z.number().min(0.1).describe('Scene duration (seconds)'),
-  layers: z
-    .array(
-      z.object({
-        type: LayerTypeSchema.describe('Layer type'),
-        name: z.string().optional().describe('Layer name'),
-        position: z
-          .object({
-            x: z.number().default(0),
-            y: z.number().default(0)
-          })
-          .optional(),
-        props: z.record(z.string(), z.unknown()).describe('Layer properties'),
-        animation: z
-          .object({
-            preset: z
-              .string()
-              .optional()
-              .describe(`Animation preset (${getPresetIds().join(', ')})`),
-            delay: z
-              .number()
-              .min(0)
-              .optional()
-              .describe('Delay before animation starts (relative to scene start)'),
-            duration: z.number().min(0.1).optional().describe('Animation duration'),
-            customKeyframes: z
-              .array(
-                z.object({
-                  time: z.number().min(0).max(1).describe('Normalized time 0-1 within animation'),
-                  property: z.string(),
-                  value: z.union([z.number(), z.string(), z.boolean()]),
-                  easing: EasingSchema.optional()
-                })
-              )
-              .optional()
-              .describe('Custom keyframes (normalized 0-1 time)')
-          })
-          .optional()
-          .describe('Animation configuration')
+export type AnimateLayerInput = z.infer<typeof AnimateLayerInputSchema>;
+
+export interface AnimateLayerOutput {
+  success: boolean;
+  layerId?: string;
+  keyframesAdded?: number;
+  message: string;
+  error?: string;
+}
+
+// ============================================
+// Tool: edit_layer
+// ============================================
+
+export const EditLayerInputSchema = z.object({
+  layerId: z.string().describe('Layer ID or reference'),
+  updates: z.object({
+    name: z.string().optional(),
+    visible: z.boolean().optional(),
+    locked: z.boolean().optional(),
+    position: z
+      .object({
+        x: z.number().optional(),
+        y: z.number().optional()
       })
-    )
-    .describe('Layers to create in this scene with their animations')
+      .optional(),
+    scale: z
+      .object({
+        x: z.number().optional(),
+        y: z.number().optional()
+      })
+      .optional(),
+    rotation: z.number().optional().describe('Rotation in degrees'),
+    opacity: z.number().min(0).max(1).optional(),
+    props: z.record(z.string(), z.unknown()).optional()
+  })
 });
 
-/**
- * Change project settings (background, duration, etc.)
- */
-export const SetProjectSettingsToolSchema = z.object({
-  action: z.literal('set_project'),
-  settings: z
-    .object({
-      name: z.string().optional().describe('Project name'),
-      width: z.number().min(100).max(8192).optional().describe('Video width in pixels'),
-      height: z.number().min(100).max(8192).optional().describe('Video height in pixels'),
-      duration: z.number().min(1).max(60).optional().describe('Video duration in seconds'),
-      backgroundColor: z.string().optional().describe('Background color as hex (e.g., #000000)')
-    })
-    .describe(
-      `Project settings. Common supported resolutions: ${commonResolutions
-        .filter((r) => r.width > 0)
-        .map((r) => r.label)
-        .join(', ')}`
-    )
-});
+export type EditLayerInput = z.infer<typeof EditLayerInputSchema>;
+
+export interface EditLayerOutput {
+  success: boolean;
+  layerId?: string;
+  message: string;
+  error?: string;
+}
 
 // ============================================
-// Combined Schema
+// Tool: remove_layer
 // ============================================
 
-/**
- * All possible AI tool calls
- */
-export const AIToolCallSchema = z.discriminatedUnion('action', [
-  AddLayerToolSchema,
-  EditLayerToolSchema,
-  RemoveLayerToolSchema,
-  AddKeyframeToolSchema,
-  EditKeyframeToolSchema,
-  RemoveKeyframeToolSchema,
-  ApplyPresetToolSchema,
-  BatchKeyframesToolSchema,
-  CreateSceneToolSchema,
-  SetProjectSettingsToolSchema
-]);
-
-export type AIToolCall = z.infer<typeof AIToolCallSchema>;
-export type AddLayerTool = z.infer<typeof AddLayerToolSchema>;
-export type EditLayerTool = z.infer<typeof EditLayerToolSchema>;
-export type RemoveLayerTool = z.infer<typeof RemoveLayerToolSchema>;
-export type AddKeyframeTool = z.infer<typeof AddKeyframeToolSchema>;
-export type EditKeyframeTool = z.infer<typeof EditKeyframeToolSchema>;
-export type RemoveKeyframeTool = z.infer<typeof RemoveKeyframeToolSchema>;
-export type ApplyPresetTool = z.infer<typeof ApplyPresetToolSchema>;
-export type BatchKeyframesTool = z.infer<typeof BatchKeyframesToolSchema>;
-export type CreateSceneTool = z.infer<typeof CreateSceneToolSchema>;
-export type SetProjectSettingsTool = z.infer<typeof SetProjectSettingsToolSchema>;
-
-/**
- * AI Response schema - what the model returns
- */
-export const AIResponseSchema = z.object({
-  message: z
-    .string()
-    .max(100)
-    .describe('A brief, friendly message to show the user (for toast notification, max 100 chars)'),
-  operations: z
-    .array(AIToolCallSchema)
-    .min(1)
-    .describe('List of operations to perform on the project - must not be empty')
+export const RemoveLayerInputSchema = z.object({
+  layerId: z.string().describe('Layer ID or reference to remove')
 });
 
-export type AIResponse = z.infer<typeof AIResponseSchema>;
+export type RemoveLayerInput = z.infer<typeof RemoveLayerInputSchema>;
+
+export interface RemoveLayerOutput {
+  success: boolean;
+  message: string;
+  error?: string;
+}
+
+// ============================================
+// Tool: configure_project
+// ============================================
+
+export const ConfigureProjectInputSchema = z.object({
+  name: z.string().optional(),
+  width: z.number().min(100).max(8192).optional(),
+  height: z.number().min(100).max(8192).optional(),
+  duration: z.number().min(1).max(300).optional(),
+  backgroundColor: z.string().optional().describe('Hex color (e.g., #1a1a2e)')
+});
+
+export type ConfigureProjectInput = z.infer<typeof ConfigureProjectInputSchema>;
+
+export interface ConfigureProjectOutput {
+  success: boolean;
+  message: string;
+  error?: string;
+}
+
+// ============================================
+// Tool Definitions for AI SDK
+// ============================================
+
+export const animationTools = {
+  get_layer_info: tool({
+    description: `REQUIRED before creating a new layer type. Returns all available properties with types, defaults, and constraints.
+
+Output: { success, layerType, label, properties: [{ name, type, description, required, defaultValue, options, min, max }] }
+
+Example: get_layer_info({ layerType: "text" }) → shows content, fontSize, fontFamily, color, etc.`,
+    inputSchema: GetLayerInfoInputSchema,
+    execute: async (input) => {
+      console.log('get_layer_info');
+      return getLayerInfo(input);
+    }
+  }),
+
+  create_layer: tool({
+    description: `Create a new layer. MUST call get_layer_info first to know valid props.
+
+Output: { success, layerId, layerIndex, layerName, message } or { success: false, error }
+
+The layerIndex (0, 1, 2...) lets you reference this layer as "layer_0", "layer_1", etc. in subsequent calls.
+Position (0,0) = canvas center. Only pass props that exist in get_layer_info output.`,
+    inputSchema: CreateLayerInputSchema
+  }),
+
+  animate_layer: tool({
+    description: `Add animation to a layer using presets or custom keyframes.
+
+Output: { success, layerId, keyframesAdded, message } or { success: false, error }
+
+Layer reference: Use "layer_0" for layers you created, or the ID/name from PROJECT STATE for existing layers.
+Animatable: position.x, position.y, scale.x, scale.y, rotation.z, opacity, props.* (any layer prop)`,
+    inputSchema: AnimateLayerInputSchema
+  }),
+
+  edit_layer: tool({
+    description: `Modify an existing layer's transform, style, or props.
+
+Output: { success, layerId, message } or { success: false, error }
+
+Layer reference: Use "layer_0" for layers you created, or the ID/name from PROJECT STATE.
+Only update props that exist for this layer type (use get_layer_info if unsure).`,
+    inputSchema: EditLayerInputSchema
+  }),
+
+  remove_layer: tool({
+    description: `Delete a layer from the project.
+
+Output: { success, message } or { success: false, error }`,
+    inputSchema: RemoveLayerInputSchema
+  }),
+
+  configure_project: tool({
+    description: `Update project settings: dimensions, duration, background color.
+
+Output: { success, message }`,
+    inputSchema: ConfigureProjectInputSchema
+  })
+};
+
+export type ToolIDs = keyof typeof animationTools;
+export const toolIDs = Object.keys(animationTools) as ToolIDs[];
+
+/**
+ * Inferred UI tool types for type-safe tool inputs/outputs in messages
+ */
+export type AnimationUITools = InferUITools<typeof animationTools>;

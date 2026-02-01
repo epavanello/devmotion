@@ -49,7 +49,8 @@
     schema,
     type: 'html',
     label: 'HTML/CSS',
-    icon: Code2
+    icon: Code2,
+    description: 'Custom HTML/CSS content with variable interpolation for dynamic elements'
   };
 
   type Props = z.infer<typeof schema>;

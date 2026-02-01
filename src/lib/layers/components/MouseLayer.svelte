@@ -20,7 +20,8 @@
     schema,
     type: 'mouse',
     label: 'Mouse Cursor',
-    icon: MousePointer
+    icon: MousePointer,
+    description: 'Mouse cursor pointer (arrow, hand, crosshair, text) for UI demonstrations'
   };
 
   type Props = z.infer<typeof schema>;

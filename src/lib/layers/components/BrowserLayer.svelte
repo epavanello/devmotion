@@ -22,7 +22,8 @@
     schema,
     type: 'browser',
     label: 'Browser',
-    icon: Globe
+    icon: Globe,
+    description: 'Browser window mockup with address bar, tabs, and iframe to display websites'
   };
 
   type Props = z.infer<typeof schema>;

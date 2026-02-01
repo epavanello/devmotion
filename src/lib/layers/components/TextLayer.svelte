@@ -62,7 +62,8 @@
     schema,
     type: 'text',
     label: 'Text',
-    icon: Type
+    icon: Type,
+    description: 'Styled text with Google Fonts, customizable size, weight, color, and alignment'
   };
 
   type Props = z.infer<typeof schema>;

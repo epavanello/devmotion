@@ -9,6 +9,7 @@ export type LayerMeta = {
   schema: z.ZodObject<z.ZodRawShape>;
   type: string;
   label: string;
+  description: string;
   icon: Component | ComponentType;
 };
 
@@ -35,6 +36,7 @@ export const layerRegistry: Record<string, LayerComponentDefinition> = layers.re
     registry[layer.meta.type] = {
       type: layer.meta.type,
       label: layer.meta.label,
+      description: layer.meta.description,
       schema: layer.meta.schema,
       component: layer.component,
       icon: layer.meta.icon

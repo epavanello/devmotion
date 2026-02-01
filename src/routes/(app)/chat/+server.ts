@@ -1,20 +1,19 @@
 /**
  * AI Chat API Routes
- * Handles AI-powered animation generation using multiple models via OpenRouter
+ * Progressive tool-calling system for animation generation
  */
-import { convertToModelMessages, Output, streamText, type UIMessage } from 'ai';
+import { convertToModelMessages, ToolLoopAgent, type UIMessage } from 'ai';
 import { error, isHttpError } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { z } from 'zod';
 import { ProjectSchema } from '$lib/schemas/animation';
-import { AIResponseSchema } from '$lib/ai/schemas';
+import { animationTools } from '$lib/ai/schemas';
 import { buildSystemPrompt } from '$lib/ai/system-prompt';
 import { getModel } from '$lib/ai/models';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import type { RequestHandler } from './$types';
-import { testTool } from '$lib/components/ai/ai-chat.svelte';
 
 /**
  * Request schema for AI generation
@@ -52,7 +51,6 @@ function logAIInteraction(data: {
   toolCalls?: unknown[];
   responseMessages?: unknown[];
   requestData?: unknown;
-  finalOutput?: unknown;
   usage?: {
     promptTokens?: number;
     completionTokens?: number;
@@ -62,16 +60,13 @@ function logAIInteraction(data: {
   try {
     const logsDir = join(process.cwd(), 'logs', 'ai-chat');
 
-    // Create logs directory if it doesn't exist
     if (!existsSync(logsDir)) {
       mkdirSync(logsDir, { recursive: true });
     }
 
-    // Create filename with timestamp
     const filename = `${data.timestamp.replace(/[:.]/g, '-')}.json`;
     const filepath = join(logsDir, filename);
 
-    // Format log data for readability
     const logData = {
       timestamp: data.timestamp,
       model: {
@@ -102,14 +97,11 @@ function logAIInteraction(data: {
             messages: data.responseMessages
           }
         : undefined,
-      finalOutput: data.finalOutput,
       usage: data.usage
     };
 
-    // Write log file
     writeFileSync(filepath, JSON.stringify(logData, null, 2), 'utf-8');
 
-    // Console log with summary
     console.log(`\n${'='.repeat(80)}`);
     console.log(`[AI Chat] ${data.timestamp}`);
     console.log(`${'='.repeat(80)}`);
@@ -126,52 +118,35 @@ function logAIInteraction(data: {
     }
     console.log(`Log file: ${filepath}`);
     console.log(`${'='.repeat(80)}\n`);
-  } catch (error) {
-    console.error('[AI] Failed to log interaction:', error);
+  } catch (err) {
+    console.error('[AI] Failed to log interaction:', err);
   }
 }
 
 /**
- * POST /api/chat - Generate animation operations from a natural language prompt
+ * POST /api/chat - Progressive animation generation with tool calls
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
   try {
-    // Optional: require authentication
     if (!locals.user) {
       error(401, 'Authentication required');
     }
 
-    // Parse and validate request body
     const body = await request.json();
     const { project, modelId, messages } = GenerateRequestSchema.parse(body);
 
     const openrouter = getOpenRouterClient();
     const systemPrompt = buildSystemPrompt(project);
-
-    // Get model configuration
     const model = getModel(modelId);
 
     console.log(`[AI] Using model: ${model.name} (${model.id})`);
     console.log(`[AI] System prompt length: ${systemPrompt.length} chars`);
 
-    const result = streamText({
+    const agent = new ToolLoopAgent({
       model: openrouter(model.id),
-      output: Output.object({
-        schema: AIResponseSchema
-      }),
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...(await convertToModelMessages(messages))
-      ],
-      // Increase temperature for more creative output
-      temperature: 0.7,
-      // Timeout for long generations
-      maxRetries: 2,
-      tools: {
-        testTool: testTool
-      },
+      instructions: systemPrompt,
+      tools: animationTools,
       onFinish(event) {
-        // Log the complete interaction for debugging
         logAIInteraction({
           timestamp: new Date().toISOString(),
           modelId: model.id,
@@ -181,10 +156,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
           toolCalls: event.toolCalls,
           responseMessages: event.response.messages,
           requestData: event.request,
-          finalOutput: undefined,
           usage: event.usage
         });
       }
+    });
+
+    const result = await agent.stream({
+      messages: await convertToModelMessages(messages)
     });
 
     return result.toUIMessageStreamResponse();
@@ -194,7 +172,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     }
     console.error('[AI] Error generating animation:', err);
 
-    // Handle Zod validation errors
     if (err instanceof z.ZodError) {
       error(400, `Validation error: ${err.message}`);
     }

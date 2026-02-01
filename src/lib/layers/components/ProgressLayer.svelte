@@ -28,7 +28,9 @@
     schema,
     type: 'progress',
     label: 'Progress',
-    icon: Loader
+    icon: Loader,
+    description:
+      'Progress bar for loading states, completion tracking, with gradient and animation options'
   };
 
   type Props = z.infer<typeof schema>;

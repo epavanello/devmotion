@@ -20,7 +20,8 @@
     schema,
     type: 'image',
     label: 'Image',
-    icon: Image
+    icon: Image,
+    description: 'Display images from URL with configurable size and object-fit modes'
   };
 
   type Props = z.infer<typeof schema>;

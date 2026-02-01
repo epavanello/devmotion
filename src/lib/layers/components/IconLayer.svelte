@@ -128,7 +128,8 @@
     schema,
     type: 'icon',
     label: 'Icon',
-    icon: Star
+    icon: Star,
+    description: 'Lucide icons with customizable size, color, stroke, and optional background'
   };
 
   type Props = z.infer<typeof schema>;
