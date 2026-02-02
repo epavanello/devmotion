@@ -1,0 +1,1 @@
+ALTER TABLE "project" ALTER COLUMN "user_id" DROP NOT NULL;
