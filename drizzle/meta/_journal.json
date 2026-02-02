@@ -36,6 +36,13 @@
       "when": 1770055823285,
       "tag": "0004_jazzy_ares",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1770057267079,
+      "tag": "0005_groovy_dagger",
+      "breakpoints": true
     }
   ]
 }
