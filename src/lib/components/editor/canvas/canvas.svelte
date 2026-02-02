@@ -8,7 +8,6 @@
   import { getLayerComponent } from '$lib/layers/registry';
   import type { Layer } from '$lib/types/animation';
   import { Fullscreen } from 'lucide-svelte';
-  import { BRAND_GRADIENTS } from '$lib/constants/branding';
 
   let canvasContainer: HTMLDivElement | undefined = $state();
 
@@ -259,11 +258,11 @@
         </div>
 
         <!-- Watermark - Always visible, unremovable -->
-        <div class="watermark">
-          <div class="watermark-icon">
+        <div class="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-md bg-black/50 px-2.5 py-1.5 backdrop-blur-sm pointer-events-none z-[9999] select-none opacity-60 hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity duration-200">
+          <div class="flex size-5 items-center justify-center rounded bg-gradient-to-br from-blue-500 to-purple-600 text-white flex-shrink-0">
             <Fullscreen size={12} strokeWidth={2.5} />
           </div>
-          <span class="watermark-text">Generated with DevMotion</span>
+          <span class="text-[11px] font-medium text-white/90 whitespace-nowrap">Generated with DevMotion</span>
         </div>
       </div>
     </div>
@@ -328,54 +327,5 @@
     position: relative !important;
     box-shadow: none !important;
     transform-origin: center center;
-  }
-
-  .watermark {
-    position: absolute;
-    bottom: 12px;
-    right: 12px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    border-radius: 6px;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    pointer-events: none;
-    z-index: 9999;
-    user-select: none;
-    opacity: 0.6;
-    transition: opacity 0.2s ease;
-  }
-
-  .watermark:hover {
-    opacity: 1;
-  }
-
-  /* Always visible on touch devices */
-  @media (hover: none) {
-    .watermark {
-      opacity: 1;
-    }
-  }
-
-  .watermark-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 4px;
-    background: linear-gradient(135deg, #3b82f6 0%, #9333ea 100%);
-    color: white;
-    flex-shrink: 0;
-  }
-
-  .watermark-text {
-    font-size: 11px;
-    font-weight: 500;
-    color: white;
-    opacity: 0.9;
-    white-space: nowrap;
   }
 </style>
