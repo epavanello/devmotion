@@ -10,12 +10,13 @@ export interface AIModel {
   description: string;
   /** Recommended for complex creative tasks */
   recommended?: boolean;
-  /** Supports structured output (JSON mode) */
-  structuredOutput: boolean;
-  /** Max context window */
-  contextWindow: number;
   /** Cost tier: 'low' | 'medium' | 'high' */
   costTier: 'low' | 'medium' | 'high';
+  /** Pricing per 1M tokens (in USD) */
+  pricing: {
+    input: number;
+    output: number;
+  };
 }
 
 /**
@@ -30,9 +31,11 @@ export const AI_MODELS: Record<string, AIModel> = {
     provider: 'Moonshot AI',
     description: 'Excellent for creative and complex tasks with 128K context',
     recommended: true,
-    structuredOutput: true,
-    contextWindow: 128000,
-    costTier: 'medium'
+    costTier: 'low',
+    pricing: {
+      input: 0.5,
+      output: 2.8
+    }
   },
 
   // Claude 4.5 Sonnet - Great reasoning and creativity
@@ -42,9 +45,11 @@ export const AI_MODELS: Record<string, AIModel> = {
     provider: 'Anthropic',
     description: 'Excellent reasoning and creative capabilities',
     recommended: true,
-    structuredOutput: true,
-    contextWindow: 200000,
-    costTier: 'medium'
+    costTier: 'high',
+    pricing: {
+      input: 3.0,
+      output: 15.0
+    }
   },
 
   // GPT-5.1 - Strong all-rounder
@@ -53,9 +58,11 @@ export const AI_MODELS: Record<string, AIModel> = {
     name: 'GPT-5.1',
     provider: 'OpenAI',
     description: 'Fast and capable multimodal model',
-    structuredOutput: true,
-    contextWindow: 128000,
-    costTier: 'medium'
+    costTier: 'medium',
+    pricing: {
+      input: 1.25,
+      output: 10.0
+    }
   },
 
   // Gemini 3 Pro - Good for structured output
@@ -64,11 +71,13 @@ export const AI_MODELS: Record<string, AIModel> = {
     name: 'Gemini 3 Pro',
     provider: 'Google',
     description: 'Strong structured output and reasoning',
-    structuredOutput: true,
-    contextWindow: 1000000,
-    costTier: 'medium'
+    costTier: 'high',
+    pricing: {
+      input: 2,
+      output: 12
+    }
   }
-} as const;
+};
 
 /**
  * Default model to use

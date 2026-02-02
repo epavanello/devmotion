@@ -14,7 +14,6 @@ import { getModel } from '$lib/ai/models';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import type { RequestHandler } from './$types';
-import { dev } from '$app/environment';
 import { canUserAccessAI, logAIUsage } from '$lib/server/services/ai-access';
 
 /**
