@@ -258,7 +258,7 @@
         </div>
 
         <!-- Watermark - Always visible, unremovable -->
-        <div class="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-md bg-black/50 px-2.5 py-1.5 backdrop-blur-sm pointer-events-none z-[9999] select-none opacity-60 hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity duration-200">
+        <div class="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-md bg-black/50 px-2.5 py-1.5 backdrop-blur-sm pointer-events-none z-[9999] select-none opacity-0 hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity duration-200">
           <div class="flex size-5 items-center justify-center rounded bg-gradient-to-br from-blue-500 to-purple-600 text-white flex-shrink-0">
             <Fullscreen size={12} strokeWidth={2.5} />
           </div>
