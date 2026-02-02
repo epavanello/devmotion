@@ -258,11 +258,15 @@
         </div>
 
         <!-- Watermark - Always visible, unremovable -->
-        <div class="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-md bg-black/50 px-2.5 py-1.5 backdrop-blur-sm pointer-events-none z-[9999] select-none opacity-0 hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity duration-200">
-          <div class="flex size-5 items-center justify-center rounded bg-gradient-to-br from-blue-500 to-purple-600 text-white flex-shrink-0">
-            <Fullscreen size={12} strokeWidth={2.5} />
+        <div
+          class="pointer-events-none absolute right-3 bottom-3 z-9999 flex items-center gap-2 rounded-md bg-black/50 px-3 py-2 opacity-60 backdrop-blur-sm select-none"
+        >
+          <div
+            class="flex size-6 shrink-0 items-center justify-center rounded bg-linear-to-br from-blue-500 to-purple-600 text-white"
+          >
+            <Fullscreen size={14} strokeWidth={2.5} />
           </div>
-          <span class="text-[11px] font-medium text-white/90 whitespace-nowrap">Generated with DevMotion</span>
+          <span class="text-sm font-semibold whitespace-nowrap text-white">DevMotion</span>
         </div>
       </div>
     </div>

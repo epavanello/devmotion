@@ -18,7 +18,7 @@
 
 <div class="relative flex h-8 bg-muted/30">
   <!-- Layer names spacer -->
-  <div class="w-[200px] flex-shrink-0 border-r"></div>
+  <div class="w-[200px] shrink-0 border-r"></div>
 
   <!-- Time markers -->
   <div class="relative flex-1">
