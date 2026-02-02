@@ -14,9 +14,7 @@ export const project = pgTable(
   'project',
   {
     id: text('id').primaryKey(),
-    userId: text('user_id')
-      .notNull()
-      .references(() => user.id, { onDelete: 'cascade' }),
+    userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     isPublic: boolean('is_public').default(false).notNull(),
     data: jsonb('data').notNull().$type<ProjectData>(),

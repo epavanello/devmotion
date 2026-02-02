@@ -62,6 +62,7 @@ const AnimationSchema = z
 
 /**
  * Get key props for each layer type for the description
+ * TODO: remove this and infer from the schema
  */
 function getKeyPropsForLayerType(type: string): string[] {
   const keyProps: Record<string, string[]> = {
@@ -83,6 +84,7 @@ function getKeyPropsForLayerType(type: string): string[] {
 
 /**
  * Get example props for each layer type
+ * TODO: remove this and infer from the schema
  */
 function getExampleProps(type: string): string {
   const examples: Record<string, string> = {
