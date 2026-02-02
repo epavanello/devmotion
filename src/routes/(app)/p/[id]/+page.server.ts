@@ -5,7 +5,7 @@ import { db } from '$lib/server/db';
 import { project } from '$lib/server/db/schema';
 import { eq, sql } from 'drizzle-orm';
 
-export const ssr = false;
+export const ssr = true;
 
 export const load: PageServerLoad = async ({ params }) => {
   const result = await getProject({ id: params.id });
