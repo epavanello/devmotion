@@ -6,7 +6,6 @@
   import type { Layer } from '$lib/types/animation';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { createLayer } from '$lib/engine/layer-factory';
-  import AiChat from '$lib/components/ai/ai-chat.svelte';
   import { getLayerDefinition, layerRegistry } from '$lib/layers/registry';
   import { cn } from '$lib/utils';
 
@@ -170,7 +169,4 @@
       {/if}
     </div>
   </ScrollArea>
-
-  <!-- AI Generation Section -->
-  <AiChat />
 </div>

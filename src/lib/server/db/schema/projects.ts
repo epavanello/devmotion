@@ -5,8 +5,10 @@ import {
   boolean,
   jsonb,
   index,
+  integer,
   type AnyPgColumn
 } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 import { user } from './auth';
 import { type ProjectData } from '$lib/schemas/animation';
 
@@ -17,6 +19,8 @@ export const project = pgTable(
     userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     isPublic: boolean('is_public').default(false).notNull(),
+    isMcp: boolean('is_mcp').default(false).notNull(),
+    views: integer('views').default(0).notNull(),
     data: jsonb('data').notNull().$type<ProjectData>(),
     forkedFromId: text('forked_from_id').references((): AnyPgColumn => project.id, {
       onDelete: 'set null'
@@ -29,6 +33,14 @@ export const project = pgTable(
   },
   (table) => [
     index('project_user_id_idx').on(table.userId),
-    index('project_is_public_idx').on(table.isPublic)
+    index('project_is_public_idx').on(table.isPublic),
+    index('project_views_idx').on(table.views)
   ]
 );
+
+export const projectRelations = relations(project, ({ one }) => ({
+  user: one(user, {
+    fields: [project.userId],
+    references: [user.id]
+  })
+}));

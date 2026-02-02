@@ -22,6 +22,20 @@
       "when": 1770025834367,
       "tag": "0002_late_doctor_faustus",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1770040487692,
+      "tag": "0003_broad_whistler",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1770055823285,
+      "tag": "0004_jazzy_ares",
+      "breakpoints": true
     }
   ]
 }

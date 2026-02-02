@@ -2,6 +2,7 @@
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
   import { Loader } from 'lucide-svelte';
+  import { BRAND_COLORS } from '$lib/constants/branding';
 
   /**
    * Schema for Progress Bar Layer custom properties
@@ -12,7 +13,7 @@
     width: z.number().min(50).max(1000).default(300).describe('Bar width (px)'),
     height: z.number().min(4).max(60).default(12).describe('Bar height (px)'),
     backgroundColor: z.string().default('#333333').describe('Background/track color'),
-    progressColor: z.string().default('#3b82f6').describe('Progress fill color'),
+    progressColor: z.string().default(BRAND_COLORS.blue).describe('Progress fill color'),
     borderRadius: z.number().min(0).max(30).default(999).describe('Border radius (px)'),
     showLabel: z.boolean().default(false).describe('Show percentage label'),
     labelColor: z.string().default('#ffffff').describe('Label text color'),
@@ -20,8 +21,8 @@
     labelPosition: z.enum(['inside', 'right', 'top']).default('inside').describe('Label position'),
     animated: z.boolean().default(false).describe('Add shine animation'),
     gradient: z.boolean().default(false).describe('Use gradient fill'),
-    gradientStart: z.string().default('#3b82f6').describe('Gradient start color'),
-    gradientEnd: z.string().default('#8b5cf6').describe('Gradient end color')
+    gradientStart: z.string().default(BRAND_COLORS.blue).describe('Gradient start color'),
+    gradientEnd: z.string().default(BRAND_COLORS.purple).describe('Gradient end color')
   });
 
   export const meta: LayerMeta = {

@@ -14,7 +14,8 @@
     Unlock,
     GitFork,
     FileDown,
-    Trash
+    Trash,
+    Globe
   } from 'lucide-svelte';
   import { projectStore } from '$lib/stores/project.svelte';
   import ExportDialog from './export-dialog.svelte';
@@ -38,6 +39,8 @@
     isOwner?: boolean;
     canEdit?: boolean;
     isPublic?: boolean;
+    isMcp?: boolean;
+    isMobile?: boolean;
   }
 
   let {
@@ -46,8 +49,19 @@
     projectId = null,
     isOwner = true,
     canEdit = true,
-    isPublic = false
+    isPublic = false,
+    isMcp = false,
+    isMobile = false
   }: Props = $props();
+
+  import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger
+  } from '$lib/components/ui/collapsible';
+  import { Menu, X } from 'lucide-svelte';
+
+  let headerOpen = $state(false);
 
   let showExportDialog = $state(false);
   let showProjectSettings = $state(false);
@@ -138,147 +152,302 @@
   }
 </script>
 
-<AppHeader>
-  {#snippet leftContent()}
-    <!-- Project Switcher (only when logged in) -->
-    <Tooltip content={!user ? 'Login to switch projects' : undefined}>
-      <ProjectSwitcher currentProjectId={projectId} />
-    </Tooltip>
+<Collapsible bind:open={headerOpen} class="w-full">
+  <AppHeader>
+    {#snippet leftContent()}
+      <div class="flex items-center gap-2">
+        <!-- Project Switcher (only when logged in) -->
+        <Tooltip content={!user ? 'Login to switch projects' : undefined}>
+          <ProjectSwitcher currentProjectId={projectId} />
+        </Tooltip>
 
-    <!-- Project Actions -->
-    <div class="flex items-center gap-1">
-      <Tooltip content="Project Settings (Dimensions, Duration, etc.)">
+        {#if isMcp}
+          <div
+            class="flex items-center rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-bold tracking-wider text-primary"
+          >
+            MCP
+          </div>
+        {/if}
+
+        {#if isMobile}
+          <CollapsibleTrigger>
+            {#snippet child({ props })}
+              <Button variant="ghost" size="icon" {...props}>
+                {#if headerOpen}
+                  <X class="size-4" />
+                {:else}
+                  <Menu class="size-4" />
+                {/if}
+              </Button>
+            {/snippet}
+          </CollapsibleTrigger>
+        {/if}
+      </div>
+
+      {#if !isMobile}
+        <!-- Project Actions (Desktop) -->
+        <div class="flex items-center gap-1">
+          <Tooltip content="Explore Community Gallery">
+            <Button variant="ghost" href="/gallery" disabled={isRecording} icon={Globe} />
+          </Tooltip>
+
+          <Tooltip content="Project Settings (Dimensions, Duration, etc.)">
+            <Button
+              variant="ghost"
+              onclick={() => openProjectSettings()}
+              disabled={isRecording || !canEdit}
+              icon={Settings}
+            />
+          </Tooltip>
+
+          <Tooltip content="New Project (Ctrl/Cmd + N)">
+            <Button variant="ghost" onclick={newProject} disabled={isRecording} icon={Trash} />
+          </Tooltip>
+
+          <Tooltip content="Download as JSON">
+            <Button
+              variant="ghost"
+              onclick={exportProject}
+              disabled={isRecording}
+              icon={FileDown}
+            />
+          </Tooltip>
+
+          <Tooltip content="Load from JSON (Ctrl/Cmd + O)">
+            <Button variant="ghost" onclick={loadProject} disabled={isRecording} icon={Upload} />
+          </Tooltip>
+
+          {#if user}
+            <Tooltip content="Save to Cloud (Ctrl/Cmd + S)">
+              <Button
+                variant="ghost"
+                onclick={handleSaveToCloud}
+                disabled={isRecording || !canEdit}
+                icon={Save}
+              />
+            </Tooltip>
+          {/if}
+        </div>
+
+        <!-- Share/Fork Actions (Desktop) -->
+        {#if projectId}
+          <div class="flex items-center gap-1">
+            {#if isOwner}
+              <Tooltip content={isPublic ? 'Make Private' : 'Make Public'}>
+                <Button
+                  variant="ghost"
+                  onclick={handleToggleVisibility}
+                  disabled={isRecording}
+                  icon={isPublic ? Unlock : Lock}
+                />
+              </Tooltip>
+            {:else if user}
+              <Tooltip content="Fork Project">
+                <Button
+                  variant="ghost"
+                  onclick={handleFork}
+                  disabled={isRecording}
+                  icon={GitFork}
+                />
+              </Tooltip>
+            {/if}
+          </div>
+        {/if}
+      {/if}
+    {/snippet}
+
+    {#snippet rightContent()}
+      {#if isRecording}
+        <div
+          class="flex animate-pulse items-center gap-2 rounded-md bg-red-500 px-3 py-1 text-xs font-medium text-white lg:text-sm"
+        >
+          <span class="h-2 w-2 rounded-full bg-white"></span>
+          Recording...
+        </div>
+      {/if}
+
+      <div class="flex items-center gap-2">
+        {#if !isMobile}
+          <!-- Keyboard Shortcuts (Desktop) -->
+          <Tooltip content="Keyboard Shortcuts">
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger>
+                {#snippet child({ props })}
+                  <Button variant="ghost" icon={Keyboard} {...props} />
+                {/snippet}
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content align="end" class="w-64">
+                <DropdownMenu.Label>Keyboard Shortcuts</DropdownMenu.Label>
+                <DropdownMenu.Separator />
+                {#each shortcuts as shortcut (shortcut.key)}
+                  <div class="flex items-center justify-between px-2 py-1.5 text-sm">
+                    <span class="text-muted-foreground">{shortcut.description}</span>
+                    <kbd
+                      class="pointer-events-none inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 select-none"
+                    >
+                      {shortcut.key}
+                    </kbd>
+                  </div>
+                {/each}
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          </Tooltip>
+
+          <!-- Export (Desktop) -->
+          <Tooltip content="Export as MP4 or WebM (Ctrl/Cmd + E)">
+            <Button
+              variant="outline"
+              onclick={openExportDialog}
+              disabled={isRecording}
+              icon={Download}
+            >
+              Export Video
+            </Button>
+          </Tooltip>
+        {/if}
+
+        <!-- User Menu (Always Visible) -->
+        {#if user}
+          <Tooltip content="Account Menu">
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger>
+                {#snippet child({ props })}
+                  <Button variant="ghost" icon={User} {...props} />
+                {/snippet}
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content align="end">
+                <DropdownMenu.Label>
+                  <div class="flex flex-col space-y-1">
+                    <p class="text-sm leading-none font-medium">{user.name}</p>
+                    <p class="text-xs leading-none text-muted-foreground">
+                      {user.email}
+                    </p>
+                  </div>
+                </DropdownMenu.Label>
+                <DropdownMenu.Separator />
+                <form {...signOut}>
+                  <DropdownMenu.Item>
+                    {#snippet child({ props })}
+                      <Button {...props} variant="ghost" type="submit" class="w-full">Logout</Button
+                      >
+                    {/snippet}
+                    <LogOut />
+                    Logout
+                  </DropdownMenu.Item>
+                </form>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          </Tooltip>
+        {:else}
+          <Button onclick={handleLogin} icon={LogIn}>Login</Button>
+        {/if}
+      </div>
+    {/snippet}
+  </AppHeader>
+
+  <CollapsibleContent>
+    <div class="flex flex-col gap-2 border-b bg-muted/30 p-4">
+      <!-- Mobile Specific Actions -->
+      <div class="grid grid-cols-2 gap-2">
         <Button
-          variant="ghost"
+          variant="outline"
+          onclick={openExportDialog}
+          disabled={isRecording}
+          icon={Download}
+          class="justify-start"
+        >
+          Export Video
+        </Button>
+
+        <Button
+          variant="outline"
           onclick={() => openProjectSettings()}
           disabled={isRecording || !canEdit}
           icon={Settings}
-        />
-      </Tooltip>
+          class="justify-start"
+        >
+          Settings
+        </Button>
 
-      <Tooltip content="New Project (Ctrl/Cmd + N)">
-        <Button variant="ghost" onclick={newProject} disabled={isRecording} icon={Trash} />
-      </Tooltip>
+        <Button
+          variant="outline"
+          href="/gallery"
+          disabled={isRecording}
+          icon={Globe}
+          class="justify-start"
+        >
+          Gallery
+        </Button>
 
-      <Tooltip content="Download as JSON">
-        <Button variant="ghost" onclick={exportProject} disabled={isRecording} icon={FileDown} />
-      </Tooltip>
-
-      <Tooltip content="Load from JSON (Ctrl/Cmd + O)">
-        <Button variant="ghost" onclick={loadProject} disabled={isRecording} icon={Upload} />
-      </Tooltip>
-
-      {#if user}
-        <Tooltip content="Save to Cloud (Ctrl/Cmd + S)">
+        {#if user}
           <Button
-            variant="ghost"
+            variant="outline"
             onclick={handleSaveToCloud}
             disabled={isRecording || !canEdit}
             icon={Save}
-          />
-        </Tooltip>
-      {/if}
-    </div>
+            class="justify-start"
+          >
+            Save Cloud
+          </Button>
+        {/if}
 
-    <!-- Share/Fork Actions (only for saved projects) -->
-    {#if projectId}
-      <div class="flex items-center gap-1">
-        {#if isOwner}
-          <Tooltip content={isPublic ? 'Make Private' : 'Make Public'}>
+        <Button
+          variant="outline"
+          onclick={newProject}
+          disabled={isRecording}
+          icon={Trash}
+          class="justify-start"
+        >
+          New
+        </Button>
+
+        <Button
+          variant="outline"
+          onclick={loadProject}
+          disabled={isRecording}
+          icon={Upload}
+          class="justify-start"
+        >
+          Load JSON
+        </Button>
+
+        <Button
+          variant="outline"
+          onclick={exportProject}
+          disabled={isRecording}
+          icon={FileDown}
+          class="justify-start"
+        >
+          Save JSON
+        </Button>
+
+        {#if projectId}
+          {#if isOwner}
             <Button
-              variant="ghost"
+              variant="outline"
               onclick={handleToggleVisibility}
               disabled={isRecording}
               icon={isPublic ? Unlock : Lock}
-            />
-          </Tooltip>
-        {:else if user}
-          <Tooltip content="Fork Project">
-            <Button variant="ghost" onclick={handleFork} disabled={isRecording} icon={GitFork} />
-          </Tooltip>
+              class="justify-start"
+            >
+              {isPublic ? 'Private' : 'Public'}
+            </Button>
+          {:else if user}
+            <Button
+              variant="outline"
+              onclick={handleFork}
+              disabled={isRecording}
+              icon={GitFork}
+              class="justify-start"
+            >
+              Fork
+            </Button>
+          {/if}
         {/if}
       </div>
-    {/if}
-  {/snippet}
-
-  {#snippet rightContent()}
-    {#if isRecording}
-      <div
-        class="flex animate-pulse items-center gap-2 rounded-md bg-red-500 px-3 py-1 text-sm font-medium text-white"
-      >
-        <span class="h-2 w-2 rounded-full bg-white"></span>
-        Recording...
-      </div>
-    {/if}
-
-    <!-- Keyboard Shortcuts -->
-    <Tooltip content="Keyboard Shortcuts">
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          {#snippet child({ props })}
-            <Button variant="ghost" icon={Keyboard} {...props} />
-          {/snippet}
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="end" class="w-64">
-          <DropdownMenu.Label>Keyboard Shortcuts</DropdownMenu.Label>
-          <DropdownMenu.Separator />
-          {#each shortcuts as shortcut (shortcut.key)}
-            <div class="flex items-center justify-between px-2 py-1.5 text-sm">
-              <span class="text-muted-foreground">{shortcut.description}</span>
-              <kbd
-                class="pointer-events-none inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 select-none"
-              >
-                {shortcut.key}
-              </kbd>
-            </div>
-          {/each}
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
-    </Tooltip>
-
-    <!-- Export -->
-    <Tooltip content="Export as MP4 or WebM (Ctrl/Cmd + E)">
-      <Button variant="outline" onclick={openExportDialog} disabled={isRecording} icon={Download}>
-        Export Video
-      </Button>
-    </Tooltip>
-
-    <!-- User Menu -->
-    {#if user}
-      <Tooltip content="Account Menu">
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger>
-            {#snippet child({ props })}
-              <Button variant="ghost" icon={User} {...props} />
-            {/snippet}
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="end">
-            <DropdownMenu.Label>
-              <div class="flex flex-col space-y-1">
-                <p class="text-sm leading-none font-medium">{user.name}</p>
-                <p class="text-xs leading-none text-muted-foreground">
-                  {user.email}
-                </p>
-              </div>
-            </DropdownMenu.Label>
-            <DropdownMenu.Separator />
-            <form {...signOut}>
-              <DropdownMenu.Item>
-                {#snippet child({ props })}
-                  <Button {...props} variant="ghost" type="submit" class="w-full">Logout</Button>
-                {/snippet}
-                <LogOut />
-                Logout
-              </DropdownMenu.Item>
-            </form>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-      </Tooltip>
-    {:else}
-      <Button onclick={handleLogin} icon={LogIn}>Login</Button>
-    {/if}
-  {/snippet}
-</AppHeader>
+    </div>
+  </CollapsibleContent>
+</Collapsible>
 
 <ExportDialog
   open={showExportDialog}

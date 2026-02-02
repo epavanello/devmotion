@@ -11,13 +11,7 @@
  * resolving temporary layer references (layer_0, layer_1, etc.).
  */
 import { nanoid } from 'nanoid';
-import type {
-  Project,
-  LayerType,
-  Easing,
-  AnimatableProperty,
-  Keyframe
-} from '$lib/types/animation';
+import type { LayerType, Easing, AnimatableProperty, Keyframe } from '$lib/types/animation';
 import { createLayer } from '$lib/engine/layer-factory';
 import { getPresetById } from '$lib/engine/presets';
 import type {
