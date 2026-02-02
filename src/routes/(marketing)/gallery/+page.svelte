@@ -92,7 +92,7 @@
               >
                 <div class="flex items-center gap-2">
                   <div
-                    class="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 text-[10px] font-bold text-white"
+                    class="flex h-6 w-6 items-center justify-center rounded-full bg-linear-to-tr from-indigo-500 to-purple-500 text-[10px] font-bold text-white"
                   >
                     {(project.user?.name || '?')[0].toUpperCase()}
                   </div>

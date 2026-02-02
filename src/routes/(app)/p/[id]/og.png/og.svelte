@@ -37,7 +37,8 @@
     <div tw="flex items-center mt-4">
       <div tw="flex items-center bg-white/10 px-4 py-2 rounded-xl mr-4 border border-white/10">
         <div
-          tw="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-tr from-indigo-500 to-purple-500 text-sm font-bold text-white mr-3"
+          tw="flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold text-white mr-3"
+          style="background: {BRAND_GRADIENTS.logo};"
         >
           {(authorName || '?')[0].toUpperCase()}
         </div>
