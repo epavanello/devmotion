@@ -53,7 +53,7 @@
           >
             <!-- Thumbnail Placeholder -->
             <div
-              class="relative flex aspect-video items-center justify-center overflow-hidden bg-gradient-to-br from-muted/50 to-muted transition-colors duration-500 group-hover:from-muted/80"
+              class="relative flex aspect-video items-center justify-center overflow-hidden bg-linear-to-br from-muted/50 to-muted transition-colors duration-500 group-hover:from-muted/80"
             >
               <div class="bg-grid-pattern absolute inset-0 opacity-10"></div>
               <div
@@ -65,7 +65,7 @@
               </div>
               <!-- Views Badge -->
               <div
-                class="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-black/40 px-2 py-1 text-xs text-white opacity-0 backdrop-blur-md transition-opacity duration-300 group-hover:opacity-100"
+                class="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-black/40 px-2 py-1 text-xs text-white opacity-0 backdrop-blur-md transition-opacity duration-300 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
               >
                 <Eye class="h-3 w-3" />
                 {project.views}
@@ -92,7 +92,7 @@
               >
                 <div class="flex items-center gap-2">
                   <div
-                    class="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 text-[10px] font-bold text-white"
+                    class="flex h-6 w-6 items-center justify-center rounded-full bg-linear-to-tr from-indigo-500 to-purple-500 text-[10px] font-bold text-white"
                   >
                     {(project.user?.name || '?')[0].toUpperCase()}
                   </div>

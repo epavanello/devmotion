@@ -723,7 +723,7 @@
                       <Button
                         variant="ghost"
                         size="sm"
-                        class="h-6 w-6 p-0 opacity-0 transition-opacity group-hover:opacity-100"
+                        class="h-6 w-6 p-0 opacity-0 transition-opacity group-hover:opacity-100 [@media(hover:none)]:opacity-100"
                         onclick={() => deleteKeyframe(keyframe.id)}
                       >
                         <Trash2 class="h-3 w-3" />

@@ -12,8 +12,8 @@
   <div tw="flex flex-col items-center">
     <div tw="flex mb-10">
       <div
-        tw="w-32 h-32 rounded-[2rem] flex items-center justify-center shadow-2xl font-bold"
-        style="background: {BRAND_GRADIENTS.logo};"
+        tw="w-32 h-32 flex items-center justify-center shadow-2xl font-bold"
+        style="background: {BRAND_GRADIENTS.logo}; border-radius: 2rem;"
       >
         <Fullscreen size={72} color="white" />
       </div>
