@@ -7,6 +7,8 @@
   import LayerWrapper from '$lib/layers/LayerWrapper.svelte';
   import { getLayerComponent } from '$lib/layers/registry';
   import type { Layer } from '$lib/types/animation';
+  import { Fullscreen } from 'lucide-svelte';
+  import { BRAND_GRADIENTS } from '$lib/constants/branding';
 
   let canvasContainer: HTMLDivElement | undefined = $state();
 
@@ -255,6 +257,14 @@
             />
           {/each}
         </div>
+
+        <!-- Watermark - Always visible, unremovable -->
+        <div class="watermark">
+          <div class="watermark-icon">
+            <Fullscreen size={12} strokeWidth={2.5} />
+          </div>
+          <span class="watermark-text">Generated with DevMotion</span>
+        </div>
       </div>
     </div>
   </div>
@@ -318,5 +328,41 @@
     position: relative !important;
     box-shadow: none !important;
     transform-origin: center center;
+  }
+
+  .watermark {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    pointer-events: none;
+    z-index: 9999;
+    user-select: none;
+  }
+
+  .watermark-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, #3b82f6 0%, #9333ea 100%);
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .watermark-text {
+    font-size: 11px;
+    font-weight: 500;
+    color: white;
+    opacity: 0.9;
+    white-space: nowrap;
   }
 </style>
