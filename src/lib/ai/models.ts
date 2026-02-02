@@ -36,47 +36,47 @@ export const AI_MODELS: Record<string, AIModel> = {
       input: 0.5,
       output: 2.8
     }
-  },
-
-  // Claude 4.5 Sonnet - Great reasoning and creativity
-  'anthropic/claude-sonnet-4.5': {
-    id: 'anthropic/claude-sonnet-4.5',
-    name: 'Claude Sonnet 4.5',
-    provider: 'Anthropic',
-    description: 'Excellent reasoning and creative capabilities',
-    recommended: true,
-    costTier: 'high',
-    pricing: {
-      input: 3.0,
-      output: 15.0
-    }
-  },
-
-  // GPT-5.1 - Strong all-rounder
-  'openai/gpt-5.1': {
-    id: 'openai/gpt-5.1',
-    name: 'GPT-5.1',
-    provider: 'OpenAI',
-    description: 'Fast and capable multimodal model',
-    costTier: 'medium',
-    pricing: {
-      input: 1.25,
-      output: 10.0
-    }
-  },
-
-  // Gemini 3 Pro - Good for structured output
-  'google/gemini-3-pro-preview': {
-    id: 'google/gemini-3-pro-preview',
-    name: 'Gemini 3 Pro',
-    provider: 'Google',
-    description: 'Strong structured output and reasoning',
-    costTier: 'high',
-    pricing: {
-      input: 2,
-      output: 12
-    }
   }
+
+  // // Claude 4.5 Sonnet - Great reasoning and creativity
+  // 'anthropic/claude-sonnet-4.5': {
+  //   id: 'anthropic/claude-sonnet-4.5',
+  //   name: 'Claude Sonnet 4.5',
+  //   provider: 'Anthropic',
+  //   description: 'Excellent reasoning and creative capabilities',
+  //   recommended: false,
+  //   costTier: 'high',
+  //   pricing: {
+  //     input: 3.0,
+  //     output: 15.0
+  //   }
+  // },
+
+  // // GPT-5.1 - Strong all-rounder
+  // 'openai/gpt-5.1': {
+  //   id: 'openai/gpt-5.1',
+  //   name: 'GPT-5.1',
+  //   provider: 'OpenAI',
+  //   description: 'Fast and capable multimodal model',
+  //   costTier: 'medium',
+  //   pricing: {
+  //     input: 1.25,
+  //     output: 10.0
+  //   }
+  // },
+
+  // // Gemini 3 Pro - Good for structured output
+  // 'google/gemini-3-pro-preview': {
+  //   id: 'google/gemini-3-pro-preview',
+  //   name: 'Gemini 3 Pro',
+  //   provider: 'Google',
+  //   description: 'Strong structured output and reasoning',
+  //   costTier: 'high',
+  //   pricing: {
+  //     input: 2,
+  //     output: 12
+  //   }
+  // }
 };
 
 /**

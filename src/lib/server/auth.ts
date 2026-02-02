@@ -1,4 +1,5 @@
 import { betterAuth } from 'better-auth';
+import type { User } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db } from './db';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
@@ -9,6 +10,9 @@ import {
   PRIVATE_GOOGLE_CLIENT_ID,
   PRIVATE_GOOGLE_CLIENT_SECRET
 } from '$env/static/private';
+import { aiUserUnlock } from './db/schema';
+import { eq } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
 
 export const auth = betterAuth({
   secret: PRIVATE_BETTER_AUTH_SECRET,
@@ -25,5 +29,35 @@ export const auth = betterAuth({
     }
   },
   baseURL: PUBLIC_BASE_URL,
-  plugins: [sveltekitCookies(getRequestEvent)]
+  plugins: [sveltekitCookies(getRequestEvent)],
+  onResponse: {
+    signUpSocial: async ({
+      user,
+      account
+    }: {
+      user: User;
+      account: { providerId: string; [key: string]: unknown };
+    }) => {
+      // Grant 20 cents to new Google sign-ups
+      if (account?.providerId === 'google') {
+        // Check if user already has an AI unlock record
+        const existingUnlock = await db
+          .select()
+          .from(aiUserUnlock)
+          .where(eq(aiUserUnlock.userId, user.id))
+          .limit(1);
+
+        // Only create if doesn't exist (new user)
+        if (existingUnlock.length === 0) {
+          await db.insert(aiUserUnlock).values({
+            id: nanoid(),
+            userId: user.id,
+            enabled: true,
+            maxCostPerMonth: 0.2, // 20 cents
+            notes: 'Welcome bonus for new Google sign-up'
+          });
+        }
+      }
+    }
+  }
 });
