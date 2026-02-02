@@ -73,9 +73,11 @@
     <h2 class="text-sm font-semibold">Layers ({projectStore.project.layers.length})</h2>
     <DropdownMenu.Root>
       <DropdownMenu.Trigger disabled={projectStore.isRecording}>
-        <Button variant="outline" size="icon" disabled={projectStore.isRecording}>
-          <Plus />
-        </Button>
+        {#snippet child({ props })}
+          <Button variant="outline" size="icon" {...props}>
+            <Plus />
+          </Button>
+        {/snippet}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="start" class="max-h-80 overflow-y-auto">
         {#each Object.values(layerRegistry) as layer (layer.type)}
