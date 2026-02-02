@@ -1,72 +1,94 @@
-# 🎬 DevMotion - Free AI-Powered Animation Video Creator
+<div align="center">
 
-Create stunning animated videos with ease. Design with full manual controls or leverage AI-powered suggestions to accelerate your workflow. Export professional-quality MP4 videos—completely free, no watermark, no limits.
+# DevMotion
 
-Perfect for content creators, marketers, educators, and motion designers who want to bring their ideas to life without expensive software.
+**AI-Powered Animation Video Creator**
 
-## ✨ Key Features
+Create stunning animated videos with full manual controls or AI-powered suggestions. Export professional MP4s—free, no watermark, no limits.
 
-🎯 **Manual Animation Studio**
+[![GitHub Stars](https://img.shields.io/github/stars/epavanello/devmotion?style=social)](https://github.com/epavanello/devmotion/stargazers)
+[![License](https://img.shields.io/github/license/epavanello/devmotion)](LICENSE)
+[![Built with SvelteKit](https://img.shields.io/badge/Built%20with-SvelteKit-FF3E00?logo=svelte)](https://kit.svelte.dev)
 
-- Full timeline-based animation editor with keyframe support
-- Text, shapes, and image layers with complete customization
-- Interactive canvas with zoom, pan, and grid controls
-- Smooth interpolation with multiple easing curves
-- Real-time animation preview
+[**Try it Live**](https://devmotion.app) • [**Documentation**](./ANIMATION_EDITOR.md) • [**Report Bug**](https://github.com/epavanello/devmotion/issues) • [**Request Feature**](https://github.com/epavanello/devmotion/issues)
 
-🤖 **AI-Powered Assistance**
+</div>
 
-- Get intelligent animation suggestions
-- Auto-generate motion sequences
-- Smart layer recommendations
+---
 
-💾 **Save & Export**
+## ✨ Features
 
-- Save projects in JSON format for future editing
-- Export high-quality MP4 videos with ffmpeg
-- No file size limits or watermarks
+### Animation Studio
+- **Timeline Editor** – Full keyframe control with smooth interpolation and easing curves
+- **Layer Management** – Text, shapes, and images with complete customization
+- **Interactive Canvas** – Zoom, pan, grid controls, and real-time preview
+- **Export** – High-quality MP4 videos with no watermarks or file limits
 
-⚡ **Modern Tech Stack**
+### AI-Powered Workflow
+- **Intelligent Suggestions** – Get smart animation and layer recommendations
+- **Auto-Generation** – Create motion sequences automatically
+- **MCP Integration** – Use DevMotion tools directly in Claude via Model Context Protocol
 
-- Built with SvelteKit and Svelte 5 Runes
-- Responsive, intuitive UI with shadcn-svelte components
-- Lightning-fast canvas rendering
-- Browser-based—no installation needed
+### Project Management
+- **Save & Load** – Store projects in JSON format for future editing
+- **Database Storage** – Persistent project storage with PostgreSQL
+- **Authentication** – Secure user accounts with Better Auth
 
 ## 🚀 Quick Start
+
+### Web Application
 
 ```bash
 # Install dependencies
 pnpm install
 
-# Run development server
-pnpm run dev
+# Start development server
+pnpm dev
 
 # Build for production
-pnpm run build
+pnpm build
 ```
 
-Open your browser to `http://localhost:5173` and start creating!
+Open `http://localhost:5173` and start creating animations!
+
+### MCP Server Integration
+
+Use DevMotion's animation tools directly in Claude Desktop or any MCP-compatible client:
+
+```bash
+claude mcp add --transport http devmotion devmotion.app/mcp
+```
+
+This enables you to create and animate videos through natural language conversations with Claude. The MCP server provides tools for:
+- Creating animation projects
+- Adding and editing layers (text, shapes, images)
+- Applying animations and keyframes
+- Configuring project settings
+
+All projects created via MCP are stored anonymously and can be previewed at `devmotion.app/p/{project-id}`.
 
 ## 📖 Documentation
 
-See [ANIMATION_EDITOR.md](./ANIMATION_EDITOR.md) for:
-
-- Complete user guide & tutorials
+Comprehensive guides available in [ANIMATION_EDITOR.md](./ANIMATION_EDITOR.md):
+- User guide and tutorials
 - Keyboard shortcuts reference
-- Technical architecture details
-- Animation presets showcase
+- Technical architecture
+- Animation presets
 
 ## 🛠️ Tech Stack
 
 | Component            | Technology                              |
 | -------------------- | --------------------------------------- |
-| **Framework**        | SvelteKit with Svelte 5 Runes           |
-| **UI Components**    | shadcn-svelte                           |
-| **Canvas Rendering** | HTML5 Canvas / SVG                      |
-| **Video Export**     | ffmpeg.wasm                             |
-| **State Management** | Svelte reactive stores (runes)          |
+| **Framework**        | SvelteKit + Svelte 5 (Runes)            |
+| **UI Components**    | bits-ui + Tailwind CSS v4               |
+| **Canvas Rendering** | HTML5 Canvas API                        |
+| **Video Processing** | MediaBunny                              |
+| **AI Integration**   | Vercel AI SDK + OpenRouter              |
+| **MCP Server**       | Vercel MCP Adapter                      |
+| **Database**         | PostgreSQL + Drizzle ORM                |
+| **Authentication**   | Better Auth                             |
 | **Animation Engine** | Custom interpolation with bezier-easing |
+| **Internationalization** | Paraglide JS                        |
 
 ## ⌨️ Keyboard Shortcuts
 
@@ -79,30 +101,14 @@ See [ANIMATION_EDITOR.md](./ANIMATION_EDITOR.md) for:
 | `+` / `-`      | Zoom in / out         |
 | `Delete`       | Remove selected layer |
 
-## 🎨 Supported Layers
+## Workflow
 
-- **Text**: Fully customizable font, size, alignment, color
-- **Shapes**: Rectangle, Circle, Triangle with fill & stroke
-- **Images**: Import and animate custom images
-
-## 🎬 Animation Presets
-
-Quick-start animations to speed up your workflow:
-
-- Fade In/Out
-- Slide In/Out (all directions)
-- Bounce
-- Scale In/Out
-- Rotate In
-
-## 🎯 Typical Workflow
-
-1. **Create**: Add layers (text, shapes, or images)
-2. **Position**: Move and size elements on the canvas
-3. **Animate**: Set keyframes and create smooth transitions
-4. **Preview**: Play your animation in real-time
-5. **Export**: Generate an MP4 video
-6. **Save**: Keep your project for future editing
+1. **Add Layers** – Text, shapes, or images
+2. **Position & Style** – Customize appearance and placement
+3. **Animate** – Set keyframes with easing curves
+4. **Preview** – Real-time playback
+5. **Export** – Generate MP4 video
+6. **Save** – Store for future editing
 
 ## 📁 Project Structure
 
@@ -129,41 +135,73 @@ src/
         └── +page.svelte     # Main editor interface
 ```
 
-## 🚦 Current Status
+## 🤝 Contributing
 
-✅ **MVP Complete** - All core features working and tested
+We welcome contributions from the community! Whether you're fixing bugs, adding features, or improving documentation—every contribution helps make DevMotion better.
 
-- Timeline editing with keyframe support
-- Layer management (create, edit, delete, reorder)
-- Smooth animation rendering
-- Video export via ffmpeg.wasm
-- Project persistence (save/load JSON)
-- Responsive UI with full keyboard shortcuts
+### Ways to Contribute
+
+- 🐛 **Report Bugs** – [Open an issue](https://github.com/epavanello/devmotion/issues) with detailed reproduction steps
+- 💡 **Suggest Features** – Share your ideas for new capabilities
+- 🔧 **Submit Pull Requests** – Pick an issue or propose a new feature
+- 📖 **Improve Docs** – Help us make the documentation clearer
+- ⭐ **Star the Project** – Show your support and help others discover DevMotion
+
+### Development Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/epavanello/devmotion.git
+cd devmotion
+
+# Install dependencies
+pnpm install
+
+# Set up environment variables (copy .env.example to .env)
+# Configure your database and API keys
+
+# Start the database
+pnpm db:start
+
+# Push schema to database
+pnpm db:push
+
+# Start development server
+pnpm dev
+```
+
+### Contribution Guidelines
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Test thoroughly
+5. Commit with clear messages (`git commit -m 'Add amazing feature'`)
+6. Push to your branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
 ## 🔮 Roadmap
 
 - [ ] Enhanced AI animation suggestions
-- [ ] Advanced motion paths
-- [ ] Layer effects and filters
+- [ ] Advanced motion paths and bezier curves
+- [ ] Layer effects and filters (blur, shadows, etc.)
 - [ ] Audio track synchronization
 - [ ] Lottie animation export
-- [ ] Collaborative editing
+- [ ] Real-time collaborative editing
 - [ ] Stock media library integration
 - [ ] Mobile-optimized interface
-
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to:
-
-- Report bugs and issues
-- Suggest new features
-- Submit pull requests
-- Improve documentation
+- [ ] Animation templates marketplace
 
 ## 📄 License
 
-Check the repository for license details.
+This project is open source. Check the repository for license details.
 
 ---
 
-**DevMotion** - Create, animate, export. Completely free. 🎬
+<div align="center">
+
+**DevMotion** – Create, animate, export. Completely free.
+
+[devmotion.app](https://devmotion.app)
+
+</div>
