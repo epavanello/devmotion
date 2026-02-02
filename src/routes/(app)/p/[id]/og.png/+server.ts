@@ -4,8 +4,6 @@ import svelteToPng from '$lib/server/svelte-to-image';
 import { getProject } from '$lib/functions/projects.remote';
 import { error } from '@sveltejs/kit';
 
-export const ssr = false;
-
 export const GET: RequestHandler = async ({ params }) => {
   const result = await getProject({ id: params.id });
 
