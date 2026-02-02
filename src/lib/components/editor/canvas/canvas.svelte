@@ -344,6 +344,19 @@
     pointer-events: none;
     z-index: 9999;
     user-select: none;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+  }
+
+  .watermark:hover {
+    opacity: 1;
+  }
+
+  /* Always visible on touch devices */
+  @media (hover: none) {
+    .watermark {
+      opacity: 1;
+    }
   }
 
   .watermark-icon {
