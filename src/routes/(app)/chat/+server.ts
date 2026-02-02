@@ -14,7 +14,7 @@ import { getModel } from '$lib/ai/models';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import type { RequestHandler } from './$types';
-import { dev } from '$app/environment';
+import { canUserAccessAI, logAIUsage } from '$lib/server/services/ai-access';
 
 /**
  * Request schema for AI generation
@@ -53,8 +53,8 @@ function logAIInteraction(data: {
   responseMessages?: unknown[];
   requestData?: unknown;
   usage?: {
-    promptTokens?: number;
-    completionTokens?: number;
+    inputTokens?: number;
+    outputTokens?: number;
     totalTokens?: number;
   };
 }) {
@@ -114,7 +114,7 @@ function logAIInteraction(data: {
     }
     if (data.usage) {
       console.log(
-        `Tokens: ${data.usage.totalTokens || 'N/A'} (prompt: ${data.usage.promptTokens || 'N/A'}, completion: ${data.usage.completionTokens || 'N/A'})`
+        `Tokens: ${data.usage.totalTokens || 'N/A'} (input: ${data.usage.inputTokens || 'N/A'}, output: ${data.usage.outputTokens || 'N/A'})`
       );
     }
     console.log(`Log file: ${filepath}`);
@@ -133,8 +133,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       error(401, 'Authentication required');
     }
 
-    if (!dev) {
-      error(503, 'AI animation generation is not ready for production yet');
+    // Check if user has AI access enabled
+    const accessCheck = await canUserAccessAI(locals.user.id);
+    if (!accessCheck.allowed) {
+      error(403, accessCheck.reason || 'AI access not enabled');
     }
 
     const body = await request.json();
@@ -152,7 +154,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       instructions: systemPrompt,
       tools: animationTools,
 
-      onFinish(event) {
+      async onFinish(event) {
         logAIInteraction({
           timestamp: new Date().toISOString(),
           modelId: model.id,
@@ -164,6 +166,21 @@ export const POST: RequestHandler = async ({ request, locals }) => {
           requestData: event.request,
           usage: event.usage
         });
+
+        // Track usage in database
+        if (event.usage && locals.user) {
+          await logAIUsage({
+            userId: locals.user.id,
+            modelId: model.id,
+            promptTokens: event.usage.inputTokens || 0,
+            completionTokens: event.usage.outputTokens || 0,
+            metadata: {
+              projectName: project.name,
+              messageCount: messages.length,
+              toolCallCount: event.toolCalls?.length || 0
+            }
+          });
+        }
       }
     });
 

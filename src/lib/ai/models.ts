@@ -10,12 +10,13 @@ export interface AIModel {
   description: string;
   /** Recommended for complex creative tasks */
   recommended?: boolean;
-  /** Supports structured output (JSON mode) */
-  structuredOutput: boolean;
-  /** Max context window */
-  contextWindow: number;
   /** Cost tier: 'low' | 'medium' | 'high' */
   costTier: 'low' | 'medium' | 'high';
+  /** Pricing per 1M tokens (in USD) */
+  pricing: {
+    input: number;
+    output: number;
+  };
 }
 
 /**
@@ -30,45 +31,53 @@ export const AI_MODELS: Record<string, AIModel> = {
     provider: 'Moonshot AI',
     description: 'Excellent for creative and complex tasks with 128K context',
     recommended: true,
-    structuredOutput: true,
-    contextWindow: 128000,
-    costTier: 'medium'
-  },
-
-  // Claude 4.5 Sonnet - Great reasoning and creativity
-  'anthropic/claude-sonnet-4.5': {
-    id: 'anthropic/claude-sonnet-4.5',
-    name: 'Claude Sonnet 4.5',
-    provider: 'Anthropic',
-    description: 'Excellent reasoning and creative capabilities',
-    recommended: true,
-    structuredOutput: true,
-    contextWindow: 200000,
-    costTier: 'medium'
-  },
-
-  // GPT-5.1 - Strong all-rounder
-  'openai/gpt-5.1': {
-    id: 'openai/gpt-5.1',
-    name: 'GPT-5.1',
-    provider: 'OpenAI',
-    description: 'Fast and capable multimodal model',
-    structuredOutput: true,
-    contextWindow: 128000,
-    costTier: 'medium'
-  },
-
-  // Gemini 3 Pro - Good for structured output
-  'google/gemini-3-pro-preview': {
-    id: 'google/gemini-3-pro-preview',
-    name: 'Gemini 3 Pro',
-    provider: 'Google',
-    description: 'Strong structured output and reasoning',
-    structuredOutput: true,
-    contextWindow: 1000000,
-    costTier: 'medium'
+    costTier: 'low',
+    pricing: {
+      input: 0.5,
+      output: 2.8
+    }
   }
-} as const;
+
+  // // Claude 4.5 Sonnet - Great reasoning and creativity
+  // 'anthropic/claude-sonnet-4.5': {
+  //   id: 'anthropic/claude-sonnet-4.5',
+  //   name: 'Claude Sonnet 4.5',
+  //   provider: 'Anthropic',
+  //   description: 'Excellent reasoning and creative capabilities',
+  //   recommended: false,
+  //   costTier: 'high',
+  //   pricing: {
+  //     input: 3.0,
+  //     output: 15.0
+  //   }
+  // },
+
+  // // GPT-5.1 - Strong all-rounder
+  // 'openai/gpt-5.1': {
+  //   id: 'openai/gpt-5.1',
+  //   name: 'GPT-5.1',
+  //   provider: 'OpenAI',
+  //   description: 'Fast and capable multimodal model',
+  //   costTier: 'medium',
+  //   pricing: {
+  //     input: 1.25,
+  //     output: 10.0
+  //   }
+  // },
+
+  // // Gemini 3 Pro - Good for structured output
+  // 'google/gemini-3-pro-preview': {
+  //   id: 'google/gemini-3-pro-preview',
+  //   name: 'Gemini 3 Pro',
+  //   provider: 'Google',
+  //   description: 'Strong structured output and reasoning',
+  //   costTier: 'high',
+  //   pricing: {
+  //     input: 2,
+  //     output: 12
+  //   }
+  // }
+};
 
 /**
  * Default model to use
