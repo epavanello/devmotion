@@ -4,6 +4,7 @@
   import { getAnimatedTransform } from '$lib/engine/interpolation';
   import { nanoid } from 'nanoid';
   import type { Component } from 'svelte';
+  import { BRAND_COLORS } from '$lib/constants/branding';
 
   interface Props extends BaseLayerProps {
     /**
@@ -194,6 +195,7 @@
     onmousedown={onMouseDown}
     role="button"
     tabindex="0"
+    style:--primary-color={BRAND_COLORS.blue}
   >
     <div class="layer-content" style:opacity={style.opacity}>
       <C {...customProps} />
@@ -207,7 +209,7 @@
   }
 
   .layer-wrapper.selected {
-    outline: 2px solid #3b82f6;
+    outline: 2px solid var(--primary-color);
     outline-offset: 0px;
   }
 

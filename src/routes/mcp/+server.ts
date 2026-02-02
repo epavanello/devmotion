@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * MCP Server for DevMotion Animation Tools
  *
@@ -75,6 +76,7 @@ const handler = createMcpHandler(
           id,
           name,
           isPublic: true,
+          isMcp: true,
           userId: null,
           data,
           updatedAt: new Date()
@@ -153,7 +155,6 @@ const handler = createMcpHandler(
 
     for (const [name, toolDef] of toolEntries) {
       // Extract original Zod schema
-      // @ts-ignore - accessing internal schema from ai-sdk tool
       const originalSchema = toolDef.inputSchema as z.ZodObject;
 
       // Extend with projectId

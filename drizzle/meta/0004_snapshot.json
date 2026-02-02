@@ -1,6 +1,6 @@
 {
-  "id": "9230a98b-3c0a-44b2-ab97-416ffd5126eb",
-  "prevId": "c12bef1f-dc7d-4e37-8248-f5232bfdd36d",
+  "id": "46057771-a99c-4119-96fe-7fb7c174a845",
+  "prevId": "9230a98b-3c0a-44b2-ab97-416ffd5126eb",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -335,6 +335,13 @@
         },
         "is_public": {
           "name": "is_public",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "is_mcp": {
+          "name": "is_mcp",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,

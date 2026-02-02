@@ -19,17 +19,20 @@ Create stunning animated videos with full manual controls or AI-powered suggesti
 ## ✨ Features
 
 ### Animation Studio
+
 - **Timeline Editor** – Full keyframe control with smooth interpolation and easing curves
 - **Layer Management** – Text, shapes, and images with complete customization
 - **Interactive Canvas** – Zoom, pan, grid controls, and real-time preview
 - **Export** – High-quality MP4 videos with no watermarks or file limits
 
 ### AI-Powered Workflow
+
 - **Intelligent Suggestions** – Get smart animation and layer recommendations
 - **Auto-Generation** – Create motion sequences automatically
 - **MCP Integration** – Use DevMotion tools directly in Claude via Model Context Protocol
 
 ### Project Management
+
 - **Save & Load** – Store projects in JSON format for future editing
 - **Database Storage** – Persistent project storage with PostgreSQL
 - **Authentication** – Secure user accounts with Better Auth
@@ -60,6 +63,7 @@ claude mcp add --transport http devmotion devmotion.app/mcp
 ```
 
 This enables you to create and animate videos through natural language conversations with Claude. The MCP server provides tools for:
+
 - Creating animation projects
 - Adding and editing layers (text, shapes, images)
 - Applying animations and keyframes
@@ -70,6 +74,7 @@ All projects created via MCP are stored anonymously and can be previewed at `dev
 ## 📖 Documentation
 
 Comprehensive guides available in [ANIMATION_EDITOR.md](./ANIMATION_EDITOR.md):
+
 - User guide and tutorials
 - Keyboard shortcuts reference
 - Technical architecture
@@ -77,18 +82,18 @@ Comprehensive guides available in [ANIMATION_EDITOR.md](./ANIMATION_EDITOR.md):
 
 ## 🛠️ Tech Stack
 
-| Component            | Technology                              |
-| -------------------- | --------------------------------------- |
-| **Framework**        | SvelteKit + Svelte 5 (Runes)            |
-| **UI Components**    | bits-ui + Tailwind CSS v4               |
-| **Canvas Rendering** | HTML5 Canvas API                        |
-| **Video Processing** | MediaBunny                              |
-| **AI Integration**   | Vercel AI SDK + OpenRouter              |
-| **MCP Server**       | Vercel MCP Adapter                      |
-| **Database**         | PostgreSQL + Drizzle ORM                |
-| **Authentication**   | Better Auth                             |
-| **Animation Engine** | Custom interpolation with bezier-easing |
-| **Internationalization** | Paraglide JS                        |
+| Component                | Technology                              |
+| ------------------------ | --------------------------------------- |
+| **Framework**            | SvelteKit + Svelte 5 (Runes)            |
+| **UI Components**        | bits-ui + Tailwind CSS v4               |
+| **Canvas Rendering**     | HTML5 Canvas API                        |
+| **Video Processing**     | MediaBunny                              |
+| **AI Integration**       | Vercel AI SDK + OpenRouter              |
+| **MCP Server**           | Vercel MCP Adapter                      |
+| **Database**             | PostgreSQL + Drizzle ORM                |
+| **Authentication**       | Better Auth                             |
+| **Animation Engine**     | Custom interpolation with bezier-easing |
+| **Internationalization** | Paraglide JS                            |
 
 ## ⌨️ Keyboard Shortcuts
 

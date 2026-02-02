@@ -1,7 +1,7 @@
 import { command, getRequestEvent, query } from '$app/server';
 import { db } from '$lib/server/db';
 import { project } from '$lib/server/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { withErrorHandling } from '.';
 import { nanoid } from 'nanoid';
@@ -49,7 +49,15 @@ export const saveProject = command(
 export const getProject = query(z.object({ id: z.string() }), async ({ id }) => {
   const { locals } = getRequestEvent();
   const result = await db.query.project.findFirst({
-    where: eq(project.id, id)
+    where: eq(project.id, id),
+    with: {
+      user: {
+        columns: {
+          name: true,
+          id: true
+        }
+      }
+    }
   });
 
   if (!result) {
@@ -158,4 +166,45 @@ export const deleteProject = command(
 
     return { success: true };
   })
+);
+
+export const getPublicProjects = query(
+  z.object({
+    page: z.number().default(1),
+    limit: z.number().default(12)
+  }),
+  async ({ page, limit }) => {
+    const offset = (page - 1) * limit;
+
+    const projects = await db.query.project.findMany({
+      where: eq(project.isPublic, true),
+      orderBy: [desc(project.views), desc(project.updatedAt)],
+      limit,
+      offset,
+      with: {
+        user: {
+          columns: {
+            name: true,
+            id: true
+          }
+        }
+      },
+      columns: {
+        id: true,
+        name: true,
+        views: true,
+        updatedAt: true,
+        userId: true,
+        isMcp: true
+      }
+    });
+
+    const total = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(project)
+      .where(eq(project.isPublic, true))
+      .then((res) => Number(res[0].count));
+
+    return { projects, total, pages: Math.ceil(total / limit) };
+  }
 );

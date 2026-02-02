@@ -10,6 +10,7 @@ import { getPresetIds } from '$lib/engine/presets';
 import { tool, type InferUITools, type Tool } from 'ai';
 import { layerRegistry, getAvailableLayerTypes, type LayerType } from '$lib/layers/registry';
 import { extractDefaultValues } from '$lib/layers/base';
+import { BRAND_COLORS } from '$lib/constants/branding';
 
 // ============================================
 // Helper Functions
@@ -90,10 +91,10 @@ function getExampleProps(type: string): string {
   const examples: Record<string, string> = {
     text: '"content": "Hello World", "fontSize": 48, "color": "#ffffff"',
     icon: '"icon": "star", "size": 64, "color": "#ffffff"',
-    shape: '"shapeType": "rectangle", "fill": "#3b82f6", "width": 200, "height": 100"',
+    shape: `"shapeType": "rectangle", "fill": "${BRAND_COLORS.blue}", "width": 200, "height": 100"`,
     code: '"code": "const x = 1;", "language": "typescript"',
     image: '"src": "https://example.com/image.jpg", "width": 400',
-    button: '"text": "Click Me", "backgroundColor": "#3b82f6"',
+    button: `"text": "Click Me", "backgroundColor": "${BRAND_COLORS.blue}"`,
     terminal: '"content": "$ npm install", "title": "Terminal"',
     progress: '"progress": 75, "progressColor": "#22c55e"',
     mouse: '"pointerType": "arrow", "size": 32',

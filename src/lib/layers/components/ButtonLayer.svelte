@@ -2,6 +2,7 @@
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
   import { Zap } from 'lucide-svelte';
+  import { BRAND_COLORS } from '$lib/constants/branding';
 
   /**
    * Schema for Button Layer custom properties
@@ -10,7 +11,7 @@
     text: z.string().default('Click me').describe('Button text'),
     width: z.number().min(50).max(500).default(120).describe('Width (px)'),
     height: z.number().min(30).max(150).default(48).describe('Height (px)'),
-    backgroundColor: z.string().default('#3b82f6').describe('Background color'),
+    backgroundColor: z.string().default(BRAND_COLORS.blue).describe('Background color'),
     textColor: z.string().default('#ffffff').describe('Text color'),
     fontSize: z.number().min(10).max(32).default(16).describe('Font size (px)'),
     borderRadius: z.number().min(0).max(100).default(8).describe('Border radius (px)'),
@@ -19,7 +20,7 @@
       .default('bold')
       .describe('Font weight'),
     style: z.enum(['solid', 'outline', 'ghost']).default('solid').describe('Button style variant'),
-    borderColor: z.string().default('#3b82f6').describe('Border color (for outline/ghost)'),
+    borderColor: z.string().default(BRAND_COLORS.blue).describe('Border color (for outline/ghost)'),
     shadow: z.boolean().default(true).describe('Show shadow')
   });
 

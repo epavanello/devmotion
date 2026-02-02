@@ -14,6 +14,9 @@ export default defineConfig({
     }),
     devtoolsJson()
   ],
+  ssr: {
+    external: ['@resvg/resvg-js']
+  },
   test: {
     expect: { requireAssertions: true },
     projects: [

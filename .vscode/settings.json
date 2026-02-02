@@ -1,4 +1,6 @@
 {
   "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact", "svelte"],
-  "typescript.tsserver.experimental.enableProjectDiagnostics": true
+  "eslint.enable": true,
+  "typescript.tsserver.experimental.enableProjectDiagnostics": true,
+  "tailwindCSS.experimental.classRegex": [["tw=\"([^\"]*)\"", "([^\"'\\s]*)"]]
 }
