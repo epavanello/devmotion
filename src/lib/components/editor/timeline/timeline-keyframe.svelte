@@ -13,6 +13,10 @@
 
   const firstKeyframe = $derived(keyframes[0]);
   const position = $derived(firstKeyframe.time * pixelsPerSecond);
+  const isSelected = $derived(keyframes.some((kf) => projectStore.selectedKeyframeIds.has(kf.id)));
+
+  let isDragging = $state(false);
+  let startX = 0;
 
   function getPropertyLabel(property: string): string {
     const labels: Record<string, string> = {
@@ -49,12 +53,56 @@
     return value;
   }
 
-  function handleClick(e: MouseEvent) {
+  function handleMouseDown(e: MouseEvent) {
+    if (projectStore.isRecording) return;
+    if (e.button !== 0) return; // Only left click
+
     e.stopPropagation();
     projectStore.setCurrentTime(firstKeyframe.time);
+
+    const isAlreadySelected = keyframes.some((kf) => projectStore.selectedKeyframeIds.has(kf.id));
+
+    if (!isAlreadySelected || e.shiftKey) {
+      for (const kf of keyframes) {
+        projectStore.toggleKeyframeSelection(kf.id, e.shiftKey);
+      }
+    }
+
+    isDragging = true;
+    startX = e.clientX;
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  }
+
+  function handleMouseMove(e: MouseEvent) {
+    if (!isDragging) return;
+
+    const deltaX = e.clientX - startX;
+    const deltaTime = deltaX / pixelsPerSecond;
+
+    // Shift all selected keyframes
+    projectStore.shiftSelectedKeyframes(deltaTime);
+
+    // Update start position for next frame to keep it relative
+    startX = e.clientX;
+  }
+
+  function handleMouseUp() {
+    isDragging = false;
+    window.removeEventListener('mousemove', handleMouseMove);
+    window.removeEventListener('mouseup', handleMouseUp);
+  }
+
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      projectStore.setCurrentTime(firstKeyframe.time);
+    }
   }
 
   function handleDelete(e: MouseEvent) {
+    e.preventDefault();
     e.stopPropagation();
     const message =
       keyframes.length === 1
@@ -64,13 +112,6 @@
       for (const keyframe of keyframes) {
         projectStore.removeKeyframe(layerId, keyframe.id);
       }
-    }
-  }
-
-  function handleKeyDown(e: KeyboardEvent) {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleClick(e as unknown as MouseEvent);
     }
   }
 </script>
@@ -107,9 +148,13 @@
     </div>
   {/snippet}
   <button
-    class="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-sm bg-primary transition-transform hover:scale-125"
+    class="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-sm border-2 transition-transform hover:scale-110 active:cursor-grabbing"
+    class:bg-primary={isSelected}
+    class:bg-muted-foreground={!isSelected}
+    class:border-primary={isSelected}
+    class:border-background={!isSelected}
     style="left: {position}px"
-    onclick={handleClick}
+    onmousedown={handleMouseDown}
     onkeydown={handleKeyDown}
     oncontextmenu={handleDelete}
     aria-label="Keyframe at {firstKeyframe.time.toFixed(2)}s"

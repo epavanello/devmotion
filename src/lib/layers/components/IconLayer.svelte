@@ -96,6 +96,7 @@
     Layers: 'layers',
     Box: 'box',
     Package: 'package',
+    Fullscreen: 'fullscreen',
 
     // Brands & Social (generic names)
     Github: 'github',
@@ -247,7 +248,8 @@
     facebook: Icons.Facebook,
     instagram: Icons.Instagram,
     linkedin: Icons.Linkedin,
-    youtube: Icons.Youtube
+    youtube: Icons.Youtube,
+    fullscreen: Icons.Fullscreen
   };
 
   const IconComponent = $derived(iconMap[icon] || Icons.Star);

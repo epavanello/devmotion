@@ -180,6 +180,13 @@
     projectStore.updateKeyframe(selectedLayer.id, keyframeId, { easing: newEasing });
   }
 
+  function updateKeyframeTime(keyframeId: string, newTime: number) {
+    if (!selectedLayer) return;
+    // Clamp time to project duration
+    const clampedTime = Math.max(0, Math.min(newTime, projectStore.project.duration));
+    projectStore.updateKeyframe(selectedLayer.id, keyframeId, { time: clampedTime });
+  }
+
   function updateLayerProperty<K extends keyof Pick<Layer, 'name'>>(property: K, value: Layer[K]) {
     if (!selectedLayer) return;
     projectStore.updateLayer(selectedLayer.id, { [property]: value });
@@ -722,19 +729,47 @@
                     class="group rounded-sm bg-background px-2 py-1.5 text-xs transition-colors hover:bg-muted"
                   >
                     <div class="flex items-center justify-between">
-                      <button
-                        class="flex-1 text-left"
-                        onclick={() => goToKeyframe(keyframe.time)}
-                        type="button"
-                      >
-                        <div class="flex items-center gap-2">
-                          <div class="h-2 w-2 rounded-sm bg-primary"></div>
-                          <div class="font-medium">{getPropertyLabel(keyframe.property)}</div>
+                      <div class="flex flex-1 flex-col">
+                        <button
+                          class="text-left"
+                          onclick={() => goToKeyframe(keyframe.time)}
+                          type="button"
+                        >
+                          <div class="flex items-center gap-2">
+                            <div class="size-1.5 rounded-full bg-primary"></div>
+                            <div
+                              class="text-[11px] font-medium tracking-wider text-muted-foreground/80 uppercase"
+                            >
+                              {getPropertyLabel(keyframe.property)}
+                            </div>
+                          </div>
+                        </button>
+                        <div class="mt-1 ml-3.5 flex items-center gap-1.5">
+                          <div class="relative">
+                            <input
+                              type="number"
+                              value={keyframe.time}
+                              step="0.01"
+                              min="0"
+                              max={projectStore.project.duration.toString()}
+                              class="h-5 w-12 rounded bg-muted/50 px-1 text-[10px] tabular-nums transition-colors hover:bg-muted focus:bg-background focus:ring-1 focus:ring-primary focus:outline-none"
+                              onchange={(e) =>
+                                updateKeyframeTime(
+                                  keyframe.id,
+                                  parseFloat(e.currentTarget.value) || 0
+                                )}
+                            />
+                            <span
+                              class="pointer-events-none absolute top-1/2 right-1 -translate-y-1/2 text-[9px] text-muted-foreground"
+                              >s</span
+                            >
+                          </div>
+                          <span class="text-[10px] text-muted-foreground/50">=</span>
+                          <span class="text-[10px] font-medium tabular-nums"
+                            >{formatKeyframeValue(keyframe.value)}</span
+                          >
                         </div>
-                        <div class="mt-0.5 ml-4 text-muted-foreground">
-                          {keyframe.time.toFixed(2)}s = {formatKeyframeValue(keyframe.value)}
-                        </div>
-                      </button>
+                      </div>
                       <Button
                         variant="ghost"
                         size="sm"

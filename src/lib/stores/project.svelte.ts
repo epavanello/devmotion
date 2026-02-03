@@ -5,6 +5,7 @@ import { getPresetById } from '$lib/engine/presets';
 import type { Project, Layer, Keyframe, ViewportSettings, Transform } from '$lib/types/animation';
 import { nanoid } from 'nanoid';
 import { watch } from 'runed';
+import { SvelteSet } from 'svelte/reactivity';
 import { getLayerTransform, getLayerStyle, getLayerProps } from '$lib/engine/layer-rendering';
 
 const STORAGE_KEY = 'devmotion_store';
@@ -37,6 +38,7 @@ class ProjectStore {
   isPlaying = $state(false);
   isRecording = $state(false);
   currentTime = $state(0);
+  selectedKeyframeIds = new SvelteSet<string>();
 
   // Frame cache for optimized recording
   frameCache = $state<Map<number, FrameCache> | null>(null);
@@ -196,10 +198,68 @@ class ProjectStore {
       if (layer.id === layerId) {
         return {
           ...layer,
-          keyframes: layer.keyframes.map((k) => (k.id === keyframeId ? { ...k, ...updates } : k))
+          keyframes: layer.keyframes
+            .map((k) => (k.id === keyframeId ? { ...k, ...updates } : k))
+            .sort((a, b) => a.time - b.time)
         };
       }
       return layer;
+    });
+  }
+
+  toggleKeyframeSelection(keyframeId: string, multi: boolean = false) {
+    if (!multi) {
+      if (this.selectedKeyframeIds.has(keyframeId) && this.selectedKeyframeIds.size === 1) {
+        this.selectedKeyframeIds.clear();
+      } else {
+        this.selectedKeyframeIds.clear();
+        this.selectedKeyframeIds.add(keyframeId);
+      }
+    } else {
+      if (this.selectedKeyframeIds.has(keyframeId)) {
+        this.selectedKeyframeIds.delete(keyframeId);
+      } else {
+        this.selectedKeyframeIds.add(keyframeId);
+      }
+    }
+  }
+
+  clearKeyframeSelection() {
+    this.selectedKeyframeIds.clear();
+  }
+
+  selectKeyframesInArea(startTime: number, endTime: number, layerIds?: Set<string>) {
+    this.selectedKeyframeIds.clear();
+    const start = Math.min(startTime, endTime);
+    const end = Math.max(startTime, endTime);
+
+    for (const layer of this.project.layers) {
+      if (layerIds && !layerIds.has(layer.id)) continue;
+
+      for (const kf of layer.keyframes) {
+        if (kf.time >= start && kf.time <= end) {
+          this.selectedKeyframeIds.add(kf.id);
+        }
+      }
+    }
+  }
+
+  shiftSelectedKeyframes(deltaTime: number) {
+    if (this.selectedKeyframeIds.size === 0) return;
+
+    this.project.layers = this.project.layers.map((layer) => {
+      const layerKeyframes = layer.keyframes.map((kf) => {
+        if (this.selectedKeyframeIds.has(kf.id)) {
+          const newTime = Math.max(0, Math.min(this.project.duration, kf.time + deltaTime));
+          return { ...kf, time: newTime };
+        }
+        return kf;
+      });
+
+      return {
+        ...layer,
+        keyframes: layerKeyframes.sort((a, b) => a.time - b.time)
+      };
     });
   }
 

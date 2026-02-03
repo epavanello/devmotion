@@ -1,5 +1,6 @@
 <script lang="ts">
   import { projectStore } from '$lib/stores/project.svelte';
+  import { SvelteSet } from 'svelte/reactivity';
   import { ScrollArea } from '$lib/components/ui/scroll-area';
   import TimelineRuler from './timeline-ruler.svelte';
   import TimelineLayer from './timeline-layer.svelte';
@@ -8,6 +9,9 @@
   let timelineContainer: HTMLDivElement;
   let isDraggingPlayhead = $state(false);
   let isDraggingTimeline = $state(false);
+  let isSelecting = $state(false);
+  let selectionBox = $state<{ x: number; y: number; width: number; height: number } | null>(null);
+  let selectionStart = { x: 0, y: 0 };
 
   const pixelsPerSecond = 100;
 
@@ -20,27 +24,80 @@
   }
 
   function handleTimelineMouseDown(e: MouseEvent) {
-    // Disable interactions during recording
     if (projectStore.isRecording) return;
-
-    // Only handle left click on the timeline area (not on keyframes)
     if (e.button !== 0) return;
-    const target = e.target as HTMLElement;
-    // Don't start dragging if clicking on a keyframe
-    if (target.closest('[role="button"][tabindex="0"]') !== timelineContainer) return;
 
-    isDraggingTimeline = true;
-    projectStore.pause();
-    updateTimeFromMousePosition(e);
+    const target = e.target as HTMLElement;
+    const isRuler = !!target.closest('.timeline-ruler');
+    const isKeyframe = !!target.closest('button[aria-label^="Keyframe"]');
+
+    if (isKeyframe) return;
+
+    const rect = timelineContainer.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (isRuler) {
+      isDraggingTimeline = true;
+      projectStore.pause();
+      updateTimeFromMousePosition(e);
+      projectStore.clearKeyframeSelection();
+    } else {
+      isSelecting = true;
+      selectionStart = { x, y };
+      selectionBox = { x, y, width: 0, height: 0 };
+      if (!e.shiftKey) {
+        projectStore.clearKeyframeSelection();
+      }
+    }
   }
 
   function handleTimelineMouseMove(e: MouseEvent) {
-    if (!isDraggingTimeline) return;
-    updateTimeFromMousePosition(e);
+    if (isDraggingTimeline) {
+      updateTimeFromMousePosition(e);
+      return;
+    }
+
+    if (isSelecting) {
+      const rect = timelineContainer.getBoundingClientRect();
+      const currentX = e.clientX - rect.left;
+      const currentY = e.clientY - rect.top;
+
+      const x = Math.min(selectionStart.x, currentX);
+      const y = Math.min(selectionStart.y, currentY);
+      const width = Math.abs(selectionStart.x - currentX);
+      const height = Math.abs(selectionStart.y - currentY);
+
+      selectionBox = { x, y, width, height };
+
+      // Calculate time range for selection
+      const startTime = (x - 200) / pixelsPerSecond;
+      const endTime = (x + width - 200) / pixelsPerSecond;
+
+      // Calculate which layers are in the vertical range
+      // Ruler is 32px (h-8)
+      const layerOffset = 32;
+      const layerHeight = 49; // 48px + 1px border
+      const activeLayerIds = new SvelteSet<string>();
+
+      projectStore.project.layers.forEach((layer, index) => {
+        const layerTop = layerOffset + index * layerHeight;
+        const layerBottom = layerTop + layerHeight;
+
+        // Check if layer overlaps with selection box vertically
+        if (y < layerBottom && y + height > layerTop) {
+          activeLayerIds.add(layer.id);
+        }
+      });
+
+      projectStore.selectKeyframesInArea(startTime, endTime, activeLayerIds);
+    }
   }
 
   function handleTimelineMouseUp() {
     isDraggingTimeline = false;
+    isSelecting = false;
+    selectionBox = null;
   }
 
   function startDragPlayhead() {
@@ -80,7 +137,7 @@
   });
 
   $effect(() => {
-    if (isDraggingTimeline) {
+    if (isDraggingTimeline || isSelecting) {
       window.addEventListener('mousemove', handleTimelineMouseMove);
       window.addEventListener('mouseup', handleTimelineMouseUp);
 
@@ -137,6 +194,14 @@
           {pixelsPerSecond}
           onDragStart={startDragPlayhead}
         />
+
+        <!-- Selection Marquee -->
+        {#if selectionBox}
+          <div
+            class="pointer-events-none absolute border border-primary bg-primary/20"
+            style="left: {selectionBox.x}px; top: {selectionBox.y}px; width: {selectionBox.width}px; height: {selectionBox.height}px; z-index: 50;"
+          ></div>
+        {/if}
       </div>
     </ScrollArea>
   </div>

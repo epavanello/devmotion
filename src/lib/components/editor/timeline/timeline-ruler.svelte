@@ -16,7 +16,7 @@
   });
 </script>
 
-<div class="relative flex h-8 bg-muted/30">
+<div class="timeline-ruler relative flex h-8 bg-muted/30">
   <!-- Layer names spacer -->
   <div class="w-[200px] shrink-0 border-r"></div>
 
