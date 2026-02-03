@@ -39,8 +39,9 @@ export function interpolateValue(
   easing: Easing,
   interpolationType?: InterpolationType
 ): number | string | boolean {
-  // If interpolation type is explicitly discrete, jump to end value
-  if (interpolationType === 'discrete') {
+  // If interpolation type is explicitly discrete or background, jump to end value
+  // Background values are complex objects, so we use discrete interpolation
+  if (interpolationType === 'discrete' || interpolationType === 'background') {
     return progress >= 1 ? endValue : startValue;
   }
 

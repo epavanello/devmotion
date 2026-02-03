@@ -99,7 +99,7 @@ class ProjectStore {
       height: 1280,
       duration: 5,
       fps: 30,
-      backgroundColor: '#000000',
+      background: '#000000',
       layers: []
     };
   }

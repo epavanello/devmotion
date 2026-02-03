@@ -24,6 +24,7 @@
   import { Select } from '$lib/components/ui/select';
   import { projectStore } from '$lib/stores/project.svelte';
   import { Settings } from 'lucide-svelte';
+  import BackgroundPicker from './panels/background-picker.svelte';
 
   interface Props {
     open: boolean;
@@ -37,7 +38,7 @@
     width: projectStore.project.width,
     height: projectStore.project.height,
     duration: projectStore.project.duration,
-    backgroundColor: projectStore.project.backgroundColor
+    background: projectStore.project.background
   });
 
   let selectedResolution = $derived.by(() => {
@@ -65,7 +66,7 @@
     projectStore.project.width = formData.width;
     projectStore.project.height = formData.height;
     projectStore.project.duration = formData.duration;
-    projectStore.project.backgroundColor = formData.backgroundColor;
+    projectStore.project.background = formData.background;
 
     onOpenChange(false);
   }
@@ -78,7 +79,7 @@
         width: projectStore.project.width,
         height: projectStore.project.height,
         duration: projectStore.project.duration,
-        backgroundColor: projectStore.project.backgroundColor
+        background: projectStore.project.background
       };
 
       const res = commonResolutions.find(
@@ -151,12 +152,9 @@
       <div class="space-y-2">
         <Label for="bgcolor">Background Color</Label>
         <div class="flex gap-2">
-          <Input id="bgcolor" type="color" bind:value={formData.backgroundColor} class="h-9 w-20" />
-          <Input
-            type="text"
-            placeholder="#000000"
-            bind:value={formData.backgroundColor}
-            class="flex-1"
+          <BackgroundPicker
+            value={formData.background}
+            onchange={(newValue) => (formData.background = newValue)}
           />
         </div>
       </div>

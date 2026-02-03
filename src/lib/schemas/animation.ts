@@ -4,6 +4,7 @@
  */
 import { getAvailableLayerTypes } from '$lib/layers/registry';
 import { z } from 'zod';
+import { BackgroundValueSchema } from './background';
 
 // ============================================
 // Easing
@@ -55,7 +56,39 @@ export const AnimatablePropertySchema = z.union([
   PropsAnimatablePropertySchema
 ]);
 
-export const InterpolationTypeSchema = z.enum(['number', 'color', 'text', 'discrete']);
+export const InterpolationTypeSchema = z.enum([
+  'number',
+  'color',
+  'text',
+  'discrete',
+  'background'
+]);
+
+// Re-export background schemas from the cycle-free module.
+// animation.ts → registry.ts → layer components → animation.ts would break if
+// these schemas lived here, so they live in background.ts and are re-exported.
+export {
+  ColorStopSchema,
+  SolidBackgroundSchema,
+  LinearGradientSchema,
+  RadialGradientSchema,
+  ConicGradientSchema,
+  BackgroundValueSchema,
+  backgroundValueToCSS,
+  solidBackground,
+  linearGradient,
+  radialGradient,
+  isGradient,
+  isSolid
+} from './background';
+export type {
+  ColorStop,
+  SolidBackground,
+  LinearGradient,
+  RadialGradient,
+  ConicGradient,
+  BackgroundValue
+} from './background';
 
 // ============================================
 // Transform & Style
@@ -139,7 +172,7 @@ export const ProjectSchema = z.object({
   height: z.number().positive(),
   duration: z.number().positive(),
   fps: z.number().positive(),
-  backgroundColor: z.string(),
+  background: BackgroundValueSchema,
   layers: z.array(LayerSchema)
 });
 

@@ -8,6 +8,7 @@
   import { getLayerComponent } from '$lib/layers/registry';
   import type { Layer } from '$lib/types/animation';
   import { Fullscreen } from 'lucide-svelte';
+  import { getBackgroundColor, getBackgroundImage } from '$lib/schemas/background';
 
   let canvasContainer: HTMLDivElement | undefined = $state();
 
@@ -229,7 +230,8 @@
         style:perspective-origin="center center"
         style:transform-style="preserve-3d"
         style:isolation="isolate"
-        style:background-color={projectStore.project.backgroundColor}
+        style:background-color={getBackgroundColor(projectStore.project.background)}
+        style:background-image={getBackgroundImage(projectStore.project.background)}
         style:cursor={projectStore.isRecording ? 'none' : undefined}
       >
         <!-- Layers -->

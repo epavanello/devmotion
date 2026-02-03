@@ -2,9 +2,17 @@
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
   import { Square } from 'lucide-svelte';
+  import { BackgroundValueSchema, getStyleProperties } from '$lib/schemas/background';
+  import { fieldRegistry } from '../base';
 
   /**
    * Schema for Shape Layer custom properties
+   *
+   * The `background` property accepts either a solid color or a gradient:
+   * - Solid: { type: 'solid', color: '#4a90e2' }
+   * - Linear gradient: { type: 'linear', angle: 90, stops: [...] }
+   * - Radial gradient: { type: 'radial', shape: 'circle', position: {...}, stops: [...] }
+   * - Conic gradient: { type: 'conic', angle: 0, position: {...}, stops: [...] }
    */
   const schema = z.object({
     shapeType: z
@@ -13,7 +21,9 @@
       .describe('Shape type'),
     width: z.number().min(1).max(2000).default(200).describe('Width (px)'),
     height: z.number().min(1).max(2000).default(200).describe('Height (px)'),
-    fill: z.string().default('#4a90e2').describe('Fill color'),
+    background: BackgroundValueSchema.default('#4a90e2')
+      .describe('Fill background (solid color or gradient)')
+      .register(fieldRegistry, { widget: 'background' }),
     stroke: z.string().default('#000000').describe('Stroke color'),
     strokeWidth: z.number().min(0).max(50).default(2).describe('Stroke width (px)'),
     radius: z
@@ -31,7 +41,8 @@
     type: 'shape',
     label: 'Shape',
     icon: Square,
-    description: 'Geometric shapes (rectangle, circle, triangle, polygon) with fill and stroke'
+    description:
+      'Geometric shapes (rectangle, circle, triangle, polygon) with background and stroke'
   };
 
   type Props = z.infer<typeof schema>;
@@ -42,7 +53,7 @@
     shapeType,
     width,
     height,
-    fill,
+    background,
     stroke,
     strokeWidth,
     radius = 100,
@@ -75,7 +86,7 @@
 
   const shapeStyles = $derived.by(() => {
     const base = {
-      backgroundColor: fill,
+      ...getStyleProperties(background),
       border: `${strokeWidth}px solid ${stroke}`
     };
 
@@ -121,6 +132,7 @@
   style:width={'width' in shapeStyles ? shapeStyles.width : undefined}
   style:height={'height' in shapeStyles ? shapeStyles.height : undefined}
   style:background-color={shapeStyles.backgroundColor}
+  style:background-image={shapeStyles.backgroundImage}
   style:border={shapeStyles.border}
   style:border-radius={'borderRadius' in shapeStyles ? shapeStyles.borderRadius : undefined}
   style:clip-path={'clipPath' in shapeStyles ? shapeStyles.clipPath : undefined}

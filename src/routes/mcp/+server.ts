@@ -43,7 +43,7 @@ const DEFAULT_PROJECT = {
   height: 1280,
   duration: 5,
   fps: 30,
-  backgroundColor: '#000000',
+  background: '#000000',
   layers: []
 };
 
@@ -126,7 +126,7 @@ const handler = createMcpHandler(
           `ID: ${projectId}`,
           `Dimensions: ${projectData.width}x${projectData.height}`,
           `Duration: ${projectData.duration}s at ${projectData.fps} FPS`,
-          `Background: ${projectData.backgroundColor}`,
+          `Background: ${projectData.background}`,
           `Layers: ${projectData.layers.length}`,
           `Preview: ${previewUrl}`,
           '',

@@ -69,7 +69,7 @@ function getKeyPropsForLayerType(type: string): string[] {
   const keyProps: Record<string, string[]> = {
     text: ['content', 'fontSize', 'color', 'fontFamily'],
     icon: ['icon', 'size', 'color'],
-    shape: ['shapeType', 'fill', 'width', 'height'],
+    shape: ['shapeType', 'background', 'width', 'height'],
     code: ['code', 'language'],
     image: ['src', 'width', 'height'],
     button: ['text', 'backgroundColor', 'textColor'],
@@ -91,7 +91,7 @@ function getExampleProps(type: string): string {
   const examples: Record<string, string> = {
     text: '"content": "Hello World", "fontSize": 48, "color": "#ffffff"',
     icon: '"icon": "star", "size": 64, "color": "#ffffff"',
-    shape: `"shapeType": "rectangle", "fill": "${BRAND_COLORS.blue}", "width": 200, "height": 100"`,
+    shape: `"shapeType": "rectangle", "background": "${BRAND_COLORS.blue}", "width": 200, "height": 100"`,
     code: '"code": "const x = 1;", "language": "typescript"',
     image: '"src": "https://example.com/image.jpg", "width": 400',
     button: `"text": "Click Me", "backgroundColor": "${BRAND_COLORS.blue}"`,

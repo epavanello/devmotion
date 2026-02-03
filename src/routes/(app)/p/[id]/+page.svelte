@@ -27,7 +27,7 @@
       height: projectData.height,
       duration: projectData.duration,
       fps: projectData.fps,
-      backgroundColor: projectData.backgroundColor,
+      background: projectData.background,
       layers: projectData.layers
     });
 

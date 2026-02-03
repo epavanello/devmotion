@@ -29,7 +29,8 @@ export default defineConfig(
         'error',
         {
           argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_'
+          varsIgnorePattern: '^_',
+          enableAutofixRemoval: { imports: true }
         }
       ]
     }

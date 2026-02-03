@@ -6,6 +6,22 @@ import type { Component } from 'svelte';
 import type { LayerMeta } from './registry';
 
 /**
+ * Per-field UI metadata that layer schemas can opt into via .register(fieldRegistry, …).
+ * Keeps UI-rendering hints out of validation logic and out of .describe() strings.
+ */
+export type FieldMeta = {
+  /** Override the default input widget rendered for this field */
+  widget?: 'textarea' | 'background';
+};
+
+/**
+ * Global registry for FieldMeta.  Individual schema fields call
+ *   .register(fieldRegistry, { widget: 'textarea' })
+ * to opt into a non-default widget.
+ */
+export const fieldRegistry = z.registry<FieldMeta>();
+
+/**
  * Anchor point options for layer positioning
  */
 export const AnchorPointSchema = z.enum([
@@ -74,7 +90,7 @@ export interface LayerComponentDefinition extends LayerMeta {
  */
 export interface PropertyMetadata {
   name: string;
-  type: 'string' | 'number' | 'boolean' | 'color' | 'select';
+  type: 'string' | 'number' | 'boolean' | 'color' | 'select' | 'background';
   description?: string;
   min?: number;
   max?: number;
@@ -86,8 +102,14 @@ export interface PropertyMetadata {
    * - 'color': RGB color interpolation
    * - 'text': Character-by-character text reveal
    * - 'discrete': Jump to new value (no smooth transition)
+   * - 'background': Background/gradient interpolation (discrete for now)
    */
-  interpolationType: 'number' | 'color' | 'text' | 'discrete';
+  interpolationType: 'number' | 'color' | 'text' | 'discrete' | 'background';
+  /**
+   * UI-widget override sourced from fieldRegistry.
+   * When present the panel renders this widget instead of the default for the type.
+   */
+  widget?: FieldMeta['widget'];
 }
 
 /**
@@ -141,16 +163,33 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
       } else if (unwrapped instanceof z.ZodBoolean) {
         meta.type = 'boolean';
         meta.interpolationType = 'discrete'; // Booleans jump between values
+      } else if (unwrapped instanceof z.ZodUnion) {
+        // Check if this is a BackgroundValue union (solid, linear, radial, conic)
+        const options = unwrapped.options as z.ZodType[];
+        const isBackgroundUnion = options.every((opt) => {
+          if (opt instanceof z.ZodObject) {
+            const typeField = (opt.shape as Record<string, z.ZodType>)['type'];
+            if (typeField instanceof z.ZodLiteral) {
+              const val = typeField.value;
+              return ['solid', 'linear', 'radial', 'conic'].includes(val as string);
+            }
+          }
+          return false;
+        });
+
+        if (isBackgroundUnion) {
+          meta.type = 'background';
+          meta.interpolationType = 'discrete'; // Backgrounds use discrete interpolation for now
+        } else {
+          meta.type = 'string';
+          meta.interpolationType = 'discrete';
+        }
       } else if (unwrapped instanceof z.ZodString) {
         meta.type = 'string';
         meta.interpolationType = 'discrete'; // Strings jump between values
 
         // Check if it's a color by convention (field name contains 'color')
-        if (
-          key.toLowerCase().includes('color') ||
-          key.toLowerCase().includes('fill') ||
-          key.toLowerCase().includes('stroke')
-        ) {
+        if (key.toLowerCase().includes('color')) {
           meta.type = 'color';
           meta.interpolationType = 'color'; // Colors can be interpolated
         }
@@ -169,6 +208,12 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
             label: String(v).charAt(0).toUpperCase() + String(v).slice(1)
           }));
         }
+      }
+
+      // Pull in any UI-widget override registered via fieldRegistry
+      const fieldMeta = fieldRegistry.get(zodType);
+      if (fieldMeta?.widget) {
+        meta.widget = fieldMeta.widget;
       }
 
       metadata.push(meta);

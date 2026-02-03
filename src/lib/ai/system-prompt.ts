@@ -13,7 +13,7 @@ function getKeyPropsForLayerType(type: string): string[] {
   const keyProps: Record<string, string[]> = {
     text: ['content', 'fontSize', 'color'],
     icon: ['icon', 'size', 'color'],
-    shape: ['shapeType', 'fill', 'width', 'height'],
+    shape: ['shapeType', 'background', 'width', 'height'],
     code: ['code', 'language'],
     image: ['src'],
     button: ['text', 'backgroundColor'],
@@ -83,7 +83,7 @@ ${buildLayerToolsList()}
 ## CANVAS SPACE
 
 Canvas: ${project.width}x${project.height}px | Center: (0, 0)
-Duration: ${project.duration}s | FPS: ${project.fps} | Background: ${project.backgroundColor}
+Duration: ${project.duration}s | FPS: ${project.fps} | Background: ${project.background}
 
 Coordinate system:
 - Center: (0, 0)

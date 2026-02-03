@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@10.28.1",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "node --inspect=6000 node_modules/vite/bin/vite.js dev",
     "build": "vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",

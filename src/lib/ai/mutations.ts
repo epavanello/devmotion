@@ -339,7 +339,7 @@ export function mutateConfigureProject(
     }
 
     if (input.backgroundColor !== undefined) {
-      ctx.project.backgroundColor = input.backgroundColor;
+      ctx.project.background = input.backgroundColor;
       changes.push(`background=${input.backgroundColor}`);
     }
 

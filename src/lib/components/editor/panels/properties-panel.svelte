@@ -41,6 +41,9 @@
   import { extractPropertyMetadata, type PropertyMetadata } from '$lib/layers/base';
   import { animationPresets } from '$lib/engine/presets';
   import InputWrapper from './input-wrapper.svelte';
+  import BackgroundPicker from './background-picker.svelte';
+  import type { BackgroundValue } from '$lib/schemas/animation';
+  import { Textarea } from '$lib/components/ui/textarea';
 
   const selectedLayer = $derived(projectStore.selectedLayer);
 
@@ -420,6 +423,18 @@
           <option value={option.value}>{option.label}</option>
         {/each}
       </select>
+    {:else if metadata.widget === 'textarea'}
+      <Textarea
+        id={metadata.name}
+        value={typeof value === 'string' ? value : ''}
+        oninput={(e) => updateLayerProps(metadata.name, e.currentTarget.value)}
+        spellcheck="false"
+      />
+    {:else if metadata.widget === 'background'}
+      <BackgroundPicker
+        value={value as BackgroundValue}
+        onchange={(newValue) => updateLayerProps(metadata.name, newValue)}
+      />
     {:else}
       <!-- Default to text input for strings and unknown types -->
       <Input
