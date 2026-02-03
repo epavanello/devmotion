@@ -6,6 +6,22 @@ import type { Component } from 'svelte';
 import type { LayerMeta } from './registry';
 
 /**
+ * Per-field UI metadata that layer schemas can opt into via .register(fieldRegistry, …).
+ * Keeps UI-rendering hints out of validation logic and out of .describe() strings.
+ */
+export type FieldMeta = {
+  /** Override the default input widget rendered for this field */
+  widget?: 'textarea';
+};
+
+/**
+ * Global registry for FieldMeta.  Individual schema fields call
+ *   .register(fieldRegistry, { widget: 'textarea' })
+ * to opt into a non-default widget.
+ */
+export const fieldRegistry = z.registry<FieldMeta>();
+
+/**
  * Anchor point options for layer positioning
  */
 export const AnchorPointSchema = z.enum([
@@ -88,6 +104,11 @@ export interface PropertyMetadata {
    * - 'discrete': Jump to new value (no smooth transition)
    */
   interpolationType: 'number' | 'color' | 'text' | 'discrete';
+  /**
+   * UI-widget override sourced from fieldRegistry.
+   * When present the panel renders this widget instead of the default for the type.
+   */
+  widget?: FieldMeta['widget'];
 }
 
 /**
@@ -169,6 +190,12 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
             label: String(v).charAt(0).toUpperCase() + String(v).slice(1)
           }));
         }
+      }
+
+      // Pull in any UI-widget override registered via fieldRegistry
+      const fieldMeta = fieldRegistry.get(zodType);
+      if (fieldMeta?.widget) {
+        meta.widget = fieldMeta.widget;
       }
 
       metadata.push(meta);

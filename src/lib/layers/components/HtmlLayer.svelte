@@ -2,6 +2,7 @@
   /* eslint-disable svelte/no-at-html-tags */
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
+  import { fieldRegistry } from '../base';
   import { Code2 } from 'lucide-svelte';
 
   /**
@@ -12,7 +13,8 @@
     html: z
       .string()
       .default('<div class="container">Hello World</div>')
-      .describe('HTML content - use {{varName}} for variable interpolation'),
+      .describe('HTML content - use {{varName}} for variable interpolation')
+      .register(fieldRegistry, { widget: 'textarea' }),
     css: z
       .string()
       .default(
@@ -24,7 +26,8 @@
   font-family: 'Inter', sans-serif;
 }`
       )
-      .describe('CSS styles (scoped to this layer)'),
+      .describe('CSS styles (scoped to this layer)')
+      .register(fieldRegistry, { widget: 'textarea' }),
     width: z.number().min(10).max(5000).default(400).describe('Container width (px)'),
     height: z.number().min(10).max(5000).default(200).describe('Container height (px)'),
     // Dynamic variables that can be interpolated and animated

@@ -420,6 +420,14 @@
           <option value={option.value}>{option.label}</option>
         {/each}
       </select>
+    {:else if metadata.widget === 'textarea'}
+      <textarea
+        id={metadata.name}
+        value={typeof value === 'string' ? value : ''}
+        oninput={(e) => updateLayerProps(metadata.name, e.currentTarget.value)}
+        class="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none resize-y"
+        spellcheck="false"
+      ></textarea>
     {:else}
       <!-- Default to text input for strings and unknown types -->
       <Input
