@@ -120,7 +120,7 @@
       <!-- Desktop Layout: Resizable panes -->
       <ResizablePaneGroup direction="horizontal" class="h-full">
         <!-- Left Panel: Layers and AI Chat -->
-        <ResizablePane defaultSize={20} minSize={15} maxSize={30}>
+        <ResizablePane defaultSize={25} minSize={15} maxSize={30}>
           <ResizablePaneGroup direction="vertical">
             <ResizablePane defaultSize={60} minSize={30}>
               {@render layersSection()}
@@ -152,7 +152,7 @@
         <ResizableHandle />
 
         <!-- Right Panel: Properties -->
-        <ResizablePane defaultSize={20} minSize={15} maxSize={30}>
+        <ResizablePane defaultSize={25} minSize={15} maxSize={30}>
           {@render propertiesSection()}
         </ResizablePane>
       </ResizablePaneGroup>

@@ -42,6 +42,8 @@
   import { animationPresets } from '$lib/engine/presets';
   import InputWrapper from './input-wrapper.svelte';
   import BackgroundPicker from './background-picker.svelte';
+  import ScrubXyz from './scrub-xyz.svelte';
+  import ScrubInput from './scrub-input.svelte';
   import type { BackgroundValue } from '$lib/schemas/animation';
   import { Textarea } from '$lib/components/ui/textarea';
 
@@ -358,15 +360,14 @@
 </script>
 
 {#snippet propertyField({ id, value, step, min, max, onInput }: PropertyFieldProps)}
-  <Input
+  <ScrubInput
     {id}
-    type="number"
     {value}
-    {step}
-    {min}
-    {max}
-    oninput={(e) => onInput(parseFloat(e.currentTarget.value) || 0)}
-    class="h-8 text-xs"
+    step={parseFloat(step || '1')}
+    min={min !== undefined ? parseFloat(min) : undefined}
+    max={max !== undefined ? parseFloat(max) : undefined}
+    onchange={onInput}
+    class="flex-1"
   />
 {/snippet}
 
@@ -391,15 +392,13 @@
     </div>
 
     {#if metadata.type === 'number'}
-      <Input
+      <ScrubInput
         id={metadata.name}
-        type="number"
         value={typeof value === 'number' ? value : 0}
-        min={metadata.min?.toString()}
-        max={metadata.max?.toString()}
-        step={metadata.step?.toString() || '1'}
-        oninput={(e) =>
-          updateLayerProps(metadata.name, parseFloat(e.currentTarget.value) || metadata.min || 0)}
+        min={metadata.min}
+        max={metadata.max}
+        step={metadata.step || 1}
+        onchange={(v) => updateLayerProps(metadata.name, v)}
       />
     {:else if metadata.type === 'color'}
       <Input
@@ -485,12 +484,24 @@
 
           <!-- Position -->
           <div class="space-y-1">
-            <Label class="mb-1 text-xs text-muted-foreground">Position</Label>
+            <div class="mb-1 flex items-center gap-1">
+              <ScrubXyz
+                valueX={currentTransform?.x ?? 0}
+                valueY={currentTransform?.y ?? 0}
+                valueZ={currentTransform?.z ?? 0}
+                stepXY={1}
+                stepZ={1}
+                onchangeX={(v: number) => updateTransformProperty('x', v)}
+                onchangeY={(v: number) => updateTransformProperty('y', v)}
+                onchangeZ={(v: number) => updateTransformProperty('z', v)}
+              />
+              <Label class="text-xs text-muted-foreground">Position</Label>
+            </div>
             <div class="flex gap-1">
               {#each [{ prop: 'position.x' as AnimatableProperty, label: 'X' }, { prop: 'position.y' as AnimatableProperty, label: 'Y' }, { prop: 'position.z' as AnimatableProperty, label: 'Z' }] as { prop, label } (prop)}
                 {@const hasKeyframes = selectedLayer?.keyframes.some((k) => k.property === prop)}
                 <div class="flex flex-1 items-center gap-1">
-                  <span class="ml-2 text-[10px] text-muted-foreground">{label}</span>
+                  <span class="ml-1 text-[10px] text-muted-foreground">{label}</span>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -524,12 +535,24 @@
 
           <!-- Scale -->
           <div class="space-y-1">
-            <Label class="mb-1 text-xs text-muted-foreground">Scale</Label>
+            <div class="mb-1 flex items-center gap-1">
+              <ScrubXyz
+                valueX={currentTransform?.scaleX ?? 1}
+                valueY={currentTransform?.scaleY ?? 1}
+                valueZ={currentTransform?.scaleZ ?? 1}
+                stepXY={0.1}
+                stepZ={0.1}
+                onchangeX={(v: number) => updateTransformProperty('scaleX', v || 1)}
+                onchangeY={(v: number) => updateTransformProperty('scaleY', v || 1)}
+                onchangeZ={(v: number) => updateTransformProperty('scaleZ', v || 1)}
+              />
+              <Label class="text-xs text-muted-foreground">Scale</Label>
+            </div>
             <div class="flex gap-1">
               {#each [{ prop: 'scale.x' as AnimatableProperty, label: 'X' }, { prop: 'scale.y' as AnimatableProperty, label: 'Y' }, { prop: 'scale.z' as AnimatableProperty, label: 'Z' }] as { prop, label } (prop)}
                 {@const hasKeyframes = selectedLayer?.keyframes.some((k) => k.property === prop)}
                 <div class="flex flex-1 items-center gap-1">
-                  <span class="ml-2 text-[10px] text-muted-foreground">{label}</span>
+                  <span class="ml-1 text-[10px] text-muted-foreground">{label}</span>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -566,12 +589,25 @@
 
           <!-- Rotation -->
           <div class="space-y-1">
-            <Label class="mb-1 text-xs text-muted-foreground">Rotation (radians)</Label>
+            <div class="mb-1 flex items-center gap-1">
+              <ScrubXyz
+                valueX={currentTransform?.rotationY ?? 0}
+                valueY={currentTransform?.rotationX ?? 0}
+                valueZ={currentTransform?.rotationZ ?? 0}
+                stepXY={0.1}
+                stepZ={0.1}
+                invertY={true}
+                onchangeX={(v: number) => updateTransformProperty('rotationY', v)}
+                onchangeY={(v: number) => updateTransformProperty('rotationX', v)}
+                onchangeZ={(v: number) => updateTransformProperty('rotationZ', v)}
+              />
+              <Label class="text-xs text-muted-foreground">Rotation (radians)</Label>
+            </div>
             <div class="flex gap-1">
               {#each [{ prop: 'rotation.x' as AnimatableProperty, label: 'X' }, { prop: 'rotation.y' as AnimatableProperty, label: 'Y' }, { prop: 'rotation.z' as AnimatableProperty, label: 'Z' }] as { prop, label } (prop)}
                 {@const hasKeyframes = selectedLayer?.keyframes.some((k) => k.property === prop)}
                 <div class="flex flex-1 items-center gap-1">
-                  <span class="ml-2 text-[10px] text-muted-foreground">{label}</span>
+                  <span class="ml-1 text-[10px] text-muted-foreground">{label}</span>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -690,12 +726,12 @@
             <div class="space-y-2">
               <Label for="preset-duration" class="text-xs text-muted-foreground">Duration (s)</Label
               >
-              <Input
+              <ScrubInput
                 id="preset-duration"
-                type="number"
-                bind:value={presetDuration}
-                min="0.1"
-                step="0.1"
+                value={presetDuration}
+                min={0.1}
+                step={0.1}
+                onchange={(v) => (presetDuration = v)}
               />
             </div>
           </div>
@@ -746,18 +782,13 @@
                         </button>
                         <div class="mt-1 ml-3.5 flex items-center gap-1.5">
                           <div class="relative">
-                            <input
-                              type="number"
+                            <ScrubInput
                               value={keyframe.time}
-                              step="0.01"
-                              min="0"
-                              max={projectStore.project.duration.toString()}
-                              class="h-5 w-12 rounded bg-muted/50 px-1 text-[10px] tabular-nums transition-colors hover:bg-muted focus:bg-background focus:ring-1 focus:ring-primary focus:outline-none"
-                              onchange={(e) =>
-                                updateKeyframeTime(
-                                  keyframe.id,
-                                  parseFloat(e.currentTarget.value) || 0
-                                )}
+                              step={0.01}
+                              min={0}
+                              max={projectStore.project.duration}
+                              onchange={(v) => updateKeyframeTime(keyframe.id, v)}
+                              class="h-5 w-14 text-[10px] [&_.scrub-grip]:pl-0.5 [&_input]:h-5 [&_input]:pr-4 [&_input]:pl-4 [&_input]:text-[10px]"
                             />
                             <span
                               class="pointer-events-none absolute top-1/2 right-1 -translate-y-1/2 text-[9px] text-muted-foreground"
