@@ -68,8 +68,13 @@ export const POST: RequestHandler = async ({ params, request, url, locals }) => 
     // Return the stream as response
     const webStream = Readable.toWeb(videoStream) as ReadableStream;
 
-    // Sanitize filename to prevent header injection
-    const sanitizedName = (dbProject.name || 'video').replace(/[;="\r\n]/g, '_').substring(0, 100);
+    // Sanitize filename to prevent header injection and filesystem issues
+    const sanitizedName =
+      (dbProject.name || 'video')
+        .replace(/[;="\r\n\\/:<>|?*]/g, '_')
+        .replace(/_{2,}/g, '_')
+        .trim()
+        .substring(0, 100) || 'video';
 
     return new Response(webStream, {
       headers: {

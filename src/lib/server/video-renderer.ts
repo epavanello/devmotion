@@ -48,6 +48,19 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
     let page = null;
     let ffmpegCommand: ffmpeg.FfmpegCommand | null = null;
 
+    const MAX_RENDER_DURATION_MS = 10 * 60 * 1000; // 10 minutes max
+    const renderTimeout = setTimeout(() => {
+      console.error('Render timeout exceeded');
+      emitProgress({
+        phase: 'error',
+        currentFrame: 0,
+        totalFrames,
+        percent: 0,
+        error: 'Render timeout exceeded'
+      });
+      videoStream.destroy(new Error('Render timeout'));
+    }, MAX_RENDER_DURATION_MS);
+
     try {
       emitProgress({ phase: 'initializing', currentFrame: 0, totalFrames, percent: 0 });
 
@@ -138,8 +151,9 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
         const time = frameIndex / actualFps;
         await page.evaluate((t) => window.__DEVMOTION__?.seek(t), time);
 
-        // Brief wait for any JS/canvas updates
-        await new Promise((resolve) => setTimeout(resolve, 32));
+        // Wait ~2 frames at 60fps for JS/canvas updates to settle after seek
+        const FRAME_SETTLE_DELAY_MS = 32;
+        await new Promise((resolve) => setTimeout(resolve, FRAME_SETTLE_DELAY_MS));
 
         const screenshot = await page.screenshot({
           type: 'png',
@@ -181,15 +195,14 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
 
       frameStream.end();
 
-      await page.close();
       await browser.close();
       browser = null;
-      invalidateRenderToken(token);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       emitProgress({ phase: 'error', currentFrame: 0, totalFrames, percent: 0, error: msg });
       videoStream.destroy(err as Error);
     } finally {
+      clearTimeout(renderTimeout);
       invalidateRenderToken(token);
       if (browser) await browser.close();
     }

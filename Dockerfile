@@ -36,9 +36,6 @@ COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 # Install only production dependencies
 RUN npm install -g pnpm && pnpm install --prod --frozen-lockfile
 
-# Playwright images usually come with browsers, but let's ensure chromium is there
-RUN npx playwright install chromium
-
 # Environment variables
 ENV NODE_ENV=production
 ENV PORT=3000

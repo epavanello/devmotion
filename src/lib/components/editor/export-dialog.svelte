@@ -39,6 +39,7 @@
   let exportProgress = $state(0);
   let errorMessage = $state<string | null>(null);
   let videoCapture = new VideoCapture();
+  let serverExportAbortController = $state<AbortController | null>(null);
 
   let exportSettings = $derived({
     format: 'webm',
@@ -103,6 +104,7 @@
     };
 
     try {
+      serverExportAbortController = new AbortController();
       const response = await fetch(`/api/export/${projectId}?renderId=${renderId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -110,7 +112,8 @@
           width: exportSettings.width,
           height: exportSettings.height,
           fps: exportSettings.fps
-        })
+        }),
+        signal: serverExportAbortController.signal
       });
 
       if (!response.ok) {
@@ -133,6 +136,9 @@
 
       onOpenChange(false);
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        return;
+      }
       console.error('Server export failed:', error);
       errorMessage =
         error instanceof Error ? error.message : 'Server export failed. Please try again.';
@@ -141,6 +147,7 @@
       eventSource.close();
       isExporting = false;
       exportProgress = 0;
+      serverExportAbortController = null;
     }
   }
 
@@ -287,7 +294,12 @@
 
   function handleCancel() {
     if (isExporting) {
-      videoCapture.stopCapture();
+      if (exportMode === 'server') {
+        serverExportAbortController?.abort();
+      } else {
+        videoCapture.stopCapture();
+      }
+
       projectStore.pause();
       projectStore.setCurrentTime(0);
 
