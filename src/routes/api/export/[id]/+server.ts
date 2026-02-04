@@ -10,6 +10,12 @@ import type { ProjectData } from '$lib/schemas/animation';
 import { Readable } from 'stream';
 
 export const POST: RequestHandler = async ({ params, request, url, locals }) => {
+  // Check authorization
+  const isLogged = !!locals.user?.id;
+  if (!isLogged) {
+    error(403, 'Forbidden');
+  }
+
   const { id } = params;
   const renderId = url.searchParams.get('renderId');
 
@@ -24,12 +30,6 @@ export const POST: RequestHandler = async ({ params, request, url, locals }) => 
 
   if (!dbProject) {
     error(404, 'Project not found');
-  }
-
-  // Check authorization
-  const isLogged = !!locals.user?.id;
-  if (!isLogged) {
-    error(403, 'Forbidden');
   }
 
   const projectData = dbProject.data as ProjectData;
@@ -95,7 +95,13 @@ export const POST: RequestHandler = async ({ params, request, url, locals }) => 
 /**
  * SSE endpoint for tracking progress
  */
-export const GET: RequestHandler = async ({ url }) => {
+export const GET: RequestHandler = async ({ url, locals }) => {
+  // Check authorization
+  const isLogged = !!locals.user?.id;
+  if (!isLogged) {
+    error(403, 'Forbidden');
+  }
+
   const renderId = url.searchParams.get('renderId');
 
   if (!renderId) {
