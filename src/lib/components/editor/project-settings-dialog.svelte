@@ -25,13 +25,13 @@
   import { projectStore } from '$lib/stores/project.svelte';
   import { Settings } from 'lucide-svelte';
   import BackgroundPicker from './panels/background-picker.svelte';
+  import { BRAND_COLORS } from '$lib/constants/branding';
 
   interface Props {
     open: boolean;
-    onOpenChange: (open: boolean) => void;
   }
 
-  let { open, onOpenChange }: Props = $props();
+  let { open = $bindable() }: Props = $props();
 
   let formData = $state({
     name: projectStore.project.name,
@@ -68,7 +68,7 @@
     projectStore.project.duration = formData.duration;
     projectStore.project.background = formData.background;
 
-    onOpenChange(false);
+    open = false;
   }
 
   function handleOpenChange(newOpen: boolean) {
@@ -88,7 +88,7 @@
       selectedResolution = res ? `${res.width}x${res.height}` : 'custom';
     }
 
-    onOpenChange(newOpen);
+    open = newOpen;
   }
 </script>
 
@@ -153,7 +153,7 @@
         <Label for="bgcolor">Background Color</Label>
         <div class="flex gap-2">
           <BackgroundPicker
-            value={formData.background}
+            value={formData.background ?? BRAND_COLORS.blue}
             onchange={(newValue) => (formData.background = newValue)}
           />
         </div>
@@ -161,7 +161,12 @@
     </div>
 
     <DialogFooter>
-      <Button variant="outline" onclick={() => onOpenChange(false)}>Cancel</Button>
+      <Button
+        variant="outline"
+        onclick={() => {
+          open = false;
+        }}>Cancel</Button
+      >
       <Button onclick={handleSave}>Save Changes</Button>
     </DialogFooter>
   </DialogContent>

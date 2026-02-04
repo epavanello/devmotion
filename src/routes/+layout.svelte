@@ -2,6 +2,8 @@
   import '../app.css';
   import { asset } from '$app/paths';
   import { Toaster } from 'svelte-sonner';
+  import { uiStore } from '$lib/stores/ui.svelte';
+  import LoginPromptDialog from '$lib/components/editor/login-prompt-dialog.svelte';
 
   let { children } = $props();
 </script>
@@ -16,4 +18,5 @@
 </svelte:head>
 
 <Toaster richColors position="top-right" />
+<LoginPromptDialog bind:open={uiStore.showLoginPrompt} action={uiStore.loginPromptAction} />
 {@render children?.()}

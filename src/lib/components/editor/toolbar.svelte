@@ -20,7 +20,7 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import Tooltip from '$lib/components/ui/tooltip';
   import ProjectSettingsDialog from './project-settings-dialog.svelte';
-  import LoginPromptDialog from './login-prompt-dialog.svelte';
+  import { uiStore } from '$lib/stores/ui.svelte';
   import { getUser, signOut } from '$lib/functions/auth.remote';
   import {
     saveProject as saveProjectToDb,
@@ -66,19 +66,18 @@
 
   let showExportDialog = $state(false);
   let showProjectSettings = $state(false);
-  let showLoginPrompt = $state(false);
-  let loginPromptAction = $state('this action');
 
   const user = $derived(await getUser());
 
   const WELCOME_TOAST_KEY = 'devmotion_welcome_shown';
 
   onMount(() => {
-    if (!localStorage.getItem(WELCOME_TOAST_KEY)) {
+    if (!localStorage.getItem(WELCOME_TOAST_KEY) && !user) {
       localStorage.setItem(WELCOME_TOAST_KEY, '1');
       toast('Welcome to DevMotion', {
-        description: 'Sign in with Google to get free AI credits and save your projects to the cloud.',
-        duration: 8000
+        description:
+          'Sign in with Google to get free AI credits and save your projects to the cloud.',
+        duration: 8_000
       });
     }
 
@@ -92,15 +91,6 @@
     { key: 'Ctrl/Cmd + N', description: 'New Project' },
     { key: 'Ctrl/Cmd + E', description: 'Export Video' }
   ];
-
-  function requireLogin(action: string, fn: () => void) {
-    if (user) {
-      fn();
-    } else {
-      loginPromptAction = action;
-      showLoginPrompt = true;
-    }
-  }
 
   function newProject() {
     if (confirm('Create new project? Unsaved changes will be lost.')) {
@@ -134,7 +124,7 @@
   }
 
   function handleSaveToCloud() {
-    requireLogin('save your project', doSaveToCloud);
+    uiStore.requireLogin('save your project', doSaveToCloud);
   }
 
   async function handleToggleVisibility() {
@@ -152,7 +142,7 @@
   }
 
   function handleFork() {
-    requireLogin('fork this project', doFork);
+    uiStore.requireLogin('fork this project', doFork);
   }
 </script>
 
@@ -423,13 +413,4 @@
   bind:isRecording
 />
 
-<ProjectSettingsDialog
-  open={showProjectSettings}
-  onOpenChange={(open) => (showProjectSettings = open)}
-/>
-
-<LoginPromptDialog
-  open={showLoginPrompt}
-  onOpenChange={(open) => (showLoginPrompt = open)}
-  action={loginPromptAction}
-/>
+<ProjectSettingsDialog bind:open={showProjectSettings} />

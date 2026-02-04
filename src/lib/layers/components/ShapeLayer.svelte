@@ -21,7 +21,8 @@
       .describe('Shape type'),
     width: z.number().min(1).max(2000).default(200).describe('Width (px)'),
     height: z.number().min(1).max(2000).default(200).describe('Height (px)'),
-    background: BackgroundValueSchema.default('#4a90e2')
+    background: BackgroundValueSchema.optional()
+      .default('#4a90e2')
       .describe('Fill background (solid color or gradient)')
       .register(fieldRegistry, { widget: 'background' }),
     stroke: z.string().default('#000000').describe('Stroke color'),

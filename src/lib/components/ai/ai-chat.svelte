@@ -26,8 +26,10 @@
   } from '$lib/ai/schemas';
   import { toast } from 'svelte-sonner';
   import { parseErrorMessage } from '$lib/utils';
+  import { uiStore } from '$lib/stores/ui.svelte';
 
-  let prompt = $state('');
+  import { PersistedState } from 'runed';
+  let prompt = new PersistedState('prompt', '');
   let showModelSelector = $state(false);
   let selectedModelId = $state(DEFAULT_MODEL_ID);
 
@@ -104,15 +106,19 @@
     }
   });
 
-  function onSubmit(event?: Event) {
-    event?.preventDefault();
-    if (!prompt.trim() || chat.status === 'streaming') return;
-
+  function sendMessage() {
     // Reset layer tracking for new message
     resetLayerTracking();
 
-    chat.sendMessage({ text: prompt });
-    prompt = '';
+    chat.sendMessage({ text: prompt.current });
+    prompt.current = '';
+  }
+
+  function onSubmit(event?: Event) {
+    event?.preventDefault();
+    if (!prompt.current.trim() || chat.status === 'streaming') return;
+
+    uiStore.requireLogin('send a message', sendMessage);
   }
 
   function handleKeyDown(e: KeyboardEvent) {
@@ -258,7 +264,7 @@
   <!-- Input -->
   <form onsubmit={onSubmit} class="border-t p-4">
     <textarea
-      bind:value={prompt}
+      bind:value={prompt.current}
       onkeydown={handleKeyDown}
       placeholder="Describe your animation... e.g., 'Create a title that fades in with a subtitle below'"
       disabled={chat.status === 'streaming' || projectStore.isRecording}
@@ -268,7 +274,7 @@
     <Button
       class="w-full"
       type="submit"
-      disabled={!prompt.trim() || chat.status === 'streaming' || projectStore.isRecording}
+      disabled={!prompt.current.trim() || chat.status === 'streaming' || projectStore.isRecording}
     >
       {#if chat.status === 'streaming'}
         Generating...

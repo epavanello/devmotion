@@ -75,7 +75,7 @@
       <ChevronDown class="size-4 transition-transform duration-200 data-[state=open]:rotate-180" />
     </CollapsibleTrigger>
     <CollapsibleContent>
-      <div class="h-[300px] border-t">
+      <div class="h-75 border-t">
         {@render content()}
       </div>
     </CollapsibleContent>

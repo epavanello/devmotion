@@ -8,12 +8,11 @@
 
   interface Props {
     open: boolean;
-    onOpenChange: (open: boolean) => void;
     /** What the user was trying to do — shown in the dialog body */
     action?: string;
   }
 
-  let { open, onOpenChange, action = 'this action' }: Props = $props();
+  let { open = $bindable(), action = 'this action' }: Props = $props();
 
   async function handleGoogleLogin() {
     try {
@@ -27,12 +26,12 @@
   }
 
   function handleEmailLogin() {
-    onOpenChange(false);
+    open = false;
     goto(resolve('/login'));
   }
 </script>
 
-<Dialog.Root {open} {onOpenChange}>
+<Dialog.Root bind:open>
   <Dialog.Content class="max-w-sm">
     <Dialog.Header>
       <Dialog.Title>Login required</Dialog.Title>
