@@ -28,17 +28,10 @@
         }
       }
 
-      // Cmd/Ctrl + S - Save
+      // Cmd/Ctrl + S - Save to cloud
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
-        const json = projectStore.exportToJSON();
-        const blob = new Blob([json], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${projectStore.project.name}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
+        window.dispatchEvent(new CustomEvent('devmotion:save'));
       }
 
       // Cmd/Ctrl + N - New project

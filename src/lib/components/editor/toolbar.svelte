@@ -3,7 +3,6 @@
   import { Button } from '$lib/components/ui/button';
   import {
     Download,
-    Upload,
     Save,
     Settings,
     User,
@@ -13,7 +12,6 @@
     Lock,
     Unlock,
     GitFork,
-    FileDown,
     Trash,
     Globe
   } from 'lucide-svelte';
@@ -22,6 +20,7 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import Tooltip from '$lib/components/ui/tooltip';
   import ProjectSettingsDialog from './project-settings-dialog.svelte';
+  import { uiStore } from '$lib/stores/ui.svelte';
   import { getUser, signOut } from '$lib/functions/auth.remote';
   import {
     saveProject as saveProjectToDb,
@@ -31,6 +30,8 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import ProjectSwitcher from './project-switcher.svelte';
+  import { onMount } from 'svelte';
+  import { toast } from 'svelte-sonner';
 
   interface Props {
     getCanvasElement: () => HTMLDivElement | undefined;
@@ -68,41 +69,28 @@
 
   const user = $derived(await getUser());
 
+  const WELCOME_TOAST_KEY = 'devmotion_welcome_shown';
+
+  onMount(() => {
+    if (!localStorage.getItem(WELCOME_TOAST_KEY) && !user) {
+      localStorage.setItem(WELCOME_TOAST_KEY, '1');
+      toast('Welcome to DevMotion', {
+        description:
+          'Sign in with Google to get free AI credits and save your projects to the cloud.',
+        duration: 8_000
+      });
+    }
+
+    const onSave = () => handleSaveToCloud();
+    window.addEventListener('devmotion:save', onSave);
+    return () => window.removeEventListener('devmotion:save', onSave);
+  });
+
   const shortcuts = [
     { key: 'Ctrl/Cmd + S', description: 'Save Project' },
-    { key: 'Ctrl/Cmd + O', description: 'Open Project' },
     { key: 'Ctrl/Cmd + N', description: 'New Project' },
     { key: 'Ctrl/Cmd + E', description: 'Export Video' }
   ];
-
-  function exportProject() {
-    const json = projectStore.exportToJSON();
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${projectStore.project.name}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function loadProject() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const json = e.target?.result as string;
-          projectStore.importFromJSON(json);
-        };
-        reader.readAsText(file);
-      }
-    };
-    input.click();
-  }
 
   function newProject() {
     if (confirm('Create new project? Unsaved changes will be lost.')) {
@@ -122,9 +110,7 @@
     goto(resolve('/login'));
   }
 
-  async function handleSaveToCloud() {
-    if (!user) return;
-
+  async function doSaveToCloud() {
     const result = await saveProjectToDb({
       id: projectId || undefined,
       data: projectStore.project
@@ -137,18 +123,26 @@
     }
   }
 
+  function handleSaveToCloud() {
+    uiStore.requireLogin('save your project', doSaveToCloud);
+  }
+
   async function handleToggleVisibility() {
     if (!projectId) return;
     await toggleVisibility({ id: projectId });
     isPublic = !isPublic;
   }
 
-  async function handleFork() {
-    if (!projectId || !user) return;
+  async function doFork() {
+    if (!projectId) return;
     const result = await forkProject({ id: projectId });
     if (result.success && result.data.id) {
       goto(resolve(`/p/${result.data.id}`));
     }
+  }
+
+  function handleFork() {
+    uiStore.requireLogin('fork this project', doFork);
   }
 </script>
 
@@ -204,35 +198,20 @@
             <Button variant="ghost" onclick={newProject} disabled={isRecording} icon={Trash} />
           </Tooltip>
 
-          <Tooltip content="Download as JSON">
+          <Tooltip content="Save to Cloud (Ctrl/Cmd + S)">
             <Button
               variant="ghost"
-              onclick={exportProject}
-              disabled={isRecording}
-              icon={FileDown}
+              onclick={handleSaveToCloud}
+              disabled={isRecording || !canEdit}
+              icon={Save}
             />
           </Tooltip>
-
-          <Tooltip content="Load from JSON (Ctrl/Cmd + O)">
-            <Button variant="ghost" onclick={loadProject} disabled={isRecording} icon={Upload} />
-          </Tooltip>
-
-          {#if user}
-            <Tooltip content="Save to Cloud (Ctrl/Cmd + S)">
-              <Button
-                variant="ghost"
-                onclick={handleSaveToCloud}
-                disabled={isRecording || !canEdit}
-                icon={Save}
-              />
-            </Tooltip>
-          {/if}
         </div>
 
         <!-- Share/Fork Actions (Desktop) -->
         {#if projectId}
           <div class="flex items-center gap-1">
-            {#if isOwner}
+            {#if isOwner && user}
               <Tooltip content={isPublic ? 'Make Private' : 'Make Public'}>
                 <Button
                   variant="ghost"
@@ -241,7 +220,7 @@
                   icon={isPublic ? Unlock : Lock}
                 />
               </Tooltip>
-            {:else if user}
+            {:else if !isOwner}
               <Tooltip content="Fork Project">
                 <Button
                   variant="ghost"
@@ -379,17 +358,15 @@
           Gallery
         </Button>
 
-        {#if user}
-          <Button
-            variant="outline"
-            onclick={handleSaveToCloud}
-            disabled={isRecording || !canEdit}
-            icon={Save}
-            class="justify-start"
-          >
-            Save Cloud
-          </Button>
-        {/if}
+        <Button
+          variant="outline"
+          onclick={handleSaveToCloud}
+          disabled={isRecording || !canEdit}
+          icon={Save}
+          class="justify-start"
+        >
+          Save Cloud
+        </Button>
 
         <Button
           variant="outline"
@@ -401,28 +378,8 @@
           New
         </Button>
 
-        <Button
-          variant="outline"
-          onclick={loadProject}
-          disabled={isRecording}
-          icon={Upload}
-          class="justify-start"
-        >
-          Load JSON
-        </Button>
-
-        <Button
-          variant="outline"
-          onclick={exportProject}
-          disabled={isRecording}
-          icon={FileDown}
-          class="justify-start"
-        >
-          Save JSON
-        </Button>
-
         {#if projectId}
-          {#if isOwner}
+          {#if isOwner && user}
             <Button
               variant="outline"
               onclick={handleToggleVisibility}
@@ -432,7 +389,7 @@
             >
               {isPublic ? 'Private' : 'Public'}
             </Button>
-          {:else if user}
+          {:else if !isOwner}
             <Button
               variant="outline"
               onclick={handleFork}
@@ -456,7 +413,4 @@
   bind:isRecording
 />
 
-<ProjectSettingsDialog
-  open={showProjectSettings}
-  onOpenChange={(open) => (showProjectSettings = open)}
-/>
+<ProjectSettingsDialog bind:open={showProjectSettings} />

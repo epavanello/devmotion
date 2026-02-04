@@ -172,7 +172,7 @@ export const ProjectSchema = z.object({
   height: z.number().positive(),
   duration: z.number().positive(),
   fps: z.number().positive(),
-  background: BackgroundValueSchema,
+  background: BackgroundValueSchema.optional(),
   layers: z.array(LayerSchema)
 });
 

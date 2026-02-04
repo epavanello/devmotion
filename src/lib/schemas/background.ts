@@ -174,7 +174,11 @@ export function getStyleProperties(value: BackgroundValue) {
   };
 }
 
-export function getBackgroundColor(value: BackgroundValue) {
+export function getBackgroundColor(value?: BackgroundValue) {
+  if (!value) {
+    return undefined;
+  }
+
   if (isSolid(value)) {
     return value;
   }
@@ -182,7 +186,11 @@ export function getBackgroundColor(value: BackgroundValue) {
   return 'transparent';
 }
 
-export function getBackgroundImage(value: BackgroundValue) {
+export function getBackgroundImage(value?: BackgroundValue) {
+  if (!value) {
+    return undefined;
+  }
+
   if (isSolid(value)) {
     return 'none';
   }
