@@ -1,7 +1,7 @@
 <script module lang="ts">
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
-  import { Type } from 'lucide-svelte';
+  import { Type } from '@lucide/svelte';
 
   /**
    * Popular Google Fonts enum

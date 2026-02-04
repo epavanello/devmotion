@@ -5,7 +5,7 @@
   import { Separator } from '$lib/components/ui/separator';
   import { ScrollArea } from '$lib/components/ui/scroll-area';
 
-  import { Palette, Sparkles, Plus, Trash2 } from 'lucide-svelte';
+  import { Palette, Sparkles, Plus, Trash2 } from '@lucide/svelte';
   import {
     type BackgroundValue,
     type ColorStop,

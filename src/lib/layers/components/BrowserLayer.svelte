@@ -1,7 +1,7 @@
 <script module lang="ts">
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
-  import { Globe } from 'lucide-svelte';
+  import { Globe } from '@lucide/svelte';
 
   /**
    * Schema for Browser Layer custom properties

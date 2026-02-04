@@ -1,7 +1,7 @@
 <script module lang="ts">
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
-  import { Image } from 'lucide-svelte';
+  import { Image } from '@lucide/svelte';
 
   /**
    * Schema for Image Layer custom properties

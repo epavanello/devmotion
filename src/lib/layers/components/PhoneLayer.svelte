@@ -1,7 +1,7 @@
 <script module lang="ts">
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
-  import { Smartphone } from 'lucide-svelte';
+  import { Smartphone } from '@lucide/svelte';
 
   /**
    * Schema for Phone Layer custom properties

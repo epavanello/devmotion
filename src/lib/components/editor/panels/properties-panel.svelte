@@ -21,7 +21,7 @@
     ArrowDownRight,
     ChevronDown,
     Sparkles
-  } from 'lucide-svelte';
+  } from '@lucide/svelte';
   import { nanoid } from 'nanoid';
   import type {
     AnimatableProperty,
@@ -367,7 +367,6 @@
     min={min !== undefined ? parseFloat(min) : undefined}
     max={max !== undefined ? parseFloat(max) : undefined}
     onchange={onInput}
-    class="flex-1"
   />
 {/snippet}
 
@@ -788,7 +787,6 @@
                               min={0}
                               max={projectStore.project.duration}
                               onchange={(v) => updateKeyframeTime(keyframe.id, v)}
-                              class="h-5 w-14 text-[10px] [&_.scrub-grip]:pl-0.5 [&_input]:h-5 [&_input]:pr-4 [&_input]:pl-4 [&_input]:text-[10px]"
                             />
                             <span
                               class="pointer-events-none absolute top-1/2 right-1 -translate-y-1/2 text-[9px] text-muted-foreground"

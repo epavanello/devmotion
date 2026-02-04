@@ -1,6 +1,6 @@
 <script lang="ts">
   import { resolve } from '$app/paths';
-  import { Fullscreen } from 'lucide-svelte';
+  import { Fullscreen } from '@lucide/svelte';
 </script>
 
 <a class="flex items-center gap-2 pl-2" href={resolve('/')}>

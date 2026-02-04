@@ -14,7 +14,7 @@
     GitFork,
     Trash,
     Globe
-  } from 'lucide-svelte';
+  } from '@lucide/svelte';
   import { projectStore } from '$lib/stores/project.svelte';
   import ExportDialog from './export-dialog.svelte';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
@@ -60,7 +60,7 @@
     CollapsibleContent,
     CollapsibleTrigger
   } from '$lib/components/ui/collapsible';
-  import { Menu, X } from 'lucide-svelte';
+  import { Menu, X } from '@lucide/svelte';
 
   let headerOpen = $state(false);
 
@@ -411,6 +411,7 @@
   onOpenChange={(open) => (showExportDialog = open)}
   {getCanvasElement}
   bind:isRecording
+  {projectId}
 />
 
 <ProjectSettingsDialog bind:open={showProjectSettings} />

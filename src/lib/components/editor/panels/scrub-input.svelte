@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as InputGroup from '$lib/components/ui/input-group';
-  import { GripVertical } from 'lucide-svelte';
+  import { GripVertical } from '@lucide/svelte';
   import { cn } from '$lib/utils';
 
   interface Props {

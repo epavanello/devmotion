@@ -1,7 +1,7 @@
 <script lang="ts">
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { Button } from '$lib/components/ui/button';
-  import { ChevronDown, Plus, FolderOpen, Trash2, Globe, Lock } from 'lucide-svelte';
+  import { ChevronDown, Plus, FolderOpen, Trash2, Globe, Lock } from '@lucide/svelte';
   import { getUserProjects, deleteProject } from '$lib/functions/projects.remote';
   import { goto } from '$app/navigation';
   import { projectStore } from '$lib/stores/project.svelte';

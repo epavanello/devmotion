@@ -2,7 +2,7 @@
 const staticLayers = import.meta.glob('./components/*.svelte', { eager: true });
 
 import type { LayerComponentDefinition } from './base';
-import type { Component, ComponentType } from 'svelte';
+import type { Component } from 'svelte';
 import type z from 'zod';
 
 export type LayerMeta = {
@@ -10,7 +10,7 @@ export type LayerMeta = {
   type: string;
   label: string;
   description: string;
-  icon: Component | ComponentType;
+  icon: Component;
 };
 
 type Layer = {

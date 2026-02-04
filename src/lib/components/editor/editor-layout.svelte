@@ -12,9 +12,9 @@
     CollapsibleTrigger,
     CollapsibleContent
   } from '$lib/components/ui/collapsible';
-  import { ChevronDown, Layers, Settings, Clock } from 'lucide-svelte';
+  import { ChevronDown, Layers, Settings, Clock } from '@lucide/svelte';
   import AiChat from '$lib/components/ai/ai-chat.svelte';
-  import type { ComponentType, Snippet } from 'svelte';
+  import type { Component, Snippet } from 'svelte';
   import { MediaQuery } from 'svelte/reactivity';
 
   interface Props {
@@ -63,7 +63,7 @@
   <AiChat />
 {/snippet}
 
-{#snippet collapsiblePane(title: string, Icon: ComponentType, content: Snippet)}
+{#snippet collapsiblePane(title: string, Icon: Component, content: Snippet)}
   <Collapsible class="border-b">
     <CollapsibleTrigger
       class="flex w-full items-center justify-between p-4 font-medium hover:bg-muted/50 data-[state=open]:bg-muted/50"

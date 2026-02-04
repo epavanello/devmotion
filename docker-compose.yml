@@ -1,14 +1,12 @@
 services:
-  db:
-    image: postgres
-    restart: always
+  app:
+    build: .
     ports:
-      - 5432:5432
+      - '3000:3000'
     environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: mysecretpassword
-      POSTGRES_DB: local
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-volumes:
-  pgdata:
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL}
+      - PRIVATE_DATABASE_URL=${PRIVATE_DATABASE_URL}
+      - PRIVATE_BETTER_AUTH_SECRET=${PRIVATE_BETTER_AUTH_SECRET}
+      - PRIVATE_GOOGLE_CLIENT_ID=${PRIVATE_GOOGLE_CLIENT_ID}
+      - PRIVATE_GOOGLE_CLIENT_SECRET=${PRIVATE_GOOGLE_CLIENT_SECRET}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}

@@ -23,7 +23,7 @@
   import { Input } from '$lib/components/ui/input';
   import { Select } from '$lib/components/ui/select';
   import { projectStore } from '$lib/stores/project.svelte';
-  import { Settings } from 'lucide-svelte';
+  import { Settings } from '@lucide/svelte';
   import BackgroundPicker from './panels/background-picker.svelte';
   import { BRAND_COLORS } from '$lib/constants/branding';
 

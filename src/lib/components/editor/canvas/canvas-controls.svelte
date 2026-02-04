@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
-  import { ZoomIn, ZoomOut, Maximize } from 'lucide-svelte';
+  import { ZoomIn, ZoomOut, Maximize } from '@lucide/svelte';
   import { projectStore } from '$lib/stores/project.svelte';
 
   function zoomIn() {

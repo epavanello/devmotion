@@ -1,7 +1,7 @@
 <svelte:options css="injected" />
 
 <script lang="ts">
-  import { Fullscreen, Calendar, Eye } from 'lucide-svelte';
+  import { Fullscreen, Calendar, Eye } from '@lucide/svelte';
   import { BRAND_GRADIENTS } from '$lib/constants/branding';
 
   export let name: string;

@@ -1,5 +1,5 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
@@ -15,20 +15,35 @@ RUN pnpm install --frozen-lockfile
 # Copy source code
 COPY . .
 
-# Prepare the app
-RUN pnpm run prepare
-
 # Build the app
 RUN pnpm run build
 
 # Production stage
-FROM nginx:alpine
+# Playwright official image includes all browser dependencies
+FROM mcr.microsoft.com/playwright:v1.50.0-jammy
 
-# Copy built static files to nginx
-COPY --from=builder /app/build /usr/share/nginx/html
+WORKDIR /app
+
+# Install FFmpeg
+RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+
+# Copy built application
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+
+# Install only production dependencies
+RUN npm install -g pnpm && pnpm install --prod --frozen-lockfile
+
+# Environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
+# Use 0.0.0.0 to allow access from outside the container
+ENV HOST=0.0.0.0
 
 # Expose port
-EXPOSE 80
+EXPOSE 3000
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start the Node.js server
+CMD ["node", "build/index.js"]
