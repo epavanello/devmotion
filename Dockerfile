@@ -36,7 +36,7 @@ RUN pnpm exec svelte-kit sync && NODE_OPTIONS="--max-old-space-size=4096" pnpm r
 
 # Production stage
 # Playwright official image includes all browser dependencies
-FROM mcr.microsoft.com/playwright:v1.50.0-jammy
+FROM mcr.microsoft.com/playwright:v1.58.0-jammy
 
 WORKDIR /app
 
