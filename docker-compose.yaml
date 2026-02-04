@@ -1,6 +1,14 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        - PUBLIC_BASE_URL=${PUBLIC_BASE_URL}
+        - PRIVATE_DATABASE_URL=${PRIVATE_DATABASE_URL}
+        - PRIVATE_BETTER_AUTH_SECRET=${PRIVATE_BETTER_AUTH_SECRET}
+        - PRIVATE_GOOGLE_CLIENT_ID=${PRIVATE_GOOGLE_CLIENT_ID}
+        - PRIVATE_GOOGLE_CLIENT_SECRET=${PRIVATE_GOOGLE_CLIENT_SECRET}
+        - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
     ports:
       - '3000:3000'
     environment:
