@@ -1,10 +1,12 @@
 import { chromium } from 'playwright';
 import ffmpeg from 'fluent-ffmpeg';
-import { PassThrough } from 'stream';
+import { PassThrough, Readable } from 'stream';
+import { EventEmitter } from 'events';
 import { generateRenderToken, invalidateRenderToken } from './render-token';
 
 interface RenderConfig {
   projectId: string;
+  renderId: string; // Unique ID for this specific render session
   width: number;
   height: number;
   fps: number;
@@ -20,194 +22,144 @@ export interface RenderProgress {
   error?: string;
 }
 
-type ProgressCallback = (progress: RenderProgress) => void;
+// Global emitter for render progress
+export const renderEmitter = new EventEmitter();
 
 /**
- * Render a project to video using Playwright screenshots and FFmpeg
- * Calls onProgress with updates and returns the final video buffer
+ * Render a project to video using Playwright screenshots and FFmpeg.
+ * Returns a Readable stream that will yield the MP4 data.
  */
-export async function renderProjectToVideo(
-  config: RenderConfig,
-  onProgress?: ProgressCallback
-): Promise<Buffer> {
-  const { projectId, width, height, fps, duration, baseUrl } = config;
+export async function renderProjectToVideoStream(config: RenderConfig): Promise<Readable> {
+  const { projectId, renderId, width, height, fps, duration, baseUrl } = config;
   const totalFrames = Math.ceil(fps * duration);
 
-  // Generate render token
+  const videoStream = new PassThrough();
   const token = generateRenderToken(projectId);
   const renderUrl = `${baseUrl}/render/${projectId}?token=${token}`;
 
-  let browser = null;
-  let page = null;
+  // Helper to emit progress
+  const emitProgress = (progress: RenderProgress) => {
+    renderEmitter.emit(`progress:${renderId}`, progress);
+  };
 
-  try {
-    onProgress?.({
-      phase: 'initializing',
-      currentFrame: 0,
-      totalFrames,
-      percent: 0
-    });
+  // Run the render process in the background
+  (async () => {
+    let browser = null;
+    let page = null;
+    let ffmpegCommand: ffmpeg.FfmpegCommand | null = null;
 
-    // Launch browser
-    browser = await chromium.launch({
-      headless: true,
-      args: [
-        '--disable-gpu',
-        '--disable-dev-shm-usage',
-        '--disable-setuid-sandbox',
-        '--no-sandbox',
-        '--disable-web-security',
-        '--disable-features=VizDisplayCompositor'
-      ]
-    });
+    try {
+      emitProgress({ phase: 'initializing', currentFrame: 0, totalFrames, percent: 0 });
 
-    page = await browser.newPage({
-      viewport: { width, height },
-      deviceScaleFactor: 1
-    });
+      browser = await chromium.launch({
+        headless: true,
+        args: [
+          '--disable-gpu',
+          '--disable-dev-shm-usage',
+          '--disable-setuid-sandbox',
+          '--no-sandbox',
+          '--disable-web-security'
+        ]
+      });
 
-    // Navigate and wait for ready
-    await page.goto(renderUrl, { waitUntil: 'networkidle' });
-    await page.waitForFunction(() => window.__DEVMOTION__?.ready, { timeout: 30000 });
-    await page.evaluate(() => window.__DEVMOTION__?.ready);
+      page = await browser.newPage({
+        viewport: { width, height },
+        deviceScaleFactor: 1
+      });
 
-    // Get actual config from page
-    const pageConfig = await page.evaluate(() => window.__DEVMOTION__?.getConfig());
-    const actualFps = pageConfig?.fps || fps;
-    const actualDuration = pageConfig?.duration || duration;
-    const actualTotalFrames = Math.ceil(actualFps * actualDuration);
+      await page.goto(renderUrl, { waitUntil: 'networkidle' });
+      await page.waitForFunction(() => window.__DEVMOTION__?.ready, { timeout: 30000 });
 
-    onProgress?.({
-      phase: 'capturing',
-      currentFrame: 0,
-      totalFrames: actualTotalFrames,
-      percent: 0
-    });
+      const pageConfig = await page.evaluate(() => window.__DEVMOTION__?.getConfig());
+      const actualFps = pageConfig?.fps || fps;
+      const actualDuration = pageConfig?.duration || duration;
+      const actualTotalFrames = Math.ceil(actualFps * actualDuration);
 
-    // Capture frames
-    const frames: Buffer[] = [];
+      // Initialize FFmpeg
+      const frameStream = new PassThrough();
 
-    for (let frameIndex = 0; frameIndex < actualTotalFrames; frameIndex++) {
-      if (page.isClosed()) {
-        throw new Error('Page was closed during rendering');
+      ffmpegCommand = ffmpeg()
+        .input(frameStream)
+        .inputFormat('image2pipe')
+        .inputFPS(actualFps)
+        .outputOptions([
+          '-c:v libx264',
+          '-preset ultrafast', // Ultrafast for streaming efficiency
+          '-crf 18',
+          '-pix_fmt yuv420p',
+          `-s ${width}x${height}`,
+          '-movflags +faststart+frag_keyframe+empty_moov'
+        ])
+        .format('mp4')
+        .on('error', (err) => {
+          console.error('FFmpeg error:', err);
+          emitProgress({
+            phase: 'error',
+            currentFrame: 0,
+            totalFrames: actualTotalFrames,
+            percent: 0,
+            error: err.message
+          });
+          videoStream.destroy(err);
+        })
+        .on('end', () => {
+          emitProgress({
+            phase: 'done',
+            currentFrame: actualTotalFrames,
+            totalFrames: actualTotalFrames,
+            percent: 100
+          });
+        });
+
+      ffmpegCommand.pipe(videoStream);
+
+      emitProgress({
+        phase: 'capturing',
+        currentFrame: 0,
+        totalFrames: actualTotalFrames,
+        percent: 0
+      });
+
+      // Capture frames and pipe to FFmpeg
+      for (let frameIndex = 0; frameIndex < actualTotalFrames; frameIndex++) {
+        const time = frameIndex / actualFps;
+        await page.evaluate((t) => window.__DEVMOTION__?.seek(t), time);
+
+        // Brief wait for any JS/canvas updates
+        await new Promise((resolve) => setTimeout(resolve, 32));
+
+        const screenshot = await page.screenshot({
+          type: 'png',
+          clip: { x: 0, y: 0, width, height }
+        });
+
+        if (frameStream.destroyed) break;
+        frameStream.write(screenshot);
+
+        const percent = Math.round(((frameIndex + 1) / actualTotalFrames) * 95);
+        emitProgress({
+          phase: 'capturing',
+          currentFrame: frameIndex + 1,
+          totalFrames: actualTotalFrames,
+          percent
+        });
       }
 
-      const time = frameIndex / actualFps;
+      frameStream.end();
 
-      // Seek to frame time
-      await page.evaluate((t) => window.__DEVMOTION__?.seek(t), time);
-
-      // Wait for render
-      await new Promise((resolve) => setTimeout(resolve, 16));
-
-      // Take screenshot
-      const screenshot = await page.screenshot({
-        type: 'png',
-        clip: { x: 0, y: 0, width, height }
-      });
-
-      frames.push(screenshot);
-
-      // Report progress (capturing is 0-80%)
-      const percent = Math.round(((frameIndex + 1) / actualTotalFrames) * 80);
-      onProgress?.({
-        phase: 'capturing',
-        currentFrame: frameIndex + 1,
-        totalFrames: actualTotalFrames,
-        percent
-      });
+      await page.close();
+      await browser.close();
+      browser = null;
+      invalidateRenderToken(token);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      emitProgress({ phase: 'error', currentFrame: 0, totalFrames, percent: 0, error: msg });
+      videoStream.destroy(err as Error);
+    } finally {
+      invalidateRenderToken(token);
+      if (browser) await browser.close();
     }
+  })();
 
-    // Close browser before encoding
-    await page.close();
-    page = null;
-    await browser.close();
-    browser = null;
-    invalidateRenderToken(token);
-
-    onProgress?.({
-      phase: 'encoding',
-      currentFrame: actualTotalFrames,
-      totalFrames: actualTotalFrames,
-      percent: 85
-    });
-
-    // Encode frames to video
-    const videoBuffer = await encodeFramesToVideo(frames, actualFps, width, height);
-
-    onProgress?.({
-      phase: 'done',
-      currentFrame: actualTotalFrames,
-      totalFrames: actualTotalFrames,
-      percent: 100
-    });
-
-    return videoBuffer;
-  } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    onProgress?.({
-      phase: 'error',
-      currentFrame: 0,
-      totalFrames,
-      percent: 0,
-      error: errorMessage
-    });
-    throw err;
-  } finally {
-    invalidateRenderToken(token);
-    try {
-      if (page && !page.isClosed()) await page.close();
-    } catch { /* ignore */ }
-    try {
-      if (browser?.isConnected()) await browser.close();
-    } catch { /* ignore */ }
-  }
-}
-
-/**
- * Encode frames to MP4 video using FFmpeg
- */
-async function encodeFramesToVideo(
-  frames: Buffer[],
-  fps: number,
-  width: number,
-  height: number
-): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const frameStream = new PassThrough();
-    const outputChunks: Buffer[] = [];
-
-    const ffmpegCommand = ffmpeg()
-      .input(frameStream)
-      .inputFormat('image2pipe')
-      .inputFPS(fps)
-      .outputOptions([
-        '-c:v libx264',
-        '-preset fast',
-        '-crf 18',
-        '-pix_fmt yuv420p',
-        `-s ${width}x${height}`,
-        '-movflags +faststart+frag_keyframe+empty_moov'
-      ])
-      .format('mp4')
-      .on('error', (err) => {
-        console.error('FFmpeg error:', err);
-        reject(err);
-      });
-
-    const outputStream = ffmpegCommand.pipe();
-    outputStream.on('data', (chunk: Buffer) => {
-      outputChunks.push(chunk);
-    });
-    outputStream.on('end', () => {
-      resolve(Buffer.concat(outputChunks));
-    });
-    outputStream.on('error', reject);
-
-    // Write all frames
-    for (const frame of frames) {
-      frameStream.write(frame);
-    }
-    frameStream.end();
-  });
+  return videoStream;
 }

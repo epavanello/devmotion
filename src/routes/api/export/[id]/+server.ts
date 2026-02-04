@@ -1,14 +1,21 @@
-import { json, error } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
 import { project } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
-import { renderProjectToVideo } from '$lib/server/video-renderer';
+import { renderProjectToVideoStream, renderEmitter } from '$lib/server/video-renderer';
+import type { RenderProgress } from '$lib/server/video-renderer';
 import { PUBLIC_BASE_URL } from '$env/static/public';
 import type { ProjectData } from '$lib/schemas/animation';
+import { Readable } from 'stream';
 
-export const POST: RequestHandler = async ({ params, request }) => {
+export const POST: RequestHandler = async ({ params, request, url }) => {
   const { id } = params;
+  const renderId = url.searchParams.get('renderId');
+
+  if (!renderId) {
+    error(400, 'Missing renderId');
+  }
 
   // Fetch project from DB
   const dbProject = await db.query.project.findFirst({
@@ -38,14 +45,13 @@ export const POST: RequestHandler = async ({ params, request }) => {
     // No body or invalid JSON, use defaults
   }
 
-  // Determine base URL for internal rendering
-  // In development, use localhost; in production, use PUBLIC_BASE_URL
   const baseUrl = PUBLIC_BASE_URL || 'http://localhost:5173';
 
   try {
-    // Render video and get stream
-    const videoStream = await renderProjectToVideo({
+    // Start rendering and get stream
+    const videoStream = await renderProjectToVideoStream({
       projectId: id,
+      renderId,
       width: config.width,
       height: config.height,
       fps: config.fps,
@@ -53,8 +59,10 @@ export const POST: RequestHandler = async ({ params, request }) => {
       baseUrl
     });
 
-    // Return streaming response
-    return new Response(videoStream, {
+    // Return the stream as response
+    const webStream = Readable.toWeb(videoStream) as ReadableStream;
+
+    return new Response(webStream, {
       headers: {
         'Content-Type': 'video/mp4',
         'Content-Disposition': `attachment; filename="${projectData.name || 'video'}.mp4"`,
@@ -68,23 +76,44 @@ export const POST: RequestHandler = async ({ params, request }) => {
   }
 };
 
-// GET for checking status (optional, for future queue implementation)
-export const GET: RequestHandler = async ({ params }) => {
+/**
+ * SSE endpoint for tracking progress
+ */
+export const GET: RequestHandler = async ({ params, url }) => {
   const { id } = params;
+  const renderId = url.searchParams.get('renderId');
 
-  const dbProject = await db.query.project.findFirst({
-    where: eq(project.id, id),
-    columns: { id: true, name: true }
-  });
-
-  if (!dbProject) {
-    error(404, 'Project not found');
+  if (!renderId) {
+    error(400, 'Missing renderId');
   }
 
-  return json({
-    projectId: id,
-    name: dbProject.name,
-    status: 'ready',
-    message: 'Use POST to start rendering'
+  const body = new ReadableStream({
+    start(controller) {
+      const onProgress = (progress: RenderProgress) => {
+        controller.enqueue(`data: ${JSON.stringify(progress)}\n\n`);
+        if (progress.phase === 'done' || progress.phase === 'error') {
+          cleanup();
+          controller.close();
+        }
+      };
+
+      const cleanup = () => {
+        renderEmitter.removeListener(`progress:${renderId}`, onProgress);
+      };
+
+      renderEmitter.on(`progress:${renderId}`, onProgress);
+    },
+    cancel() {
+      // In case of client disconnect, thePOST might still be running,
+      // but we should detach the listener.
+    }
+  });
+
+  return new Response(body, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive'
+    }
   });
 };

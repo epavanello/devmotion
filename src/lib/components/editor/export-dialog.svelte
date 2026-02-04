@@ -39,7 +39,6 @@
   let exportProgress = $state(0);
   let errorMessage = $state<string | null>(null);
   let videoCapture = new VideoCapture();
-  let exportMode = $derived<ExportMode>(projectId ? 'server' : 'browser');
 
   let exportSettings = $derived({
     format: 'webm',
@@ -48,8 +47,14 @@
     height: projectStore.project.height
   });
 
+  let exportMode = $derived<ExportMode>(projectId ? 'server' : 'browser');
+
   // Server export requires saved project
   const canUseServerExport = $derived(!!projectId);
+
+  let serverPhase = $state<'initializing' | 'capturing' | 'encoding' | 'done' | 'error' | 'ready'>(
+    'ready'
+  );
 
   async function handleExport() {
     if (exportMode === 'server' && canUseServerExport) {
@@ -65,12 +70,39 @@
       return;
     }
 
+    const renderId = crypto.randomUUID();
     isExporting = true;
     exportProgress = 0;
     errorMessage = null;
+    serverPhase = 'initializing';
+
+    // Start SSE for progress
+    const eventSource = new EventSource(`/api/export/${projectId}?renderId=${renderId}`);
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        exportProgress = data.percent;
+        serverPhase = data.phase;
+
+        if (data.phase === 'done' || data.phase === 'error') {
+          eventSource.close();
+          if (data.phase === 'error') {
+            errorMessage = data.error || 'Server export failed.';
+          }
+        }
+      } catch (err) {
+        console.error('Error parsing SSE:', err);
+      }
+    };
+
+    eventSource.onerror = () => {
+      console.error('SSE connection failed');
+      eventSource.close();
+    };
 
     try {
-      const response = await fetch(`/api/export/${projectId}`, {
+      const response = await fetch(`/api/export/${projectId}?renderId=${renderId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -85,11 +117,10 @@
         throw new Error(errorText || `Export failed with status ${response.status}`);
       }
 
-      // Get the video blob from response
+      // In a streaming response, we have to read it as a blob if we want to trigger a download window
       const blob = await response.blob();
       const filename = `${projectStore.project.name || 'video'}.mp4`;
 
-      // Download the file
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -104,7 +135,9 @@
       console.error('Server export failed:', error);
       errorMessage =
         error instanceof Error ? error.message : 'Server export failed. Please try again.';
+      serverPhase = 'error';
     } finally {
+      eventSource.close();
       isExporting = false;
       exportProgress = 0;
     }
@@ -408,6 +441,18 @@
           <div class="text-center text-sm text-muted-foreground">
             {#if isPreparing}
               Preparing frames for recording...
+            {:else if exportMode === 'server'}
+              {#if serverPhase === 'initializing'}
+                Initializing render engine...
+              {:else if serverPhase === 'capturing'}
+                Capturing animation frames...
+              {:else if serverPhase === 'encoding'}
+                Encoding high-quality video...
+              {:else if serverPhase === 'done'}
+                Download starting...
+              {:else}
+                Rendering video...
+              {/if}
             {:else}
               Recording video... Please wait.
             {/if}
