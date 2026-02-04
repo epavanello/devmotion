@@ -43,8 +43,8 @@ export const POST: RequestHandler = async ({ params, request }) => {
   const baseUrl = PUBLIC_BASE_URL || 'http://localhost:5173';
 
   try {
-    // Render video and get buffer
-    const videoBuffer = await renderProjectToVideo({
+    // Render video and get stream
+    const videoStream = await renderProjectToVideo({
       projectId: id,
       width: config.width,
       height: config.height,
@@ -53,13 +53,13 @@ export const POST: RequestHandler = async ({ params, request }) => {
       baseUrl
     });
 
-    // Return video response (convert Buffer to Uint8Array for Response compatibility)
-    return new Response(new Uint8Array(videoBuffer), {
+    // Return streaming response
+    return new Response(videoStream, {
       headers: {
         'Content-Type': 'video/mp4',
-        'Content-Length': videoBuffer.byteLength.toString(),
         'Content-Disposition': `attachment; filename="${projectData.name || 'video'}.mp4"`,
-        'Cache-Control': 'no-cache'
+        'Cache-Control': 'no-cache',
+        'Transfer-Encoding': 'chunked'
       }
     });
   } catch (err) {

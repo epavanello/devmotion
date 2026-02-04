@@ -1,4 +1,4 @@
-import { chromium, type Browser, type Page } from 'playwright';
+import { chromium } from 'playwright';
 import ffmpeg from 'fluent-ffmpeg';
 import { PassThrough } from 'stream';
 import { generateRenderToken, invalidateRenderToken } from './render-token';
@@ -12,18 +12,19 @@ interface RenderConfig {
   baseUrl: string;
 }
 
-interface RenderProgress {
-  phase: 'initializing' | 'capturing' | 'encoding' | 'done';
+export interface RenderProgress {
+  phase: 'initializing' | 'capturing' | 'encoding' | 'done' | 'error';
   currentFrame: number;
   totalFrames: number;
   percent: number;
+  error?: string;
 }
 
 type ProgressCallback = (progress: RenderProgress) => void;
 
 /**
  * Render a project to video using Playwright screenshots and FFmpeg
- * Returns a Buffer containing the video data
+ * Calls onProgress with updates and returns the final video buffer
  */
 export async function renderProjectToVideo(
   config: RenderConfig,
@@ -36,8 +37,8 @@ export async function renderProjectToVideo(
   const token = generateRenderToken(projectId);
   const renderUrl = `${baseUrl}/render/${projectId}?token=${token}`;
 
-  let browser: Browser | null = null;
-  let page: Page | null = null;
+  let browser = null;
+  let page = null;
 
   try {
     onProgress?.({
@@ -47,7 +48,7 @@ export async function renderProjectToVideo(
       percent: 0
     });
 
-    // Launch browser (fresh instance per render for stability)
+    // Launch browser
     browser = await chromium.launch({
       headless: true,
       args: [
@@ -70,7 +71,7 @@ export async function renderProjectToVideo(
     await page.waitForFunction(() => window.__DEVMOTION__?.ready, { timeout: 30000 });
     await page.evaluate(() => window.__DEVMOTION__?.ready);
 
-    // Get actual config from page (in case it differs)
+    // Get actual config from page
     const pageConfig = await page.evaluate(() => window.__DEVMOTION__?.getConfig());
     const actualFps = pageConfig?.fps || fps;
     const actualDuration = pageConfig?.duration || duration;
@@ -83,11 +84,10 @@ export async function renderProjectToVideo(
       percent: 0
     });
 
-    // Capture all frames first
+    // Capture frames
     const frames: Buffer[] = [];
 
     for (let frameIndex = 0; frameIndex < actualTotalFrames; frameIndex++) {
-      // Check if page is still valid
       if (page.isClosed()) {
         throw new Error('Page was closed during rendering');
       }
@@ -97,7 +97,7 @@ export async function renderProjectToVideo(
       // Seek to frame time
       await page.evaluate((t) => window.__DEVMOTION__?.seek(t), time);
 
-      // Small delay to ensure render is complete
+      // Wait for render
       await new Promise((resolve) => setTimeout(resolve, 16));
 
       // Take screenshot
@@ -108,8 +108,8 @@ export async function renderProjectToVideo(
 
       frames.push(screenshot);
 
-      // Report progress
-      const percent = Math.round(((frameIndex + 1) / actualTotalFrames) * 100);
+      // Report progress (capturing is 0-80%)
+      const percent = Math.round(((frameIndex + 1) / actualTotalFrames) * 80);
       onProgress?.({
         phase: 'capturing',
         currentFrame: frameIndex + 1,
@@ -118,7 +118,7 @@ export async function renderProjectToVideo(
       });
     }
 
-    // Close page early - we have all frames
+    // Close browser before encoding
     await page.close();
     page = null;
     await browser.close();
@@ -129,7 +129,7 @@ export async function renderProjectToVideo(
       phase: 'encoding',
       currentFrame: actualTotalFrames,
       totalFrames: actualTotalFrames,
-      percent: 100
+      percent: 85
     });
 
     // Encode frames to video
@@ -143,23 +143,24 @@ export async function renderProjectToVideo(
     });
 
     return videoBuffer;
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    onProgress?.({
+      phase: 'error',
+      currentFrame: 0,
+      totalFrames,
+      percent: 0,
+      error: errorMessage
+    });
+    throw err;
   } finally {
-    // Cleanup
-    try {
-      if (page && !page.isClosed()) {
-        await page.close();
-      }
-    } catch {
-      // Ignore close errors
-    }
-    try {
-      if (browser?.isConnected()) {
-        await browser.close();
-      }
-    } catch {
-      // Ignore close errors
-    }
     invalidateRenderToken(token);
+    try {
+      if (page && !page.isClosed()) await page.close();
+    } catch { /* ignore */ }
+    try {
+      if (browser?.isConnected()) await browser.close();
+    } catch { /* ignore */ }
   }
 }
 
@@ -194,7 +195,6 @@ async function encodeFramesToVideo(
         reject(err);
       });
 
-    // Collect output chunks
     const outputStream = ffmpegCommand.pipe();
     outputStream.on('data', (chunk: Buffer) => {
       outputChunks.push(chunk);
