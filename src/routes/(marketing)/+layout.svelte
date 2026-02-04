@@ -1,7 +1,7 @@
 <script lang="ts">
   import Logo from '$lib/components/editor/Logo.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { ArrowLeft, Github } from 'lucide-svelte';
+  import { ArrowLeft, Github } from '@lucide/svelte';
   import { PUBLIC_BASE_URL } from '$env/static/public';
   import JsonLd from '$lib/components/json-ld.svelte';
   import SeoHead from '$lib/components/seo-head.svelte';

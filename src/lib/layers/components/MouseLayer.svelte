@@ -1,7 +1,7 @@
 <script module lang="ts">
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
-  import { MousePointer } from 'lucide-svelte';
+  import { MousePointer } from '@lucide/svelte';
 
   /**
    * Schema for Mouse Layer custom properties
@@ -28,7 +28,7 @@
 </script>
 
 <script lang="ts">
-  import { Hand, Crosshair, Pointer, MousePointer2, TextCursor } from 'lucide-svelte';
+  import { Hand, Crosshair, Pointer, MousePointer2, TextCursor } from '@lucide/svelte';
 
   let { pointerType, size, color, backgroundColor }: Props = $props();
 

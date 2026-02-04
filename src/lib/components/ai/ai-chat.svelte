@@ -1,7 +1,7 @@
 <script lang="ts">
   import { projectStore } from '$lib/stores/project.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Sparkles, ChevronDown, Bot, Loader2, User } from 'lucide-svelte';
+  import { Sparkles, ChevronDown, Bot, Loader2, User } from '@lucide/svelte';
   import { AI_MODELS, DEFAULT_MODEL_ID } from '$lib/ai/models';
   import { Chat } from '@ai-sdk/svelte';
   import { DefaultChatTransport, isToolUIPart, type UIMessage, type UIDataTypes } from 'ai';

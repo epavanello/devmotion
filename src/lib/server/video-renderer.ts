@@ -51,15 +51,15 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
     try {
       emitProgress({ phase: 'initializing', currentFrame: 0, totalFrames, percent: 0 });
 
+      const launchArgs = ['--disable-gpu', '--disable-dev-shm-usage', '--disable-setuid-sandbox'];
+
+      if (process.env.PLAYWRIGHT_ALLOW_INSECURE_FLAGS === 'true') {
+        launchArgs.push('--no-sandbox', '--disable-web-security');
+      }
+
       browser = await chromium.launch({
         headless: true,
-        args: [
-          '--disable-gpu',
-          '--disable-dev-shm-usage',
-          '--disable-setuid-sandbox',
-          '--no-sandbox',
-          '--disable-web-security'
-        ]
+        args: launchArgs
       });
 
       page = await browser.newPage({
@@ -120,8 +120,21 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
         percent: 0
       });
 
+      let clientDisconnected = false;
+      videoStream.on('close', () => {
+        clientDisconnected = true;
+      });
+      videoStream.on('error', () => {
+        clientDisconnected = true;
+      });
+
       // Capture frames and pipe to FFmpeg
       for (let frameIndex = 0; frameIndex < actualTotalFrames; frameIndex++) {
+        if (clientDisconnected || videoStream.destroyed || frameStream.destroyed) {
+          console.log('Stopping render: client disconnected or stream destroyed');
+          break;
+        }
+
         const time = frameIndex / actualFps;
         await page.evaluate((t) => window.__DEVMOTION__?.seek(t), time);
 
@@ -133,8 +146,29 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
           clip: { x: 0, y: 0, width, height }
         });
 
-        if (frameStream.destroyed) break;
-        frameStream.write(screenshot);
+        const canWrite = frameStream.write(screenshot);
+        if (!canWrite) {
+          await new Promise<void>((resolve, reject) => {
+            const onDrain = () => {
+              frameStream.removeListener('error', onError);
+              frameStream.removeListener('close', onClose);
+              resolve();
+            };
+            const onError = (err: Error) => {
+              frameStream.removeListener('drain', onDrain);
+              frameStream.removeListener('close', onClose);
+              reject(err);
+            };
+            const onClose = () => {
+              frameStream.removeListener('drain', onDrain);
+              frameStream.removeListener('error', onError);
+              resolve();
+            };
+            frameStream.once('drain', onDrain);
+            frameStream.once('error', onError);
+            frameStream.once('close', onClose);
+          });
+        }
 
         const percent = Math.round(((frameIndex + 1) / actualTotalFrames) * 95);
         emitProgress({

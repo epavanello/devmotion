@@ -2,7 +2,7 @@
   import { page } from '$app/stores';
   import AppHeader from '$lib/components/layout/app-header.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Home, RefreshCw } from 'lucide-svelte';
+  import { Home, RefreshCw } from '@lucide/svelte';
 
   const errorMessages: Record<number, { title: string; description: string }> = {
     404: {

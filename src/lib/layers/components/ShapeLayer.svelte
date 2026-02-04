@@ -1,7 +1,7 @@
 <script module lang="ts">
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
-  import { Square } from 'lucide-svelte';
+  import { Square } from '@lucide/svelte';
   import { BackgroundValueSchema, getStyleProperties } from '$lib/schemas/background';
   import { fieldRegistry } from '../base';
 

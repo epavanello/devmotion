@@ -1,7 +1,7 @@
 <script module lang="ts">
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
-  import { Star } from 'lucide-svelte';
+  import { Star } from '@lucide/svelte';
 
   /**
    * Common Lucide icon names for motion graphics
@@ -137,7 +137,7 @@
 </script>
 
 <script lang="ts">
-  import * as Icons from 'lucide-svelte';
+  import * as Icons from '@lucide/svelte';
 
   let {
     icon,

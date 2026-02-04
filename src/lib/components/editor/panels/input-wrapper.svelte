@@ -3,7 +3,7 @@
   import Label from '$lib/components/ui/label/label.svelte';
   import type { AnimatableProperty } from '$lib/schemas/animation';
   import { projectStore } from '$lib/stores/project.svelte';
-  import { Pin } from 'lucide-svelte';
+  import { Pin } from '@lucide/svelte';
   import type { Snippet } from 'svelte';
 
   const {

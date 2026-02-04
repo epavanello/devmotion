@@ -9,7 +9,7 @@ import { PUBLIC_BASE_URL } from '$env/static/public';
 import type { ProjectData } from '$lib/schemas/animation';
 import { Readable } from 'stream';
 
-export const POST: RequestHandler = async ({ params, request, url }) => {
+export const POST: RequestHandler = async ({ params, request, url, locals }) => {
   const { id } = params;
   const renderId = url.searchParams.get('renderId');
 
@@ -24,6 +24,12 @@ export const POST: RequestHandler = async ({ params, request, url }) => {
 
   if (!dbProject) {
     error(404, 'Project not found');
+  }
+
+  // Check authorization
+  const isLogged = !!locals.user?.id;
+  if (!isLogged) {
+    error(403, 'Forbidden');
   }
 
   const projectData = dbProject.data as ProjectData;
@@ -62,10 +68,15 @@ export const POST: RequestHandler = async ({ params, request, url }) => {
     // Return the stream as response
     const webStream = Readable.toWeb(videoStream) as ReadableStream;
 
+    // Sanitize filename to prevent header injection
+    const sanitizedName = (dbProject.name || 'video').replace(/[;="\r\n]/g, '_').substring(0, 100);
+
     return new Response(webStream, {
       headers: {
         'Content-Type': 'video/mp4',
-        'Content-Disposition': `attachment; filename="${projectData.name || 'video'}.mp4"`,
+        'Content-Disposition': `attachment; filename="${sanitizedName}.mp4"; filename*=UTF-8''${encodeURIComponent(
+          sanitizedName
+        )}.mp4`,
         'Cache-Control': 'no-cache',
         'Transfer-Encoding': 'chunked'
       }
@@ -79,33 +90,33 @@ export const POST: RequestHandler = async ({ params, request, url }) => {
 /**
  * SSE endpoint for tracking progress
  */
-export const GET: RequestHandler = async ({ params, url }) => {
-  const { id } = params;
+export const GET: RequestHandler = async ({ url }) => {
   const renderId = url.searchParams.get('renderId');
 
   if (!renderId) {
     error(400, 'Missing renderId');
   }
 
+  let onProgress: ((progress: RenderProgress) => void) | undefined;
+
   const body = new ReadableStream({
     start(controller) {
-      const onProgress = (progress: RenderProgress) => {
+      onProgress = (progress: RenderProgress) => {
         controller.enqueue(`data: ${JSON.stringify(progress)}\n\n`);
         if (progress.phase === 'done' || progress.phase === 'error') {
-          cleanup();
+          if (onProgress) {
+            renderEmitter.removeListener(`progress:${renderId}`, onProgress);
+          }
           controller.close();
         }
-      };
-
-      const cleanup = () => {
-        renderEmitter.removeListener(`progress:${renderId}`, onProgress);
       };
 
       renderEmitter.on(`progress:${renderId}`, onProgress);
     },
     cancel() {
-      // In case of client disconnect, thePOST might still be running,
-      // but we should detach the listener.
+      if (onProgress) {
+        renderEmitter.removeListener(`progress:${renderId}`, onProgress);
+      }
     }
   });
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Move3d } from 'lucide-svelte';
+  import { Move3d } from '@lucide/svelte';
 
   interface Props {
     valueX: number;

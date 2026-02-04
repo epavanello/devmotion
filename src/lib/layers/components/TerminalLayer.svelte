@@ -1,7 +1,7 @@
 <script module lang="ts">
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
-  import { Terminal } from 'lucide-svelte';
+  import { Terminal } from '@lucide/svelte';
 
   /**
    * Schema for Terminal Layer custom properties

@@ -1,7 +1,7 @@
 <svelte:options css="injected" />
 
 <script lang="ts">
-  import { Fullscreen } from 'lucide-svelte';
+  import { Fullscreen } from '@lucide/svelte';
   import { BRAND_GRADIENTS } from '$lib/constants/branding';
 </script>
 

@@ -1,7 +1,7 @@
 <script module lang="ts">
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
-  import { Loader } from 'lucide-svelte';
+  import { Loader } from '@lucide/svelte';
   import { BRAND_COLORS } from '$lib/constants/branding';
 
   /**

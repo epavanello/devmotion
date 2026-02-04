@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
-  import { Play, Pause, SkipBack } from 'lucide-svelte';
+  import { Play, Pause, SkipBack } from '@lucide/svelte';
   import { projectStore } from '$lib/stores/project.svelte';
 
   function togglePlayback() {

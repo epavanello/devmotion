@@ -21,7 +21,7 @@
     ArrowDownRight,
     ChevronDown,
     Sparkles
-  } from 'lucide-svelte';
+  } from '@lucide/svelte';
   import { nanoid } from 'nanoid';
   import type {
     AnimatableProperty,

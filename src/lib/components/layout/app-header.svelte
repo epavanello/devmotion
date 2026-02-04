@@ -1,7 +1,7 @@
 <script lang="ts">
   import Logo from '../editor/Logo.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Github } from 'lucide-svelte';
+  import { Github } from '@lucide/svelte';
 
   interface Props {
     /**

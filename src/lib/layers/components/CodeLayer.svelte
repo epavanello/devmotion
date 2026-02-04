@@ -1,7 +1,7 @@
 <script module lang="ts">
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
-  import { Code } from 'lucide-svelte';
+  import { Code } from '@lucide/svelte';
 
   /**
    * Schema for Code Layer custom properties

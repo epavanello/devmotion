@@ -7,7 +7,7 @@
   import LayerWrapper from '$lib/layers/LayerWrapper.svelte';
   import { getLayerComponent } from '$lib/layers/registry';
   import type { Layer } from '$lib/types/animation';
-  import { Fullscreen } from 'lucide-svelte';
+  import { Fullscreen } from '@lucide/svelte';
   import { getBackgroundColor, getBackgroundImage } from '$lib/schemas/background';
 
   let canvasContainer: HTMLDivElement | undefined = $state();

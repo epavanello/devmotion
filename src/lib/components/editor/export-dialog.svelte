@@ -13,7 +13,7 @@
   import { Progress } from '$lib/components/ui/progress';
   import { projectStore } from '$lib/stores/project.svelte';
   import { VideoCapture } from '$lib/utils/video-capture';
-  import { Loader2, AlertCircle, Monitor, Server } from 'lucide-svelte';
+  import { Loader2, AlertCircle, Monitor, Server } from '@lucide/svelte';
 
   interface Props {
     open: boolean;
@@ -98,6 +98,7 @@
 
     eventSource.onerror = () => {
       console.error('SSE connection failed');
+      errorMessage = 'Lost connection to render progress. The export might still be processing.';
       eventSource.close();
     };
 

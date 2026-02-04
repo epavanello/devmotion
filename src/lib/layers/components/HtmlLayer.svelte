@@ -3,7 +3,7 @@
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
   import { fieldRegistry } from '../base';
-  import { Code2 } from 'lucide-svelte';
+  import { Code2 } from '@lucide/svelte';
 
   /**
    * Schema for HTML Layer custom properties

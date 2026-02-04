@@ -3,7 +3,7 @@
   import SeoHead from '$lib/components/seo-head.svelte';
   import { Button } from '$lib/components/ui/button';
   import { goto } from '$app/navigation';
-  import { ArrowLeft, ArrowRight, Eye, Film } from 'lucide-svelte';
+  import { ArrowLeft, ArrowRight, Eye, Film } from '@lucide/svelte';
   import { resolve } from '$app/paths';
 
   let { data } = $props();
