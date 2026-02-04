@@ -81,6 +81,9 @@
             <GoogleIcon />
             Sign up with Google
           </Button>
+          <p class="text-center text-xs text-muted-foreground">
+            Google sign-up includes free AI credits
+          </p>
           <Field.Description class="text-center">
             Already have an account? <a href={resolve('/login')}>Sign in</a>
           </Field.Description>
