@@ -411,6 +411,7 @@
   onOpenChange={(open) => (showExportDialog = open)}
   {getCanvasElement}
   bind:isRecording
+  {projectId}
 />
 
 <ProjectSettingsDialog bind:open={showProjectSettings} />

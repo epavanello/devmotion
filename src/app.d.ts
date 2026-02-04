@@ -3,6 +3,17 @@
 import type { Session, User } from 'better-auth';
 
 // for information about these interfaces
+interface DevMotionAPI {
+  ready: Promise<void>;
+  seek: (time: number) => void;
+  getConfig: () => {
+    width: number;
+    height: number;
+    duration: number;
+    fps: number;
+  };
+}
+
 declare global {
   namespace App {
     // interface Error {}
@@ -13,6 +24,10 @@ declare global {
     // interface PageData {}
     // interface PageState {}
     // interface Platform {}
+  }
+
+  interface Window {
+    __DEVMOTION__?: DevMotionAPI;
   }
 }
 
