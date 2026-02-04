@@ -16,7 +16,7 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Build the app
-RUN NODE_OPTIONS="--max-old-space-size=4096" pnpm run build
+RUN pnpm exec svelte-kit sync && NODE_OPTIONS="--max-old-space-size=4096" pnpm run build
 
 # Production stage
 # Playwright official image includes all browser dependencies
