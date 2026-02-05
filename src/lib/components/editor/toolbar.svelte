@@ -82,8 +82,13 @@
     }
 
     const onSave = () => handleSaveToCloud();
+    const onNewProject = () => newProject();
     window.addEventListener('devmotion:save', onSave);
-    return () => window.removeEventListener('devmotion:save', onSave);
+    window.addEventListener('devmotion:new-project', onNewProject);
+    return () => {
+      window.removeEventListener('devmotion:save', onSave);
+      window.removeEventListener('devmotion:new-project', onNewProject);
+    };
   });
 
   const shortcuts = [
@@ -95,6 +100,7 @@
   function newProject() {
     if (confirm('Create new project? Unsaved changes will be lost.')) {
       projectStore.newProject();
+      goto(resolve('/'));
     }
   }
 

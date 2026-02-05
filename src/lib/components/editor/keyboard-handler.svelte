@@ -37,9 +37,7 @@
       // Cmd/Ctrl + N - New project
       if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
         e.preventDefault();
-        if (confirm('Create new project? Unsaved changes will be lost.')) {
-          projectStore.newProject();
-        }
+        window.dispatchEvent(new CustomEvent('devmotion:new-project'));
       }
 
       // Cmd/Ctrl + G - Toggle grid
