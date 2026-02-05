@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Keyframe } from '$lib/types/animation';
   import { projectStore } from '$lib/stores/project.svelte';
-  import Tooltip from '$lib/components/ui/tooltip';
+  import TooltipWrapper from '$lib/components/ui/tooltip/tooltip-wrapper.svelte';
 
   interface Props {
     keyframes: Keyframe[];
@@ -116,7 +116,7 @@
   }
 </script>
 
-<Tooltip delayDuration={0}>
+<TooltipWrapper delayDuration={0}>
   {#snippet content()}
     <div class="space-y-1 text-xs">
       <div class="font-semibold">
@@ -160,4 +160,4 @@
     aria-label="Keyframe at {firstKeyframe.time.toFixed(2)}s"
   >
   </button>
-</Tooltip>
+</TooltipWrapper>

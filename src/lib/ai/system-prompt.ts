@@ -1,53 +1,13 @@
 /**
- * System prompt builder for progressive AI animation generation
- * Uses static layer-specific tools with explicit schemas
+ * System prompt builder for progressive AI animation generation.
+ *
+ * Design goals:
+ * - Keep the prompt short and non-repetitive (LLMs degrade with long context).
+ * - Do NOT duplicate information already present in tool schemas/descriptions
+ *   (preset lists, key props, etc. live in the tool definitions).
+ * - Derive everything possible from the registry/schemas at runtime.
  */
 import type { Project } from '$lib/types/animation';
-import { layerRegistry, getAvailableLayerTypes, type LayerType } from '$lib/layers/registry';
-import { extractDefaultValues } from '$lib/layers/base';
-
-/**
- * Get key props for each layer type
- */
-function getKeyPropsForLayerType(type: string): string[] {
-  const keyProps: Record<string, string[]> = {
-    text: ['content', 'fontSize', 'color'],
-    icon: ['icon', 'size', 'color'],
-    shape: ['shapeType', 'background', 'width', 'height'],
-    code: ['code', 'language'],
-    image: ['src'],
-    button: ['text', 'backgroundColor'],
-    terminal: ['title', 'content'],
-    progress: ['progress', 'progressColor'],
-    mouse: ['pointerType'],
-    phone: ['url'],
-    browser: ['url'],
-    html: ['html', 'css']
-  };
-  return keyProps[type] || [];
-}
-
-/**
- * Build formatted list of available layer creation tools
- */
-function buildLayerToolsList(): string {
-  return getAvailableLayerTypes()
-    .map((type) => {
-      const definition = layerRegistry[type as LayerType];
-      const keyProps = getKeyPropsForLayerType(type);
-      const defaults = extractDefaultValues(definition.schema);
-
-      const propsInfo = keyProps
-        .map((prop) => {
-          const defaultVal = defaults[prop];
-          return defaultVal !== undefined ? `${prop}="${defaultVal}"` : prop;
-        })
-        .join(', ');
-
-      return `- **create_${type}_layer**: ${definition.description || definition.label} (${propsInfo})`;
-    })
-    .join('\n');
-}
 
 /**
  * Build the system prompt for progressive tool-calling
@@ -55,110 +15,57 @@ function buildLayerToolsList(): string {
 export function buildSystemPrompt(project: Project): string {
   const halfWidth = project.width / 2;
   const halfHeight = project.height / 2;
+  const thirdHeight = Math.round(project.height / 3);
 
-  return `# DevMotion AI - Motion Graphics Designer
+  return `You are a motion-graphics designer. You create professional video animations by calling tools step-by-step.
 
-You create professional video animations by thinking through the design, then using tools step-by-step to build the animation progressively.
+## Workflow
 
-## LAYER CREATION TOOLS
+1. **configure_project** first if the user wants a specific format, background, or duration.
+2. **Create layers** with create_*_layer tools. Each call returns a reference (layer_0, layer_1, ...) you can reuse.
+3. **Animate every layer** — pass an \`animation\` object inline when creating, or call animate_layer after. No layer should be static.
+4. **Refine** with edit_layer or remove_layer as needed.
 
-Each layer type has its own creation tool with explicit properties:
+## Canvas
 
-${buildLayerToolsList()}
-
-## OTHER TOOLS
-
-- **animate_layer**: Add animation to an existing layer
-- **edit_layer**: Modify layer properties, position, or transform
-- **remove_layer**: Delete a layer
-- **configure_project**: Update project dimensions, duration, or background
-
-## YOUR WORKFLOW
-
-1. **Design**: Plan your composition and explain your approach
-2. **Build**: Create layers using create_*_layer tools (returns layer_0, layer_1, etc.)
-3. **Animate**: Add motion with inline animation or animate_layer
-4. **Refine**: Edit and iterate based on tool results
-
-## CANVAS SPACE
-
-Canvas: ${project.width}x${project.height}px | Center: (0, 0)
+${project.width}x${project.height}px, center at (0,0). X: -${halfWidth}..+${halfWidth}. Y: -${halfHeight}..+${halfHeight}.
 Duration: ${project.duration}s | FPS: ${project.fps} | Background: ${project.background}
 
-Coordinate system:
-- Center: (0, 0)
-- Left edge: x = -${halfWidth} | Right edge: x = +${halfWidth}
-- Top edge: y = -${halfHeight} | Bottom edge: y = +${halfHeight}
+## Layout guidelines
 
-## CURRENT PROJECT STATE
-${buildCanvasState(project)}
+Distribute layers across the canvas — never stack everything at (0,0).
+- Title area: y ≈ -${thirdHeight}
+- Main content: y ≈ 0
+- Footer / subtitle: y ≈ +${thirdHeight}
 
-## MOTION DESIGN PRINCIPLES
+## Layer references
 
-- **Timing**: Entrances 0.3-0.6s, exits 0.2-0.4s, stagger 0.1-0.2s
-- **Easing**: ease-out (entrances), ease-in (exits), ease-in-out (movements)
-- **Hierarchy**: Animate hero elements first, then supporting elements
-- **Polish**: Subtle overshoot (scale: 1 → 1.05 → 1) adds polish
+- **Layers you create**: use layer_0, layer_1, ... (assigned in creation order within this conversation).
+- **Pre-existing layers**: use the exact \`id\` or \`name\` shown in PROJECT STATE. layer_N does NOT work for pre-existing layers.
 
-## LAYER REFERENCES
+## Animation tips
 
-**For layers YOU create:** Use layer_0, layer_1, etc. (assigned in creation order)
-**For EXISTING layers:** Use the exact ID or name shown in PROJECT STATE below
+- Stagger start times by 0.1–0.3 s between layers for a professional sequence.
+- Entrances: 0.3–0.6 s with ease-out. Exits: 0.2–0.4 s with ease-in.
+- Animate hero elements first, then supporting ones.
 
-Example: If PROJECT STATE shows '0. "Title" (id: "abc123", type: text)':
-- Use "abc123" or "Title" to reference it
-- layer_0 will NOT work (it only tracks layers you create)
+## Rules
 
-## ANIMATION IS REQUIRED
+1. Always set meaningful props (content, colors, sizes) — do not rely on defaults for visible content.
+2. Always position layers intentionally.
+3. Always animate every layer.
+4. Create layers one at a time; do not batch unrelated layers in a single call.
 
-**Every layer MUST have animation.** Static layers are not acceptable for motion graphics.
-
-Options to animate:
-1. **Inline animation**: Pass \`animation: { preset: "fade-in", startTime: 0, duration: 0.5 }\` in create tool
-2. **Separate call**: Use animate_layer after creating the layer
-
-Available presets: fade-in, fade-out, slide-in-left, slide-in-right, slide-in-top, slide-in-bottom, scale-in, pop, bounce-in, rotate-in, zoom-in, pulse, float
-
-Stagger timing: Start each layer's animation 0.1-0.3s after the previous one for professional flow.
-
-## PROPS ARE IMPORTANT
-
-Every layer should have meaningful props that match the user's intent.
-
-**Position matters!** Don't stack everything at (0,0). Plan your composition:
-- Title at top: y = -${project.height / 3}
-- Main content: y = 0
-- Subtitle/footer: y = +${project.height / 3}
-- Use x offset for side-by-side elements
-
-**GOOD example:**
-\`\`\`json
-create_text_layer({
-  "name": "Hero Title",
-  "position": { "x": 0, "y": -150 },
-  "props": { "content": "DevMotion", "fontSize": 96, "fontWeight": "bold", "color": "#ffffff" },
-  "animation": { "preset": "slide-in-bottom", "startTime": 0.2, "duration": 0.6 }
-})
-\`\`\`
-
-## KEY RULES
-
-1. Use the specific create tool for each layer type (create_text_layer, create_icon_layer, etc.)
-2. ALWAYS add animation to every layer (inline or via animate_layer)
-3. ALWAYS include meaningful props - the tool shows you exactly what's available
-4. ALWAYS position layers intentionally - don't stack at center
-5. Build progressively - create layers one by one
-6. Use staggered timing for multi-layer animations
-
-Now help the user create their animation.`;
+## Project state
+${buildCanvasState(project)}`;
 }
 
 /**
- * Build visual canvas state
+ * Build a compact view of the current canvas state for the AI.
  */
 function buildCanvasState(project: Project): string {
   if (project.layers.length === 0) {
-    return `Canvas is EMPTY. Start by creating layers.`;
+    return 'Empty canvas — no layers yet.';
   }
 
   const halfHeight = project.height / 2;
@@ -181,7 +88,6 @@ function buildCanvasState(project: Project): string {
     spatial += `BOTTOM: ${bottomLayers.map((l) => `[${l.name}]`).join(' ')}\n`;
   }
 
-  // Detailed layer list
   const layerList = project.layers
     .map((layer, index) => {
       const animatedProps = [...new Set(layer.keyframes.map((k) => k.property))];
@@ -198,6 +104,6 @@ function buildCanvasState(project: Project): string {
     .join('\n');
 
   return `${spatial}
-LAYERS (${project.layers.length} total):
+${project.layers.length} layer(s):
 ${layerList}`;
 }

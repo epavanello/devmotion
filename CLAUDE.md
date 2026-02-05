@@ -7,26 +7,34 @@ Quick reference for AI assistants working with DevMotion, an animation editor bu
 ## Core Architecture Patterns
 
 ### 1. **Svelte 5 Runes** - Use exclusively, no legacy stores
+
 ```typescript
-let count = $state(0);              // Reactive state
-let doubled = $derived(count * 2);  // Computed values
-$effect(() => { /* side effects */ });
+let count = $state(0); // Reactive state
+let doubled = $derived(count * 2); // Computed values
+$effect(() => {
+  /* side effects */
+});
 ```
 
 ### 2. **Zod-First Types** - Single source of truth
+
 ```typescript
 // Define schema first, infer types
-export const LayerSchema = z.object({ /* ... */ });
+export const LayerSchema = z.object({
+  /* ... */
+});
 export type Layer = z.infer<typeof LayerSchema>;
 ```
 
 ### 3. **Shared Mutations** - Web app and MCP server share logic
+
 ```typescript
 // src/lib/ai/mutations.ts - pure functions that modify Project objects
-export function mutateCreateLayer(ctx: MutationContext, input) { }
+export function mutateCreateLayer(ctx: MutationContext, input) {}
 ```
 
 ### 4. **Layer Registry** - Dynamic layer type system
+
 ```typescript
 // Register layer components with validation schemas
 registerLayer('my-layer', Component, PropsSchema);
@@ -36,21 +44,22 @@ registerLayer('my-layer', Component, PropsSchema);
 
 ## Key File Locations
 
-| What | Where |
-|------|-------|
-| **Global state** | `src/lib/stores/project.svelte.ts` (ProjectStore class) |
-| **Type definitions** | `src/lib/schemas/animation.ts` (Zod schemas) |
-| **Shared mutations** | `src/lib/ai/mutations.ts` (web + MCP) |
-| **Animation engine** | `src/lib/engine/interpolation.ts` |
-| **Layer components** | `src/lib/layers/components/` |
-| **MCP server** | `src/routes/mcp/+server.ts` |
-| **Database schemas** | `src/lib/server/db/schema/` |
+| What                 | Where                                                   |
+| -------------------- | ------------------------------------------------------- |
+| **Global state**     | `src/lib/stores/project.svelte.ts` (ProjectStore class) |
+| **Type definitions** | `src/lib/schemas/animation.ts` (Zod schemas)            |
+| **Shared mutations** | `src/lib/ai/mutations.ts` (web + MCP)                   |
+| **Animation engine** | `src/lib/engine/interpolation.ts`                       |
+| **Layer components** | `src/lib/layers/components/`                            |
+| **MCP server**       | `src/routes/mcp/+server.ts`                             |
+| **Database schemas** | `src/lib/server/db/schema/`                             |
 
 ---
 
 ## Essential Conventions
 
 ### Code Style
+
 - **Package manager**: `pnpm` only (not npm/yarn)
 - **Naming**: `kebab-case.ts`, `PascalCase.svelte`, `camelCase` functions
 - **Imports**: External → SvelteKit → Internal → Relative
@@ -58,12 +67,14 @@ registerLayer('my-layer', Component, PropsSchema);
 - **Prettier**: 2 spaces, single quotes, no trailing commas, 100 line width
 
 ### TypeScript
+
 - Strict mode always on
 - Prefer type inference over explicit types
 - No `any` - use `unknown` or proper types
 - Prefix unused vars with `_`
 
 ### Project Structure
+
 ```
 src/lib/
 ├── stores/           # Global state (Svelte 5 runes)
@@ -94,6 +105,7 @@ src/lib/
 ```
 
 ### Animatable Properties
+
 - Built-in: `position.x/y/z`, `scale.x/y/z`, `rotation.x/y/z`, `opacity`, `color`
 - Custom: `props.fontSize`, `props.fill`, etc.
 
@@ -102,22 +114,25 @@ src/lib/
 ## Common Tasks
 
 ### Adding a Layer Type
+
 1. Create component in `src/lib/layers/components/`
 2. Export props schema: `export const MyLayerPropsSchema = z.object({ ... })`
 3. Call `registerLayer('my-layer', MyComponent, MyLayerPropsSchema)`
 
 ### Modifying Project Store
+
 ```typescript
 // src/lib/stores/project.svelte.ts
 class ProjectStore {
   myMethod() {
-    this.project = { ...this.project, /* changes */ };
+    this.project = { ...this.project /* changes */ };
     // Auto-saves to localStorage (debounced)
   }
 }
 ```
 
 ### Database Changes
+
 ```bash
 # 1. Define schema in src/lib/server/db/schema/
 # 2. Export from schema/index.ts
@@ -126,14 +141,19 @@ pnpm db:push      # Apply to database
 ```
 
 ### Adding MCP Tools
+
 ```typescript
 // src/routes/mcp/+server.ts
-server.registerTool('tool_name', {
-  description: '...',
-  inputSchema: z.object({ projectId: z.string(), /* ... */ })
-}, async ({ projectId, ...params }) => {
-  // Use shared mutations from src/lib/ai/mutations.ts
-});
+server.registerTool(
+  'tool_name',
+  {
+    description: '...',
+    inputSchema: z.object({ projectId: z.string() /* ... */ })
+  },
+  async ({ projectId, ...params }) => {
+    // Use shared mutations from src/lib/ai/mutations.ts
+  }
+);
 ```
 
 ---
@@ -160,6 +180,7 @@ pnpm db:studio        # Database GUI
 ## Critical Patterns to Follow
 
 ### ✅ DO
+
 - Use Svelte 5 runes (`$state`, `$derived`, `$effect`)
 - Define Zod schemas first, infer TypeScript types
 - Use `projectStore` for global animation state
@@ -168,6 +189,7 @@ pnpm db:studio        # Database GUI
 - Use `pnpm` exclusively
 
 ### ❌ DON'T
+
 - Use legacy Svelte stores (`writable`, `derived`)
 - Duplicate type definitions (Zod + TypeScript)
 - Mutate state directly without reactivity
