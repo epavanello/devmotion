@@ -7,6 +7,7 @@ import { withErrorHandling } from '.';
 import { nanoid } from 'nanoid';
 import { invalid } from '@sveltejs/kit';
 import { projectDataSchema } from '$lib/schemas/animation';
+import { thumbnailQueue } from '$lib/server/thumbnail-queue';
 
 export const saveProject = command(
   z.object({
@@ -41,6 +42,17 @@ export const saveProject = command(
         data
       });
     }
+
+    thumbnailQueue.enqueue({
+      projectId,
+      projectData: {
+        width: data.width,
+        height: data.height,
+        fps: data.fps,
+        duration: data.duration
+      },
+      addedAt: new Date()
+    });
 
     return { id: projectId };
   })
@@ -90,7 +102,8 @@ export const getUserProjects = query(async () => {
       id: true,
       name: true,
       isPublic: true,
-      updatedAt: true
+      updatedAt: true,
+      thumbnailUrl: true
     }
   });
 });
@@ -195,7 +208,8 @@ export const getPublicProjects = query(
         views: true,
         updatedAt: true,
         userId: true,
-        isMcp: true
+        isMcp: true,
+        thumbnailUrl: true
       }
     });
 

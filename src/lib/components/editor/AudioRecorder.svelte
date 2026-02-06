@@ -1,6 +1,13 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
   import { Mic, Square, Loader2 } from '@lucide/svelte';
+  import {
+    uploadMediaBlob,
+    generateTimestampedFileName,
+    formatDuration,
+    handleMediaError,
+    stopMediaStream
+  } from './media-upload-utils';
 
   interface Props {
     /** Callback when recording is complete and uploaded */
@@ -15,6 +22,7 @@
   let isUploading = $state(false);
   let recordingError = $state('');
   let mediaRecorder: MediaRecorder | null = $state(null);
+  let mediaStream: MediaStream | null = $state(null);
   let audioChunks: Blob[] = $state([]);
   let recordingDuration = $state(0);
   let recordingInterval: ReturnType<typeof setInterval> | null = null;
@@ -22,9 +30,9 @@
   async function startRecording() {
     try {
       recordingError = '';
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      mediaRecorder = new MediaRecorder(stream, {
+      mediaRecorder = new MediaRecorder(mediaStream, {
         mimeType: 'audio/webm;codecs=opus'
       });
 
@@ -39,7 +47,8 @@
 
       mediaRecorder.onstop = async () => {
         // Stop the stream
-        stream.getTracks().forEach((track) => track.stop());
+        stopMediaStream(mediaStream);
+        mediaStream = null;
 
         // Create blob from chunks
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
@@ -56,8 +65,8 @@
         recordingDuration += 1;
       }, 1000);
     } catch (err) {
-      recordingError =
-        err instanceof Error ? err.message : 'Failed to access microphone. Please allow access.';
+      const error = handleMediaError(err);
+      recordingError = error.message;
       console.error('Recording error:', err);
     }
   }
@@ -79,34 +88,9 @@
     recordingError = '';
 
     try {
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const fileName = `recording-${timestamp}.webm`;
-
-      const formData = new FormData();
-      formData.append('file', blob, fileName);
-      formData.append('mediaType', 'audio');
-      if (projectId) {
-        formData.append('projectId', projectId);
-      }
-
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.message || `Upload failed (${res.status})`);
-      }
-
-      const data = await res.json();
-      if (data.success && data.file) {
-        onRecordingComplete({
-          url: data.file.url,
-          key: data.file.key,
-          fileName: data.file.originalName
-        });
-      }
+      const fileName = generateTimestampedFileName('recording', 'webm');
+      const result = await uploadMediaBlob(blob, fileName, 'audio', projectId);
+      onRecordingComplete(result);
     } catch (err) {
       recordingError = err instanceof Error ? err.message : 'Upload failed';
     } finally {
@@ -115,11 +99,15 @@
     }
   }
 
-  function formatDuration(seconds: number): string {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  }
+  // Cleanup on unmount
+  $effect(() => {
+    return () => {
+      if (recordingInterval) {
+        clearInterval(recordingInterval);
+      }
+      stopMediaStream(mediaStream);
+    };
+  });
 </script>
 
 <div class="space-y-2">

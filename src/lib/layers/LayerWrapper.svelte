@@ -185,7 +185,7 @@
 
 {#if visible}
   <div
-    class="layer-wrapper absolute top-1/2 left-1/2"
+    class="layer-wrapper absolute top-1/2 left-1/2 *:pointer-events-none"
     class:selected
     class:locked
     data-layer-id={id}

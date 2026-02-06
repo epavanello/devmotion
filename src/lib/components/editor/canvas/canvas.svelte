@@ -184,7 +184,7 @@
   });
 </script>
 
-<div class="relative h-full w-full overflow-hidden bg-gray-700" class:recording-mode={isRecording}>
+<div class="relative h-full w-full overflow-hidden" class:recording-mode={isRecording}>
   <!-- Canvas viewport -->
   <div
     bind:this={canvasContainer}
@@ -210,7 +210,7 @@
           style:height="20000px"
           style:left="-10000px"
           style:top="-10000px"
-          style:background-color="rgba(0, 0, 0, 0.6)"
+          style:background-color="rgba(0, 0, 0, 0.4)"
           style:clip-path={`polygon(evenodd, 0 0, 0 20000px, 20000px 20000px, 20000px 0, 0 0, ${10000 - projectStore.project.width / 2}px ${10000 - projectStore.project.height / 2}px, ${10000 - projectStore.project.width / 2}px ${10000 + projectStore.project.height / 2}px, ${10000 + projectStore.project.width / 2}px ${10000 + projectStore.project.height / 2}px, ${10000 + projectStore.project.width / 2}px ${10000 - projectStore.project.height / 2}px, ${10000 - projectStore.project.width / 2}px ${10000 - projectStore.project.height / 2}px)`}
           style:pointer-events="none"
         ></div>

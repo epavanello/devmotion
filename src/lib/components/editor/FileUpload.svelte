@@ -2,6 +2,8 @@
   import { Button } from '$lib/components/ui/button';
   import { Upload, Trash2, Loader2, Check } from '@lucide/svelte';
   import AudioRecorder from './AudioRecorder.svelte';
+  import VideoRecorder from './VideoRecorder.svelte';
+  import CameraCapture from './CameraCapture.svelte';
 
   interface Props {
     /** Current file URL (if already uploaded or set) */
@@ -126,11 +128,25 @@
     {/if}
   </Button>
 
-  <!-- Audio recorder (only for audio media type) -->
+  <!-- Media capture options based on type -->
   {#if mediaType === 'audio'}
     <AudioRecorder
       {projectId}
       onRecordingComplete={(result) => {
+        onUpload(result);
+      }}
+    />
+  {:else if mediaType === 'video'}
+    <VideoRecorder
+      {projectId}
+      onRecordingComplete={(result) => {
+        onUpload(result);
+      }}
+    />
+  {:else if mediaType === 'image'}
+    <CameraCapture
+      {projectId}
+      onCaptureComplete={(result) => {
         onUpload(result);
       }}
     />

@@ -80,8 +80,11 @@ const MAX_FILE_SIZES: Record<MediaType, number> = {
 
 /**
  * Get the file extension from a MIME type
+ * Strips MIME type parameters (e.g., "video/webm;codecs=vp9" → "video/webm")
  */
 function getExtension(mimeType: string): string {
+  // Strip parameters from MIME type (everything after semicolon)
+  const baseMimeType = mimeType.split(';')[0].trim();
   const map: Record<string, string> = {
     'image/jpeg': 'jpg',
     'image/png': 'png',
@@ -99,14 +102,17 @@ function getExtension(mimeType: string): string {
     'audio/mp4': 'm4a',
     'audio/aac': 'aac'
   };
-  return map[mimeType] || 'bin';
+  return map[baseMimeType] || 'bin';
 }
 
 /**
  * Validate that a file's MIME type is allowed for the given media category
+ * Strips MIME type parameters (e.g., "video/webm;codecs=vp9" → "video/webm")
  */
 export function validateMediaType(mimeType: string, mediaType: MediaType): boolean {
-  return ALLOWED_MIME_TYPES[mediaType].includes(mimeType);
+  // Strip parameters from MIME type (everything after semicolon)
+  const baseMimeType = mimeType.split(';')[0].trim();
+  return ALLOWED_MIME_TYPES[mediaType].includes(baseMimeType);
 }
 
 /**
@@ -265,10 +271,13 @@ export async function fileExists(key: string): Promise<boolean> {
 
 /**
  * Detect media type from MIME type
+ * Strips MIME type parameters (e.g., "video/webm;codecs=vp9" → "video/webm")
  */
 export function detectMediaType(mimeType: string): MediaType | null {
+  // Strip parameters from MIME type (everything after semicolon)
+  const baseMimeType = mimeType.split(';')[0].trim();
   for (const [type, mimes] of Object.entries(ALLOWED_MIME_TYPES)) {
-    if (mimes.includes(mimeType)) {
+    if (mimes.includes(baseMimeType)) {
       return type as MediaType;
     }
   }
