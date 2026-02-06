@@ -7,6 +7,7 @@ export interface MediaCaptureResult {
   url: string;
   key: string;
   fileName: string;
+  duration?: number;
 }
 
 export interface MediaCaptureProps {

@@ -118,7 +118,7 @@
         newEnter = newExit - duration;
       }
 
-      projectStore.setLayerTimeRange(layer.id, newEnter, newExit);
+      projectStore.setLayerTimeRange(layer.id, newEnter, newExit, true);
     }
   }
 

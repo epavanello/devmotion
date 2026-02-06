@@ -13,7 +13,7 @@
     /** Media type: image, video, or audio */
     mediaType: 'image' | 'video' | 'audio';
     /** Callback when file is uploaded */
-    onUpload: (result: { url: string; key: string; fileName: string }) => void;
+    onUpload: (result: { url: string; key: string; fileName: string; duration?: number }) => void;
     /** Callback when file is removed */
     onRemove?: () => void;
     /** Optional project ID for organizing uploads */
@@ -47,6 +47,44 @@
     audio: '100MB'
   };
 
+  /**
+   * Extract duration from video or audio file
+   */
+  async function extractMediaDuration(file: File): Promise<number | undefined> {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+
+      if (mediaType === 'video') {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.onloadedmetadata = () => {
+          URL.revokeObjectURL(url);
+          resolve(video.duration);
+        };
+        video.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(undefined);
+        };
+        video.src = url;
+      } else if (mediaType === 'audio') {
+        const audio = document.createElement('audio');
+        audio.preload = 'metadata';
+        audio.onloadedmetadata = () => {
+          URL.revokeObjectURL(url);
+          resolve(audio.duration);
+        };
+        audio.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(undefined);
+        };
+        audio.src = url;
+      } else {
+        URL.revokeObjectURL(url);
+        resolve(undefined);
+      }
+    });
+  }
+
   async function handleFileSelect(e: Event) {
     const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -56,6 +94,12 @@
     uploadError = '';
 
     try {
+      // Extract duration for video/audio files
+      let duration: number | undefined;
+      if (mediaType === 'video' || mediaType === 'audio') {
+        duration = await extractMediaDuration(file);
+      }
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('mediaType', mediaType);
@@ -78,7 +122,8 @@
         onUpload({
           url: data.file.url,
           key: data.file.key,
-          fileName: data.file.originalName
+          fileName: data.file.originalName,
+          duration
         });
       }
     } catch (err) {
@@ -98,6 +143,29 @@
 </script>
 
 <div class="space-y-2">
+  <!-- Media preview (if uploaded) -->
+  {#if value && (mediaType === 'image' || mediaType === 'video')}
+    <div class="relative overflow-hidden rounded border bg-black">
+      {#if mediaType === 'image'}
+        <img
+          src={value}
+          alt={displayName}
+          class="h-auto w-full"
+          style="max-height: 180px; object-fit: contain;"
+        />
+      {:else if mediaType === 'video'}
+        <!-- svelte-ignore a11y_media_has_caption -->
+        <video
+          src={value}
+          class="h-auto w-full"
+          style="max-height: 180px; object-fit: contain;"
+          controls
+          preload="metadata"
+        ></video>
+      {/if}
+    </div>
+  {/if}
+
   <!-- Upload button with status -->
   <Button
     variant="outline"

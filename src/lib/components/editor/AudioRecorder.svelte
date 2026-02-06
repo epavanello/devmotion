@@ -25,6 +25,7 @@
   let mediaStream: MediaStream | null = $state(null);
   let audioChunks: Blob[] = $state([]);
   let recordingDuration = $state(0);
+  let recordingStartTime = $state(0);
   let recordingInterval: ReturnType<typeof setInterval> | null = null;
 
   async function startRecording() {
@@ -38,6 +39,7 @@
 
       audioChunks = [];
       recordingDuration = 0;
+      recordingStartTime = Date.now();
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -46,6 +48,10 @@
       };
 
       mediaRecorder.onstop = async () => {
+        // Calculate final precise duration (ensure it's never NaN)
+        const elapsed = Date.now() - recordingStartTime;
+        const finalDuration = recordingStartTime > 0 && elapsed > 0 ? elapsed / 1000 : 1;
+
         // Stop the stream
         stopMediaStream(mediaStream);
         mediaStream = null;
@@ -53,17 +59,17 @@
         // Create blob from chunks
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
 
-        // Upload the recording
-        await uploadRecording(audioBlob);
+        // Upload the recording with precise duration
+        await uploadRecording(audioBlob, finalDuration);
       };
 
       mediaRecorder.start();
       isRecording = true;
 
-      // Update duration display
+      // Update duration display (more frequently for smoother UI)
       recordingInterval = setInterval(() => {
-        recordingDuration += 1;
-      }, 1000);
+        recordingDuration = (Date.now() - recordingStartTime) / 1000;
+      }, 100);
     } catch (err) {
       const error = handleMediaError(err);
       recordingError = error.message;
@@ -83,13 +89,13 @@
     }
   }
 
-  async function uploadRecording(blob: Blob) {
+  async function uploadRecording(blob: Blob, duration: number) {
     isUploading = true;
     recordingError = '';
 
     try {
       const fileName = generateTimestampedFileName('recording', 'webm');
-      const result = await uploadMediaBlob(blob, fileName, 'audio', projectId);
+      const result = await uploadMediaBlob(blob, fileName, 'audio', projectId, duration);
       onRecordingComplete(result);
     } catch (err) {
       recordingError = err instanceof Error ? err.message : 'Upload failed';
@@ -118,7 +124,9 @@
         <div class="h-2 w-2 animate-pulse rounded-full bg-destructive"></div>
         <span class="text-sm font-medium">Recording...</span>
       </div>
-      <div class="mb-2 font-mono text-2xl tabular-nums">{formatDuration(recordingDuration)}</div>
+      <div class="mb-2 font-mono text-2xl tabular-nums">
+        {formatDuration(Math.floor(recordingDuration))}
+      </div>
       <Button variant="destructive" size="sm" onclick={stopRecording}>
         <Square class="mr-1 size-3" />
         Stop Recording

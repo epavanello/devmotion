@@ -2,6 +2,8 @@
   import type { Keyframe } from '$lib/types/animation';
   import { projectStore } from '$lib/stores/project.svelte';
   import TooltipWrapper from '$lib/components/ui/tooltip/tooltip-wrapper.svelte';
+  import * as Popover from '$lib/components/ui/popover';
+  import { Button } from '$lib/components/ui/button';
 
   interface Props {
     keyframes: Keyframe[];
@@ -101,17 +103,9 @@
     }
   }
 
-  function handleDelete(e: MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    const message =
-      keyframes.length === 1
-        ? 'Delete this keyframe?'
-        : `Delete all ${keyframes.length} keyframes at this time?`;
-    if (confirm(message)) {
-      for (const keyframe of keyframes) {
-        projectStore.removeKeyframe(layerId, keyframe.id);
-      }
+  function handleDelete() {
+    for (const keyframe of keyframes) {
+      projectStore.removeKeyframe(layerId, keyframe.id);
     }
   }
 </script>
@@ -140,24 +134,60 @@
           </div>
         {/each}
       </div>
-      <div class="mt-2 border-t pt-1 text-muted-foreground">
-        {keyframes.length === 1
-          ? 'Right-click to delete'
-          : `Right-click to delete all ${keyframes.length} keyframes`}
-      </div>
+      <div class="mt-2 border-t pt-1 text-muted-foreground">Click to delete</div>
     </div>
   {/snippet}
-  <button
-    class="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-sm border-2 transition-transform hover:scale-110 active:cursor-grabbing"
-    class:bg-primary={isSelected}
-    class:bg-muted-foreground={!isSelected}
-    class:border-primary={isSelected}
-    class:border-background={!isSelected}
-    style="left: {position}px"
-    onmousedown={handleMouseDown}
-    onkeydown={handleKeyDown}
-    oncontextmenu={handleDelete}
-    aria-label="Keyframe at {firstKeyframe.time.toFixed(2)}s"
-  >
-  </button>
+  <Popover.Root>
+    <Popover.Trigger>
+      {#snippet child({ props })}
+        <button
+          class="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-sm border-2 transition-transform hover:scale-110 active:cursor-grabbing"
+          class:bg-primary={isSelected}
+          class:bg-muted-foreground={!isSelected}
+          class:border-primary={isSelected}
+          class:border-background={!isSelected}
+          style="left: {position}px"
+          onmousedown={handleMouseDown}
+          onkeydown={handleKeyDown}
+          oncontextmenu={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          aria-label="Keyframe at {firstKeyframe.time.toFixed(2)}s"
+          {...props}
+        >
+        </button>
+      {/snippet}
+    </Popover.Trigger>
+    <Popover.Content class="w-64" align="center" side="top">
+      <div class="space-y-2">
+        <h4 class="text-sm font-medium">Delete Keyframe{keyframes.length > 1 ? 's' : ''}</h4>
+        <p class="text-xs text-muted-foreground">
+          {keyframes.length === 1
+            ? 'Delete this keyframe?'
+            : `Delete all ${keyframes.length} keyframes at this time?`}
+        </p>
+        <div class="flex justify-end gap-2">
+          <Popover.Close>
+            {#snippet child({ props })}
+              <Button variant="outline" size="sm" class="h-7 text-xs" {...props}>Cancel</Button>
+            {/snippet}
+          </Popover.Close>
+          <Popover.Close>
+            {#snippet child({ props })}
+              <Button
+                variant="destructive"
+                size="sm"
+                class="h-7 text-xs"
+                onclick={handleDelete}
+                {...props}
+              >
+                Delete
+              </Button>
+            {/snippet}
+          </Popover.Close>
+        </div>
+      </div>
+    </Popover.Content>
+  </Popover.Root>
 </TooltipWrapper>

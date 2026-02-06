@@ -113,7 +113,17 @@ function generateLayerCreationTools(): Record<string, Tool> {
         .number()
         .min(0)
         .optional()
-        .describe('When layer exits the timeline (seconds, default: project duration)')
+        .describe('When layer exits the timeline (seconds, default: project duration)'),
+      contentDuration: z
+        .number()
+        .min(0)
+        .optional()
+        .describe('Total content duration for media layers (video/audio duration in seconds)'),
+      contentOffset: z
+        .number()
+        .min(0)
+        .optional()
+        .describe('Start offset for trimming media content (seconds)')
     });
 
     const description =
@@ -147,6 +157,10 @@ export interface CreateLayerInput {
   enterTime?: number;
   /** When the layer exits the timeline (seconds) */
   exitTime?: number;
+  /** Total duration of layer content (for video/audio layers) */
+  contentDuration?: number;
+  /** Start offset for trimming content (seconds) */
+  contentOffset?: number;
 }
 
 export interface CreateLayerOutput {
@@ -223,7 +237,19 @@ export const EditLayerInputSchema = z.object({
       .optional(),
     rotation: z.number().optional().describe('Rotation in degrees'),
     opacity: z.number().min(0).max(1).optional(),
-    props: z.record(z.string(), z.unknown()).optional()
+    props: z.record(z.string(), z.unknown()).optional(),
+    enterTime: z.number().min(0).optional().describe('When layer enters timeline (seconds)'),
+    exitTime: z.number().min(0).optional().describe('When layer exits timeline (seconds)'),
+    contentDuration: z
+      .number()
+      .min(0)
+      .optional()
+      .describe('Total duration of layer content (e.g., video/audio duration in seconds)'),
+    contentOffset: z
+      .number()
+      .min(0)
+      .optional()
+      .describe('Start offset for trimming content (seconds)')
   })
 });
 

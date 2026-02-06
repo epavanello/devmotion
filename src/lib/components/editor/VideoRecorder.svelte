@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
-  import { Video, Square, Loader2 } from '@lucide/svelte';
+  import { Video, Square, Loader2, RotateCw } from '@lucide/svelte';
   import {
     uploadMediaBlob,
     generateTimestampedFileName,
@@ -28,8 +28,10 @@
   let mediaStream: MediaStream | null = $state(null);
   let videoChunks: Blob[] = $state([]);
   let recordingDuration = $state(0);
+  let recordingStartTime = $state(0);
   let recordingInterval: ReturnType<typeof setInterval> | null = null;
   let videoPreviewEl: HTMLVideoElement | undefined = $state();
+  let facingMode = $state<'user' | 'environment'>('user');
 
   const MAX_DURATION = 300; // 5 minutes in seconds
 
@@ -42,15 +44,12 @@
         video: {
           width: { ideal: 1280 },
           height: { ideal: 720 },
-          facingMode: 'user'
+          facingMode
         },
         audio: audioEnabled
       });
 
-      // Show preview
-      if (videoPreviewEl) {
-        videoPreviewEl.srcObject = mediaStream;
-      }
+      // Note: srcObject is set in the $effect below after video element is rendered
 
       // Get supported mime type with fallback
       const mimeTypes = [
@@ -73,6 +72,7 @@
 
       videoChunks = [];
       recordingDuration = 0;
+      recordingStartTime = Date.now();
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -81,6 +81,10 @@
       };
 
       mediaRecorder.onstop = async () => {
+        // Calculate final precise duration (ensure it's never NaN)
+        const elapsed = Date.now() - recordingStartTime;
+        const finalDuration = recordingStartTime > 0 && elapsed > 0 ? elapsed / 1000 : 1;
+
         // Stop the stream
         stopMediaStream(mediaStream);
         mediaStream = null;
@@ -88,22 +92,22 @@
         // Create blob from chunks
         const videoBlob = new Blob(videoChunks, { type: mimeType });
 
-        // Upload the recording
-        await uploadRecording(videoBlob);
+        // Upload the recording with precise duration
+        await uploadRecording(videoBlob, finalDuration);
       };
 
       mediaRecorder.start(1000); // Get chunks every second
       isRecording = true;
 
-      // Update duration display and enforce max duration
+      // Update duration display (more frequently for smoother UI) and enforce max duration
       recordingInterval = setInterval(() => {
-        recordingDuration += 1;
+        recordingDuration = (Date.now() - recordingStartTime) / 1000;
 
         // Auto-stop at max duration
         if (recordingDuration >= MAX_DURATION) {
           stopRecording();
         }
-      }, 1000);
+      }, 100);
     } catch (err) {
       const error = handleMediaError(err);
       recordingError = error.message;
@@ -127,13 +131,13 @@
     }
   }
 
-  async function uploadRecording(blob: Blob) {
+  async function uploadRecording(blob: Blob, duration: number) {
     isUploading = true;
     recordingError = '';
 
     try {
       const fileName = generateTimestampedFileName('video', 'webm');
-      const result = await uploadMediaBlob(blob, fileName, 'video', projectId);
+      const result = await uploadMediaBlob(blob, fileName, 'video', projectId, duration);
       onRecordingComplete(result);
     } catch (err) {
       recordingError = err instanceof Error ? err.message : 'Upload failed';
@@ -142,6 +146,42 @@
       recordingDuration = 0;
     }
   }
+
+  async function switchCamera() {
+    if (!isRecording) return;
+
+    // Toggle facing mode
+    facingMode = facingMode === 'user' ? 'environment' : 'user';
+
+    // Stop current recording
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      isRecording = false;
+
+      if (recordingInterval) {
+        clearInterval(recordingInterval);
+        recordingInterval = null;
+      }
+    }
+
+    // Clean up current stream
+    stopMediaStream(mediaStream);
+    mediaStream = null;
+
+    // Restart recording with new camera
+    await startRecording();
+  }
+
+  // Reactively set srcObject when both video element and stream are ready
+  $effect(() => {
+    if (videoPreviewEl && mediaStream && isRecording) {
+      videoPreviewEl.srcObject = mediaStream;
+      // Explicitly play to ensure preview shows (autoplay isn't always reliable)
+      videoPreviewEl.play().catch((err) => {
+        console.warn('Preview autoplay failed:', err);
+      });
+    }
+  });
 
   // Cleanup on unmount
   $effect(() => {
@@ -160,7 +200,6 @@
     <div class="rounded border-2 border-destructive bg-destructive/10 p-3">
       <!-- Video preview -->
       <div class="relative mb-2 overflow-hidden rounded bg-black">
-        <!-- svelte-ignore a11y_media_has_caption -->
         <video
           bind:this={videoPreviewEl}
           autoplay
@@ -179,9 +218,19 @@
         <!-- Duration overlay -->
         <div class="absolute top-2 right-2 rounded bg-black/50 px-2 py-1">
           <span class="font-mono text-xs text-white tabular-nums">
-            {formatDuration(recordingDuration)}
+            {formatDuration(Math.floor(recordingDuration))}
           </span>
         </div>
+
+        <!-- Camera switch button -->
+        <button
+          type="button"
+          class="absolute right-2 bottom-2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+          onclick={switchCamera}
+          title="Switch camera"
+        >
+          <RotateCw class="size-4" />
+        </button>
       </div>
 
       <!-- Stop button -->

@@ -145,31 +145,76 @@ export const LayerTypeSchema = z.enum(getAvailableLayerTypes());
 // Layer
 // ============================================
 
-export const LayerSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  type: LayerTypeSchema,
-  transform: TransformSchema,
-  style: LayerStyleSchema,
-  visible: z.boolean(),
-  locked: z.boolean(),
-  keyframes: z.array(KeyframeSchema),
-  /**
-   * Layer-specific properties validated by the component's Zod schema.
-   * Kept flexible to allow each layer type to define its own props.
-   */
-  props: z.record(z.string(), z.unknown()),
-  /**
-   * Enter time - when this layer becomes visible in the timeline (seconds).
-   * If undefined, the layer is visible from the start.
-   */
-  enterTime: z.number().min(0).optional(),
-  /**
-   * Exit time - when this layer stops being visible in the timeline (seconds).
-   * If undefined, the layer is visible until the project ends.
-   */
-  exitTime: z.number().min(0).optional()
-});
+export const LayerSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    type: LayerTypeSchema,
+    transform: TransformSchema,
+    style: LayerStyleSchema,
+    visible: z.boolean(),
+    locked: z.boolean(),
+    keyframes: z.array(KeyframeSchema),
+    /**
+     * Layer-specific properties validated by the component's Zod schema.
+     * Kept flexible to allow each layer type to define its own props.
+     */
+    props: z.record(z.string(), z.unknown()),
+    /**
+     * Enter time - when this layer becomes visible in the timeline (seconds).
+     * If undefined, the layer is visible from the start.
+     */
+    enterTime: z.number().min(0).optional(),
+    /**
+     * Exit time - when this layer stops being visible in the timeline (seconds).
+     * If undefined, the layer is visible until the project ends.
+     */
+    exitTime: z.number().min(0).optional(),
+    /**
+     * Content duration - the total duration of the layer's content in seconds.
+     * For video/audio layers, this is the media file duration.
+     * For other layers, this may be undefined (infinite duration).
+     * Used to constrain enter/exit times and content offset.
+     */
+    contentDuration: z.number().min(0).optional(),
+    /**
+     * Content offset - how much to trim/skip from the start of the content (seconds).
+     * For video/audio layers, this is where playback starts in the source media.
+     * Combined with enter/exit times, this determines what portion of content is shown.
+     * Only applicable when contentDuration is defined.
+     */
+    contentOffset: z.number().min(0).optional()
+  })
+  .refine(
+    (data) => {
+      // Validate contentOffset doesn't exceed contentDuration
+      if (
+        data.contentDuration !== undefined &&
+        data.contentOffset !== undefined &&
+        data.contentOffset >= data.contentDuration
+      ) {
+        return false;
+      }
+      // Validate visible duration doesn't exceed available content
+      if (
+        data.contentDuration !== undefined &&
+        data.enterTime !== undefined &&
+        data.exitTime !== undefined
+      ) {
+        const visibleDuration = data.exitTime - data.enterTime;
+        const contentOffset = data.contentOffset ?? 0;
+        const availableContent = data.contentDuration - contentOffset;
+        if (visibleDuration > availableContent) {
+          return false;
+        }
+      }
+      return true;
+    },
+    {
+      message:
+        'Content duration and offset constraints violated: offset must be < duration, and visible duration must fit within available content'
+    }
+  );
 
 // ============================================
 // Project

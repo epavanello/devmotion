@@ -7,6 +7,7 @@
   import { Separator } from '$lib/components/ui/separator';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import * as ButtonGroup from '$lib/components/ui/button-group';
+  import * as Popover from '$lib/components/ui/popover';
   import {
     Pin,
     Trash2,
@@ -443,11 +444,24 @@
           updateLayerProps('src', result.url);
           updateLayerProps('fileKey', result.key);
           updateLayerProps('fileName', result.fileName);
+          // Set content duration if available
+          if (result.duration !== undefined) {
+            projectStore.updateLayer(selectedLayer.id, { contentDuration: result.duration });
+            // Auto-set exit time based on content duration if layer has no exit time yet
+            if (!selectedLayer.exitTime) {
+              const enterTime = selectedLayer.enterTime ?? 0;
+              projectStore.setLayerExitTime(selectedLayer.id, enterTime + result.duration);
+            }
+          }
         }}
         onRemove={() => {
           updateLayerProps('src', '');
           updateLayerProps('fileKey', '');
           updateLayerProps('fileName', '');
+          projectStore.updateLayer(selectedLayer.id, {
+            contentDuration: undefined,
+            contentOffset: undefined
+          });
         }}
       />
     {:else if metadata.type === 'number'}
@@ -539,7 +553,17 @@
 
         <!-- Enter/Exit Time -->
         <div class="space-y-3">
-          <Label class="font-semibold">Time Range</Label>
+          <div class="flex items-center justify-between">
+            <Label class="font-semibold">Time Range</Label>
+            {#if selectedLayer.contentDuration !== undefined}
+              {@const contentDuration = selectedLayer.contentDuration}
+              {@const contentOffset = selectedLayer.contentOffset ?? 0}
+              {@const availableContent = contentDuration - contentOffset}
+              <span class="text-[10px] text-muted-foreground/60">
+                Max: {availableContent.toFixed(1)}s
+              </span>
+            {/if}
+          </div>
           <div class="grid grid-cols-2 gap-2">
             <div class="space-y-1">
               <Label class="text-xs text-muted-foreground">Enter (s)</Label>
@@ -547,7 +571,13 @@
                 id="enter-time"
                 value={selectedLayer.enterTime ?? 0}
                 min={0}
-                max={projectStore.project.duration}
+                max={selectedLayer.contentDuration !== undefined
+                  ? Math.min(
+                      projectStore.project.duration,
+                      projectStore.project.duration -
+                        (selectedLayer.contentDuration - (selectedLayer.contentOffset ?? 0))
+                    )
+                  : projectStore.project.duration}
                 step={0.1}
                 onchange={(v) => projectStore.setLayerEnterTime(selectedLayer.id, v)}
               />
@@ -565,35 +595,54 @@
             </div>
           </div>
 
-          <!-- Media layer controls -->
+          <!-- Content offset control for time-based layers -->
           {#if selectedLayer.type === 'video' || selectedLayer.type === 'audio'}
+            {@const contentDuration = selectedLayer.contentDuration ?? 0}
+            {@const contentOffset = selectedLayer.contentOffset ?? 0}
+            {@const hasDuration = contentDuration > 0}
             <div class="space-y-2">
-              <Label class="text-xs text-muted-foreground">Media Trim</Label>
-              <div class="grid grid-cols-2 gap-2">
-                <div class="space-y-1">
-                  <Label class="text-[10px] text-muted-foreground">Start (s)</Label>
-                  <ScrubInput
-                    id="media-start"
-                    value={(selectedLayer.props.mediaStartTime as number) ?? 0}
-                    min={0}
-                    step={0.1}
-                    onchange={(v) => updateLayerProps('mediaStartTime', v)}
-                  />
-                </div>
-                <div class="space-y-1">
-                  <Label class="text-[10px] text-muted-foreground">End (s)</Label>
-                  <ScrubInput
-                    id="media-end"
-                    value={(selectedLayer.props.mediaEndTime as number) ??
-                      (selectedLayer.props.media?.duration as number) ??
-                      selectedLayer.exitTime ??
-                      projectStore.project.duration}
-                    min={0}
-                    step={0.1}
-                    onchange={(v) => updateLayerProps('mediaEndTime', v)}
-                  />
-                </div>
+              <div class="flex items-center justify-between">
+                <Label class="text-xs text-muted-foreground">Content Trim</Label>
+                {#if hasDuration}
+                  <span class="text-[10px] text-muted-foreground/60">
+                    Duration: {contentDuration.toFixed(1)}s
+                  </span>
+                {/if}
               </div>
+              <div class="space-y-1">
+                <Label class="text-[10px] text-muted-foreground">Start offset (s)</Label>
+                <ScrubInput
+                  id="content-offset"
+                  value={contentOffset}
+                  min={0}
+                  max={hasDuration ? contentDuration - 0.1 : undefined}
+                  step={0.1}
+                  onchange={(v) => {
+                    const clamped = hasDuration
+                      ? Math.min(v, contentDuration - 0.1)
+                      : Math.max(0, v);
+                    projectStore.updateLayer(selectedLayer.id, { contentOffset: clamped });
+
+                    // Auto-adjust exitTime if it would exceed available content
+                    if (hasDuration && selectedLayer.exitTime !== undefined) {
+                      const enterTime = selectedLayer.enterTime ?? 0;
+                      const maxVisibleDuration = contentDuration - clamped;
+                      const maxExitTime = enterTime + maxVisibleDuration;
+                      if (selectedLayer.exitTime > maxExitTime) {
+                        projectStore.setLayerExitTime(selectedLayer.id, maxExitTime);
+                      }
+                    }
+                  }}
+                />
+                <p class="text-[10px] text-muted-foreground/70">
+                  Where to start playing in the source media
+                </p>
+              </div>
+              {#if !hasDuration && selectedLayer.props.src}
+                <p class="text-[10px] text-muted-foreground/70">
+                  Upload a new file to detect duration
+                </p>
+              {/if}
               <Button
                 variant="outline"
                 size="sm"
@@ -946,14 +995,48 @@
                           >
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        class="h-6 w-6 p-0 opacity-0 transition-opacity group-hover:opacity-100 [@media(hover:none)]:opacity-100"
-                        onclick={() => deleteKeyframe(keyframe.id)}
-                      >
-                        <Trash2 class="h-3 w-3" />
-                      </Button>
+                      <Popover.Root>
+                        <Popover.Trigger>
+                          {#snippet child({ props })}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              class="h-6 w-6 p-0 opacity-0 transition-opacity group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+                              {...props}
+                            >
+                              <Trash2 class="h-3 w-3" />
+                            </Button>
+                          {/snippet}
+                        </Popover.Trigger>
+                        <Popover.Content class="w-64" align="end" side="left">
+                          <div class="space-y-2">
+                            <h4 class="text-sm font-medium">Delete Keyframe</h4>
+                            <p class="text-xs text-muted-foreground">
+                              Delete keyframe for {getPropertyLabel(keyframe.property)}?
+                            </p>
+                            <div class="flex justify-end gap-2">
+                              <Popover.Close>
+                                {#snippet child({ props })}
+                                  <Button variant="outline" size="sm" class="h-7 text-xs" {...props}>Cancel</Button>
+                                {/snippet}
+                              </Popover.Close>
+                              <Popover.Close>
+                                {#snippet child({ props })}
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    class="h-7 text-xs"
+                                    onclick={() => deleteKeyframe(keyframe.id)}
+                                    {...props}
+                                  >
+                                    Delete
+                                  </Button>
+                                {/snippet}
+                              </Popover.Close>
+                            </div>
+                          </div>
+                        </Popover.Content>
+                      </Popover.Root>
                     </div>
                     <div class="mt-1.5 ml-4">
                       <select

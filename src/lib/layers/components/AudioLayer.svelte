@@ -18,10 +18,6 @@
     width: z.number().min(50).max(5000).default(400).describe('Width (px)'),
     /** Height of the visual representation */
     height: z.number().min(20).max(500).default(60).describe('Height (px)'),
-    /** Start time in the source audio (seconds) - for trimming */
-    mediaStartTime: z.number().min(0).default(0).describe('Media start time (s)'),
-    /** End time in the source audio (seconds) - for trimming */
-    mediaEndTime: z.number().min(0).default(0).describe('Media end time (s) - 0 means full'),
     /** Playback volume */
     volume: z.number().min(0).max(1).default(1).describe('Volume (0-1)'),
     /** Whether audio is muted */
@@ -50,7 +46,9 @@
     /** Layer ID - passed by LayerWrapper for time sync */
     layerId: z.string().optional().describe('Layer ID (internal)'),
     /** Enter time - passed by LayerWrapper for time sync */
-    enterTime: z.number().optional().describe('Enter time (internal)')
+    enterTime: z.number().optional().describe('Enter time (internal)'),
+    /** Content offset - passed by LayerWrapper for content trimming */
+    contentOffset: z.number().optional().describe('Content offset (internal)')
   });
 
   export const meta: LayerMeta = {
@@ -73,8 +71,6 @@
     label,
     width,
     height,
-    mediaStartTime,
-    mediaEndTime,
     volume,
     muted,
     playbackRate,
@@ -88,7 +84,8 @@
     fileKey: _fileKey,
     fileName: _fileName,
     layerId: _layerId,
-    enterTime: enterTimeProp
+    enterTime: enterTimeProp,
+    contentOffset: contentOffsetProp
   }: Props = $props();
 
   let audioEl: HTMLAudioElement | undefined = $state();
@@ -102,19 +99,20 @@
     const enterTime = enterTimeProp ?? 0;
     const relativeTime = currentTime - enterTime;
 
-    // Apply media start offset and playback rate
-    const audioTime = mediaStartTime + relativeTime * playbackRate;
+    // Apply content offset (where to start in the source audio)
+    const contentOffset = contentOffsetProp ?? 0;
+    const audioTime = contentOffset + relativeTime * playbackRate;
 
-    // Clamp to valid range
-    const maxTime = mediaEndTime > 0 ? mediaEndTime : audioEl.duration || Infinity;
-    const clampedTime = Math.max(mediaStartTime, Math.min(audioTime, maxTime));
+    // Clamp to valid range (up to audio duration)
+    const maxTime = audioEl.duration || Infinity;
+    const clampedTime = Math.max(contentOffset, Math.min(audioTime, maxTime));
 
     if (isFinite(clampedTime) && Math.abs(audioEl.currentTime - clampedTime) > 0.05) {
       audioEl.currentTime = clampedTime;
     }
 
     // Sync playback state
-    if (projectStore.isPlaying && relativeTime >= 0 && clampedTime < maxTime) {
+    if (projectStore.isPlaying && relativeTime >= 0 && audioTime < maxTime) {
       if (audioEl.paused) audioEl.play().catch(() => {});
     } else {
       if (!audioEl.paused) audioEl.pause();
@@ -149,7 +147,8 @@
   const currentCaption = $derived.by(() => {
     if (!showCaptions || parsedCaptions.length === 0) return '';
     const enterTime = enterTimeProp ?? 0;
-    const relativeTime = projectStore.currentTime - enterTime + mediaStartTime;
+    const contentOffset = contentOffsetProp ?? 0;
+    const relativeTime = projectStore.currentTime - enterTime + contentOffset;
     const active = parsedCaptions.find((c) => relativeTime >= c.start && relativeTime < c.end);
     return active?.text || '';
   });

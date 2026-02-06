@@ -130,6 +130,14 @@ export function mutateCreateLayer(
       layer.exitTime = input.exitTime;
     }
 
+    // Set content duration and offset if provided (for video/audio layers)
+    if (input.contentDuration !== undefined) {
+      layer.contentDuration = input.contentDuration;
+    }
+    if (input.contentOffset !== undefined) {
+      layer.contentOffset = input.contentOffset;
+    }
+
     // Mutate project
     ctx.project.layers.push(layer);
 
@@ -293,6 +301,14 @@ export function mutateEditLayer(ctx: MutationContext, input: EditLayerInput): Ed
     }
     if (input.updates.exitTime !== undefined) {
       layer.exitTime = Math.max(0, input.updates.exitTime);
+    }
+
+    // Update content duration and offset (for video/audio layers)
+    if (input.updates.contentDuration !== undefined) {
+      layer.contentDuration = Math.max(0, input.updates.contentDuration);
+    }
+    if (input.updates.contentOffset !== undefined) {
+      layer.contentOffset = Math.max(0, input.updates.contentOffset);
     }
 
     return {

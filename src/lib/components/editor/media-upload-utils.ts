@@ -12,13 +12,15 @@ export type MediaType = 'image' | 'video' | 'audio';
  * @param fileName The filename to use
  * @param mediaType The type of media (image, video, audio)
  * @param projectId Optional project ID for organizing uploads
+ * @param duration Optional duration in seconds (for video/audio)
  * @returns Promise resolving to upload result
  */
 export async function uploadMediaBlob(
   blob: Blob,
   fileName: string,
   mediaType: MediaType,
-  projectId?: string
+  projectId?: string,
+  duration?: number
 ): Promise<MediaCaptureResult> {
   const formData = new FormData();
   formData.append('file', blob, fileName);
@@ -42,7 +44,8 @@ export async function uploadMediaBlob(
     return {
       url: data.file.url,
       key: data.file.key,
-      fileName: data.file.originalName
+      fileName: data.file.originalName,
+      duration
     };
   }
 

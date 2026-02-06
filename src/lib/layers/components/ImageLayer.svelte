@@ -2,6 +2,8 @@
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
   import { Image } from '@lucide/svelte';
+  import { calculateCoverDimensions, ASPECT_RATIOS } from '$lib/utils/media';
+  import { projectStore } from '$lib/stores/project.svelte';
 
   /**
    * Schema for Image Layer custom properties
@@ -10,11 +12,35 @@
    */
   const schema = z.object({
     src: z.string().default('').describe('Image source URL or uploaded file URL'),
-    width: z.number().min(1).max(5000).default(400).describe('Width (px)'),
-    height: z.number().min(1).max(5000).default(300).describe('Height (px)'),
+    width: z
+      .number()
+      .min(1)
+      .max(5000)
+      .default(
+        () =>
+          calculateCoverDimensions(
+            projectStore.project.width,
+            projectStore.project.height,
+            ASPECT_RATIOS.IMAGE_DEFAULT
+          ).width
+      )
+      .describe('Width (px)'),
+    height: z
+      .number()
+      .min(1)
+      .max(5000)
+      .default(
+        () =>
+          calculateCoverDimensions(
+            projectStore.project.width,
+            projectStore.project.height,
+            ASPECT_RATIOS.IMAGE_DEFAULT
+          ).height
+      )
+      .describe('Height (px)'),
     objectFit: z
       .enum(['contain', 'cover', 'fill', 'none', 'scale-down'])
-      .default('contain')
+      .default('cover')
       .describe('Object fit mode'),
     /** The storage key if file was uploaded (used for cleanup) */
     fileKey: z.string().default('').describe('Storage key (for uploaded files)'),

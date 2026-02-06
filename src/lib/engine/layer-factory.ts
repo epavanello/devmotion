@@ -12,19 +12,6 @@ import { extractDefaultValues } from '$lib/layers/base';
 const defaultEasing: Easing = { type: 'ease-in-out' };
 
 /**
- * Options for creating a layer
- */
-interface CreateLayerOptions {
-  /** Initial position */
-  x?: number;
-  y?: number;
-  /** Enter time - when the layer becomes visible (seconds) */
-  enterTime?: number;
-  /** Exit time - when the layer becomes hidden (seconds) */
-  exitTime?: number;
-}
-
-/**
  * Create a new layer of the specified type
  * @param type - The layer type from the registry
  * @param propsOverrides - Optional props to override defaults
@@ -33,11 +20,9 @@ interface CreateLayerOptions {
 export function createLayer(
   type: LayerType,
   propsOverrides: Record<string, unknown> = {},
-  position: { x?: number; y?: number } | CreateLayerOptions = {}
+  position: { x?: number; y?: number } = {}
 ): Layer {
   const { x = 0, y = 0 } = position;
-  const enterTime = 'enterTime' in position ? position.enterTime : undefined;
-  const exitTime = 'exitTime' in position ? position.exitTime : undefined;
   const definition = getLayerDefinition(type);
 
   // Extract default values from the Zod schema
@@ -87,7 +72,8 @@ export function createLayer(
       ...defaultProps,
       ...propsOverrides
     },
-    ...(enterTime !== undefined ? { enterTime } : {}),
-    ...(exitTime !== undefined ? { exitTime } : {})
+    ...(type === 'video' || type === 'audio'
+      ? { contentDuration: 0, enterTime: 0, exitTime: 0, contentOffset: 0 }
+      : {})
   };
 }

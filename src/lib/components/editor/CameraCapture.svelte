@@ -18,7 +18,7 @@
   let { onCaptureComplete, projectId }: Props = $props();
 
   type State = 'idle' | 'preview' | 'review' | 'uploading';
-  let state = $state<State>('idle');
+  let cameraState = $state<State>('idle');
   let captureError = $state('');
   let mediaStream: MediaStream | null = $state(null);
   let facingMode = $state<'user' | 'environment'>('user');
@@ -40,19 +40,26 @@
         audio: false
       });
 
-      // Show preview
-      if (videoEl) {
-        videoEl.srcObject = mediaStream;
-      }
-
-      state = 'preview';
+      cameraState = 'preview';
+      // Note: srcObject is set in the $effect below after video element is rendered
     } catch (err) {
       const error = handleMediaError(err);
       captureError = error.message;
       console.error('Camera error:', err);
-      state = 'idle';
+      cameraState = 'idle';
     }
   }
+
+  // Reactively set srcObject when both video element and stream are ready
+  $effect(() => {
+    if (videoEl && mediaStream && cameraState === 'preview') {
+      videoEl.srcObject = mediaStream;
+      // Explicitly play to ensure preview shows (autoplay isn't always reliable)
+      videoEl.play().catch((err) => {
+        console.warn('Preview autoplay failed:', err);
+      });
+    }
+  });
 
   function capturePhoto() {
     if (!videoEl || !canvasEl) return;
@@ -78,7 +85,7 @@
       mediaStream = null;
 
       // Move to review state
-      state = 'review';
+      cameraState = 'review';
     } catch (err) {
       captureError = err instanceof Error ? err.message : 'Failed to capture photo';
       console.error('Capture error:', err);
@@ -88,7 +95,7 @@
   async function usePhoto() {
     if (!canvasEl) return;
 
-    state = 'uploading';
+    cameraState = 'uploading';
     captureError = '';
 
     try {
@@ -106,24 +113,24 @@
       onCaptureComplete(result);
 
       // Reset state
-      state = 'idle';
+      cameraState = 'idle';
       capturedImageUrl = '';
     } catch (err) {
       captureError = err instanceof Error ? err.message : 'Upload failed';
-      state = 'review'; // Stay in review to allow retry
+      cameraState = 'review'; // Stay in review to allow retry
     }
   }
 
   function retakePhoto() {
     capturedImageUrl = '';
-    state = 'idle';
+    cameraState = 'idle';
     startPreview();
   }
 
   function cancelPreview() {
     stopMediaStream(mediaStream);
     mediaStream = null;
-    state = 'idle';
+    cameraState = 'idle';
   }
 
   async function switchCamera() {
@@ -148,18 +155,17 @@
 </script>
 
 <div class="space-y-2">
-  {#if state === 'idle'}
+  {#if cameraState === 'idle'}
     <!-- Take photo button -->
     <Button variant="outline" size="sm" class="w-full text-xs" onclick={startPreview}>
       <Camera class="mr-1 size-3" />
       Take Photo
     </Button>
-  {:else if state === 'preview'}
+  {:else if cameraState === 'preview'}
     <!-- Camera preview -->
     <div class="rounded border-2 border-primary bg-black p-2">
       <!-- Video preview -->
       <div class="relative mb-2 overflow-hidden rounded">
-        <!-- svelte-ignore a11y_media_has_caption -->
         <video
           bind:this={videoEl}
           autoplay
@@ -192,7 +198,7 @@
         </Button>
       </div>
     </div>
-  {:else if state === 'review'}
+  {:else if cameraState === 'review'}
     <!-- Review captured photo -->
     <div class="rounded border-2 border-primary bg-black p-2">
       <!-- Captured image preview -->
@@ -217,7 +223,7 @@
         </Button>
       </div>
     </div>
-  {:else if state === 'uploading'}
+  {:else if cameraState === 'uploading'}
     <!-- Uploading -->
     <div class="rounded border bg-muted/30 p-3 text-center">
       <Loader2 class="mx-auto mb-2 size-6 animate-spin text-primary" />
