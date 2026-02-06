@@ -87,7 +87,7 @@ export function createLayer(
       ...defaultProps,
       ...propsOverrides
     },
-    enterTime: enterTime ?? 0,
-    exitTime
+    ...(enterTime !== undefined ? { enterTime } : {}),
+    ...(exitTime !== undefined ? { exitTime } : {})
   };
 }

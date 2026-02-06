@@ -35,7 +35,7 @@
 </script>
 
 <script lang="ts">
-  let { src, width, height, objectFit, fileKey, fileName }: Props = $props();
+  let { src, width, height, objectFit, fileKey: _fileKey, fileName }: Props = $props();
 </script>
 
 <div class="overflow-hidden" style:width="{width}px" style:height="{height}px">

@@ -168,13 +168,18 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
         audioTracks.forEach((track, i) => {
           const inputIndex = i + 1; // 0 is the video frame stream
           const trimStart = track.mediaStartTime;
+          const trimEnd = track.mediaEndTime > 0 ? track.mediaEndTime : undefined;
           const delay = Math.round(track.enterTime * 1000); // ms
           const vol = track.volume;
 
           // Trim and delay each audio track, then adjust volume
           let filter = `[${inputIndex}:a]`;
-          if (trimStart > 0) {
-            filter += `atrim=start=${trimStart},asetpts=PTS-STARTPTS,`;
+          if (trimStart > 0 || trimEnd) {
+            filter += `atrim=start=${trimStart}`;
+            if (trimEnd) {
+              filter += `:end=${trimEnd}`;
+            }
+            filter += ',asetpts=PTS-STARTPTS,';
           }
           if (delay > 0) {
             filter += `adelay=${delay}|${delay},`;

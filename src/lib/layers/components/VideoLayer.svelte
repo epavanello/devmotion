@@ -23,7 +23,15 @@
     /** Whether the video is muted */
     muted: z.boolean().default(false).describe('Mute audio'),
     /** Playback rate */
-    playbackRate: z.number().min(0.1).max(4).default(1).describe('Playback rate')
+    playbackRate: z.number().min(0.1).max(4).default(1).describe('Playback rate'),
+    /** The storage key if file was uploaded (used for cleanup) */
+    fileKey: z.string().default('').describe('Storage key (for uploaded files)'),
+    /** Original filename if uploaded */
+    fileName: z.string().default('').describe('Original filename'),
+    /** Layer ID - passed by LayerWrapper for time sync */
+    layerId: z.string().optional().describe('Layer ID (internal)'),
+    /** Enter time - passed by LayerWrapper for time sync */
+    enterTime: z.number().optional().describe('Enter time (internal)')
   });
 
   export const meta: LayerMeta = {
@@ -49,7 +57,11 @@
     mediaEndTime,
     volume,
     muted,
-    playbackRate
+    playbackRate,
+    fileKey: _fileKey,
+    fileName: _fileName,
+    layerId: _layerId,
+    enterTime: enterTimeProp
   }: Props = $props();
 
   let videoEl: HTMLVideoElement | undefined = $state();
@@ -59,12 +71,8 @@
     if (!videoEl || !src) return;
     const currentTime = projectStore.currentTime;
 
-    // Calculate the video's internal time based on the project timeline
-    // The layer's enterTime determines when the video starts playing
-    const layer = projectStore.project.layers.find(
-      (l) => l.type === 'video' && l.props.src === src
-    );
-    const enterTime = layer?.enterTime ?? 0;
+    // Use enterTime passed as prop or fallback to 0
+    const enterTime = enterTimeProp ?? 0;
     const relativeTime = currentTime - enterTime;
 
     // Apply media start offset (trimming)

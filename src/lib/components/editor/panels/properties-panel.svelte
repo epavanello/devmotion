@@ -46,6 +46,7 @@
   import ScrubInput from './scrub-input.svelte';
   import type { BackgroundValue } from '$lib/schemas/animation';
   import { Textarea } from '$lib/components/ui/textarea';
+  import FileUpload from '../FileUpload.svelte';
 
   const selectedLayer = $derived(projectStore.selectedLayer);
 
@@ -429,7 +430,27 @@
       </Button>
     </div>
 
-    {#if metadata.type === 'number'}
+    {#if metadata.name === 'src' && selectedLayer && (selectedLayer.type === 'image' || selectedLayer.type === 'video' || selectedLayer.type === 'audio')}
+      <!-- Special handling for media src properties with file upload -->
+      <FileUpload
+        value={typeof value === 'string' ? value : ''}
+        currentFileName={typeof selectedLayer.props.fileName === 'string'
+          ? selectedLayer.props.fileName
+          : ''}
+        mediaType={selectedLayer.type}
+        projectId={projectStore.project.id}
+        onUpload={(result) => {
+          updateLayerProps('src', result.url);
+          updateLayerProps('fileKey', result.key);
+          updateLayerProps('fileName', result.fileName);
+        }}
+        onRemove={() => {
+          updateLayerProps('src', '');
+          updateLayerProps('fileKey', '');
+          updateLayerProps('fileName', '');
+        }}
+      />
+    {:else if metadata.type === 'number'}
       <ScrubInput
         id={metadata.name}
         value={typeof value === 'number' ? value : 0}
@@ -563,7 +584,10 @@
                   <Label class="text-[10px] text-muted-foreground">End (s)</Label>
                   <ScrubInput
                     id="media-end"
-                    value={(selectedLayer.props.mediaEndTime as number) ?? 0}
+                    value={(selectedLayer.props.mediaEndTime as number) ??
+                      (selectedLayer.props.media?.duration as number) ??
+                      selectedLayer.exitTime ??
+                      projectStore.project.duration}
                     min={0}
                     step={0.1}
                     onchange={(v) => updateLayerProps('mediaEndTime', v)}

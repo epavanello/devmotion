@@ -26,6 +26,8 @@
     volume: z.number().min(0).max(1).default(1).describe('Volume (0-1)'),
     /** Whether audio is muted */
     muted: z.boolean().default(false).describe('Mute audio'),
+    /** Playback rate */
+    playbackRate: z.number().min(0.1).max(4).default(1).describe('Playback rate'),
     /** Visual style */
     waveformColor: z.string().default('#3b82f6').describe('Waveform color'),
     backgroundColor: z.string().default('#1e293b').describe('Background color'),
@@ -40,7 +42,15 @@
     /** Caption style */
     captionFontSize: z.number().min(8).max(120).default(24).describe('Caption font size'),
     captionColor: z.string().default('#ffffff').describe('Caption text color'),
-    captionBgColor: z.string().default('rgba(0,0,0,0.7)').describe('Caption background color')
+    captionBgColor: z.string().default('rgba(0,0,0,0.7)').describe('Caption background color'),
+    /** The storage key if file was uploaded (used for cleanup) */
+    fileKey: z.string().default('').describe('Storage key (for uploaded files)'),
+    /** Original filename if uploaded */
+    fileName: z.string().default('').describe('Original filename'),
+    /** Layer ID - passed by LayerWrapper for time sync */
+    layerId: z.string().optional().describe('Layer ID (internal)'),
+    /** Enter time - passed by LayerWrapper for time sync */
+    enterTime: z.number().optional().describe('Enter time (internal)')
   });
 
   export const meta: LayerMeta = {
@@ -67,13 +77,18 @@
     mediaEndTime,
     volume,
     muted,
+    playbackRate,
     waveformColor,
     backgroundColor,
     showCaptions,
     captionText,
     captionFontSize,
     captionColor,
-    captionBgColor
+    captionBgColor,
+    fileKey: _fileKey,
+    fileName: _fileName,
+    layerId: _layerId,
+    enterTime: enterTimeProp
   }: Props = $props();
 
   let audioEl: HTMLAudioElement | undefined = $state();
@@ -83,15 +98,12 @@
     if (!audioEl || !src) return;
     const currentTime = projectStore.currentTime;
 
-    // Find the layer to get enterTime
-    const layer = projectStore.project.layers.find(
-      (l) => l.type === 'audio' && l.props.src === src
-    );
-    const enterTime = layer?.enterTime ?? 0;
+    // Use enterTime passed as prop or fallback to 0
+    const enterTime = enterTimeProp ?? 0;
     const relativeTime = currentTime - enterTime;
 
-    // Apply media start offset
-    const audioTime = mediaStartTime + relativeTime;
+    // Apply media start offset and playback rate
+    const audioTime = mediaStartTime + relativeTime * playbackRate;
 
     // Clamp to valid range
     const maxTime = mediaEndTime > 0 ? mediaEndTime : audioEl.duration || Infinity;
@@ -109,11 +121,12 @@
     }
   });
 
-  // Sync volume/muted
+  // Sync volume/muted/playbackRate
   $effect(() => {
     if (!audioEl) return;
     audioEl.volume = volume;
     audioEl.muted = muted;
+    audioEl.playbackRate = playbackRate;
   });
 
   // Parse captions as timed segments: "0:00 - 0:05 | Hello world\n0:05 - 0:10 | Next line"
@@ -135,10 +148,7 @@
   // Current caption based on project time
   const currentCaption = $derived.by(() => {
     if (!showCaptions || parsedCaptions.length === 0) return '';
-    const layer = projectStore.project.layers.find(
-      (l) => l.type === 'audio' && l.props.src === src
-    );
-    const enterTime = layer?.enterTime ?? 0;
+    const enterTime = enterTimeProp ?? 0;
     const relativeTime = projectStore.currentTime - enterTime + mediaStartTime;
     const active = parsedCaptions.find((c) => relativeTime >= c.start && relativeTime < c.end);
     return active?.text || '';

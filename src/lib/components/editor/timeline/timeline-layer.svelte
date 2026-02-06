@@ -2,6 +2,7 @@
   import type { Layer, Keyframe } from '$lib/types/animation';
   import { projectStore } from '$lib/stores/project.svelte';
   import TimelineKeyframe from './timeline-keyframe.svelte';
+  import { onDestroy } from 'svelte';
 
   interface Props {
     layer: Layer;
@@ -128,6 +129,12 @@
     window.removeEventListener('mousemove', handleDragMove);
     window.removeEventListener('mouseup', handleDragEnd);
   }
+
+  // Clean up listeners on unmount
+  onDestroy(() => {
+    window.removeEventListener('mousemove', handleDragMove);
+    window.removeEventListener('mouseup', handleDragEnd);
+  });
 
   // Color for the duration bar based on layer type
   const barColor = $derived.by(() => {

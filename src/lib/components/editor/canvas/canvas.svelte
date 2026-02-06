@@ -249,6 +249,7 @@
               {@const { transform, style, customProps } = getLayerRenderData(layer)}
               {@const component = getLayerComponent(layer.type)}
               {@const isSelected = projectStore.selectedLayerId === layer.id}
+              {@const enhancedProps = { ...customProps, layerId: layer.id, enterTime }}
 
               <LayerWrapper
                 id={layer.id}
@@ -259,7 +260,7 @@
                 {transform}
                 {style}
                 {component}
-                {customProps}
+                customProps={enhancedProps}
               />
             {/if}
           {/each}

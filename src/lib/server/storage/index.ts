@@ -161,14 +161,16 @@ export async function uploadFile(
     })
   );
 
-  // Build public URL
+  // Build URL - use proxy endpoint for private buckets, direct URL for public buckets
   let url: string;
   if (config.publicUrl) {
+    // Custom public URL (e.g., CloudFront, custom domain)
     url = `${config.publicUrl}/${key}`;
-  } else if (config.endpoint) {
-    url = `${config.endpoint}/${config.bucket}/${key}`;
   } else {
-    url = `https://${config.bucket}.s3.${config.region}.amazonaws.com/${key}`;
+    // Use proxy endpoint that generates presigned URLs for private buckets
+    // This allows secure access without making the bucket public
+    const encodedKey = encodeURIComponent(key);
+    url = `/api/upload/${encodedKey}`;
   }
 
   return {
@@ -189,12 +191,25 @@ export async function getSignedFileUrl(key: string, expiresIn = 3600): Promise<s
   const config = getConfig();
   const client = getClient();
 
-  const command = new GetObjectCommand({
-    Bucket: config.bucket,
-    Key: key
+  console.log('Generating presigned URL for:', {
+    bucket: config.bucket,
+    key,
+    region: config.region,
+    endpoint: config.endpoint
   });
 
-  return getSignedUrl(client, command, { expiresIn });
+  try {
+    const command = new GetObjectCommand({
+      Bucket: config.bucket,
+      Key: key
+    });
+
+    const signedUrl = await getSignedUrl(client, command, { expiresIn });
+    return signedUrl;
+  } catch (err) {
+    console.error('Error generating presigned URL:', err);
+    throw err;
+  }
 }
 
 /**
@@ -227,8 +242,24 @@ export async function fileExists(key: string): Promise<boolean> {
       })
     );
     return true;
-  } catch {
-    return false;
+  } catch (err) {
+    // Only return false for NotFound errors, rethrow others
+    if (err && typeof err === 'object' && 'name' in err && err.name === 'NotFound') {
+      return false;
+    }
+    if (
+      err &&
+      typeof err === 'object' &&
+      '$metadata' in err &&
+      err.$metadata &&
+      typeof err.$metadata === 'object' &&
+      'httpStatusCode' in err.$metadata &&
+      err.$metadata.httpStatusCode === 404
+    ) {
+      return false;
+    }
+    // Re-throw for other errors (network, auth, throttling, etc.)
+    throw err;
   }
 }
 

@@ -15,10 +15,23 @@ import {
   type MediaType
 } from '$lib/server/storage';
 
-export const POST: RequestHandler = async ({ request }) => {
+const MAX_REQUEST_SIZE = 100 * 1024 * 1024; // 100MB
+
+export const POST: RequestHandler = async ({ request, locals }) => {
+  // Check authentication
+  if (!locals.user?.id) {
+    error(401, 'Unauthorized');
+  }
+
   // Check if storage is configured
   if (!isStorageConfigured()) {
     error(503, 'File storage is not configured. Set S3 environment variables.');
+  }
+
+  // Enforce size limit
+  const contentLength = request.headers.get('content-length');
+  if (contentLength && parseInt(contentLength, 10) > MAX_REQUEST_SIZE) {
+    error(413, 'Payload Too Large');
   }
 
   try {
@@ -37,8 +50,20 @@ export const POST: RequestHandler = async ({ request }) => {
       error(400, 'No file provided');
     }
 
-    // Detect media type from MIME type
-    const mediaType = (mediaTypeHint as MediaType) || detectMediaType(file.type);
+    // Validate and use mediaTypeHint if provided, otherwise detect from MIME
+    let mediaType: MediaType | null = null;
+    if (mediaTypeHint) {
+      // Validate that mediaTypeHint is a valid MediaType
+      const detectedType = detectMediaType(file.type);
+      if (mediaTypeHint === 'image' || mediaTypeHint === 'video' || mediaTypeHint === 'audio') {
+        mediaType = mediaTypeHint as MediaType;
+      } else {
+        mediaType = detectedType;
+      }
+    } else {
+      mediaType = detectMediaType(file.type);
+    }
+
     if (!mediaType) {
       error(400, `Unsupported file type: ${file.type}`);
     }

@@ -9,6 +9,14 @@ import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 import OpenAI from 'openai';
+import { z } from 'zod';
+
+/** Input validation schema */
+const CaptionRequestSchema = z.object({
+  audioUrl: z.string().url(),
+  language: z.string().optional(),
+  style: z.enum(['subtitle', 'caption', 'lyrics']).optional()
+});
 
 /** Format seconds as M:SS.d (e.g., 0:03.5, 1:23.0) */
 function formatTime(seconds: number): string {
@@ -25,17 +33,22 @@ function formatTime(seconds: number): string {
  * Accepts an audio URL and generates timed captions using OpenAI Whisper.
  * The audio is downloaded and sent to Whisper for real speech-to-text transcription.
  */
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+  // Check authentication
+  if (!locals.user?.id) {
+    error(401, 'Unauthorized');
+  }
+
   try {
     const body = await request.json();
-    const { audioUrl, language } = body as {
-      audioUrl: string;
-      language?: string;
-    };
 
-    if (!audioUrl) {
-      error(400, 'audioUrl is required');
+    // Validate request body
+    const result = CaptionRequestSchema.safeParse(body);
+    if (!result.success) {
+      error(400, `Invalid request: ${result.error.message}`);
     }
+
+    const { audioUrl, language } = result.data;
 
     const apiKey = env.OPENAI_API_KEY;
     if (!apiKey) {

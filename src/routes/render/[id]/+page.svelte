@@ -86,20 +86,25 @@
   <!-- Layers -->
   <div class="layers-container">
     {#each project.layers as layer (layer.id)}
-      {@const { transform, style, customProps } = getLayerRenderData(layer)}
-      {@const component = getLayerComponent(layer.type)}
+      {@const enterTime = layer.enterTime ?? 0}
+      {@const exitTime = layer.exitTime ?? project.duration}
+      {@const isInTimeRange = currentTime >= enterTime && currentTime <= exitTime}
+      {#if isInTimeRange}
+        {@const { transform, style, customProps } = getLayerRenderData(layer)}
+        {@const component = getLayerComponent(layer.type)}
 
-      <LayerWrapper
-        id={layer.id}
-        name={layer.name}
-        visible={layer.visible}
-        locked={layer.locked}
-        selected={false}
-        {transform}
-        {style}
-        {component}
-        {customProps}
-      />
+        <LayerWrapper
+          id={layer.id}
+          name={layer.name}
+          visible={layer.visible}
+          locked={layer.locked}
+          selected={false}
+          {transform}
+          {style}
+          {component}
+          {customProps}
+        />
+      {/if}
     {/each}
   </div>
 </div>

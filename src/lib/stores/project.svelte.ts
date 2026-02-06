@@ -148,7 +148,22 @@ class ProjectStore {
     this.project.layers = [...this.project.layers, layer];
   }
 
-  removeLayer(layerId: string) {
+  async removeLayer(layerId: string) {
+    // Find the layer to check if it has uploaded files to clean up
+    const layer = this.project.layers.find((l) => l.id === layerId);
+
+    // Clean up uploaded files if the layer has a fileKey
+    if (layer && layer.props.fileKey && typeof layer.props.fileKey === 'string') {
+      try {
+        await fetch(`/api/upload/${encodeURIComponent(layer.props.fileKey as string)}`, {
+          method: 'DELETE'
+        });
+      } catch (err) {
+        console.warn('Failed to delete file from storage:', err);
+        // Continue with layer deletion even if file cleanup fails
+      }
+    }
+
     this.project.layers = this.project.layers.filter((l) => l.id !== layerId);
     if (this.selectedLayerId === layerId) {
       this.selectedLayerId = null;
@@ -382,37 +397,52 @@ class ProjectStore {
    * Set the enter time for a layer (when it becomes visible)
    */
   setLayerEnterTime(layerId: string, enterTime: number) {
-    this.project.layers = this.project.layers.map((layer) =>
-      layer.id === layerId
-        ? { ...layer, enterTime: Math.max(0, Math.min(enterTime, this.project.duration)) }
-        : layer
-    );
+    this.project.layers = this.project.layers.map((layer) => {
+      if (layer.id === layerId) {
+        const exitTime = layer.exitTime ?? this.project.duration;
+        const clampedEnterTime = Math.max(0, Math.min(enterTime, this.project.duration));
+        // Ensure enter time is before exit time
+        const validEnterTime = Math.min(clampedEnterTime, exitTime - 0.1);
+        return { ...layer, enterTime: validEnterTime };
+      }
+      return layer;
+    });
   }
 
   /**
    * Set the exit time for a layer (when it becomes hidden)
    */
   setLayerExitTime(layerId: string, exitTime: number) {
-    this.project.layers = this.project.layers.map((layer) =>
-      layer.id === layerId
-        ? { ...layer, exitTime: Math.max(0, Math.min(exitTime, this.project.duration)) }
-        : layer
-    );
+    this.project.layers = this.project.layers.map((layer) => {
+      if (layer.id === layerId) {
+        const enterTime = layer.enterTime ?? 0;
+        const clampedExitTime = Math.max(0, Math.min(exitTime, this.project.duration));
+        // Ensure exit time is after enter time
+        const validExitTime = Math.max(clampedExitTime, enterTime + 0.1);
+        return { ...layer, exitTime: validExitTime };
+      }
+      return layer;
+    });
   }
 
   /**
    * Set both enter and exit times for a layer
    */
   setLayerTimeRange(layerId: string, enterTime: number, exitTime: number) {
-    this.project.layers = this.project.layers.map((layer) =>
-      layer.id === layerId
-        ? {
-            ...layer,
-            enterTime: Math.max(0, Math.min(enterTime, this.project.duration)),
-            exitTime: Math.max(0, Math.min(exitTime, this.project.duration))
-          }
-        : layer
-    );
+    this.project.layers = this.project.layers.map((layer) => {
+      if (layer.id === layerId) {
+        const clampedEnterTime = Math.max(0, Math.min(enterTime, this.project.duration));
+        const clampedExitTime = Math.max(0, Math.min(exitTime, this.project.duration));
+        // Ensure exit time is after enter time
+        const validExitTime = Math.max(clampedExitTime, clampedEnterTime + 0.1);
+        return {
+          ...layer,
+          enterTime: clampedEnterTime,
+          exitTime: validExitTime
+        };
+      }
+      return layer;
+    });
   }
 
   // ========================================
@@ -444,11 +474,11 @@ class ProjectStore {
     // Create the second half as a new layer
     const secondHalf: Layer = {
       ...JSON.parse(JSON.stringify(layer)),
-      id: layer.id + '_split',
+      id: nanoid(),
       name: `${layer.name} (2)`,
       enterTime: time,
       exitTime: exitTime,
-      keyframes: layer.keyframes.filter((k) => k.time >= time).map((k) => ({ ...k }))
+      keyframes: layer.keyframes.filter((k) => k.time > time).map((k) => ({ ...k }))
     };
 
     if (isMediaLayer && mediaDuration > 0) {

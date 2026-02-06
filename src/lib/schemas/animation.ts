@@ -161,12 +161,11 @@ export const LayerSchema = z.object({
   props: z.record(z.string(), z.unknown()),
   /**
    * Enter time - when this layer becomes visible in the timeline (seconds).
-   * Defaults to 0 (visible from start).
+   * If undefined, the layer is visible from the start.
    */
-  enterTime: z.number().min(0).default(0).optional(),
+  enterTime: z.number().min(0).optional(),
   /**
    * Exit time - when this layer stops being visible in the timeline (seconds).
-   * Defaults to project duration (visible until end).
    * If undefined, the layer is visible until the project ends.
    */
   exitTime: z.number().min(0).optional()
