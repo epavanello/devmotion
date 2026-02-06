@@ -243,7 +243,8 @@
           {#each projectStore.project.layers as layer (layer.id)}
             {@const enterTime = layer.enterTime ?? 0}
             {@const exitTime = layer.exitTime ?? projectStore.project.duration}
-            {@const isInTimeRange = projectStore.currentTime >= enterTime && projectStore.currentTime <= exitTime}
+            {@const isInTimeRange =
+              projectStore.currentTime >= enterTime && projectStore.currentTime <= exitTime}
             {#if isInTimeRange}
               {@const { transform, style, customProps } = getLayerRenderData(layer)}
               {@const component = getLayerComponent(layer.type)}

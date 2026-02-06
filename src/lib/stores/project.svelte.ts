@@ -448,15 +448,15 @@ class ProjectStore {
       name: `${layer.name} (2)`,
       enterTime: time,
       exitTime: exitTime,
-      keyframes: layer.keyframes
-        .filter((k) => k.time >= time)
-        .map((k) => ({ ...k }))
+      keyframes: layer.keyframes.filter((k) => k.time >= time).map((k) => ({ ...k }))
     };
 
     if (isMediaLayer && mediaDuration > 0) {
-      const splitMediaTime = mediaStartTime + (mediaEndTime > 0
-        ? (mediaEndTime - mediaStartTime) * splitRatio
-        : mediaDuration * splitRatio);
+      const splitMediaTime =
+        mediaStartTime +
+        (mediaEndTime > 0
+          ? (mediaEndTime - mediaStartTime) * splitRatio
+          : mediaDuration * splitRatio);
       secondHalf.props = {
         ...secondHalf.props,
         mediaStartTime: splitMediaTime

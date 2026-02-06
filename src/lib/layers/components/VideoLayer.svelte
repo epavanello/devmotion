@@ -107,9 +107,7 @@
       playsinline
     ></video>
   {:else}
-    <div
-      class="flex h-full w-full items-center justify-center bg-gray-800 text-sm text-gray-400"
-    >
+    <div class="flex h-full w-full items-center justify-center bg-gray-800 text-sm text-gray-400">
       No video source
     </div>
   {/if}

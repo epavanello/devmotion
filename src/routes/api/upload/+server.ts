@@ -15,9 +15,7 @@ import {
   type MediaType
 } from '$lib/server/storage';
 
-const MAX_REQUEST_SIZE = 500 * 1024 * 1024; // 500MB total
-
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST: RequestHandler = async ({ request }) => {
   // Check if storage is configured
   if (!isStorageConfigured()) {
     error(503, 'File storage is not configured. Set S3 environment variables.');

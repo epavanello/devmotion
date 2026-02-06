@@ -48,8 +48,8 @@ function extractAudioTracks(projectData: ProjectData): AudioTrackInfo[] {
     if ((layer.type === 'video' || layer.type === 'audio') && layer.props.src) {
       const muted =
         layer.type === 'video'
-          ? (layer.props.muted as boolean) ?? false
-          : (layer.props.muted as boolean) ?? false;
+          ? ((layer.props.muted as boolean) ?? false)
+          : ((layer.props.muted as boolean) ?? false);
 
       if (!muted) {
         tracks.push({
@@ -143,10 +143,7 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
       // Initialize FFmpeg
       const frameStream = new PassThrough();
 
-      ffmpegCommand = ffmpeg()
-        .input(frameStream)
-        .inputFormat('image2pipe')
-        .inputFPS(actualFps);
+      ffmpegCommand = ffmpeg().input(frameStream).inputFormat('image2pipe').inputFPS(actualFps);
 
       // Add audio tracks as additional inputs
       for (const track of audioTracks) {

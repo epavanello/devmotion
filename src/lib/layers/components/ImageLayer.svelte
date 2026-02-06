@@ -27,7 +27,8 @@
     type: 'image',
     label: 'Image',
     icon: Image,
-    description: 'Display images from URL or uploaded files with configurable size and object-fit modes'
+    description:
+      'Display images from URL or uploaded files with configurable size and object-fit modes'
   };
 
   type Props = z.infer<typeof schema>;
@@ -41,9 +42,7 @@
   {#if src}
     <img {src} alt={fileName || ''} class="h-full w-full" style:object-fit={objectFit} />
   {:else}
-    <div
-      class="flex h-full w-full items-center justify-center bg-gray-800 text-sm text-gray-400"
-    >
+    <div class="flex h-full w-full items-center justify-center bg-gray-800 text-sm text-gray-400">
       No image source
     </div>
   {/if}

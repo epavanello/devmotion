@@ -343,6 +343,45 @@
     value: unknown;
   }
 
+  // Caption generation state
+  let isGeneratingCaptions = $state(false);
+  let captionError = $state('');
+
+  async function generateCaptions() {
+    if (!selectedLayer || selectedLayer.type !== 'audio') return;
+    const audioUrl = selectedLayer.props.src as string;
+    if (!audioUrl) {
+      captionError = 'No audio source URL set';
+      return;
+    }
+
+    isGeneratingCaptions = true;
+    captionError = '';
+
+    try {
+      const res = await fetch('/api/captions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audioUrl })
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.message || `Failed (${res.status})`);
+      }
+
+      const data = await res.json();
+      if (data.success && data.captions) {
+        updateLayerProps('captionText', data.captions);
+        updateLayerProps('showCaptions', true);
+      }
+    } catch (err) {
+      captionError = err instanceof Error ? err.message : 'Unknown error';
+    } finally {
+      isGeneratingCaptions = false;
+    }
+  }
+
   // Preset application state
   let selectedPresetId = $state<string>('');
   let presetDuration = $state<number>(1);
@@ -767,6 +806,22 @@
                 value: currentAnimatedProps[propMetadata.name]
               })}
             {/each}
+
+            {#if selectedLayer?.type === 'audio' && selectedLayer.props.src}
+              <Button
+                variant="outline"
+                size="sm"
+                class="w-full text-xs"
+                disabled={isGeneratingCaptions}
+                onclick={generateCaptions}
+              >
+                <Sparkles class="mr-1 size-3" />
+                {isGeneratingCaptions ? 'Generating...' : 'Generate Captions (AI)'}
+              </Button>
+              {#if captionError}
+                <p class="text-xs text-destructive">{captionError}</p>
+              {/if}
+            {/if}
           </div>
         {/if}
 

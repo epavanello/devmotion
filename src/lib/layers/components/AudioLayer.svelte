@@ -1,6 +1,7 @@
 <script module lang="ts">
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
+  import { fieldRegistry } from '../base';
   import { Music } from '@lucide/svelte';
 
   /**
@@ -31,7 +32,11 @@
     /** Show captions overlay */
     showCaptions: z.boolean().default(false).describe('Show captions'),
     /** Caption text - can be set by AI transcription */
-    captionText: z.string().default('').describe('Caption/subtitle text'),
+    captionText: z
+      .string()
+      .default('')
+      .describe('Caption/subtitle text')
+      .register(fieldRegistry, { widget: 'textarea' }),
     /** Caption style */
     captionFontSize: z.number().min(8).max(120).default(24).describe('Caption font size'),
     captionColor: z.string().default('#ffffff').describe('Caption text color'),
@@ -116,9 +121,7 @@
     if (!captionText) return [];
     const lines = captionText.split('\n').filter((l) => l.trim());
     return lines.map((line) => {
-      const match = line.match(
-        /(\d+):(\d+(?:\.\d+)?)\s*-\s*(\d+):(\d+(?:\.\d+)?)\s*\|\s*(.+)/
-      );
+      const match = line.match(/(\d+):(\d+(?:\.\d+)?)\s*-\s*(\d+):(\d+(?:\.\d+)?)\s*\|\s*(.+)/);
       if (match) {
         const start = parseInt(match[1]) * 60 + parseFloat(match[2]);
         const end = parseInt(match[3]) * 60 + parseFloat(match[4]);
@@ -162,7 +165,7 @@
     style:background-color={backgroundColor}
     style:padding="4px"
   >
-    {#each Array(barCount) as _, i}
+    {#each Array(barCount) as _, i (i)}
       {@const barHeight = 20 + Math.sin(i * 0.3) * 30 + Math.cos(i * 0.7) * 20}
       <div
         class="flex-1 rounded-t-sm"
