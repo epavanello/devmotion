@@ -374,6 +374,150 @@ class ProjectStore {
     return this.project.layers.find((l) => l.id === this.selectedLayerId) || null;
   }
 
+  // ========================================
+  // Enter/Exit Time Operations
+  // ========================================
+
+  /**
+   * Set the enter time for a layer (when it becomes visible)
+   */
+  setLayerEnterTime(layerId: string, enterTime: number) {
+    this.project.layers = this.project.layers.map((layer) =>
+      layer.id === layerId
+        ? { ...layer, enterTime: Math.max(0, Math.min(enterTime, this.project.duration)) }
+        : layer
+    );
+  }
+
+  /**
+   * Set the exit time for a layer (when it becomes hidden)
+   */
+  setLayerExitTime(layerId: string, exitTime: number) {
+    this.project.layers = this.project.layers.map((layer) =>
+      layer.id === layerId
+        ? { ...layer, exitTime: Math.max(0, Math.min(exitTime, this.project.duration)) }
+        : layer
+    );
+  }
+
+  /**
+   * Set both enter and exit times for a layer
+   */
+  setLayerTimeRange(layerId: string, enterTime: number, exitTime: number) {
+    this.project.layers = this.project.layers.map((layer) =>
+      layer.id === layerId
+        ? {
+            ...layer,
+            enterTime: Math.max(0, Math.min(enterTime, this.project.duration)),
+            exitTime: Math.max(0, Math.min(exitTime, this.project.duration))
+          }
+        : layer
+    );
+  }
+
+  // ========================================
+  // Media Layer Operations (Split/Crop/Resize)
+  // ========================================
+
+  /**
+   * Split a media layer (video/audio) at the current time
+   * Creates two layers from one, each with appropriate time ranges
+   */
+  splitLayer(layerId: string, splitTime?: number) {
+    const layer = this.project.layers.find((l) => l.id === layerId);
+    if (!layer) return;
+
+    const time = splitTime ?? this.currentTime;
+    const enterTime = layer.enterTime ?? 0;
+    const exitTime = layer.exitTime ?? this.project.duration;
+
+    // Don't split if time is outside the layer's range
+    if (time <= enterTime || time >= exitTime) return;
+
+    // For media layers, adjust mediaStartTime/mediaEndTime too
+    const isMediaLayer = layer.type === 'video' || layer.type === 'audio';
+    const mediaStartTime = (layer.props.mediaStartTime as number) ?? 0;
+    const mediaEndTime = (layer.props.mediaEndTime as number) ?? 0;
+    const mediaDuration = exitTime - enterTime;
+    const splitRatio = (time - enterTime) / mediaDuration;
+
+    // Create the second half as a new layer
+    const secondHalf: Layer = {
+      ...JSON.parse(JSON.stringify(layer)),
+      id: layer.id + '_split',
+      name: `${layer.name} (2)`,
+      enterTime: time,
+      exitTime: exitTime,
+      keyframes: layer.keyframes
+        .filter((k) => k.time >= time)
+        .map((k) => ({ ...k }))
+    };
+
+    if (isMediaLayer && mediaDuration > 0) {
+      const splitMediaTime = mediaStartTime + (mediaEndTime > 0
+        ? (mediaEndTime - mediaStartTime) * splitRatio
+        : mediaDuration * splitRatio);
+      secondHalf.props = {
+        ...secondHalf.props,
+        mediaStartTime: splitMediaTime
+      };
+    }
+
+    // Update the first half (original layer)
+    this.project.layers = this.project.layers.map((l) => {
+      if (l.id === layerId) {
+        const updated = {
+          ...l,
+          exitTime: time,
+          keyframes: l.keyframes.filter((k) => k.time <= time)
+        };
+        if (isMediaLayer && mediaEndTime > 0 && mediaDuration > 0) {
+          const splitMediaTime = mediaStartTime + (mediaEndTime - mediaStartTime) * splitRatio;
+          updated.props = { ...updated.props, mediaEndTime: splitMediaTime };
+        }
+        return updated;
+      }
+      return l;
+    });
+
+    // Add the second half after the original
+    const insertIndex = this.project.layers.findIndex((l) => l.id === layerId) + 1;
+    const layers = [...this.project.layers];
+    layers.splice(insertIndex, 0, secondHalf);
+    this.project.layers = layers;
+  }
+
+  /**
+   * Trim/crop a media layer's source time range
+   */
+  trimMediaLayer(layerId: string, mediaStartTime: number, mediaEndTime: number) {
+    this.project.layers = this.project.layers.map((layer) => {
+      if (layer.id === layerId && (layer.type === 'video' || layer.type === 'audio')) {
+        return {
+          ...layer,
+          props: {
+            ...layer.props,
+            mediaStartTime: Math.max(0, mediaStartTime),
+            mediaEndTime: mediaEndTime > 0 ? mediaEndTime : 0
+          }
+        };
+      }
+      return layer;
+    });
+  }
+
+  /**
+   * Check if a layer is visible at the current time based on enter/exit times
+   */
+  isLayerVisibleAtTime(layerId: string, time?: number): boolean {
+    const layer = this.project.layers.find((l) => l.id === layerId);
+    if (!layer) return false;
+    const t = time ?? this.currentTime;
+    const enterTime = layer.enterTime ?? 0;
+    const exitTime = layer.exitTime ?? this.project.duration;
+    return t >= enterTime && t <= exitTime;
+  }
+
   /**
    * Pre-calculate all frames for optimized recording
    * Uses the same rendering functions as canvas for consistency

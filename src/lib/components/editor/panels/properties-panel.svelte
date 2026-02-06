@@ -477,6 +477,74 @@
 
         <Separator />
 
+        <!-- Enter/Exit Time -->
+        <div class="space-y-3">
+          <Label class="font-semibold">Time Range</Label>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="space-y-1">
+              <Label class="text-xs text-muted-foreground">Enter (s)</Label>
+              <ScrubInput
+                id="enter-time"
+                value={selectedLayer.enterTime ?? 0}
+                min={0}
+                max={projectStore.project.duration}
+                step={0.1}
+                onchange={(v) => projectStore.setLayerEnterTime(selectedLayer.id, v)}
+              />
+            </div>
+            <div class="space-y-1">
+              <Label class="text-xs text-muted-foreground">Exit (s)</Label>
+              <ScrubInput
+                id="exit-time"
+                value={selectedLayer.exitTime ?? projectStore.project.duration}
+                min={0}
+                max={projectStore.project.duration}
+                step={0.1}
+                onchange={(v) => projectStore.setLayerExitTime(selectedLayer.id, v)}
+              />
+            </div>
+          </div>
+
+          <!-- Media layer controls -->
+          {#if selectedLayer.type === 'video' || selectedLayer.type === 'audio'}
+            <div class="space-y-2">
+              <Label class="text-xs text-muted-foreground">Media Trim</Label>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="space-y-1">
+                  <Label class="text-[10px] text-muted-foreground">Start (s)</Label>
+                  <ScrubInput
+                    id="media-start"
+                    value={(selectedLayer.props.mediaStartTime as number) ?? 0}
+                    min={0}
+                    step={0.1}
+                    onchange={(v) => updateLayerProps('mediaStartTime', v)}
+                  />
+                </div>
+                <div class="space-y-1">
+                  <Label class="text-[10px] text-muted-foreground">End (s)</Label>
+                  <ScrubInput
+                    id="media-end"
+                    value={(selectedLayer.props.mediaEndTime as number) ?? 0}
+                    min={0}
+                    step={0.1}
+                    onchange={(v) => updateLayerProps('mediaEndTime', v)}
+                  />
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                class="w-full text-xs"
+                onclick={() => projectStore.splitLayer(selectedLayer.id)}
+              >
+                Split at Playhead
+              </Button>
+            </div>
+          {/if}
+        </div>
+
+        <Separator />
+
         <!-- Transform -->
         <div class="space-y-3">
           <Label class="font-semibold">Transform</Label>

@@ -54,7 +54,7 @@ export const POST: RequestHandler = async ({ params, request, url, locals }) => 
   const baseUrl = PUBLIC_BASE_URL || 'http://localhost:5173';
 
   try {
-    // Start rendering and get stream
+    // Start rendering and get stream (include project data for audio merging)
     const videoStream = await renderProjectToVideoStream({
       projectId: id,
       renderId,
@@ -62,7 +62,8 @@ export const POST: RequestHandler = async ({ params, request, url, locals }) => 
       height: config.height,
       fps: config.fps,
       duration: config.duration,
-      baseUrl
+      baseUrl,
+      projectData
     });
 
     // Return the stream as response

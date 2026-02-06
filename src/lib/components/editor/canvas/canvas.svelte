@@ -241,21 +241,26 @@
           style:pointer-events={projectStore.isRecording ? 'none' : undefined}
         >
           {#each projectStore.project.layers as layer (layer.id)}
-            {@const { transform, style, customProps } = getLayerRenderData(layer)}
-            {@const component = getLayerComponent(layer.type)}
-            {@const isSelected = projectStore.selectedLayerId === layer.id}
+            {@const enterTime = layer.enterTime ?? 0}
+            {@const exitTime = layer.exitTime ?? projectStore.project.duration}
+            {@const isInTimeRange = projectStore.currentTime >= enterTime && projectStore.currentTime <= exitTime}
+            {#if isInTimeRange}
+              {@const { transform, style, customProps } = getLayerRenderData(layer)}
+              {@const component = getLayerComponent(layer.type)}
+              {@const isSelected = projectStore.selectedLayerId === layer.id}
 
-            <LayerWrapper
-              id={layer.id}
-              name={layer.name}
-              visible={layer.visible}
-              locked={layer.locked}
-              selected={isSelected && !projectStore.isRecording}
-              {transform}
-              {style}
-              {component}
-              {customProps}
-            />
+              <LayerWrapper
+                id={layer.id}
+                name={layer.name}
+                visible={layer.visible}
+                locked={layer.locked}
+                selected={isSelected && !projectStore.isRecording}
+                {transform}
+                {style}
+                {component}
+                {customProps}
+              />
+            {/if}
           {/each}
         </div>
 

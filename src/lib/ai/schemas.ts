@@ -78,7 +78,9 @@ function getKeyPropsForLayerType(type: string): string[] {
     mouse: ['pointerType', 'size'],
     phone: ['url'],
     browser: ['url'],
-    html: ['html', 'css']
+    html: ['html', 'css'],
+    video: ['src', 'width', 'height', 'mediaStartTime', 'mediaEndTime', 'volume'],
+    audio: ['src', 'label', 'volume', 'mediaStartTime', 'mediaEndTime', 'showCaptions']
   };
   return keyProps[type] || [];
 }
@@ -100,7 +102,9 @@ function getExampleProps(type: string): string {
     mouse: '"pointerType": "arrow", "size": 32',
     phone: '"url": "https://example.com"',
     browser: '"url": "https://example.com"',
-    html: '"html": "<div>Content</div>", "css": ".container { color: white; }"'
+    html: '"html": "<div>Content</div>", "css": ".container { color: white; }"',
+    video: '"src": "https://example.com/video.mp4", "width": 640, "height": 360, "volume": 1',
+    audio: '"src": "https://example.com/audio.mp3", "label": "Background Music", "volume": 0.8'
   };
   return examples[type] || '';
 }
@@ -133,7 +137,17 @@ function generateLayerCreationTools(): Record<string, Tool> {
       name: z.string().optional().describe('Layer name for identification'),
       position: PositionSchema,
       props: definition.schema.describe(`Properties for ${definition.label} layer`),
-      animation: AnimationSchema
+      animation: AnimationSchema,
+      enterTime: z
+        .number()
+        .min(0)
+        .optional()
+        .describe('When layer enters the timeline (seconds, default: 0)'),
+      exitTime: z
+        .number()
+        .min(0)
+        .optional()
+        .describe('When layer exits the timeline (seconds, default: project duration)')
     });
 
     const description = `Create a ${definition.label} layer. ${definition.description}
@@ -171,6 +185,10 @@ export interface CreateLayerInput {
     startTime?: number;
     duration?: number;
   };
+  /** When the layer enters the timeline (seconds) */
+  enterTime?: number;
+  /** When the layer exits the timeline (seconds) */
+  exitTime?: number;
 }
 
 export interface CreateLayerOutput {
