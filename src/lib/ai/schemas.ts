@@ -10,7 +10,6 @@ import { getPresetIds } from '$lib/engine/presets';
 import { tool, type InferUITools, type Tool } from 'ai';
 import { layerRegistry, getAvailableLayerTypes, type LayerType } from '$lib/layers/registry';
 import { extractDefaultValues } from '$lib/layers/base';
-import { BRAND_COLORS } from '$lib/constants/branding';
 
 // ============================================
 // Helper Functions
@@ -33,84 +32,53 @@ export function getLayerTypeFromToolName(toolName: string): string | null {
 }
 
 // ============================================
+// Schema Introspection
+// ============================================
+
+/**
+ * Maximum number of key props to show in tool descriptions.
+ * Layer authors should place the most important fields first in their schema.
+ */
+const MAX_KEY_PROPS = 4;
+
+/**
+ * Extract key property names from a Zod object schema.
+ * Takes the first N fields from the schema shape, relying on layer authors
+ * ordering the most important properties first.
+ */
+function extractKeyProps(schema: z.ZodObject<z.ZodRawShape>): string[] {
+  return Object.keys(schema.shape).slice(0, MAX_KEY_PROPS);
+}
+
+// ============================================
 // Shared Schemas for Layer Creation
 // ============================================
 
 const PositionSchema = z
   .object({
-    x: z.number().default(0).describe('X position (0=center)'),
-    y: z.number().default(0).describe('Y position (0=center)')
+    x: z.number().default(0).describe('X position (0 = center)'),
+    y: z.number().default(0).describe('Y position (0 = center)')
   })
   .optional()
-  .describe('Position on canvas - ALWAYS specify to avoid stacking at center');
+  .describe('Position on canvas. IMPORTANT: always specify to avoid stacking at center');
 
 const AnimationSchema = z
   .object({
-    preset: z
-      .string()
-      .describe(
-        'Animation preset ID (REQUIRED): fade-in, slide-in-left, scale-in, pop, bounce-in, zoom-in, etc.'
-      ),
+    preset: z.string().describe('Animation preset: ' + getPresetIds().join(', ')),
     startTime: z.number().min(0).default(0).describe('Start time in seconds'),
     duration: z.number().min(0.1).default(0.5).describe('Duration in seconds')
   })
   .optional()
-  .describe('Animation to apply immediately when layer is created');
+  .describe('Animation to apply on creation. Every layer should be animated');
 
 // ============================================
 // Layer Creation Tool Generator
 // ============================================
 
 /**
- * Get key props for each layer type for the description
- * TODO: remove this and infer from the schema
- */
-function getKeyPropsForLayerType(type: string): string[] {
-  const keyProps: Record<string, string[]> = {
-    text: ['content', 'fontSize', 'color', 'fontFamily'],
-    icon: ['icon', 'size', 'color'],
-    shape: ['shapeType', 'background', 'width', 'height'],
-    code: ['code', 'language'],
-    image: ['src', 'width', 'height'],
-    button: ['text', 'backgroundColor', 'textColor'],
-    terminal: ['title', 'content'],
-    progress: ['progress', 'progressColor'],
-    mouse: ['pointerType', 'size'],
-    phone: ['url'],
-    browser: ['url'],
-    html: ['html', 'css'],
-    video: ['src', 'width', 'height', 'mediaStartTime', 'mediaEndTime', 'volume'],
-    audio: ['src', 'label', 'volume', 'mediaStartTime', 'mediaEndTime', 'showCaptions']
-  };
-  return keyProps[type] || [];
-}
-
-/**
- * Get example props for each layer type
- * TODO: remove this and infer from the schema
- */
-function getExampleProps(type: string): string {
-  const examples: Record<string, string> = {
-    text: '"content": "Hello World", "fontSize": 48, "color": "#ffffff"',
-    icon: '"icon": "star", "size": 64, "color": "#ffffff"',
-    shape: `"shapeType": "rectangle", "background": "${BRAND_COLORS.blue}", "width": 200, "height": 100"`,
-    code: '"code": "const x = 1;", "language": "typescript"',
-    image: '"src": "https://example.com/image.jpg", "width": 400',
-    button: `"text": "Click Me", "backgroundColor": "${BRAND_COLORS.blue}"`,
-    terminal: '"content": "$ npm install", "title": "Terminal"',
-    progress: '"progress": 75, "progressColor": "#22c55e"',
-    mouse: '"pointerType": "arrow", "size": 32',
-    phone: '"url": "https://example.com"',
-    browser: '"url": "https://example.com"',
-    html: '"html": "<div>Content</div>", "css": ".container { color: white; }"',
-    video: '"src": "https://example.com/video.mp4", "width": 640, "height": 360, "volume": 1',
-    audio: '"src": "https://example.com/audio.mp3", "label": "Background Music", "volume": 0.8'
-  };
-  return examples[type] || '';
-}
-
-/**
- * Generate tool definitions for all layer types from the registry
+ * Generate tool definitions for all layer types from the registry.
+ * Key props and defaults are derived directly from each layer's Zod schema,
+ * so no manual mapping needs to be maintained.
  */
 function generateLayerCreationTools(): Record<string, Tool> {
   const tools: Record<string, Tool> = {};
@@ -120,11 +88,10 @@ function generateLayerCreationTools(): Record<string, Tool> {
     if (!definition) continue;
 
     const toolName = `create_${layerType}_layer`;
-    const keyProps = getKeyPropsForLayerType(layerType);
-    const exampleProps = getExampleProps(layerType);
+    const keyProps = extractKeyProps(definition.schema);
     const defaults = extractDefaultValues(definition.schema);
 
-    // Build key props description with defaults
+    // Build key props description with defaults from schema
     const keyPropsDescription = keyProps
       .map((prop) => {
         const defaultVal = defaults[prop];
@@ -132,7 +99,6 @@ function generateLayerCreationTools(): Record<string, Tool> {
       })
       .join(', ');
 
-    // Build the input schema with shared fields + layer-specific props
     const inputSchema = z.object({
       name: z.string().optional().describe('Layer name for identification'),
       position: PositionSchema,
@@ -150,17 +116,9 @@ function generateLayerCreationTools(): Record<string, Tool> {
         .describe('When layer exits the timeline (seconds, default: project duration)')
     });
 
-    const description = `Create a ${definition.label} layer. ${definition.description}
-
-Key props: ${keyPropsDescription}
-
-Example:
-{
-  "name": "My ${definition.label}",
-  "position": { "x": 0, "y": 0 },
-  "props": { ${exampleProps} },
-  "animation": { "preset": "fade-in", "startTime": 0, "duration": 0.5 }
-}`;
+    const description =
+      `Create a ${definition.label} layer. ${definition.description}\n` +
+      `Key props: ${keyPropsDescription}`;
 
     tools[toolName] = tool({
       description,
@@ -325,38 +283,29 @@ export const animationTools = {
   // Layer creation tools (dynamically generated from registry)
   ...layerCreationTools,
 
-  // Animation and editing tools
   animate_layer: tool({
-    description: `Add animation to a layer. Use when you need to animate an existing layer or add complex keyframes.
-
-Presets: fade-in, slide-in-left, slide-in-right, slide-in-top, slide-in-bottom, scale-in, pop, bounce-in, zoom-in, rotate-in, pulse, float
-
-Example: { layerId: "layer_0", preset: { id: "pop", startTime: 0.3, duration: 0.6 } }
-
-Output: { success, keyframesAdded, message }`,
+    description:
+      'Add animation to an existing layer via preset or custom keyframes. ' +
+      'Use layer_N for layers you just created, or actual ID/name for existing layers.',
     inputSchema: AnimateLayerInputSchema
   }),
 
   edit_layer: tool({
-    description: `Modify an existing layer's transform, style, or props.
-
-Output: { success, layerId, message } or { success: false, error }
-
-Layer reference: Use "layer_0" for layers you created, or the ID/name from PROJECT STATE.`,
+    description:
+      'Modify an existing layer (position, scale, rotation, opacity, or props). ' +
+      'Use layer_N for layers you just created, or actual ID/name for existing layers.',
     inputSchema: EditLayerInputSchema
   }),
 
   remove_layer: tool({
-    description: `Delete a layer from the project.
-
-Output: { success, message } or { success: false, error }`,
+    description: 'Delete a layer from the project.',
     inputSchema: RemoveLayerInputSchema
   }),
 
   configure_project: tool({
-    description: `Update project settings: dimensions, duration, background color.
-
-Output: { success, message }`,
+    description:
+      'Set project dimensions, duration, and background color. ' +
+      'Call this FIRST to match the target format (e.g. 1080x1920 for vertical video, dark background).',
     inputSchema: ConfigureProjectInputSchema
   })
 };

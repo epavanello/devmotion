@@ -87,6 +87,22 @@ function resolveLayerId(
   return null;
 }
 
+/**
+ * Build an error string listing available layers so the AI can self-correct.
+ */
+function layerNotFoundError(project: ProjectData, ref: string): string {
+  if (project.layers.length === 0) {
+    return `Layer "${ref}" not found. The project has no layers — create one first.`;
+  }
+  const available = project.layers.map((l) => `"${l.name}" (id: ${l.id})`).join(', ');
+  return (
+    `Layer "${ref}" not found. ` +
+    `Use layer_N for layers you just created in this conversation, ` +
+    `or reference existing layers by id/name. ` +
+    `Available layers: ${available}`
+  );
+}
+
 // ============================================
 // Mutations
 // ============================================
@@ -163,11 +179,8 @@ export function mutateAnimateLayer(
   const resolvedId = resolveLayerId(ctx.project, input.layerId, ctx.layerIdMap);
 
   if (!resolvedId) {
-    return {
-      success: false,
-      message: `Layer not found: ${input.layerId}`,
-      error: 'Use layer_0, layer_1, etc. for recently created layers, or an existing layer ID/name.'
-    };
+    const errMsg = layerNotFoundError(ctx.project, input.layerId);
+    return { success: false, message: errMsg, error: errMsg };
   }
 
   const layer = ctx.project.layers.find((l) => l.id === resolvedId);
@@ -232,11 +245,8 @@ export function mutateAnimateLayer(
 export function mutateEditLayer(ctx: MutationContext, input: EditLayerInput): EditLayerOutput {
   const resolvedId = resolveLayerId(ctx.project, input.layerId, ctx.layerIdMap);
   if (!resolvedId) {
-    return {
-      success: false,
-      message: `Layer not found: ${input.layerId}`,
-      error: 'Invalid layer reference'
-    };
+    const errMsg = layerNotFoundError(ctx.project, input.layerId);
+    return { success: false, message: errMsg, error: errMsg };
   }
 
   const layerIndex = ctx.project.layers.findIndex((l) => l.id === resolvedId);
@@ -305,11 +315,8 @@ export function mutateRemoveLayer(
 ): RemoveLayerOutput {
   const resolvedId = resolveLayerId(ctx.project, input.layerId, ctx.layerIdMap);
   if (!resolvedId) {
-    return {
-      success: false,
-      message: `Layer not found: ${input.layerId}`,
-      error: 'Invalid layer reference'
-    };
+    const errMsg = layerNotFoundError(ctx.project, input.layerId);
+    return { success: false, message: errMsg, error: errMsg };
   }
 
   const index = ctx.project.layers.findIndex((l) => l.id === resolvedId);

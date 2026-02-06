@@ -4,10 +4,10 @@ class UIStore {
   showLoginPrompt = $state(false);
   loginPromptAction = $state('this action');
 
-  async requireLogin(action: string, fn: () => void) {
+  async requireLogin(action: string, fn: () => void | Promise<void>) {
     const user = await getUser();
     if (user) {
-      fn();
+      await fn();
     } else {
       this.loginPromptAction = action;
       this.showLoginPrompt = true;

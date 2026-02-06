@@ -29,6 +29,8 @@
   import { uiStore } from '$lib/stores/ui.svelte';
 
   import { PersistedState } from 'runed';
+  import ToolPart from './tool-part.svelte';
+
   let prompt = new PersistedState('prompt', '');
   let showModelSelector = $state(false);
   let selectedModelId = $state(DEFAULT_MODEL_ID);
@@ -192,54 +194,31 @@
     {:else}
       <div class="space-y-4">
         {#each chat.messages as message (message.id)}
-          <div class="flex gap-3">
-            <div
-              class="flex size-7 shrink-0 items-center justify-center rounded-full {message.role ===
-              'user'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted'}"
-            >
-              {#if message.role === 'user'}
-                <User class="size-3.5" />
-              {:else}
-                <Bot class="size-3.5" />
-              {/if}
-            </div>
-
-            <div class="min-w-0 flex-1 space-y-2">
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center gap-2">
+              <div
+                class="flex size-7 shrink-0 items-center justify-center rounded-full {message.role ===
+                'user'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted'}"
+              >
+                {#if message.role === 'user'}
+                  <User class="size-3.5" />
+                {:else}
+                  <Bot class="size-3.5" />
+                {/if}
+              </div>
               <p class="text-xs font-medium text-muted-foreground">
                 {message.role === 'user' ? 'You' : 'AI'}
               </p>
+            </div>
 
+            <div class="space-y-2 pl-0">
               {#each message.parts as part, partIndex (partIndex)}
                 {#if part.type === 'text' && part.text.trim()}
                   <p class="text-sm whitespace-pre-wrap">{part.text}</p>
                 {:else if isToolUIPart(part)}
-                  <details class="rounded border bg-muted/50 px-2 py-1 text-xs">
-                    <summary class="cursor-pointer font-mono font-medium text-primary">
-                      🔧 {part.type.replace('tool-', '')}
-                      <span class="text-muted-foreground">({part.state || 'pending'})</span>
-                    </summary>
-                    <div class="mt-2 space-y-1 font-mono text-[10px]">
-                      {#if part.input}
-                        <div>
-                          <span class="font-semibold">Input:</span>
-                          {JSON.stringify(part.input, null, 2)}
-                        </div>
-                      {/if}
-                      {#if part.output}
-                        <div>
-                          <span class="font-semibold">Output:</span>
-                          {JSON.stringify(part.output, null, 2)}
-                        </div>
-                      {/if}
-                    </div>
-                  </details>
-                  <!-- <ToolCallDisplay
-                    toolName={part.type.replace('tool-', '')}
-                    input={part.input}
-                    state={part.state}
-                  /> -->
+                  <ToolPart tool={part} />
                 {/if}
               {/each}
             </div>
@@ -247,11 +226,14 @@
         {/each}
 
         {#if chat.status === 'streaming' || chat.status === 'submitted'}
-          <div class="flex gap-3">
-            <div class="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted">
-              <Bot class="size-3.5" />
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center gap-2">
+              <div class="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted">
+                <Bot class="size-3.5" />
+              </div>
+              <p class="text-xs font-medium text-muted-foreground">AI</p>
             </div>
-            <div class="flex items-center gap-2 text-sm text-muted-foreground">
+            <div class="flex items-center gap-2 pl-0 text-sm text-muted-foreground">
               <Loader2 class="size-4 animate-spin" />
               Thinking...
             </div>
