@@ -75,6 +75,31 @@ const AnimationSchema = z
 // Layer Creation Tool Generator
 // ============================================
 
+const CreateLayerInputSchema = z.object({
+  name: z.string().optional().describe('Layer name for identification'),
+  position: PositionSchema,
+  animation: AnimationSchema,
+  enterTime: z
+    .number()
+    .min(0)
+    .optional()
+    .describe('When layer enters the timeline (seconds, default: 0)'),
+  exitTime: z
+    .number()
+    .min(0)
+    .optional()
+    .describe('When layer exits the timeline (seconds, default: project duration)'),
+  contentDuration: z
+    .number()
+    .min(0)
+    .optional()
+    .describe('Total content duration for media layers (video/audio duration in seconds)'),
+  contentOffset: z
+    .number()
+    .min(0)
+    .optional()
+    .describe('Start offset for trimming media content (seconds)')
+});
 /**
  * Generate tool definitions for all layer types from the registry.
  * Key props and defaults are derived directly from each layer's Zod schema,
@@ -99,40 +124,15 @@ function generateLayerCreationTools(): Record<string, Tool> {
       })
       .join(', ');
 
-    const inputSchema = z.object({
-      name: z.string().optional().describe('Layer name for identification'),
-      position: PositionSchema,
-      props: definition.schema.describe(`Properties for ${definition.label} layer`),
-      animation: AnimationSchema,
-      enterTime: z
-        .number()
-        .min(0)
-        .optional()
-        .describe('When layer enters the timeline (seconds, default: 0)'),
-      exitTime: z
-        .number()
-        .min(0)
-        .optional()
-        .describe('When layer exits the timeline (seconds, default: project duration)'),
-      contentDuration: z
-        .number()
-        .min(0)
-        .optional()
-        .describe('Total content duration for media layers (video/audio duration in seconds)'),
-      contentOffset: z
-        .number()
-        .min(0)
-        .optional()
-        .describe('Start offset for trimming media content (seconds)')
-    });
-
     const description =
       `Create a ${definition.label} layer. ${definition.description}\n` +
       `Key props: ${keyPropsDescription}`;
 
     tools[toolName] = tool({
       description,
-      inputSchema
+      inputSchema: CreateLayerInputSchema.extend({
+        props: definition.schema.describe(`Properties for ${definition.label} layer`)
+      })
     });
   }
 
@@ -143,32 +143,16 @@ function generateLayerCreationTools(): Record<string, Tool> {
 // Input/Output Types for Layer Creation
 // ============================================
 
-export interface CreateLayerInput {
+export type CreateLayerInput = z.infer<typeof CreateLayerInputSchema> & {
   type: string;
-  name?: string;
-  position?: { x: number; y: number };
   props: Record<string, unknown>;
-  animation?: {
-    preset: string;
-    startTime?: number;
-    duration?: number;
-  };
-  /** When the layer enters the timeline (seconds) */
-  enterTime?: number;
-  /** When the layer exits the timeline (seconds) */
-  exitTime?: number;
-  /** Total duration of layer content (for video/audio layers) */
-  contentDuration?: number;
-  /** Start offset for trimming content (seconds) */
-  contentOffset?: number;
-}
-
+};
 export interface CreateLayerOutput {
   success: boolean;
+  message: string;
   layerId?: string;
   layerIndex?: number;
   layerName?: string;
-  message: string;
   error?: string;
 }
 
