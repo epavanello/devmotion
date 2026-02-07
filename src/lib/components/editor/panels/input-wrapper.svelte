@@ -30,12 +30,12 @@
   const hasKeyframes = $derived(selectedLayer?.keyframes.some((k) => k.property === property));
 </script>
 
-<div>
-  <div class="mb-1 flex items-center justify-between">
-    <Label for={id} class="text-xs">{label}</Label>
+<div class="flex flex-col gap-1">
+  <div class="flex items-center gap-0.5">
     {#if property}
       <InputPin {property} active={!!hasKeyframes} {label} {addKeyframe} />
     {/if}
+    <Label for={id} class="text-[10px] text-muted-foreground">{label}</Label>
   </div>
 
   {@render children()}

@@ -18,6 +18,7 @@
   import { projectStore } from '$lib/stores/project.svelte';
   import { resolve } from '$app/paths';
   import { getUser } from '$lib/functions/auth.remote';
+  import Input from '../ui/input/input.svelte';
 
   interface Props {
     currentProjectId?: string | null;
@@ -141,39 +142,34 @@
 
           <!-- Project Info -->
           {#if editingProjectId === proj.id}
-            <div
-              class="flex min-w-0 flex-1 items-center gap-1"
-              onclick={(e) => e.stopPropagation()}
-            >
-              <input
+            <div class="flex min-w-0 flex-1 items-center gap-1">
+              <Input
                 type="text"
                 bind:value={editingName}
-                class="h-7 min-w-0 flex-1 rounded border border-input bg-background px-2 text-sm"
                 disabled={renaming}
                 onkeydown={(e) => {
-                  if (e.key === 'Enter') saveRename(e);
-                  if (e.key === 'Escape') cancelRename(e);
+                  if (e.key === 'Enter') {
+                    saveRename(e);
+                  }
+                  if (e.key === 'Escape') {
+                    cancelRename(e);
+                  }
                 }}
-                autofocus
               />
               <Button
                 variant="ghost"
-                size="sm"
-                class="h-7 w-7 shrink-0 p-0"
+                size="icon-sm"
                 disabled={renaming}
                 onclick={saveRename}
-              >
-                <Check class="h-3 w-3" />
-              </Button>
+                icon={Check}
+              />
               <Button
                 variant="ghost"
-                size="sm"
-                class="h-7 w-7 shrink-0 p-0"
+                size="icon-sm"
                 disabled={renaming}
                 onclick={cancelRename}
-              >
-                <X class="h-3 w-3" />
-              </Button>
+                icon={X}
+              />
             </div>
           {:else}
             <div class="flex min-w-0 flex-1 flex-col">

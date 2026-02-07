@@ -6,7 +6,6 @@
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import * as ButtonGroup from '$lib/components/ui/button-group';
   import * as Popover from '$lib/components/ui/popover';
   import {
     Trash2,
@@ -38,19 +37,19 @@
     getAnimatedProps
   } from '$lib/engine/interpolation';
   import { getLayerDefinition, getLayerSchema } from '$lib/layers/registry';
-  import { extractPropertyMetadata, type PropertyMetadata } from '$lib/layers/base';
+  import { extractPropertyMetadata } from '$lib/layers/base';
   import { animationPresets } from '$lib/engine/presets';
   import InputWrapper from './input-wrapper.svelte';
-  import BackgroundPicker from './background-picker.svelte';
+  
   import ScrubXyz from './scrub-xyz.svelte';
   import ScrubInput from './scrub-input.svelte';
-  import type { BackgroundValue } from '$lib/schemas/animation';
-  import { Textarea } from '$lib/components/ui/textarea';
-  import FileUpload from '../FileUpload.svelte';
+  
+  
+  
   import type { Snippet } from 'svelte';
-  import InputPin from './input-pin.svelte';
   import PropertiesGroup from './properties-group.svelte';
   import InputsWrapper from './inputs-wrapper.svelte';
+  import InputPropery from './input-propery.svelte';
 
   const selectedLayer = $derived(projectStore.selectedLayer);
 
@@ -97,7 +96,6 @@
   const layerCustomPropertyComponents = $derived.by(() => {
     if (!selectedLayer) return [];
     const definition = getLayerDefinition(selectedLayer.type);
-    console.log(definition);
     return Object.entries(definition.customPropertyComponents ?? {});
   });
 
@@ -341,20 +339,6 @@
     updateAnimatableValue(selectedLayer, property, currentValue);
   }
 
-  interface PropertyFieldProps {
-    id: string;
-    value: number;
-    step?: string;
-    min?: string;
-    max?: string;
-    onInput: (value: number) => void;
-  }
-
-  interface DynamicPropertyFieldProps {
-    metadata: PropertyMetadata;
-    value: unknown;
-  }
-
   // Preset application state
   let selectedPresetId = $state<string>('');
   let presetDuration = $state<number>(1);
@@ -371,16 +355,6 @@
   }
 </script>
 
-{#snippet propertyField({ id, value, step, min, max, onInput }: PropertyFieldProps)}
-  <ScrubInput
-    {id}
-    {value}
-    step={parseFloat(step || '1')}
-    min={min !== undefined ? parseFloat(min) : undefined}
-    max={max !== undefined ? parseFloat(max) : undefined}
-    onchange={onInput}
-  />
-{/snippet}
 {#snippet basicProperyfield({
   label,
   name,
@@ -401,111 +375,6 @@
     </Label>
     {@render content()}
   </div>
-{/snippet}
-
-{#snippet dynamicPropertyField({ metadata, value }: DynamicPropertyFieldProps)}
-  {#snippet content()}
-    {#if selectedLayer && metadata.meta?.widget === 'upload'}
-      <!-- Special handling for media src properties with file upload -->
-      <FileUpload
-        value={typeof value === 'string' ? value : ''}
-        currentFileName={typeof selectedLayer.props.fileName === 'string'
-          ? selectedLayer.props.fileName
-          : ''}
-        mediaType={metadata.meta.mediaType}
-        projectId={projectStore.project.id}
-        onUpload={(result) => {
-          updateLayerProps(metadata.name, result.url);
-          updateLayerProps('fileKey', result.key);
-          // Set content duration if available
-          if (result.duration !== undefined) {
-            projectStore.updateLayer(selectedLayer.id, { contentDuration: result.duration });
-            // Auto-set exit time based on content duration if layer has no exit time yet
-            if (selectedLayer.exitTime === undefined || selectedLayer.exitTime === null) {
-              const enterTime = selectedLayer.enterTime ?? 0;
-              projectStore.setLayerExitTime(selectedLayer.id, enterTime + result.duration);
-            }
-          }
-        }}
-        onRemove={() => {
-          updateLayerProps(metadata.name, '');
-          updateLayerProps('fileKey', '');
-          projectStore.updateLayer(selectedLayer.id, {
-            contentDuration: 0,
-            contentOffset: 0
-          });
-        }}
-      />
-    {:else if metadata.type === 'number'}
-      <ScrubInput
-        id={metadata.name}
-        value={typeof value === 'number' ? value : 0}
-        min={metadata.min}
-        max={metadata.max}
-        step={metadata.step || 1}
-        onchange={(v) => updateLayerProps(metadata.name, v)}
-      />
-    {:else if metadata.type === 'color'}
-      <Input
-        id={metadata.name}
-        type="color"
-        value={typeof value === 'string' ? value : '#000000'}
-        oninput={(e) => updateLayerProps(metadata.name, e.currentTarget.value)}
-      />
-    {:else if metadata.type === 'boolean'}
-      <label class="flex items-center gap-2">
-        <input
-          id={metadata.name}
-          type="checkbox"
-          checked={typeof value === 'boolean' ? value : false}
-          onchange={(e) => updateLayerProps(metadata.name, e.currentTarget.checked)}
-          class="h-4 w-4 rounded border-gray-300"
-        />
-        <span class="text-sm">Enable</span>
-      </label>
-    {:else if metadata.type === 'select' && metadata.options}
-      <select
-        id={metadata.name}
-        value={typeof value === 'string' || typeof value === 'number' ? value : ''}
-        onchange={(e) => updateLayerProps(metadata.name, e.currentTarget.value)}
-        class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
-      >
-        {#each metadata.options as option (option.value)}
-          <option value={option.value}>{option.label}</option>
-        {/each}
-      </select>
-    {:else if metadata.meta?.widget === 'textarea'}
-      <Textarea
-        id={metadata.name}
-        value={typeof value === 'string' ? value : ''}
-        oninput={(e) => updateLayerProps(metadata.name, e.currentTarget.value)}
-        spellcheck="false"
-      />
-    {:else if metadata.meta?.widget === 'background'}
-      <BackgroundPicker
-        value={value as BackgroundValue}
-        onchange={(newValue) => updateLayerProps(metadata.name, newValue)}
-      />
-    {:else}
-      <!-- Default to text input for strings and unknown types -->
-      <Input
-        id={metadata.name}
-        type="text"
-        value={typeof value === 'string' ? value : ''}
-        oninput={(e) => updateLayerProps(metadata.name, e.currentTarget.value)}
-        disabled={metadata.meta?.readOnly}
-      />
-    {/if}
-  {/snippet}
-
-  <InputWrapper
-    id={metadata.name}
-    label={metadata.description || metadata.name}
-    property={metadata.name}
-    {addKeyframe}
-  >
-    {@render content()}
-  </InputWrapper>
 {/snippet}
 
 <div
@@ -658,6 +527,7 @@
             }))}
           >
             {#snippet prefix()}
+              <Label class="text-xs text-muted-foreground">Position</Label>
               <ScrubXyz
                 valueX={currentTransform?.x ?? 0}
                 valueY={currentTransform?.y ?? 0}
@@ -668,23 +538,24 @@
                 onchangeY={(v: number) => updateTransformProperty('y', v)}
                 onchangeZ={(v: number) => updateTransformProperty('z', v)}
               />
-              <Label class="text-xs text-muted-foreground">Position</Label>
             {/snippet}
-            {@render propertyField({
-              id: 'pos-x',
-              value: currentTransform?.x ?? 0,
-              onInput: (v) => updateTransformProperty('x', v)
-            })}
-            {@render propertyField({
-              id: 'pos-y',
-              value: currentTransform?.y ?? 0,
-              onInput: (v) => updateTransformProperty('y', v)
-            })}
-            {@render propertyField({
-              id: 'pos-z',
-              value: currentTransform?.z ?? 0,
-              onInput: (v) => updateTransformProperty('z', v)
-            })}
+
+            <ScrubInput
+              id="pos-x"
+              value={currentTransform?.x ?? 0}
+              onchange={(v) => updateTransformProperty('x', v)}
+            />
+
+            <ScrubInput
+              id="pos-y"
+              value={currentTransform?.y ?? 0}
+              onchange={(v) => updateTransformProperty('y', v)}
+            />
+            <ScrubInput
+              id="pos-z"
+              value={currentTransform?.z ?? 0}
+              onchange={(v) => updateTransformProperty('z', v)}
+            />
           </InputsWrapper>
 
           <!-- Scale -->
@@ -702,6 +573,7 @@
             }))}
           >
             {#snippet prefix()}
+              <Label class="text-xs text-muted-foreground">Scale</Label>
               <ScrubXyz
                 valueX={currentTransform?.scaleX ?? 1}
                 valueY={currentTransform?.scaleY ?? 1}
@@ -712,26 +584,25 @@
                 onchangeY={(v: number) => updateTransformProperty('scaleY', v || 1)}
                 onchangeZ={(v: number) => updateTransformProperty('scaleZ', v || 1)}
               />
-              <Label class="text-xs text-muted-foreground">Scale</Label>
             {/snippet}
-            {@render propertyField({
-              id: 'scale-x',
-              value: currentTransform?.scaleX ?? 1,
-              step: '0.1',
-              onInput: (v) => updateTransformProperty('scaleX', v || 1)
-            })}
-            {@render propertyField({
-              id: 'scale-y',
-              value: currentTransform?.scaleY ?? 1,
-              step: '0.1',
-              onInput: (v) => updateTransformProperty('scaleY', v || 1)
-            })}
-            {@render propertyField({
-              id: 'scale-z',
-              value: currentTransform?.scaleZ ?? 1,
-              step: '0.1',
-              onInput: (v) => updateTransformProperty('scaleZ', v || 1)
-            })}
+            <ScrubInput
+              id="scale-x"
+              value={currentTransform?.scaleX ?? 1}
+              step={0.1}
+              onchange={(v) => updateTransformProperty('scaleX', v || 1)}
+            />
+            <ScrubInput
+              id="scale-y"
+              value={currentTransform?.scaleY ?? 1}
+              step={0.1}
+              onchange={(v) => updateTransformProperty('scaleY', v || 1)}
+            />
+            <ScrubInput
+              id="scale-z"
+              value={currentTransform?.scaleZ ?? 1}
+              step={0.1}
+              onchange={(v) => updateTransformProperty('scaleZ', v || 1)}
+            />
           </InputsWrapper>
 
           <!-- Rotation -->
@@ -749,6 +620,7 @@
             }))}
           >
             {#snippet prefix()}
+              <Label class="text-xs text-muted-foreground">Rotation (radians)</Label>
               <ScrubXyz
                 valueX={currentTransform?.rotationY ?? 0}
                 valueY={currentTransform?.rotationX ?? 0}
@@ -760,26 +632,25 @@
                 onchangeY={(v: number) => updateTransformProperty('rotationX', v)}
                 onchangeZ={(v: number) => updateTransformProperty('rotationZ', v)}
               />
-              <Label class="text-xs text-muted-foreground">Rotation (radians)</Label>
             {/snippet}
-            {@render propertyField({
-              id: 'rot-x',
-              value: currentTransform?.rotationX ?? 0,
-              step: '0.1',
-              onInput: (v) => updateTransformProperty('rotationX', v)
-            })}
-            {@render propertyField({
-              id: 'rot-y',
-              value: currentTransform?.rotationY ?? 0,
-              step: '0.1',
-              onInput: (v) => updateTransformProperty('rotationY', v)
-            })}
-            {@render propertyField({
-              id: 'rot-z',
-              value: currentTransform?.rotationZ ?? 0,
-              step: '0.1',
-              onInput: (v) => updateTransformProperty('rotationZ', v)
-            })}
+            <ScrubInput
+              id="rot-x"
+              value={currentTransform?.rotationX ?? 0}
+              step={0.1}
+              onchange={(v) => updateTransformProperty('rotationX', v)}
+            />
+            <ScrubInput
+              id="rot-y"
+              value={currentTransform?.rotationY ?? 0}
+              step={0.1}
+              onchange={(v) => updateTransformProperty('rotationY', v)}
+            />
+            <ScrubInput
+              id="rot-z"
+              value={currentTransform?.rotationZ ?? 0}
+              step={0.1}
+              onchange={(v) => updateTransformProperty('rotationZ', v)}
+            />
           </InputsWrapper>
 
           <!-- Anchor Point -->
@@ -815,14 +686,14 @@
         <!-- Style -->
         <PropertiesGroup label="Style">
           <InputWrapper id="opacity" label="Opacity" property="opacity" {addKeyframe}>
-            {@render propertyField({
-              id: 'opacity',
-              value: currentStyle?.opacity ?? 1,
-              step: '0.1',
-              min: '0',
-              max: '1',
-              onInput: (v) => updateStyle('opacity', v || 0)
-            })}
+            <ScrubInput
+              id="opacity"
+              value={currentStyle?.opacity ?? 1}
+              step={0.1}
+              min={0}
+              max={1}
+              onchange={(v) => updateStyle('opacity', v || 0)}
+            />
           </InputWrapper>
         </PropertiesGroup>
 
@@ -832,10 +703,20 @@
           <PropertiesGroup label="Layer Properties">
             {#each layerPropertyMetadata as propMetadata (propMetadata.name)}
               {#if !propMetadata.meta?.hidden}
-                {@render dynamicPropertyField({
-                  metadata: propMetadata,
-                  value: currentAnimatedProps[propMetadata.name]
-                })}
+                {@const metadata = propMetadata}
+                <InputWrapper
+                  id={metadata.name}
+                  label={metadata.description || metadata.name}
+                  property={metadata.name}
+                  {addKeyframe}
+                >
+                  <InputPropery
+                    metadata={propMetadata}
+                    value={currentAnimatedProps[propMetadata.name]}
+                    onUpdateProp={(name, v) => updateLayerProps(name, v)}
+                    layer={selectedLayer}
+                  />
+                </InputWrapper>
               {/if}
             {/each}
             {#each layerCustomPropertyComponents as [name, { component: PropertyComponent, label }] (name)}

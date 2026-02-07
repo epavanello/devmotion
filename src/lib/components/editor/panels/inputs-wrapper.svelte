@@ -1,7 +1,7 @@
 <script lang="ts">
   import Label from '$lib/components/ui/label/label.svelte';
   import type { AnimatableProperty } from '$lib/schemas/animation';
-  import { projectStore } from '$lib/stores/project.svelte';
+  
   import type { Snippet } from 'svelte';
   import InputPin from './input-pin.svelte';
   import * as ButtonGroup from '$lib/components/ui/button-group';
@@ -31,17 +31,16 @@
   } = $props();
 </script>
 
-<div class="space-y-1">
+<div class="flex flex-col gap-1">
   {#if prefix}
-    <div class="flex gap-1">
+    <div class="flex flex-row gap-0.5">
       {@render prefix()}
     </div>
   {/if}
 
   <div class="flex gap-1">
     {#each fields as field (field.id)}
-      <div class="flex flex-1 items-center gap-1">
-        <span class="ml-1 text-[10px] text-muted-foreground">{field.labels}</span>
+      <div class="flex flex-1 items-center gap-0.5">
         {#if field.property}
           <InputPin
             property={field.property}
@@ -50,6 +49,7 @@
             addKeyframe={field.addKeyframe}
           />
         {/if}
+        <Label for={field.id} class="text-[10px] text-muted-foreground">{field.labels}</Label>
       </div>
     {/each}
   </div>

@@ -82,7 +82,6 @@
     muted,
     playbackRate,
     fileKey: _fileKey,
-    fileName: _fileName,
     layer
   }: Props & {
     layer: Layer;
