@@ -1,7 +1,7 @@
 <script lang="ts">
   import Label from '$lib/components/ui/label/label.svelte';
   import type { AnimatableProperty } from '$lib/schemas/animation';
-  
+
   import type { Snippet } from 'svelte';
   import InputPin from './input-pin.svelte';
   import * as ButtonGroup from '$lib/components/ui/button-group';

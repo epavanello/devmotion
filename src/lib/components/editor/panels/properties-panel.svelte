@@ -6,9 +6,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import * as Popover from '$lib/components/ui/popover';
   import {
-    Trash2,
     ArrowUpLeft,
     ArrowUp,
     ArrowUpRight,
@@ -27,8 +25,6 @@
     Transform,
     LayerStyle,
     Layer,
-    EasingType,
-    Easing,
     AnchorPoint
   } from '$lib/types/animation';
   import {
@@ -40,16 +36,15 @@
   import { extractPropertyMetadata } from '$lib/layers/base';
   import { animationPresets } from '$lib/engine/presets';
   import InputWrapper from './input-wrapper.svelte';
-  
+
   import ScrubXyz from './scrub-xyz.svelte';
   import ScrubInput from './scrub-input.svelte';
-  
-  
-  
+
   import type { Snippet } from 'svelte';
   import PropertiesGroup from './properties-group.svelte';
   import InputsWrapper from './inputs-wrapper.svelte';
   import InputPropery from './input-propery.svelte';
+  import LayerKeyframes from './layer-keyframes.svelte';
 
   const selectedLayer = $derived(projectStore.selectedLayer);
 
@@ -81,11 +76,6 @@
     };
   });
 
-  const sortedKeyframes = $derived.by(() => {
-    if (!selectedLayer) return [];
-    return [...selectedLayer.keyframes].sort((a, b) => a.time - b.time);
-  });
-
   // Extract property metadata from the layer's Zod schema
   const layerPropertyMetadata = $derived.by(() => {
     if (!selectedLayer) return [];
@@ -110,58 +100,6 @@
     );
   });
 
-  function getPropertyLabel(property: string): string {
-    const labels: Record<string, string> = {
-      'position.x': 'Position X',
-      'position.y': 'Position Y',
-      'position.z': 'Position Z',
-      'rotation.x': 'Rotation X',
-      'rotation.y': 'Rotation Y',
-      'rotation.z': 'Rotation Z',
-      'scale.x': 'Scale X',
-      'scale.y': 'Scale Y',
-      'scale.z': 'Scale Z',
-      opacity: 'Opacity'
-    };
-    if (labels[property]) return labels[property];
-
-    // Handle props.* properties
-    if (property.startsWith('props.')) {
-      const propName = property.slice(6);
-      // Find metadata for this prop to get description
-      const meta = layerPropertyMetadata.find((m) => m.name === propName);
-      return meta?.description || propName;
-    }
-
-    return property;
-  }
-
-  function formatKeyframeValue(value: number | string | boolean): string {
-    if (typeof value === 'number') {
-      return value.toFixed(2);
-    }
-    if (typeof value === 'boolean') {
-      return value ? 'true' : 'false';
-    }
-    return value;
-  }
-
-  function deleteKeyframe(keyframeId: string) {
-    if (!selectedLayer) return;
-    projectStore.removeKeyframe(selectedLayer.id, keyframeId);
-  }
-
-  function goToKeyframe(time: number) {
-    projectStore.setCurrentTime(time);
-  }
-
-  const easingOptions: { value: EasingType; label: string }[] = [
-    { value: 'linear', label: 'Linear' },
-    { value: 'ease-in', label: 'Ease In' },
-    { value: 'ease-out', label: 'Ease Out' },
-    { value: 'ease-in-out', label: 'Ease In-Out' }
-  ];
-
   const anchorOptions: { value: AnchorPoint; label: string; icon: typeof ArrowUpLeft }[] = [
     { value: 'top-left', label: 'Top Left', icon: ArrowUpLeft },
     { value: 'top-center', label: 'Top Center', icon: ArrowUp },
@@ -184,19 +122,6 @@
     if (!selectedLayer) return;
     const newTransform: Transform = { ...selectedLayer.transform, anchor };
     projectStore.updateLayer(selectedLayer.id, { transform: newTransform });
-  }
-
-  function updateKeyframeEasing(keyframeId: string, easingType: EasingType) {
-    if (!selectedLayer) return;
-    const newEasing: Easing = { type: easingType };
-    projectStore.updateKeyframe(selectedLayer.id, keyframeId, { easing: newEasing });
-  }
-
-  function updateKeyframeTime(keyframeId: string, newTime: number) {
-    if (!selectedLayer) return;
-    // Clamp time to project duration
-    const clampedTime = Math.max(0, Math.min(newTime, projectStore.project.duration));
-    projectStore.updateKeyframe(selectedLayer.id, keyframeId, { time: clampedTime });
   }
 
   function updateLayerProperty<K extends keyof Pick<Layer, 'name'>>(property: K, value: Layer[K]) {
@@ -772,116 +697,8 @@
         <Separator />
 
         <!-- Keyframes -->
-        <PropertiesGroup label="Keyframes">
-          {#if selectedLayer.keyframes.length > 0}
-            <div class="mt-4 space-y-2">
-              <Label class="text-xs text-muted-foreground">
-                {selectedLayer.keyframes.length} keyframe(s)
-              </Label>
-
-              <div class="max-h-75 space-y-1 overflow-y-auto rounded-md border bg-muted/20 p-2">
-                {#each sortedKeyframes as keyframe (keyframe.id)}
-                  <div
-                    class="group rounded-sm bg-background px-2 py-1.5 text-xs transition-colors hover:bg-muted"
-                  >
-                    <div class="flex items-center justify-between">
-                      <div class="flex flex-1 flex-col">
-                        <button
-                          class="text-left"
-                          onclick={() => goToKeyframe(keyframe.time)}
-                          type="button"
-                        >
-                          <div class="flex items-center gap-2">
-                            <div class="size-1.5 rounded-full bg-primary"></div>
-                            <div
-                              class="text-[11px] font-medium tracking-wider text-muted-foreground/80 uppercase"
-                            >
-                              {getPropertyLabel(keyframe.property)}
-                            </div>
-                          </div>
-                        </button>
-                        <div class="mt-1 ml-3.5 flex items-center gap-1.5">
-                          <div class="relative">
-                            <ScrubInput
-                              value={keyframe.time}
-                              step={0.01}
-                              min={0}
-                              max={projectStore.project.duration}
-                              onchange={(v) => updateKeyframeTime(keyframe.id, v)}
-                            />
-                            <span
-                              class="pointer-events-none absolute top-1/2 right-1 -translate-y-1/2 text-[9px] text-muted-foreground"
-                              >s</span
-                            >
-                          </div>
-                          <span class="text-[10px] text-muted-foreground/50">=</span>
-                          <span class="text-[10px] font-medium tabular-nums"
-                            >{formatKeyframeValue(keyframe.value)}</span
-                          >
-                        </div>
-                      </div>
-                      <Popover.Root>
-                        <Popover.Trigger>
-                          {#snippet child({ props })}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              class="h-6 w-6 p-0 opacity-0 transition-opacity group-hover:opacity-100 [@media(hover:none)]:opacity-100"
-                              {...props}
-                            >
-                              <Trash2 class="h-3 w-3" />
-                            </Button>
-                          {/snippet}
-                        </Popover.Trigger>
-                        <Popover.Content class="w-64" align="end" side="left">
-                          <div class="space-y-2">
-                            <h4 class="text-sm font-medium">Delete Keyframe</h4>
-                            <p class="text-xs text-muted-foreground">
-                              Delete keyframe for {getPropertyLabel(keyframe.property)}?
-                            </p>
-                            <div class="flex justify-end gap-2">
-                              <Popover.Close>
-                                {#snippet child({ props })}
-                                  <Button variant="outline" size="sm" class="h-7 text-xs" {...props}
-                                    >Cancel</Button
-                                  >
-                                {/snippet}
-                              </Popover.Close>
-                              <Popover.Close>
-                                {#snippet child({ props })}
-                                  <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    class="h-7 text-xs"
-                                    onclick={() => deleteKeyframe(keyframe.id)}
-                                    {...props}
-                                  >
-                                    Delete
-                                  </Button>
-                                {/snippet}
-                              </Popover.Close>
-                            </div>
-                          </div>
-                        </Popover.Content>
-                      </Popover.Root>
-                    </div>
-                    <div class="mt-1.5 ml-4">
-                      <select
-                        value={keyframe.easing.type}
-                        onchange={(e) =>
-                          updateKeyframeEasing(keyframe.id, e.currentTarget.value as EasingType)}
-                        class="h-6 w-full rounded border border-input bg-transparent px-2 text-xs focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
-                      >
-                        {#each easingOptions as option (option.value)}
-                          <option value={option.value}>{option.label}</option>
-                        {/each}
-                      </select>
-                    </div>
-                  </div>
-                {/each}
-              </div>
-            </div>
-          {/if}
+        <PropertiesGroup label={`Keyframes ${selectedLayer.keyframes.length}`}>
+          <LayerKeyframes layer={selectedLayer} />
         </PropertiesGroup>
       </div>
     </ScrollArea>
