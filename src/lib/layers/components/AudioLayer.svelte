@@ -3,6 +3,7 @@
   import type { LayerMeta } from '../registry';
   import { fieldRegistry } from '../base';
   import { Music } from '@lucide/svelte';
+  import GenerateCaption from '../properties/GenerateCaption.svelte';
 
   /**
    * Schema for Audio Layer custom properties
@@ -11,7 +12,11 @@
    * and play audio synchronized to the project timeline.
    */
   const schema = z.object({
-    src: z.string().default('').describe('Audio source URL or uploaded file URL'),
+    src: z
+      .string()
+      .default('')
+      .describe('Audio source URL or uploaded file URL')
+      .register(fieldRegistry, { widget: 'upload', mediaType: 'audio' }),
     /** Display label shown on canvas */
     label: z.string().default('Audio').describe('Display label'),
     /** Width of the visual representation */
@@ -40,15 +45,11 @@
     captionColor: z.string().default('#ffffff').describe('Caption text color'),
     captionBgColor: z.string().default('rgba(0,0,0,0.7)').describe('Caption background color'),
     /** The storage key if file was uploaded (used for cleanup) */
-    fileKey: z.string().default('').describe('Storage key (for uploaded files)'),
-    /** Original filename if uploaded */
-    fileName: z.string().default('').describe('Original filename'),
-    /** Layer ID - passed by LayerWrapper for time sync */
-    layerId: z.string().optional().describe('Layer ID (internal)'),
-    /** Enter time - passed by LayerWrapper for time sync */
-    enterTime: z.number().optional().describe('Enter time (internal)'),
-    /** Content offset - passed by LayerWrapper for content trimming */
-    contentOffset: z.number().optional().describe('Content offset (internal)')
+    fileKey: z
+      .string()
+      .default('')
+      .describe('Storage key (for uploaded files)')
+      .register(fieldRegistry, { hidden: true })
   });
 
   export const meta: LayerMeta = {
@@ -57,7 +58,10 @@
     label: 'Audio',
     icon: Music,
     description:
-      'Audio tracks with waveform visualization, volume control, trimming, and AI-powered captions'
+      'Audio tracks with waveform visualization, volume control, trimming, and AI-powered captions',
+    customPropertyComponents: {
+      generateCaptions: { label: 'Generate captions', component: GenerateCaption }
+    }
   };
 
   type Props = z.infer<typeof schema>;
@@ -65,6 +69,7 @@
 
 <script lang="ts">
   import { projectStore } from '$lib/stores/project.svelte';
+  import type { Layer } from '$lib/schemas/animation';
 
   let {
     src,
@@ -82,11 +87,10 @@
     captionColor,
     captionBgColor,
     fileKey: _fileKey,
-    fileName: _fileName,
-    layerId: _layerId,
-    enterTime: enterTimeProp,
-    contentOffset: contentOffsetProp
-  }: Props = $props();
+    layer
+  }: Props & {
+    layer: Layer;
+  } = $props();
 
   let audioEl: HTMLAudioElement | undefined = $state();
 
@@ -96,11 +100,11 @@
     const currentTime = projectStore.currentTime;
 
     // Use enterTime passed as prop or fallback to 0
-    const enterTime = enterTimeProp ?? 0;
+    const enterTime = layer.enterTime ?? 0;
     const relativeTime = currentTime - enterTime;
 
     // Apply content offset (where to start in the source audio)
-    const contentOffset = contentOffsetProp ?? 0;
+    const contentOffset = layer.contentOffset ?? 0;
     const audioTime = contentOffset + relativeTime * playbackRate;
 
     // Clamp to valid range (up to audio duration)
@@ -146,8 +150,8 @@
   // Current caption based on project time
   const currentCaption = $derived.by(() => {
     if (!showCaptions || parsedCaptions.length === 0) return '';
-    const enterTime = enterTimeProp ?? 0;
-    const contentOffset = contentOffsetProp ?? 0;
+    const enterTime = layer.enterTime ?? 0;
+    const contentOffset = layer.contentOffset ?? 0;
     const relativeTime = projectStore.currentTime - enterTime + contentOffset;
     const active = parsedCaptions.find((c) => relativeTime >= c.start && relativeTime < c.end);
     return active?.text || '';

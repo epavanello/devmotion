@@ -124,9 +124,12 @@
 
           <!-- Layer Controls -->
           <div
-            class="flex max-w-0 items-center gap-1 overflow-hidden opacity-0 transition-all duration-200 group-hover:max-w-40 group-hover:opacity-100 [@media(hover:none)]:max-w-40 [@media(hover:none)]:opacity-100"
-            class:!max-w-40={deletePopoverOpenLayerId === layer.id}
-            class:!opacity-100={deletePopoverOpenLayerId === layer.id}
+            class={cn(
+              'flex max-w-0 items-center gap-1 overflow-hidden opacity-0 transition-all duration-200 group-hover:max-w-40 group-hover:opacity-100 [@media(hover:none)]:max-w-40 [@media(hover:none)]:opacity-100',
+              {
+                'max-w-40! opacity-100!': deletePopoverOpenLayerId === layer.id
+              }
+            )}
           >
             <Button
               variant="ghost"
@@ -178,10 +181,11 @@
                       {/snippet}
                     </Popover.Close>
                     <Popover.Close>
-                      {#snippet child()}
+                      {#snippet child({ props })}
                         <Button
                           variant="destructive"
                           size="sm"
+                          {...props}
                           onclick={() => deleteLayer(layer.id)}
                         >
                           Delete

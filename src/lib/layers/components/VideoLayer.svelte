@@ -1,6 +1,7 @@
 <script module lang="ts">
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
+  import { fieldRegistry } from '../base';
   import { Video } from '@lucide/svelte';
   import { calculateCoverDimensions, ASPECT_RATIOS } from '$lib/utils/media';
 
@@ -8,7 +9,11 @@
    * Schema for Video Layer custom properties
    */
   const schema = z.object({
-    src: z.string().default('').describe('Video source URL or uploaded file URL'),
+    src: z
+      .string()
+      .default('')
+      .describe('Video source URL or uploaded file URL')
+      .register(fieldRegistry, { widget: 'upload', mediaType: 'video' }),
     width: z
       .number()
       .min(1)
@@ -46,15 +51,11 @@
     /** Playback rate */
     playbackRate: z.number().min(0.1).max(4).default(1).describe('Playback rate'),
     /** The storage key if file was uploaded (used for cleanup) */
-    fileKey: z.string().default('').describe('Storage key (for uploaded files)'),
-    /** Original filename if uploaded */
-    fileName: z.string().default('').describe('Original filename'),
-    /** Layer ID - passed by LayerWrapper for time sync */
-    layerId: z.string().optional().describe('Layer ID (internal)'),
-    /** Enter time - passed by LayerWrapper for time sync */
-    enterTime: z.number().optional().describe('Enter time (internal)'),
-    /** Content offset - passed by LayerWrapper for content trimming */
-    contentOffset: z.number().optional().describe('Content offset (internal)')
+    fileKey: z
+      .string()
+      .default('')
+      .describe('Storage key (for uploaded files)')
+      .register(fieldRegistry, { hidden: true })
   });
 
   export const meta: LayerMeta = {
@@ -70,6 +71,7 @@
 
 <script lang="ts">
   import { projectStore } from '$lib/stores/project.svelte';
+  import type { Layer } from '$lib/schemas/animation';
 
   let {
     src,
@@ -81,10 +83,10 @@
     playbackRate,
     fileKey: _fileKey,
     fileName: _fileName,
-    layerId: _layerId,
-    enterTime: enterTimeProp,
-    contentOffset: contentOffsetProp
-  }: Props = $props();
+    layer
+  }: Props & {
+    layer: Layer;
+  } = $props();
 
   let videoEl: HTMLVideoElement | undefined = $state();
 
@@ -94,11 +96,11 @@
     const currentTime = projectStore.currentTime;
 
     // Use enterTime passed as prop or fallback to 0
-    const enterTime = enterTimeProp ?? 0;
+    const enterTime = layer.enterTime ?? 0;
     const relativeTime = currentTime - enterTime;
 
     // Apply content offset (where to start in the source video)
-    const contentOffset = contentOffsetProp ?? 0;
+    const contentOffset = layer.contentOffset ?? 0;
     const videoTime = contentOffset + relativeTime * playbackRate;
 
     // Clamp to valid range (up to video duration)

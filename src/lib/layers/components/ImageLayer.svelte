@@ -4,6 +4,7 @@
   import { Image } from '@lucide/svelte';
   import { calculateCoverDimensions, ASPECT_RATIOS } from '$lib/utils/media';
   import { projectStore } from '$lib/stores/project.svelte';
+  import { fieldRegistry } from '../base';
 
   /**
    * Schema for Image Layer custom properties
@@ -11,7 +12,11 @@
    * Now supports both URL sources and uploaded file URLs from S3 storage.
    */
   const schema = z.object({
-    src: z.string().default('').describe('Image source URL or uploaded file URL'),
+    src: z
+      .string()
+      .default('')
+      .describe('Image source URL or uploaded file URL')
+      .register(fieldRegistry, { widget: 'upload', mediaType: 'image' }),
     width: z
       .number()
       .min(1)

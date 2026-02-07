@@ -21,6 +21,7 @@
     getGradientCategories,
     type GradientPreset
   } from '$lib/engine/gradient-presets';
+  import { watch } from 'runed';
 
   interface Props {
     value: BackgroundValue;
@@ -61,24 +62,37 @@
   );
 
   // Sync local state when value changes from outside
-  $effect(() => {
-    activeTab = isSolid(value) ? 'solid' : 'gradient';
-    if (isGradient(value)) {
-      gradientType = value.type;
-      stops = [...value.stops];
-      if (value.type === 'linear') {
-        angle = value.angle;
-      } else if (value.type === 'radial') {
-        posX = value.position.x;
-        posY = value.position.y;
-        radialShape = value.shape;
-      } else if (value.type === 'conic') {
-        angle = value.angle;
-        posX = value.position.x;
-        posY = value.position.y;
+  watch(
+    () => value,
+    () => {
+      if (isSolid(value)) {
+        activeTab = 'solid';
+      } else {
+        gradientType = value.type;
+        stops = [...value.stops];
+        if (value.type === 'linear') {
+          angle = value.angle;
+        } else if (value.type === 'radial') {
+          posX = value.position.x;
+          posY = value.position.y;
+          radialShape = value.shape;
+        } else if (value.type === 'conic') {
+          angle = value.angle;
+          posX = value.position.x;
+          posY = value.position.y;
+        }
+
+        const isPreset = gradientPresets.some(
+          (p: GradientPreset) => JSON.stringify(p.value) === JSON.stringify(value)
+        );
+        if (isPreset) {
+          activeTab = 'presets';
+        } else {
+          activeTab = 'gradient';
+        }
       }
     }
-  });
+  );
 
   // CSS preview of current value
   const previewCSS = $derived(backgroundValueToCSS(value));
@@ -377,8 +391,8 @@
           </div>
 
           <!-- Preset grid -->
-          <ScrollArea class="h-64">
-            <div class="grid grid-cols-3 gap-2 pr-2">
+          <ScrollArea class="-m-2.5 h-64 p-1">
+            <div class="grid grid-cols-3 gap-2 p-1.5">
               {#each filteredPresets as preset (preset.id)}
                 <button
                   type="button"

@@ -196,6 +196,7 @@
     role="button"
     tabindex="0"
     style:--primary-color={BRAND_COLORS.blue}
+    style:visibility={visible ? 'visible' : 'hidden'}
   >
     <div class="layer-content" style:opacity={style.opacity}>
       <C {...customProps} />

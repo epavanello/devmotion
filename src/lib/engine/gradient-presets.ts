@@ -28,8 +28,8 @@ export const gradientPresets: GradientPreset[] = [
       size: 'farthest-corner',
       position: { x: 10, y: 20 },
       stops: [
-        { color: 'rgba(253,246,5,1)', position: 0 },
-        { color: 'rgba(245,139,139,1)', position: 100 }
+        { color: '#fdf605', position: 0 },
+        { color: '#f58b8b', position: 100 }
       ]
     }
   },
@@ -84,8 +84,8 @@ export const gradientPresets: GradientPreset[] = [
       type: 'linear',
       angle: 99,
       stops: [
-        { color: 'rgba(34,175,245,1)', position: 3 },
-        { color: 'rgba(98,247,151,1)', position: 98 }
+        { color: '#22aff5', position: 3 },
+        { color: '#62f797', position: 98 }
       ]
     }
   },
@@ -140,8 +140,8 @@ export const gradientPresets: GradientPreset[] = [
       type: 'linear',
       angle: 180,
       stops: [
-        { color: 'rgba(249,21,215,1)', position: 1 },
-        { color: 'rgba(22,0,98,1)', position: 99 }
+        { color: '#f915d7', position: 1 },
+        { color: '#160062', position: 99 }
       ]
     }
   },
@@ -153,10 +153,10 @@ export const gradientPresets: GradientPreset[] = [
       type: 'linear',
       angle: 110,
       stops: [
-        { color: 'rgba(112,246,255,0.33)', position: 11 },
-        { color: 'rgba(221,108,241,0.26)', position: 42 },
-        { color: 'rgba(229,106,253,0.71)', position: 72 },
-        { color: 'rgba(123,183,253,1)', position: 100 }
+        { color: '#c4f9ff', position: 11 },
+        { color: '#eec5f6', position: 42 },
+        { color: '#edb5fe', position: 72 },
+        { color: '#7bb7fd', position: 100 }
       ]
     }
   },
@@ -211,9 +211,9 @@ export const gradientPresets: GradientPreset[] = [
       type: 'linear',
       angle: 103,
       stops: [
-        { color: 'rgba(252,225,208,1)', position: 30 },
-        { color: 'rgba(255,173,214,1)', position: 56 },
-        { color: 'rgba(162,186,245,1)', position: 82 }
+        { color: '#fce1d0', position: 30 },
+        { color: '#ffadd6', position: 56 },
+        { color: '#a2baf5', position: 82 }
       ]
     }
   },

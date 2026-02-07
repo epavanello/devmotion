@@ -9,7 +9,6 @@
   import * as ButtonGroup from '$lib/components/ui/button-group';
   import * as Popover from '$lib/components/ui/popover';
   import {
-    Pin,
     Trash2,
     ArrowUpLeft,
     ArrowUp,
@@ -38,7 +37,7 @@
     getAnimatedStyle,
     getAnimatedProps
   } from '$lib/engine/interpolation';
-  import { getLayerSchema } from '$lib/layers/registry';
+  import { getLayerDefinition, getLayerSchema } from '$lib/layers/registry';
   import { extractPropertyMetadata, type PropertyMetadata } from '$lib/layers/base';
   import { animationPresets } from '$lib/engine/presets';
   import InputWrapper from './input-wrapper.svelte';
@@ -48,6 +47,10 @@
   import type { BackgroundValue } from '$lib/schemas/animation';
   import { Textarea } from '$lib/components/ui/textarea';
   import FileUpload from '../FileUpload.svelte';
+  import type { Snippet } from 'svelte';
+  import InputPin from './input-pin.svelte';
+  import PropertiesGroup from './properties-group.svelte';
+  import InputsWrapper from './inputs-wrapper.svelte';
 
   const selectedLayer = $derived(projectStore.selectedLayer);
 
@@ -89,6 +92,13 @@
     if (!selectedLayer) return [];
     const schema = getLayerSchema(selectedLayer.type);
     return extractPropertyMetadata(schema);
+  });
+
+  const layerCustomPropertyComponents = $derived.by(() => {
+    if (!selectedLayer) return [];
+    const definition = getLayerDefinition(selectedLayer.type);
+    console.log(definition);
+    return Object.entries(definition.customPropertyComponents ?? {});
   });
 
   // Get the current animated props values
@@ -345,45 +355,6 @@
     value: unknown;
   }
 
-  // Caption generation state
-  let isGeneratingCaptions = $state(false);
-  let captionError = $state('');
-
-  async function generateCaptions() {
-    if (!selectedLayer || selectedLayer.type !== 'audio') return;
-    const audioUrl = selectedLayer.props.src as string;
-    if (!audioUrl) {
-      captionError = 'No audio source URL set';
-      return;
-    }
-
-    isGeneratingCaptions = true;
-    captionError = '';
-
-    try {
-      const res = await fetch('/api/captions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ audioUrl })
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.message || `Failed (${res.status})`);
-      }
-
-      const data = await res.json();
-      if (data.success && data.captions) {
-        updateLayerProps('captionText', data.captions);
-        updateLayerProps('showCaptions', true);
-      }
-    } catch (err) {
-      captionError = err instanceof Error ? err.message : 'Unknown error';
-    } finally {
-      isGeneratingCaptions = false;
-    }
-  }
-
   // Preset application state
   let selectedPresetId = $state<string>('');
   let presetDuration = $state<number>(1);
@@ -410,57 +381,58 @@
     onchange={onInput}
   />
 {/snippet}
+{#snippet basicProperyfield({
+  label,
+  name,
+  labelExtra,
+  content
+}: {
+  label: string;
+  name?: string;
+  labelExtra?: Snippet;
+  content: Snippet;
+})}
+  <div class="space-y-2">
+    <Label for={name} class="text-xs"
+      >{label}
+      {#if labelExtra}
+        {@render labelExtra()}
+      {/if}
+    </Label>
+    {@render content()}
+  </div>
+{/snippet}
 
 {#snippet dynamicPropertyField({ metadata, value }: DynamicPropertyFieldProps)}
-  {@const isInterpolatable = metadata.interpolationType !== 'discrete'}
-  {@const property = `props.${metadata.name}` as AnimatableProperty}
-  {@const hasKeyframes = selectedLayer?.keyframes.some((k) => k.property === property)}
-  <div class="space-y-2">
-    <div class="flex items-center justify-between">
-      <Label for={metadata.name} class="text-xs">{metadata.description || metadata.name}</Label>
-      <Button
-        variant="ghost"
-        size="sm"
-        class="h-5 w-5 p-0"
-        onclick={() => addKeyframe(property)}
-        title={isInterpolatable
-          ? `Add keyframe for ${metadata.description || metadata.name}`
-          : `Add keyframe for ${metadata.description || metadata.name} (discrete - jumps to value)`}
-      >
-        <Pin class="size-3" fill={hasKeyframes ? 'currentColor' : 'none'} />
-      </Button>
-    </div>
-
-    {#if metadata.name === 'src' && selectedLayer && (selectedLayer.type === 'image' || selectedLayer.type === 'video' || selectedLayer.type === 'audio')}
+  {#snippet content()}
+    {#if selectedLayer && metadata.meta?.widget === 'upload'}
       <!-- Special handling for media src properties with file upload -->
       <FileUpload
         value={typeof value === 'string' ? value : ''}
         currentFileName={typeof selectedLayer.props.fileName === 'string'
           ? selectedLayer.props.fileName
           : ''}
-        mediaType={selectedLayer.type}
+        mediaType={metadata.meta.mediaType}
         projectId={projectStore.project.id}
         onUpload={(result) => {
-          updateLayerProps('src', result.url);
+          updateLayerProps(metadata.name, result.url);
           updateLayerProps('fileKey', result.key);
-          updateLayerProps('fileName', result.fileName);
           // Set content duration if available
           if (result.duration !== undefined) {
             projectStore.updateLayer(selectedLayer.id, { contentDuration: result.duration });
             // Auto-set exit time based on content duration if layer has no exit time yet
-            if (!selectedLayer.exitTime) {
+            if (selectedLayer.exitTime === undefined || selectedLayer.exitTime === null) {
               const enterTime = selectedLayer.enterTime ?? 0;
               projectStore.setLayerExitTime(selectedLayer.id, enterTime + result.duration);
             }
           }
         }}
         onRemove={() => {
-          updateLayerProps('src', '');
+          updateLayerProps(metadata.name, '');
           updateLayerProps('fileKey', '');
-          updateLayerProps('fileName', '');
           projectStore.updateLayer(selectedLayer.id, {
-            contentDuration: undefined,
-            contentOffset: undefined
+            contentDuration: 0,
+            contentOffset: 0
           });
         }}
       />
@@ -502,14 +474,14 @@
           <option value={option.value}>{option.label}</option>
         {/each}
       </select>
-    {:else if metadata.widget === 'textarea'}
+    {:else if metadata.meta?.widget === 'textarea'}
       <Textarea
         id={metadata.name}
         value={typeof value === 'string' ? value : ''}
         oninput={(e) => updateLayerProps(metadata.name, e.currentTarget.value)}
         spellcheck="false"
       />
-    {:else if metadata.widget === 'background'}
+    {:else if metadata.meta?.widget === 'background'}
       <BackgroundPicker
         value={value as BackgroundValue}
         onchange={(newValue) => updateLayerProps(metadata.name, newValue)}
@@ -521,9 +493,19 @@
         type="text"
         value={typeof value === 'string' ? value : ''}
         oninput={(e) => updateLayerProps(metadata.name, e.currentTarget.value)}
+        disabled={metadata.meta?.readOnly}
       />
     {/if}
-  </div>
+  {/snippet}
+
+  <InputWrapper
+    id={metadata.name}
+    label={metadata.description || metadata.name}
+    property={metadata.name}
+    {addKeyframe}
+  >
+    {@render content()}
+  </InputWrapper>
 {/snippet}
 
 <div
@@ -552,18 +534,20 @@
         <Separator />
 
         <!-- Enter/Exit Time -->
-        <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <Label class="font-semibold">Time Range</Label>
-            {#if selectedLayer.contentDuration !== undefined}
-              {@const contentDuration = selectedLayer.contentDuration}
-              {@const contentOffset = selectedLayer.contentOffset ?? 0}
-              {@const availableContent = contentDuration - contentOffset}
-              <span class="text-[10px] text-muted-foreground/60">
-                Max: {availableContent.toFixed(1)}s
-              </span>
-            {/if}
-          </div>
+        <PropertiesGroup>
+          {#snippet label()}
+            <div class="flex items-center justify-between">
+              <Label class="font-semibold">Time Range</Label>
+              {#if selectedLayer.contentDuration !== undefined}
+                {@const contentDuration = selectedLayer.contentDuration}
+                {@const contentOffset = selectedLayer.contentOffset ?? 0}
+                {@const availableContent = contentDuration - contentOffset}
+                <span class="text-[10px] text-muted-foreground/60">
+                  Max: {availableContent.toFixed(1)}s
+                </span>
+              {/if}
+            </div>
+          {/snippet}
           <div class="grid grid-cols-2 gap-2">
             <div class="space-y-1">
               <Label class="text-xs text-muted-foreground">Enter (s)</Label>
@@ -653,17 +637,27 @@
               </Button>
             </div>
           {/if}
-        </div>
+        </PropertiesGroup>
 
         <Separator />
 
         <!-- Transform -->
-        <div class="space-y-3">
-          <Label class="font-semibold">Transform</Label>
-
+        <PropertiesGroup label="Transform">
           <!-- Position -->
-          <div class="space-y-1">
-            <div class="mb-1 flex items-center gap-1">
+          <InputsWrapper
+            fields={[
+              { prop: 'position.x' as AnimatableProperty, label: 'X' },
+              { prop: 'position.y' as AnimatableProperty, label: 'Y' },
+              { prop: 'position.z' as AnimatableProperty, label: 'Z' }
+            ].map((f) => ({
+              id: f.prop,
+              labels: f.label,
+              property: f.prop,
+              addKeyframe: addKeyframe,
+              hasKeyframes: selectedLayer?.keyframes.some((k) => k.property === f.prop)
+            }))}
+          >
+            {#snippet prefix()}
               <ScrubXyz
                 valueX={currentTransform?.x ?? 0}
                 valueY={currentTransform?.y ?? 0}
@@ -675,46 +669,39 @@
                 onchangeZ={(v: number) => updateTransformProperty('z', v)}
               />
               <Label class="text-xs text-muted-foreground">Position</Label>
-            </div>
-            <div class="flex gap-1">
-              {#each [{ prop: 'position.x' as AnimatableProperty, label: 'X' }, { prop: 'position.y' as AnimatableProperty, label: 'Y' }, { prop: 'position.z' as AnimatableProperty, label: 'Z' }] as { prop, label } (prop)}
-                {@const hasKeyframes = selectedLayer?.keyframes.some((k) => k.property === prop)}
-                <div class="flex flex-1 items-center gap-1">
-                  <span class="ml-1 text-[10px] text-muted-foreground">{label}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    class="h-3 w-3 p-0"
-                    onclick={() => addKeyframe(prop)}
-                    title="Add keyframe for {label}"
-                  >
-                    <Pin class="size-2.5" fill={hasKeyframes ? 'currentColor' : 'none'} />
-                  </Button>
-                </div>
-              {/each}
-            </div>
-            <ButtonGroup.Root>
-              {@render propertyField({
-                id: 'pos-x',
-                value: currentTransform?.x ?? 0,
-                onInput: (v) => updateTransformProperty('x', v)
-              })}
-              {@render propertyField({
-                id: 'pos-y',
-                value: currentTransform?.y ?? 0,
-                onInput: (v) => updateTransformProperty('y', v)
-              })}
-              {@render propertyField({
-                id: 'pos-z',
-                value: currentTransform?.z ?? 0,
-                onInput: (v) => updateTransformProperty('z', v)
-              })}
-            </ButtonGroup.Root>
-          </div>
+            {/snippet}
+            {@render propertyField({
+              id: 'pos-x',
+              value: currentTransform?.x ?? 0,
+              onInput: (v) => updateTransformProperty('x', v)
+            })}
+            {@render propertyField({
+              id: 'pos-y',
+              value: currentTransform?.y ?? 0,
+              onInput: (v) => updateTransformProperty('y', v)
+            })}
+            {@render propertyField({
+              id: 'pos-z',
+              value: currentTransform?.z ?? 0,
+              onInput: (v) => updateTransformProperty('z', v)
+            })}
+          </InputsWrapper>
 
           <!-- Scale -->
-          <div class="space-y-1">
-            <div class="mb-1 flex items-center gap-1">
+          <InputsWrapper
+            fields={[
+              { prop: 'scale.x' as AnimatableProperty, label: 'X' },
+              { prop: 'scale.y' as AnimatableProperty, label: 'Y' },
+              { prop: 'scale.z' as AnimatableProperty, label: 'Z' }
+            ].map((f) => ({
+              id: f.prop,
+              labels: f.label,
+              property: f.prop,
+              addKeyframe: addKeyframe,
+              hasKeyframes: selectedLayer?.keyframes.some((k) => k.property === f.prop)
+            }))}
+          >
+            {#snippet prefix()}
               <ScrubXyz
                 valueX={currentTransform?.scaleX ?? 1}
                 valueY={currentTransform?.scaleY ?? 1}
@@ -726,49 +713,42 @@
                 onchangeZ={(v: number) => updateTransformProperty('scaleZ', v || 1)}
               />
               <Label class="text-xs text-muted-foreground">Scale</Label>
-            </div>
-            <div class="flex gap-1">
-              {#each [{ prop: 'scale.x' as AnimatableProperty, label: 'X' }, { prop: 'scale.y' as AnimatableProperty, label: 'Y' }, { prop: 'scale.z' as AnimatableProperty, label: 'Z' }] as { prop, label } (prop)}
-                {@const hasKeyframes = selectedLayer?.keyframes.some((k) => k.property === prop)}
-                <div class="flex flex-1 items-center gap-1">
-                  <span class="ml-1 text-[10px] text-muted-foreground">{label}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    class="h-3 w-3 p-0"
-                    onclick={() => addKeyframe(prop)}
-                    title="Add keyframe for {label}"
-                  >
-                    <Pin class="size-2.5" fill={hasKeyframes ? 'currentColor' : 'none'} />
-                  </Button>
-                </div>
-              {/each}
-            </div>
-            <ButtonGroup.Root>
-              {@render propertyField({
-                id: 'scale-x',
-                value: currentTransform?.scaleX ?? 1,
-                step: '0.1',
-                onInput: (v) => updateTransformProperty('scaleX', v || 1)
-              })}
-              {@render propertyField({
-                id: 'scale-y',
-                value: currentTransform?.scaleY ?? 1,
-                step: '0.1',
-                onInput: (v) => updateTransformProperty('scaleY', v || 1)
-              })}
-              {@render propertyField({
-                id: 'scale-z',
-                value: currentTransform?.scaleZ ?? 1,
-                step: '0.1',
-                onInput: (v) => updateTransformProperty('scaleZ', v || 1)
-              })}
-            </ButtonGroup.Root>
-          </div>
+            {/snippet}
+            {@render propertyField({
+              id: 'scale-x',
+              value: currentTransform?.scaleX ?? 1,
+              step: '0.1',
+              onInput: (v) => updateTransformProperty('scaleX', v || 1)
+            })}
+            {@render propertyField({
+              id: 'scale-y',
+              value: currentTransform?.scaleY ?? 1,
+              step: '0.1',
+              onInput: (v) => updateTransformProperty('scaleY', v || 1)
+            })}
+            {@render propertyField({
+              id: 'scale-z',
+              value: currentTransform?.scaleZ ?? 1,
+              step: '0.1',
+              onInput: (v) => updateTransformProperty('scaleZ', v || 1)
+            })}
+          </InputsWrapper>
 
           <!-- Rotation -->
-          <div class="space-y-1">
-            <div class="mb-1 flex items-center gap-1">
+          <InputsWrapper
+            fields={[
+              { prop: 'rotation.x' as AnimatableProperty, label: 'X' },
+              { prop: 'rotation.y' as AnimatableProperty, label: 'Y' },
+              { prop: 'rotation.z' as AnimatableProperty, label: 'Z' }
+            ].map((f) => ({
+              id: f.prop,
+              labels: f.label,
+              property: f.prop,
+              addKeyframe: addKeyframe,
+              hasKeyframes: selectedLayer?.keyframes.some((k) => k.property === f.prop)
+            }))}
+          >
+            {#snippet prefix()}
               <ScrubXyz
                 valueX={currentTransform?.rotationY ?? 0}
                 valueY={currentTransform?.rotationX ?? 0}
@@ -781,49 +761,29 @@
                 onchangeZ={(v: number) => updateTransformProperty('rotationZ', v)}
               />
               <Label class="text-xs text-muted-foreground">Rotation (radians)</Label>
-            </div>
-            <div class="flex gap-1">
-              {#each [{ prop: 'rotation.x' as AnimatableProperty, label: 'X' }, { prop: 'rotation.y' as AnimatableProperty, label: 'Y' }, { prop: 'rotation.z' as AnimatableProperty, label: 'Z' }] as { prop, label } (prop)}
-                {@const hasKeyframes = selectedLayer?.keyframes.some((k) => k.property === prop)}
-                <div class="flex flex-1 items-center gap-1">
-                  <span class="ml-1 text-[10px] text-muted-foreground">{label}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    class="h-3 w-3 p-0"
-                    onclick={() => addKeyframe(prop)}
-                    title="Add keyframe for {label}"
-                  >
-                    <Pin class="size-2.5" fill={hasKeyframes ? 'currentColor' : 'none'} />
-                  </Button>
-                </div>
-              {/each}
-            </div>
-            <ButtonGroup.Root>
-              {@render propertyField({
-                id: 'rot-x',
-                value: currentTransform?.rotationX ?? 0,
-                step: '0.1',
-                onInput: (v) => updateTransformProperty('rotationX', v)
-              })}
-              {@render propertyField({
-                id: 'rot-y',
-                value: currentTransform?.rotationY ?? 0,
-                step: '0.1',
-                onInput: (v) => updateTransformProperty('rotationY', v)
-              })}
-              {@render propertyField({
-                id: 'rot-z',
-                value: currentTransform?.rotationZ ?? 0,
-                step: '0.1',
-                onInput: (v) => updateTransformProperty('rotationZ', v)
-              })}
-            </ButtonGroup.Root>
-          </div>
+            {/snippet}
+            {@render propertyField({
+              id: 'rot-x',
+              value: currentTransform?.rotationX ?? 0,
+              step: '0.1',
+              onInput: (v) => updateTransformProperty('rotationX', v)
+            })}
+            {@render propertyField({
+              id: 'rot-y',
+              value: currentTransform?.rotationY ?? 0,
+              step: '0.1',
+              onInput: (v) => updateTransformProperty('rotationY', v)
+            })}
+            {@render propertyField({
+              id: 'rot-z',
+              value: currentTransform?.rotationZ ?? 0,
+              step: '0.1',
+              onInput: (v) => updateTransformProperty('rotationZ', v)
+            })}
+          </InputsWrapper>
 
           <!-- Anchor Point -->
-          <div class="space-y-2">
-            <Label class="text-xs text-muted-foreground">Anchor Point</Label>
+          <InputWrapper id="anchor-point" label="Anchor Point">
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
                 {#snippet child({ props })}
@@ -847,14 +807,13 @@
                 </div>
               </DropdownMenu.Content>
             </DropdownMenu.Root>
-          </div>
-        </div>
+          </InputWrapper>
+        </PropertiesGroup>
 
         <Separator />
 
         <!-- Style -->
-        <div class="space-y-3">
-          <Label class="font-semibold">Style</Label>
+        <PropertiesGroup label="Style">
           <InputWrapper id="opacity" label="Opacity" property="opacity" {addKeyframe}>
             {@render propertyField({
               id: 'opacity',
@@ -865,71 +824,58 @@
               onInput: (v) => updateStyle('opacity', v || 0)
             })}
           </InputWrapper>
-        </div>
+        </PropertiesGroup>
 
         <!-- Layer-specific properties (dynamic based on schema) -->
         {#if layerPropertyMetadata.length > 0}
           <Separator />
-          <div class="space-y-3">
-            <Label class="font-semibold">Layer Properties</Label>
-
+          <PropertiesGroup label="Layer Properties">
             {#each layerPropertyMetadata as propMetadata (propMetadata.name)}
-              {@render dynamicPropertyField({
-                metadata: propMetadata,
-                value: currentAnimatedProps[propMetadata.name]
+              {#if !propMetadata.meta?.hidden}
+                {@render dynamicPropertyField({
+                  metadata: propMetadata,
+                  value: currentAnimatedProps[propMetadata.name]
+                })}
+              {/if}
+            {/each}
+            {#each layerCustomPropertyComponents as [name, { component: PropertyComponent, label }] (name)}
+              {#snippet content()}
+                <PropertyComponent layer={selectedLayer} />
+              {/snippet}
+              {@render basicProperyfield({
+                label,
+                name,
+                content
               })}
             {/each}
-
-            {#if selectedLayer?.type === 'audio' && selectedLayer.props.src}
-              <Button
-                variant="outline"
-                size="sm"
-                class="w-full text-xs"
-                disabled={isGeneratingCaptions}
-                onclick={generateCaptions}
-              >
-                <Sparkles class="mr-1 size-3" />
-                {isGeneratingCaptions ? 'Generating...' : 'Generate Captions (AI)'}
-              </Button>
-              {#if captionError}
-                <p class="text-xs text-destructive">{captionError}</p>
-              {/if}
-            {/if}
-          </div>
+          </PropertiesGroup>
         {/if}
 
         <Separator />
 
         <!-- Animation Presets -->
-        <div class="space-y-3">
-          <Label class="font-semibold">Animation Presets</Label>
+        <PropertiesGroup label="Animation Presets">
+          <InputWrapper id="animation-presets" label="Animation Presets">
+            <select
+              bind:value={selectedPresetId}
+              class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+            >
+              <option value="">Select...</option>
+              {#each animationPresets as preset (preset.id)}
+                <option value={preset.id}>{preset.name}</option>
+              {/each}
+            </select>
+          </InputWrapper>
 
-          <div class="grid grid-cols-3 gap-2">
-            <div class="col-span-2 space-y-2">
-              <Label class="text-xs text-muted-foreground">Preset</Label>
-              <select
-                bind:value={selectedPresetId}
-                class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
-              >
-                <option value="">Select...</option>
-                {#each animationPresets as preset (preset.id)}
-                  <option value={preset.id}>{preset.name}</option>
-                {/each}
-              </select>
-            </div>
-
-            <div class="space-y-2">
-              <Label for="preset-duration" class="text-xs text-muted-foreground">Duration (s)</Label
-              >
-              <ScrubInput
-                id="preset-duration"
-                value={presetDuration}
-                min={0.1}
-                step={0.1}
-                onchange={(v) => (presetDuration = v)}
-              />
-            </div>
-          </div>
+          <InputWrapper id="preset-duration" label="Duration (s)">
+            <ScrubInput
+              id="preset-duration"
+              value={presetDuration}
+              min={0.1}
+              step={0.1}
+              onchange={(v) => (presetDuration = v)}
+            />
+          </InputWrapper>
 
           <Button
             variant="default"
@@ -940,14 +886,12 @@
             <Sparkles class="mr-2 h-4 w-4" />
             Apply Preset
           </Button>
-        </div>
+        </PropertiesGroup>
 
         <Separator />
 
         <!-- Keyframes -->
-        <div class="space-y-3">
-          <Label class="font-semibold">Keyframes</Label>
-
+        <PropertiesGroup label="Keyframes">
           {#if selectedLayer.keyframes.length > 0}
             <div class="mt-4 space-y-2">
               <Label class="text-xs text-muted-foreground">
@@ -1017,7 +961,9 @@
                             <div class="flex justify-end gap-2">
                               <Popover.Close>
                                 {#snippet child({ props })}
-                                  <Button variant="outline" size="sm" class="h-7 text-xs" {...props}>Cancel</Button>
+                                  <Button variant="outline" size="sm" class="h-7 text-xs" {...props}
+                                    >Cancel</Button
+                                  >
                                 {/snippet}
                               </Popover.Close>
                               <Popover.Close>
@@ -1055,7 +1001,7 @@
               </div>
             </div>
           {/if}
-        </div>
+        </PropertiesGroup>
       </div>
     </ScrollArea>
   {:else}
