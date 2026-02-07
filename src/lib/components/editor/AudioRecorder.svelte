@@ -6,6 +6,7 @@
     generateTimestampedFileName,
     formatDuration,
     handleMediaError,
+    getSupportedMimeType,
     stopMediaStream
   } from './media-upload-utils';
 
@@ -33,8 +34,21 @@
       recordingError = '';
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
+      // Get supported mime type with fallback
+      const mimeTypes = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/mp4',
+        'audio/ogg;codecs=opus'
+      ];
+
+      const mimeType = await getSupportedMimeType(mimeTypes);
+      if (!mimeType) {
+        throw new Error('No supported audio codec found in your browser');
+      }
+
       mediaRecorder = new MediaRecorder(mediaStream, {
-        mimeType: 'audio/webm;codecs=opus'
+        mimeType
       });
 
       audioChunks = [];
@@ -57,7 +71,7 @@
         mediaStream = null;
 
         // Create blob from chunks
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const audioBlob = new Blob(audioChunks, { type: mimeType });
 
         // Upload the recording with precise duration
         await uploadRecording(audioBlob, finalDuration);
@@ -74,6 +88,10 @@
       const error = handleMediaError(err);
       recordingError = error.message;
       console.error('Recording error:', err);
+
+      // Clean up on error
+      stopMediaStream(mediaStream);
+      mediaStream = null;
     }
   }
 

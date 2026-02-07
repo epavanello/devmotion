@@ -91,7 +91,7 @@
 
   // Sync the video element's currentTime to the project timeline
   $effect(() => {
-    if (!videoEl || !src) return;
+    if (!videoEl || !src || !layer) return;
     const currentTime = projectStore.currentTime;
 
     // Use enterTime passed as prop or fallback to 0

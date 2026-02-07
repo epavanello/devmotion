@@ -37,10 +37,8 @@
           contentDuration: result.duration
         });
         // Auto-set exit time based on content duration if layer has no exit time yet
-        if (layer.exitTime === undefined || layer.exitTime === null) {
-          const enterTime = layer.enterTime ?? 0;
-          projectStore.setLayerExitTime(layer.id, enterTime + result.duration);
-        }
+        const enterTime = layer.enterTime ?? 0;
+        projectStore.setLayerExitTime(layer.id, enterTime + result.duration);
       }
     }}
     onRemove={() => {

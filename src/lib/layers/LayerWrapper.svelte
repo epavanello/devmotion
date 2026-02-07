@@ -183,26 +183,24 @@
   }
 </script>
 
-{#if visible}
-  <div
-    class="layer-wrapper absolute top-1/2 left-1/2 *:pointer-events-none"
-    class:selected
-    class:locked
-    data-layer-id={id}
-    style:transform={transformCSS}
-    style:transform-style="preserve-3d"
-    style:cursor={locked ? 'not-allowed' : 'move'}
-    onmousedown={onMouseDown}
-    role="button"
-    tabindex="0"
-    style:--primary-color={BRAND_COLORS.blue}
-    style:visibility={visible ? 'visible' : 'hidden'}
-  >
-    <div class="layer-content" style:opacity={style.opacity}>
-      <C {...customProps} />
-    </div>
+<div
+  class="layer-wrapper absolute top-1/2 left-1/2 *:pointer-events-none"
+  class:selected
+  class:locked
+  data-layer-id={id}
+  style:transform={transformCSS}
+  style:transform-style="preserve-3d"
+  style:cursor={locked ? 'not-allowed' : 'move'}
+  onmousedown={onMouseDown}
+  role="button"
+  tabindex="0"
+  style:--primary-color={BRAND_COLORS.blue}
+  style:visibility={visible ? 'visible' : 'hidden'}
+>
+  <div class="layer-content" style:opacity={style.opacity}>
+    <C {...customProps} />
   </div>
-{/if}
+</div>
 
 <style>
   .layer-wrapper {

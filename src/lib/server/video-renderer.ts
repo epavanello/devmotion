@@ -3,6 +3,7 @@ import ffmpeg from 'fluent-ffmpeg';
 import { PassThrough, Readable } from 'stream';
 import { EventEmitter } from 'events';
 import { generateRenderToken, invalidateRenderToken } from './render-token';
+import { getSignedFileUrl } from './storage';
 import type { ProjectData } from '$lib/schemas/animation';
 
 interface RenderConfig {
@@ -36,6 +37,22 @@ interface AudioTrackInfo {
   mediaEndTime: number;
   volume: number;
   muted: boolean;
+}
+
+/**
+ * Convert a URL to a format that FFmpeg can use.
+ * If the URL is a local proxy endpoint (/api/upload/...), convert it to a presigned S3 URL.
+ */
+async function resolveMediaUrl(url: string): Promise<string> {
+  // If it's a local API proxy URL, extract the key and get a presigned URL
+  if (url.startsWith('/api/upload/')) {
+    const encodedKey = url.replace('/api/upload/', '');
+    const key = decodeURIComponent(encodedKey);
+    console.log('Converting proxy URL to presigned URL:', { url, key });
+    return await getSignedFileUrl(key, 7200); // 2 hours expiry for long renders
+  }
+  // Otherwise, return the URL as-is (it's already a public URL)
+  return url;
 }
 
 /**
@@ -92,6 +109,7 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
   // Helper to emit progress
   const emitProgress = (progress: RenderProgress) => {
     renderEmitter.emit(`progress:${renderId}`, progress);
+    console.log({ progress });
   };
 
   // Run the render process in the background
@@ -123,7 +141,7 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
       }
 
       browser = await chromium.launch({
-        headless: true,
+        headless: process.env.NODE_ENV !== 'development',
         args: launchArgs
       });
 
@@ -140,13 +158,21 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
       const actualDuration = pageConfig?.duration || duration;
       const actualTotalFrames = Math.ceil(actualFps * actualDuration);
 
+      // Resolve audio track URLs (convert proxy URLs to presigned URLs)
+      const resolvedAudioTracks = await Promise.all(
+        audioTracks.map(async (track) => ({
+          ...track,
+          src: await resolveMediaUrl(track.src)
+        }))
+      );
+
       // Initialize FFmpeg
       const frameStream = new PassThrough();
 
       ffmpegCommand = ffmpeg().input(frameStream).inputFormat('image2pipe').inputFPS(actualFps);
 
       // Add audio tracks as additional inputs
-      for (const track of audioTracks) {
+      for (const track of resolvedAudioTracks) {
         ffmpegCommand = ffmpegCommand.input(track.src);
       }
 
@@ -161,11 +187,11 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
       ];
 
       // If we have audio tracks, build a complex filter for mixing
-      if (audioTracks.length > 0) {
+      if (resolvedAudioTracks.length > 0) {
         const filterParts: string[] = [];
         const audioInputs: string[] = [];
 
-        audioTracks.forEach((track, i) => {
+        resolvedAudioTracks.forEach((track, i) => {
           const inputIndex = i + 1; // 0 is the video frame stream
           const trimStart = track.mediaStartTime;
           const trimEnd = track.mediaEndTime > 0 ? track.mediaEndTime : undefined;

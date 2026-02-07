@@ -96,7 +96,7 @@
 
   // Sync audio to project timeline
   $effect(() => {
-    if (!audioEl || !src) return;
+    if (!audioEl || !src || !layer) return;
     const currentTime = projectStore.currentTime;
 
     // Use enterTime passed as prop or fallback to 0
@@ -149,7 +149,7 @@
 
   // Current caption based on project time
   const currentCaption = $derived.by(() => {
-    if (!showCaptions || parsedCaptions.length === 0) return '';
+    if (!showCaptions || parsedCaptions.length === 0 || !layer) return '';
     const enterTime = layer.enterTime ?? 0;
     const contentOffset = layer.contentOffset ?? 0;
     const relativeTime = projectStore.currentTime - enterTime + contentOffset;
