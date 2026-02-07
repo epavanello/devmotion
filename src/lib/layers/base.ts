@@ -10,9 +10,18 @@ import type { LayerMeta } from './registry';
  * Keeps UI-rendering hints out of validation logic and out of .describe() strings.
  */
 export type FieldMeta = {
-  /** Override the default input widget rendered for this field */
-  widget?: 'textarea' | 'background';
-};
+  hidden?: boolean;
+  readOnly?: boolean;
+} & (
+  | {
+      /** Override the default input widget rendered for this field */
+      widget?: 'textarea' | 'background';
+    }
+  | {
+      widget: 'upload';
+      mediaType: 'image' | 'video' | 'audio';
+    }
+);
 
 /**
  * Global registry for FieldMeta.  Individual schema fields call
@@ -88,7 +97,7 @@ export interface LayerComponentDefinition extends LayerMeta {
 /**
  * Extract property metadata from a Zod schema for dynamic UI generation
  */
-export interface PropertyMetadata {
+export type PropertyMetadata = {
   name: string;
   type: 'string' | 'number' | 'boolean' | 'color' | 'select' | 'background';
   description?: string;
@@ -105,12 +114,8 @@ export interface PropertyMetadata {
    * - 'background': Background/gradient interpolation (discrete for now)
    */
   interpolationType: 'number' | 'color' | 'text' | 'discrete' | 'background';
-  /**
-   * UI-widget override sourced from fieldRegistry.
-   * When present the panel renders this widget instead of the default for the type.
-   */
-  widget?: FieldMeta['widget'];
-}
+  meta?: FieldMeta;
+};
 
 /**
  * Unwrap ZodDefault and ZodOptional to get the inner type
@@ -139,7 +144,7 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
       const zodType = value;
       const unwrapped = unwrapZodType(zodType);
 
-      const meta: PropertyMetadata = {
+      const propertiesMeta: PropertyMetadata = {
         name: key,
         type: 'string',
         interpolationType: 'discrete', // Default to discrete (no interpolation),
@@ -149,20 +154,20 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
 
       // Determine type and interpolation type
       if (unwrapped instanceof z.ZodNumber) {
-        meta.type = 'number';
-        meta.interpolationType = 'number'; // Numbers can be interpolated
+        propertiesMeta.type = 'number';
+        propertiesMeta.interpolationType = 'number'; // Numbers can be interpolated
 
         const min = unwrapped.def.checks?.find((check) => check._zod.def.check === 'greater_than');
         if (min && 'value' in min._zod.def) {
-          meta.min = min._zod.def.value as number;
+          propertiesMeta.min = min._zod.def.value as number;
         }
         const max = unwrapped.def.checks?.find((check) => check._zod.def.check === 'less_than');
         if (max && 'value' in max._zod.def) {
-          meta.max = max._zod.def.value as number;
+          propertiesMeta.max = max._zod.def.value as number;
         }
       } else if (unwrapped instanceof z.ZodBoolean) {
-        meta.type = 'boolean';
-        meta.interpolationType = 'discrete'; // Booleans jump between values
+        propertiesMeta.type = 'boolean';
+        propertiesMeta.interpolationType = 'discrete'; // Booleans jump between values
       } else if (unwrapped instanceof z.ZodUnion) {
         // Check if this is a BackgroundValue union (solid, linear, radial, conic)
         const options = unwrapped.options as z.ZodType[];
@@ -178,45 +183,41 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
         });
 
         if (isBackgroundUnion) {
-          meta.type = 'background';
-          meta.interpolationType = 'discrete'; // Backgrounds use discrete interpolation for now
+          propertiesMeta.type = 'background';
+          propertiesMeta.interpolationType = 'discrete'; // Backgrounds use discrete interpolation for now
         } else {
-          meta.type = 'string';
-          meta.interpolationType = 'discrete';
+          propertiesMeta.type = 'string';
+          propertiesMeta.interpolationType = 'discrete';
         }
       } else if (unwrapped instanceof z.ZodString) {
-        meta.type = 'string';
-        meta.interpolationType = 'discrete'; // Strings jump between values
+        propertiesMeta.type = 'string';
+        propertiesMeta.interpolationType = 'discrete'; // Strings jump between values
 
         // Check if it's a color by convention (field name contains 'color')
         if (key.toLowerCase().includes('color')) {
-          meta.type = 'color';
-          meta.interpolationType = 'color'; // Colors can be interpolated
+          propertiesMeta.type = 'color';
+          propertiesMeta.interpolationType = 'color'; // Colors can be interpolated
         }
         // Check if it's text content (for character-by-character animation)
         else if (key === 'content' || key === 'text') {
-          meta.interpolationType = 'text'; // Text can be interpolated character by character
+          propertiesMeta.interpolationType = 'text'; // Text can be interpolated character by character
         }
       } else if (unwrapped instanceof z.ZodEnum) {
-        meta.type = 'select';
-        meta.interpolationType = 'discrete'; // Enums jump between values
+        propertiesMeta.type = 'select';
+        propertiesMeta.interpolationType = 'discrete'; // Enums jump between values
         // Extract enum values from Zod 4 - uses 'entries' object or 'options' array
         const enumEntries = unwrapped._zod?.def?.entries;
         if (enumEntries && typeof enumEntries === 'object') {
-          meta.options = Object.keys(enumEntries).map((v) => ({
+          propertiesMeta.options = Object.keys(enumEntries).map((v) => ({
             value: v,
             label: String(v).charAt(0).toUpperCase() + String(v).slice(1)
           }));
         }
       }
 
-      // Pull in any UI-widget override registered via fieldRegistry
-      const fieldMeta = fieldRegistry.get(zodType);
-      if (fieldMeta?.widget) {
-        meta.widget = fieldMeta.widget;
-      }
+      propertiesMeta.meta = fieldRegistry.get(zodType);
 
-      metadata.push(meta);
+      metadata.push(propertiesMeta);
     }
   }
 

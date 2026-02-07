@@ -184,7 +184,7 @@
   });
 </script>
 
-<div class="relative h-full w-full overflow-hidden bg-gray-700" class:recording-mode={isRecording}>
+<div class="relative h-full w-full overflow-hidden" class:recording-mode={isRecording}>
   <!-- Canvas viewport -->
   <div
     bind:this={canvasContainer}
@@ -210,7 +210,7 @@
           style:height="20000px"
           style:left="-10000px"
           style:top="-10000px"
-          style:background-color="rgba(0, 0, 0, 0.6)"
+          style:background-color="rgba(0, 0, 0, 0.2)"
           style:clip-path={`polygon(evenodd, 0 0, 0 20000px, 20000px 20000px, 20000px 0, 0 0, ${10000 - projectStore.project.width / 2}px ${10000 - projectStore.project.height / 2}px, ${10000 - projectStore.project.width / 2}px ${10000 + projectStore.project.height / 2}px, ${10000 + projectStore.project.width / 2}px ${10000 + projectStore.project.height / 2}px, ${10000 + projectStore.project.width / 2}px ${10000 - projectStore.project.height / 2}px, ${10000 - projectStore.project.width / 2}px ${10000 - projectStore.project.height / 2}px)`}
           style:pointer-events="none"
         ></div>
@@ -241,21 +241,34 @@
           style:pointer-events={projectStore.isRecording ? 'none' : undefined}
         >
           {#each projectStore.project.layers as layer (layer.id)}
-            {@const { transform, style, customProps } = getLayerRenderData(layer)}
-            {@const component = getLayerComponent(layer.type)}
-            {@const isSelected = projectStore.selectedLayerId === layer.id}
+            {@const enterTime = layer.enterTime ?? 0}
+            {@const exitTime = layer.exitTime ?? projectStore.project.duration}
+            {@const isInTimeRange =
+              projectStore.currentTime >= enterTime && projectStore.currentTime <= exitTime}
+            <!-- if the layer is video, image or audio, it must be rendered with visibility: invisible even if it's not in the time range -->
+            {@const mustKeepWarm =
+              layer.type === 'video' || layer.type === 'image' || layer.type === 'audio'}
+            {#if isInTimeRange || mustKeepWarm}
+              {@const { transform, style, customProps } = getLayerRenderData(layer)}
+              {@const component = getLayerComponent(layer.type)}
+              {@const isSelected = projectStore.selectedLayerId === layer.id}
+              {@const enhancedProps = {
+                ...customProps,
+                layer
+              }}
 
-            <LayerWrapper
-              id={layer.id}
-              name={layer.name}
-              visible={layer.visible}
-              locked={layer.locked}
-              selected={isSelected && !projectStore.isRecording}
-              {transform}
-              {style}
-              {component}
-              {customProps}
-            />
+              <LayerWrapper
+                id={layer.id}
+                name={layer.name}
+                visible={layer.visible && isInTimeRange}
+                locked={layer.locked}
+                selected={isSelected && !projectStore.isRecording}
+                {transform}
+                {style}
+                {component}
+                customProps={enhancedProps}
+              />
+            {/if}
           {/each}
         </div>
 

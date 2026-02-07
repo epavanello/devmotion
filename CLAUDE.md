@@ -61,6 +61,7 @@ registerLayer('my-layer', Component, PropsSchema);
 ### Code Style
 
 - **Package manager**: `pnpm` only (not npm/yarn)
+- **Icons**: Use `@lucide/svelte` package exclusively
 - **Naming**: `kebab-case.ts`, `PascalCase.svelte`, `camelCase` functions
 - **Imports**: External → SvelteKit → Internal → Relative
 - **Store files**: `name.svelte.ts` suffix for rune-based stores
@@ -248,4 +249,4 @@ OPENROUTER_API_KEY                 # AI features (optional)
 - **Type definitions**: Check `src/lib/schemas/animation.ts`
 - **Layer examples**: Look at existing layer components
 
-**Last Updated**: 2026-02-05
+**Last Updated**: 2026-02-06

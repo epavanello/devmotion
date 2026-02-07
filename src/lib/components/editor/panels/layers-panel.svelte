@@ -5,13 +5,16 @@
   import { Eye, EyeOff, Lock, Unlock, Trash2, Plus } from '@lucide/svelte';
   import type { Layer } from '$lib/types/animation';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+  import * as Popover from '$lib/components/ui/popover';
   import { createLayer } from '$lib/engine/layer-factory';
-  import { getLayerDefinition, layerRegistry } from '$lib/layers/registry';
+  import { getLayerDefinition, layerRegistry, type LayerType } from '$lib/layers/registry';
   import { cn } from '$lib/utils';
+
+  let deletePopoverOpenLayerId = $state<string | null>(null);
 
   // Note: Coordinate system has (0, 0) at canvas center
   function addLayer(type: string) {
-    const layer = createLayer(type as import('$lib/types/animation').LayerType, {}, { x: 0, y: 0 });
+    const layer = createLayer(type as LayerType, {}, { x: 0, y: 0 });
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }
@@ -30,11 +33,8 @@
     projectStore.updateLayer(layer.id, { locked: !layer.locked });
   }
 
-  function deleteLayer(layer: Layer, e: Event) {
-    e.stopPropagation();
-    if (confirm(`Delete layer "${layer.name}"?`)) {
-      projectStore.removeLayer(layer.id);
-    }
+  function deleteLayer(layerId: string) {
+    projectStore.removeLayer(layerId);
   }
 
   function handleDragStart(e: DragEvent, index: number) {
@@ -83,7 +83,8 @@
         {#each Object.values(layerRegistry) as layer (layer.type)}
           <DropdownMenu.Item onclick={() => addLayer(layer.type)}>
             {#if layer.icon}
-              <svelte:component this={layer.icon} class="mr-2 h-4 w-4" />
+              {@const Icon = layer.icon}
+              <Icon class="mr-2 h-4 w-4" />
             {/if}
             {layer.label}
           </DropdownMenu.Item>
@@ -123,7 +124,12 @@
 
           <!-- Layer Controls -->
           <div
-            class="flex max-w-0 items-center gap-1 overflow-hidden opacity-0 transition-all duration-200 group-hover:max-w-40 group-hover:opacity-100 [@media(hover:none)]:max-w-40 [@media(hover:none)]:opacity-100"
+            class={cn(
+              'flex max-w-0 items-center gap-1 overflow-hidden opacity-0 transition-all duration-200 group-hover:max-w-40 group-hover:opacity-100 [@media(hover:none)]:max-w-40 [@media(hover:none)]:opacity-100',
+              {
+                'max-w-40! opacity-100!': deletePopoverOpenLayerId === layer.id
+              }
+            )}
           >
             <Button
               variant="ghost"
@@ -151,14 +157,45 @@
               {/if}
             </Button>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              class="h-6 w-6 p-0 text-destructive"
-              onclick={(e) => deleteLayer(layer, e)}
+            <Popover.Root
+              open={deletePopoverOpenLayerId === layer.id}
+              onOpenChange={(open) => (deletePopoverOpenLayerId = open ? layer.id : null)}
             >
-              <Trash2 class="size-3" />
-            </Button>
+              <Popover.Trigger>
+                {#snippet child({ props })}
+                  <Button variant="ghost" size="sm" class="h-6 w-6 p-0 text-destructive" {...props}>
+                    <Trash2 class="size-3" />
+                  </Button>
+                {/snippet}
+              </Popover.Trigger>
+              <Popover.Content class="w-72" align="start" side="right">
+                <div class="space-y-2">
+                  <h4 class="leading-none font-medium">Delete Layer</h4>
+                  <p class="text-sm text-muted-foreground">
+                    Delete "{layer.name}"? This cannot be undone.
+                  </p>
+                  <div class="flex justify-end gap-2 pt-2">
+                    <Popover.Close>
+                      {#snippet child({ props })}
+                        <Button variant="outline" size="sm" {...props}>Cancel</Button>
+                      {/snippet}
+                    </Popover.Close>
+                    <Popover.Close>
+                      {#snippet child({ props })}
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          {...props}
+                          onclick={() => deleteLayer(layer.id)}
+                        >
+                          Delete
+                        </Button>
+                      {/snippet}
+                    </Popover.Close>
+                  </div>
+                </div>
+              </Popover.Content>
+            </Popover.Root>
           </div>
         </div>
       {/each}

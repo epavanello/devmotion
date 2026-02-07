@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const staticLayers = import.meta.glob('./components/*.svelte', { eager: true });
 
+import type { Layer } from '$lib/schemas/animation';
 import type { LayerComponentDefinition } from './base';
 import type { Component } from 'svelte';
 import type z from 'zod';
@@ -11,11 +12,10 @@ export type LayerMeta = {
   label: string;
   description: string;
   icon: Component;
-};
-
-type Layer = {
-  component: Component<any>;
-  meta: LayerMeta;
+  customPropertyComponents?: Record<
+    string,
+    { label: string; component: Component<{ layer: Layer }> }
+  >;
 };
 
 type LayerModule = {
@@ -23,23 +23,21 @@ type LayerModule = {
   meta: LayerMeta;
 };
 
-const layers: Layer[] = (Object.values(staticLayers) as LayerModule[]).map((module) => ({
-  component: module.default,
-  meta: module.meta
-}));
-
 /**
  * Registry of all available layer types
  */
-export const layerRegistry: Record<string, LayerComponentDefinition> = layers.reduce(
+export const layerRegistry: Record<string, LayerComponentDefinition> = (
+  Object.values(staticLayers) as LayerModule[]
+).reduce(
   (registry, layer) => {
     registry[layer.meta.type] = {
       type: layer.meta.type,
       label: layer.meta.label,
       description: layer.meta.description,
       schema: layer.meta.schema,
-      component: layer.component,
-      icon: layer.meta.icon
+      component: layer.default,
+      icon: layer.meta.icon,
+      customPropertyComponents: layer.meta.customPropertyComponents
     };
     return registry;
   },

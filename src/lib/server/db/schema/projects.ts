@@ -22,6 +22,7 @@ export const project = pgTable(
     isMcp: boolean('is_mcp').default(false).notNull(),
     views: integer('views').default(0).notNull(),
     data: jsonb('data').notNull().$type<ProjectData>(),
+    thumbnailUrl: text('thumbnail_url'),
     forkedFromId: text('forked_from_id').references((): AnyPgColumn => project.id, {
       onDelete: 'set null'
     }),

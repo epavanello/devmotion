@@ -7,6 +7,7 @@ import { withErrorHandling } from '.';
 import { nanoid } from 'nanoid';
 import { invalid } from '@sveltejs/kit';
 import { projectDataSchema } from '$lib/schemas/animation';
+import { thumbnailQueue } from '$lib/server/thumbnail-queue';
 
 export const saveProject = command(
   z.object({
@@ -41,6 +42,17 @@ export const saveProject = command(
         data
       });
     }
+
+    thumbnailQueue.enqueue({
+      projectId,
+      projectData: {
+        width: data.width,
+        height: data.height,
+        fps: data.fps,
+        duration: data.duration
+      },
+      addedAt: new Date()
+    });
 
     return { id: projectId };
   })
@@ -90,7 +102,8 @@ export const getUserProjects = query(async () => {
       id: true,
       name: true,
       isPublic: true,
-      updatedAt: true
+      updatedAt: true,
+      thumbnailUrl: true
     }
   });
 });
@@ -154,6 +167,31 @@ export const forkProject = command(
   })
 );
 
+export const renameProject = command(
+  z.object({ id: z.string(), name: z.string().min(1) }),
+  withErrorHandling(async ({ id, name }) => {
+    const { locals } = getRequestEvent();
+    if (!locals.user) {
+      throw new Error('Not authenticated');
+    }
+
+    const existing = await db.query.project.findFirst({
+      where: and(eq(project.id, id), eq(project.userId, locals.user.id))
+    });
+
+    if (!existing) {
+      throw new Error('Project not found or access denied');
+    }
+
+    await db
+      .update(project)
+      .set({ name, data: { ...existing.data, name }, updatedAt: new Date() })
+      .where(eq(project.id, id));
+
+    return { success: true };
+  })
+);
+
 export const deleteProject = command(
   z.object({ id: z.string() }),
   withErrorHandling(async ({ id }) => {
@@ -195,7 +233,8 @@ export const getPublicProjects = query(
         views: true,
         updatedAt: true,
         userId: true,
-        isMcp: true
+        isMcp: true,
+        thumbnailUrl: true
       }
     });
 

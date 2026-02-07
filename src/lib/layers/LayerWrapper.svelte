@@ -185,7 +185,7 @@
 
 {#if visible}
   <div
-    class="layer-wrapper absolute top-1/2 left-1/2"
+    class="layer-wrapper absolute top-1/2 left-1/2 *:pointer-events-none"
     class:selected
     class:locked
     data-layer-id={id}
@@ -196,6 +196,7 @@
     role="button"
     tabindex="0"
     style:--primary-color={BRAND_COLORS.blue}
+    style:visibility={visible ? 'visible' : 'hidden'}
   >
     <div class="layer-content" style:opacity={style.opacity}>
       <C {...customProps} />
@@ -209,8 +210,10 @@
   }
 
   .layer-wrapper.selected {
-    outline: 2px solid var(--primary-color);
+    outline: 4px solid var(--primary-color);
     outline-offset: 0px;
+    outline-style: dotted;
+    outline-width: 2px;
   }
 
   .layer-wrapper.locked {

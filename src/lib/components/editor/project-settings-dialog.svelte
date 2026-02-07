@@ -155,6 +155,7 @@
           <BackgroundPicker
             value={formData.background ?? BRAND_COLORS.blue}
             onchange={(newValue) => (formData.background = newValue)}
+            side="right"
           />
         </div>
       </div>

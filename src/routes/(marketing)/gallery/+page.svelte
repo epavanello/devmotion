@@ -55,14 +55,22 @@
             <div
               class="relative flex aspect-video items-center justify-center overflow-hidden bg-linear-to-br from-muted/50 to-muted transition-colors duration-500 group-hover:from-muted/80"
             >
-              <div class="bg-grid-pattern absolute inset-0 opacity-10"></div>
-              <div
-                class="flex h-16 w-16 items-center justify-center rounded-full bg-background/50 shadow-inner backdrop-blur-md transition-transform duration-500 group-hover:scale-110"
-              >
-                <Film
-                  class="h-8 w-8 text-foreground/70 transition-colors duration-500 group-hover:text-primary"
+              {#if project.thumbnailUrl}
+                <img
+                  src={project.thumbnailUrl}
+                  alt={project.name}
+                  class="absolute inset-0 h-full w-full object-cover"
                 />
-              </div>
+              {:else}
+                <div class="bg-grid-pattern absolute inset-0 opacity-10"></div>
+                <div
+                  class="flex h-16 w-16 items-center justify-center rounded-full bg-background/50 shadow-inner backdrop-blur-md transition-transform duration-500 group-hover:scale-110"
+                >
+                  <Film
+                    class="h-8 w-8 text-foreground/70 transition-colors duration-500 group-hover:text-primary"
+                  />
+                </div>
+              {/if}
               <!-- Views Badge -->
               <div
                 class="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-black/40 px-2 py-1 text-xs text-white opacity-0 backdrop-blur-md transition-opacity duration-300 group-hover:opacity-100 [@media(hover:none)]:opacity-100"

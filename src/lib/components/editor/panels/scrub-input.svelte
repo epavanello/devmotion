@@ -113,6 +113,6 @@
     oninput={handleInput}
     onfocus={() => (isFocused = true)}
     onblur={() => (isFocused = false)}
-    class=" number-input-no-spin pr-0! pl-1!"
+    class="number-input-no-spin pr-0! pl-1!"
   />
 </InputGroup.Root>

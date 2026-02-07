@@ -22,7 +22,8 @@
     type ConfigureProjectInput,
     type AnimationUITools,
     isLayerCreationTool,
-    getLayerTypeFromToolName
+    getLayerTypeFromToolName,
+    type CreateLayerInput
   } from '$lib/ai/schemas';
   import { toast } from 'svelte-sonner';
   import { parseErrorMessage } from '$lib/utils';
@@ -64,12 +65,7 @@
       if (isLayerCreationTool(toolName)) {
         const layerType = getLayerTypeFromToolName(toolName);
         if (layerType) {
-          const input = toolCall.input as {
-            name?: string;
-            position?: { x: number; y: number };
-            props: Record<string, unknown>;
-            animation?: { preset: string; startTime?: number; duration?: number };
-          };
+          const input = toolCall.input as CreateLayerInput;
           result = executeCreateLayer({
             type: layerType,
             name: input.name,
