@@ -32,6 +32,13 @@
   async function startRecording() {
     try {
       recordingError = '';
+
+      // Require projectId - user must save project before recording
+      if (!projectId) {
+        recordingError = 'Please save your project before recording audio';
+        return;
+      }
+
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
       // Get supported mime type with fallback

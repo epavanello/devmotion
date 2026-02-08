@@ -1,6 +1,6 @@
 import { command, getRequestEvent, query } from '$app/server';
 import { db } from '$lib/server/db';
-import { project } from '$lib/server/db/schema';
+import { project, asset } from '$lib/server/db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { withErrorHandling } from '.';
@@ -8,6 +8,7 @@ import { nanoid } from 'nanoid';
 import { invalid } from '@sveltejs/kit';
 import { projectDataSchema } from '$lib/schemas/animation';
 import { thumbnailQueue } from '$lib/server/thumbnail-queue';
+import { deleteFile } from '$lib/server/storage';
 
 export const saveProject = command(
   z.object({
@@ -200,6 +201,23 @@ export const deleteProject = command(
       throw new Error('Not authenticated');
     }
 
+    // Get all assets for this project before deleting
+    const projectAssets = await db.query.asset.findMany({
+      where: eq(asset.projectId, id)
+    });
+
+    // Delete files from S3 storage
+    // Continue even if some deletions fail to avoid orphaned database records
+    const deletePromises = projectAssets.map(async (a) => {
+      try {
+        await deleteFile(a.storageKey);
+      } catch (err) {
+        console.error(`Failed to delete S3 file ${a.storageKey}:`, err);
+      }
+    });
+    await Promise.allSettled(deletePromises);
+
+    // Delete project (will cascade delete asset records)
     await db.delete(project).where(and(eq(project.id, id), eq(project.userId, locals.user.id)));
 
     return { success: true };

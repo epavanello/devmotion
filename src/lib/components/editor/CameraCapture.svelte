@@ -30,6 +30,12 @@
     try {
       captureError = '';
 
+      // Require projectId - user must save project before capturing
+      if (!projectId) {
+        captureError = 'Please save your project before capturing photos';
+        return;
+      }
+
       // Request camera access
       mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {

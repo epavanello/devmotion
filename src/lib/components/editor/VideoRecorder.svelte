@@ -39,6 +39,12 @@
     try {
       recordingError = '';
 
+      // Require projectId - user must save project before recording
+      if (!projectId) {
+        recordingError = 'Please save your project before recording video';
+        return;
+      }
+
       // Request camera and mic access
       mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {

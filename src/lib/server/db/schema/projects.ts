@@ -39,9 +39,48 @@ export const project = pgTable(
   ]
 );
 
-export const projectRelations = relations(project, ({ one }) => ({
+export const projectRelations = relations(project, ({ one, many }) => ({
   user: one(user, {
     fields: [project.userId],
+    references: [user.id]
+  }),
+  assets: many(asset)
+}));
+
+/**
+ * Asset table - stores uploaded files (images, videos, audio) linked to projects
+ */
+export const asset = pgTable(
+  'asset',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => project.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    storageKey: text('storage_key').notNull(),
+    url: text('url').notNull(),
+    originalName: text('original_name').notNull(),
+    mimeType: text('mime_type').notNull(),
+    mediaType: text('media_type').notNull(), // 'image', 'video', or 'audio'
+    size: integer('size').notNull(), // File size in bytes
+    createdAt: timestamp('created_at').defaultNow().notNull()
+  },
+  (table) => [
+    index('asset_project_id_idx').on(table.projectId),
+    index('asset_user_id_idx').on(table.userId)
+  ]
+);
+
+export const assetRelations = relations(asset, ({ one }) => ({
+  project: one(project, {
+    fields: [asset.projectId],
+    references: [project.id]
+  }),
+  user: one(user, {
+    fields: [asset.userId],
     references: [user.id]
   })
 }));

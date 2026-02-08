@@ -16,50 +16,58 @@ interface ThumbnailJob {
 }
 
 class ThumbnailQueue {
-  private queue: ThumbnailJob[] = [];
-  private processing = false;
-  private maxConcurrent = 1;
+  private timers = new Map<string, NodeJS.Timeout>();
+  private jobs = new Map<string, ThumbnailJob>();
+  private readonly DEBOUNCE_DELAY = 120000; // 2 minutes in milliseconds
 
   enqueue(job: ThumbnailJob) {
-    this.queue.push(job);
-    console.log(`[ThumbnailQueue] Enqueued job for project ${job.projectId}`);
-    this.processQueue();
-  }
-
-  private async processQueue() {
-    if (this.processing || this.queue.length === 0) return;
-
-    this.processing = true;
-
-    while (this.queue.length > 0) {
-      const job = this.queue.shift();
-      if (!job) continue;
-
-      try {
-        console.log(`[ThumbnailQueue] Processing thumbnail for project ${job.projectId}`);
-        const baseUrl = PUBLIC_BASE_URL;
-
-        await generateThumbnail({
-          projectId: job.projectId,
-          projectData: job.projectData,
-          baseUrl
-        });
-
-        console.log(`[ThumbnailQueue] Successfully generated thumbnail for ${job.projectId}`);
-      } catch (err) {
-        console.error(`[ThumbnailQueue] Failed to generate thumbnail for ${job.projectId}:`, err);
-      }
+    const existingTimer = this.timers.get(job.projectId);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+      console.log(`[ThumbnailQueue] Cancelled previous timer for project ${job.projectId}`);
     }
 
-    this.processing = false;
+    this.jobs.set(job.projectId, job);
+
+    const timer = setTimeout(() => {
+      this.processJob(job.projectId);
+    }, this.DEBOUNCE_DELAY);
+
+    this.timers.set(job.projectId, timer);
+    console.log(
+      `[ThumbnailQueue] Scheduled thumbnail generation for project ${job.projectId} in 2 minutes`
+    );
+  }
+
+  private async processJob(projectId: string) {
+    const job = this.jobs.get(projectId);
+    if (!job) return;
+
+    this.timers.delete(projectId);
+    this.jobs.delete(projectId);
+
+    try {
+      console.log(`[ThumbnailQueue] Processing thumbnail for project ${projectId}`);
+      const baseUrl = PUBLIC_BASE_URL;
+
+      await generateThumbnail({
+        projectId: job.projectId,
+        projectData: job.projectData,
+        baseUrl
+      });
+
+      console.log(`[ThumbnailQueue] Successfully generated thumbnail for ${projectId}`);
+    } catch (err) {
+      console.error(`[ThumbnailQueue] Failed to generate thumbnail for ${projectId}:`, err);
+    }
   }
 
   getQueueLength(): number {
-    return this.queue.length;
+    return this.jobs.size;
   }
 
   isProcessing(): boolean {
-    return this.processing;
+    return this.timers.size > 0;
   }
 }
 

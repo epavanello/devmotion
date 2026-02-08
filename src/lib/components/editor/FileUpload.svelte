@@ -43,8 +43,8 @@
 
   const maxSizes = {
     image: '10MB',
-    video: '500MB',
-    audio: '100MB'
+    video: '10MB',
+    audio: '10MB'
   };
 
   /**
@@ -89,6 +89,13 @@
     const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
+
+    // Require projectId - user must save project before uploading
+    if (!projectId) {
+      uploadError = 'Please save your project before uploading files';
+      if (input) input.value = '';
+      return;
+    }
 
     isUploading = true;
     uploadError = '';

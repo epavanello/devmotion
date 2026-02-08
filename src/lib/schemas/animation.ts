@@ -156,7 +156,7 @@ export const LayerSchema = BaseLayerFieldsSchema.extend({
     if (
       data.contentDuration !== undefined &&
       data.contentOffset !== undefined &&
-      data.contentOffset >= data.contentDuration
+      data.contentOffset > data.contentDuration
     ) {
       return false;
     }
