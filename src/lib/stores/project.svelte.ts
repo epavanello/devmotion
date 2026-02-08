@@ -25,7 +25,7 @@ interface LayerFrameCache {
 /**
  * Cache for all layers in a single frame
  */
-interface FrameCache {
+export interface FrameCache {
   [layerId: string]: LayerFrameCache;
 }
 

@@ -68,7 +68,6 @@
 </script>
 
 <script lang="ts">
-  import { projectStore } from '$lib/stores/project.svelte';
   import type { Layer } from '$lib/schemas/animation';
 
   let {
@@ -87,9 +86,13 @@
     captionColor,
     captionBgColor,
     fileKey: _fileKey,
-    layer
+    layer,
+    currentTime,
+    isPlaying
   }: Props & {
     layer: Layer;
+    currentTime: number;
+    isPlaying: boolean;
   } = $props();
 
   let audioEl: HTMLAudioElement | undefined = $state();
@@ -97,7 +100,6 @@
   // Sync audio to project timeline
   $effect(() => {
     if (!audioEl || !src || !layer) return;
-    const currentTime = projectStore.currentTime;
 
     // Use enterTime passed as prop or fallback to 0
     const enterTime = layer.enterTime ?? 0;
@@ -105,7 +107,7 @@
 
     // Apply content offset (where to start in the source audio)
     const contentOffset = layer.contentOffset ?? 0;
-    const audioTime = contentOffset + relativeTime * playbackRate;
+    const audioTime = contentOffset + relativeTime * (playbackRate ?? 1);
 
     // Clamp to valid range (up to audio duration)
     const maxTime = audioEl.duration || Infinity;
@@ -116,7 +118,7 @@
     }
 
     // Sync playback state
-    if (projectStore.isPlaying && relativeTime >= 0 && audioTime < maxTime) {
+    if (isPlaying && relativeTime >= 0 && audioTime < maxTime) {
       if (audioEl.paused) audioEl.play().catch(() => {});
     } else {
       if (!audioEl.paused) audioEl.pause();
@@ -152,7 +154,7 @@
     if (!showCaptions || parsedCaptions.length === 0 || !layer) return '';
     const enterTime = layer.enterTime ?? 0;
     const contentOffset = layer.contentOffset ?? 0;
-    const relativeTime = projectStore.currentTime - enterTime + contentOffset;
+    const relativeTime = currentTime - enterTime + contentOffset;
     const active = parsedCaptions.find((c) => relativeTime >= c.start && relativeTime < c.end);
     return active?.text || '';
   });

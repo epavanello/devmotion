@@ -1,10 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
-  import { getLayerTransform, getLayerStyle, getLayerProps } from '$lib/engine/layer-rendering';
-  import LayerWrapper from '$lib/layers/LayerWrapper.svelte';
-  import { getLayerComponent } from '$lib/layers/registry';
-  import type { Layer, Project } from '$lib/types/animation';
+  import LayersRenderer from '$lib/components/editor/canvas/layers-renderer.svelte';
+  import type { Project } from '$lib/types/animation';
   import { getBackgroundColor, getBackgroundImage } from '$lib/schemas/background';
   import type { PageData } from './$types';
 
@@ -21,17 +19,6 @@
   const readyPromise = new Promise<void>((resolve) => {
     readyResolve = resolve;
   });
-
-  /**
-   * Get layer rendering data for current time
-   */
-  function getLayerRenderData(layer: Layer) {
-    return {
-      transform: getLayerTransform(layer, currentTime),
-      style: getLayerStyle(layer, currentTime),
-      customProps: getLayerProps(layer, currentTime)
-    };
-  }
 
   onMount(() => {
     if (!browser) return;
@@ -50,8 +37,46 @@
       })
     };
 
-    // Mark as ready after a small delay to ensure rendering is complete
-    requestAnimationFrame(() => {
+    // Wait for all video/image elements to be loaded before marking as ready
+    const waitForMediaLoad = async () => {
+      const videoElements = document.querySelectorAll('video');
+      const imageElements = document.querySelectorAll('img');
+
+      const videoPromises = Array.from(videoElements).map((video) => {
+        if (video.readyState >= 3) return Promise.resolve(); // HAVE_FUTURE_DATA or better
+        return new Promise<void>((resolve) => {
+          const onReady = () => {
+            video.removeEventListener('loadeddata', onReady);
+            video.removeEventListener('error', onReady);
+            resolve();
+          };
+          video.addEventListener('loadeddata', onReady);
+          video.addEventListener('error', onReady); // Don't block on errors
+          // Timeout after 5 seconds to avoid hanging
+          setTimeout(resolve, 5000);
+        });
+      });
+
+      const imagePromises = Array.from(imageElements).map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise<void>((resolve) => {
+          const onReady = () => {
+            img.removeEventListener('load', onReady);
+            img.removeEventListener('error', onReady);
+            resolve();
+          };
+          img.addEventListener('load', onReady);
+          img.addEventListener('error', onReady); // Don't block on errors
+          setTimeout(resolve, 5000);
+        });
+      });
+
+      await Promise.all([...videoPromises, ...imagePromises]);
+    };
+
+    // Mark as ready after rendering is complete and media is loaded
+    requestAnimationFrame(async () => {
+      await waitForMediaLoad();
       readyResolve();
     });
 
@@ -85,27 +110,12 @@
 >
   <!-- Layers -->
   <div class="layers-container">
-    {#each project.layers as layer (layer.id)}
-      {@const enterTime = layer.enterTime ?? 0}
-      {@const exitTime = layer.exitTime ?? project.duration}
-      {@const isInTimeRange = currentTime >= enterTime && currentTime <= exitTime}
-      {#if isInTimeRange}
-        {@const { transform, style, customProps } = getLayerRenderData(layer)}
-        {@const component = getLayerComponent(layer.type)}
-
-        <LayerWrapper
-          id={layer.id}
-          name={layer.name}
-          visible={layer.visible}
-          locked={layer.locked}
-          selected={false}
-          {transform}
-          {style}
-          {component}
-          {customProps}
-        />
-      {/if}
-    {/each}
+    <LayersRenderer
+      layers={project.layers}
+      {currentTime}
+      duration={project.duration}
+      disableSelection={true}
+    />
   </div>
 </div>
 

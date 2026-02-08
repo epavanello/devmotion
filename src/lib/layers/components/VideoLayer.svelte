@@ -70,8 +70,8 @@
 </script>
 
 <script lang="ts">
-  import { projectStore } from '$lib/stores/project.svelte';
   import type { Layer } from '$lib/schemas/animation';
+  import { projectStore } from '$lib/stores/project.svelte';
 
   let {
     src,
@@ -81,10 +81,13 @@
     volume,
     muted,
     playbackRate,
-    fileKey: _fileKey,
-    layer
+    layer,
+    currentTime,
+    isPlaying
   }: Props & {
     layer: Layer;
+    currentTime: number;
+    isPlaying: boolean;
   } = $props();
 
   let videoEl: HTMLVideoElement | undefined = $state();
@@ -92,7 +95,6 @@
   // Sync the video element's currentTime to the project timeline
   $effect(() => {
     if (!videoEl || !src || !layer) return;
-    const currentTime = projectStore.currentTime;
 
     // Use enterTime passed as prop or fallback to 0
     const enterTime = layer.enterTime ?? 0;
@@ -100,7 +102,7 @@
 
     // Apply content offset (where to start in the source video)
     const contentOffset = layer.contentOffset ?? 0;
-    const videoTime = contentOffset + relativeTime * playbackRate;
+    const videoTime = contentOffset + relativeTime * (playbackRate ?? 1);
 
     // Clamp to valid range (up to video duration)
     const maxTime = videoEl.duration || Infinity;
@@ -111,7 +113,7 @@
     }
 
     // Sync playback state
-    if (projectStore.isPlaying && relativeTime >= 0 && videoTime < maxTime) {
+    if (isPlaying && relativeTime >= 0 && videoTime < maxTime) {
       if (videoEl.paused) videoEl.play().catch(() => {});
     } else {
       if (!videoEl.paused) videoEl.pause();
@@ -120,10 +122,16 @@
 
   // Sync volume
   $effect(() => {
-    if (!videoEl) return;
-    videoEl.volume = volume;
+    if (!videoEl) {
+      return;
+    }
+    if (volume) {
+      videoEl.volume = volume;
+    }
     videoEl.muted = muted;
-    videoEl.playbackRate = playbackRate;
+    if (playbackRate) {
+      videoEl.playbackRate = playbackRate;
+    }
   });
 </script>
 

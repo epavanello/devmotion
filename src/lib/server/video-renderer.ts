@@ -26,17 +26,12 @@ export interface RenderProgress {
   error?: string;
 }
 
-/**
- * Audio track info extracted from project layers
- */
 interface AudioTrackInfo {
   src: string;
   enterTime: number;
-  exitTime: number;
   mediaStartTime: number;
   mediaEndTime: number;
   volume: number;
-  muted: boolean;
 }
 
 /**
@@ -63,22 +58,20 @@ function extractAudioTracks(projectData: ProjectData): AudioTrackInfo[] {
 
   for (const layer of projectData.layers) {
     if ((layer.type === 'video' || layer.type === 'audio') && layer.props.src) {
-      const muted =
-        layer.type === 'video'
-          ? ((layer.props.muted as boolean) ?? false)
-          : ((layer.props.muted as boolean) ?? false);
+      if ((layer.props.muted as boolean) ?? false) continue;
 
-      if (!muted) {
-        tracks.push({
-          src: layer.props.src as string,
-          enterTime: layer.enterTime ?? 0,
-          exitTime: layer.exitTime ?? projectData.duration,
-          mediaStartTime: (layer.props.mediaStartTime as number) ?? 0,
-          mediaEndTime: (layer.props.mediaEndTime as number) ?? 0,
-          volume: (layer.props.volume as number) ?? 1,
-          muted
-        });
-      }
+      const enterTime = layer.enterTime ?? 0;
+      const exitTime = layer.exitTime ?? projectData.duration;
+      const contentOffset = layer.contentOffset ?? 0;
+      const layerDuration = exitTime - enterTime;
+
+      tracks.push({
+        src: layer.props.src as string,
+        enterTime,
+        mediaStartTime: contentOffset,
+        mediaEndTime: contentOffset + layerDuration,
+        volume: (layer.props.volume as number) ?? 1
+      });
     }
   }
 
@@ -141,7 +134,7 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
       }
 
       browser = await chromium.launch({
-        headless: process.env.NODE_ENV !== 'development',
+        headless: true,
         args: launchArgs
       });
 
@@ -171,7 +164,7 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
 
       ffmpegCommand = ffmpeg().input(frameStream).inputFormat('image2pipe').inputFPS(actualFps);
 
-      // Add audio tracks as additional inputs
+      // Add audio tracks as additional inputs (no input-level seeking)
       for (const track of resolvedAudioTracks) {
         ffmpegCommand = ffmpegCommand.input(track.src);
       }
@@ -193,32 +186,27 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
 
         resolvedAudioTracks.forEach((track, i) => {
           const inputIndex = i + 1; // 0 is the video frame stream
-          const trimStart = track.mediaStartTime;
-          const trimEnd = track.mediaEndTime > 0 ? track.mediaEndTime : undefined;
           const delay = Math.round(track.enterTime * 1000); // ms
-          const vol = track.volume;
 
-          // Trim and delay each audio track, then adjust volume
+          // atrim extracts the correct portion, asetpts=N/SR rebuilds PTS from scratch
           let filter = `[${inputIndex}:a]`;
-          if (trimStart > 0 || trimEnd) {
-            filter += `atrim=start=${trimStart}`;
-            if (trimEnd) {
-              filter += `:end=${trimEnd}`;
-            }
-            filter += ',asetpts=PTS-STARTPTS,';
-          }
+          filter += `atrim=start=${track.mediaStartTime}:end=${track.mediaEndTime},`;
+          filter += 'asetpts=N/SR,';
+
           if (delay > 0) {
             filter += `adelay=${delay}|${delay},`;
           }
-          filter += `volume=${vol}[a${i}]`;
+
+          filter += `volume=${track.volume}[a${i}]`;
+
           filterParts.push(filter);
           audioInputs.push(`[a${i}]`);
         });
 
-        // Mix all audio tracks together
+        // Mix all audio tracks together and trim to video duration
         if (audioInputs.length > 0) {
           filterParts.push(
-            `${audioInputs.join('')}amix=inputs=${audioInputs.length}:duration=longest[aout]`
+            `${audioInputs.join('')}amix=inputs=${audioInputs.length}:duration=longest,atrim=duration=${actualDuration}[aout]`
           );
           outputOptions.push('-filter_complex', filterParts.join(';'));
           outputOptions.push('-map', '0:v', '-map', '[aout]');
