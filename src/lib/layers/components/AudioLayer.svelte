@@ -29,17 +29,25 @@
     muted: z.boolean().default(false).describe('Mute audio'),
     /** Playback rate */
     playbackRate: z.number().min(0.1).max(4).default(1).describe('Playback rate'),
-    /** Visual style */
-    waveformColor: z.string().default('#3b82f6').describe('Waveform color'),
-    backgroundColor: z.string().default('#1e293b').describe('Background color'),
     /** Show captions overlay */
     showCaptions: z.boolean().default(false).describe('Show captions'),
-    /** Caption text - can be set by AI transcription */
-    captionText: z
-      .string()
-      .default('')
-      .describe('Caption/subtitle text')
-      .register(fieldRegistry, { widget: 'textarea' }),
+    /** Caption display mode */
+    captionMode: z
+      .enum(['block', 'word-by-word'])
+      .default('word-by-word')
+      .describe('Caption display mode'),
+    /** Word-level caption data (single source of truth) */
+    captionWords: z
+      .array(
+        z.object({
+          word: z.string(),
+          start: z.number(),
+          end: z.number()
+        })
+      )
+      .default([])
+      .describe('Caption words with timestamps')
+      .register(fieldRegistry, { widget: 'custom', component: CaptionsEditor }),
     /** Caption style */
     captionFontSize: z.number().min(8).max(120).default(24).describe('Caption font size'),
     captionColor: z.string().default('#ffffff').describe('Caption text color'),
@@ -57,8 +65,7 @@
     type: 'audio',
     label: 'Audio',
     icon: Music,
-    description:
-      'Audio tracks with waveform visualization, volume control, trimming, and AI-powered captions',
+    description: 'Audio tracks with captions',
     customPropertyComponents: {
       generateCaptions: { label: 'Generate captions', component: GenerateCaption }
     }
@@ -69,19 +76,18 @@
 
 <script lang="ts">
   import type { Layer } from '$lib/schemas/animation';
+  import CaptionsEditor from '../properties/CaptionsEditor.svelte';
 
   let {
     src,
-    label,
     width,
     height,
     volume,
     muted,
     playbackRate,
-    waveformColor,
-    backgroundColor,
     showCaptions,
-    captionText,
+    captionMode,
+    captionWords,
     captionFontSize,
     captionColor,
     captionBgColor,
@@ -133,34 +139,71 @@
     audioEl.playbackRate = playbackRate;
   });
 
-  // Parse captions as timed segments: "0:00 - 0:05 | Hello world\n0:05 - 0:10 | Next line"
-  const parsedCaptions = $derived.by(() => {
-    if (!captionText) return [];
-    const lines = captionText.split('\n').filter((l) => l.trim());
-    return lines.map((line) => {
-      const match = line.match(/(\d+):(\d+(?:\.\d+)?)\s*-\s*(\d+):(\d+(?:\.\d+)?)\s*\|\s*(.+)/);
-      if (match) {
-        const start = parseInt(match[1]) * 60 + parseFloat(match[2]);
-        const end = parseInt(match[3]) * 60 + parseFloat(match[4]);
-        return { start, end, text: match[5].trim() };
+  // Derive caption blocks from words (for block mode)
+  // Group words into sentences/segments based on timing gaps
+  const captionBlocks = $derived.by(() => {
+    if (!captionWords || captionWords.length === 0) return [];
+
+    type Block = { start: number; end: number; words: string[] };
+    const blocks: Array<{ id: number; start: number; end: number; text: string }> = [];
+    let currentBlock: Block | null = null;
+
+    captionWords.forEach((word, index) => {
+      const prevWord = index > 0 ? captionWords[index - 1] : null;
+      const gap = prevWord ? word.start - prevWord.end : 0;
+
+      // Start new block if gap > 1 second or if it's the first word
+      if (!currentBlock || gap > 1) {
+        if (currentBlock) {
+          blocks.push({
+            id: blocks.length,
+            start: currentBlock.start,
+            end: currentBlock.end,
+            text: currentBlock.words.join(' ')
+          });
+        }
+        currentBlock = { start: word.start, end: word.end, words: [word.word] };
+      } else {
+        // TypeScript narrowing: we know currentBlock is not null here
+        const block = currentBlock;
+        block.words.push(word.word);
+        block.end = word.end;
       }
-      // Simple format: just text (always shown)
-      return { start: 0, end: Infinity, text: line.trim() };
     });
+
+    // Add final block
+    if (currentBlock) {
+      const finalBlock: Block = currentBlock;
+      blocks.push({
+        id: blocks.length,
+        start: finalBlock.start,
+        end: finalBlock.end,
+        text: finalBlock.words.join(' ')
+      });
+    }
+
+    return blocks;
   });
 
-  // Current caption based on project time
-  const currentCaption = $derived.by(() => {
-    if (!showCaptions || parsedCaptions.length === 0 || !layer) return '';
+  // Current caption block index based on project time
+  const currentBlockIndex = $derived.by(() => {
+    if (!showCaptions || captionBlocks.length === 0 || !layer) return -1;
     const enterTime = layer.enterTime ?? 0;
     const contentOffset = layer.contentOffset ?? 0;
     const relativeTime = currentTime - enterTime + contentOffset;
-    const active = parsedCaptions.find((c) => relativeTime >= c.start && relativeTime < c.end);
-    return active?.text || '';
+    return captionBlocks.findIndex((c) => relativeTime >= c.start && relativeTime < c.end);
   });
 
-  // Generate fake waveform bars for visual representation
-  const barCount = $derived(Math.max(10, Math.floor(width / 4)));
+  // Current words to display (for word-by-word mode)
+  const currentWords = $derived.by(() => {
+    if (!showCaptions || !captionWords || captionWords.length === 0 || !layer) return [];
+    const enterTime = layer.enterTime ?? 0;
+    const contentOffset = layer.contentOffset ?? 0;
+    const relativeTime = currentTime - enterTime + contentOffset;
+
+    // Return all words up to current time
+    return captionWords.filter((w) => w.start <= relativeTime);
+  });
 </script>
 
 {#if src}
@@ -168,48 +211,65 @@
 {/if}
 
 <div
-  class="relative overflow-hidden rounded"
+  class="relative overflow-visible rounded"
   style:width="{width}px"
-  style:height="{height + (showCaptions ? captionFontSize + 16 : 0)}px"
+  style:min-height="{height}px"
 >
-  <!-- Waveform visualization -->
-  <div
-    class="flex items-end gap-px"
-    style:width="{width}px"
-    style:height="{height}px"
-    style:background-color={backgroundColor}
-    style:padding="4px"
-  >
-    {#each Array(barCount) as _, i (i)}
-      {@const barHeight = 20 + Math.sin(i * 0.3) * 30 + Math.cos(i * 0.7) * 20}
-      <div
-        class="flex-1 rounded-t-sm"
-        style:height="{barHeight}%"
-        style:background-color={waveformColor}
-        style:opacity={0.5 + Math.sin(i * 0.5) * 0.3}
-      ></div>
-    {/each}
-
-    <!-- Label overlay -->
-    <div class="absolute top-1 left-2 text-xs font-medium text-white/70">
-      {label}
-    </div>
-
-    <!-- Volume indicator -->
-    <div class="absolute right-2 bottom-1 text-xs text-white/50">
-      {muted ? 'Muted' : `${Math.round(volume * 100)}%`}
-    </div>
-  </div>
-
-  <!-- Captions overlay -->
-  {#if showCaptions && currentCaption}
+  {#if showCaptions && captionMode === 'word-by-word' && currentWords.length > 0}
+    <!-- Word-by-word mode: Social media style -->
     <div
-      class="flex items-center justify-center px-2 py-1 text-center"
-      style:background-color={captionBgColor}
-      style:font-size="{captionFontSize}px"
-      style:color={captionColor}
+      class="flex flex-wrap content-start items-center justify-center gap-1 p-4"
+      style:width="{width}px"
+      style:min-height="{height}px"
     >
-      {currentCaption}
+      {#each currentWords as word, i (i)}
+        {@const enterTime = layer.enterTime ?? 0}
+        {@const contentOffset = layer.contentOffset ?? 0}
+        {@const relativeTime = currentTime - enterTime + contentOffset}
+        {@const isActive = relativeTime >= word.start && relativeTime < word.end}
+        {@const justAppeared = relativeTime - word.start < 0.3}
+        <span
+          class="inline-block transition-all duration-150"
+          style:font-size="{captionFontSize}px"
+          style:color={captionColor}
+          style:background-color={isActive ? captionBgColor : 'transparent'}
+          style:padding={isActive ? '4px 8px' : '2px 4px'}
+          style:border-radius="4px"
+          style:font-weight={isActive ? '700' : '500'}
+          style:transform={justAppeared ? 'scale(1.15)' : 'scale(1)'}
+          style:opacity={isActive ? '1' : '0.85'}
+        >
+          {word.word}
+        </span>
+      {/each}
+    </div>
+  {:else if showCaptions && captionMode === 'block' && captionBlocks.length > 0}
+    <!-- Block mode: Progressive paragraphs (derived from words) -->
+    <div
+      class="flex flex-col gap-3 overflow-y-auto p-4"
+      style:width="{width}px"
+      style:max-height="{height}px"
+    >
+      {#each captionBlocks as block (block.id)}
+        {@const isActive = currentBlockIndex === block.id}
+        {@const isPast = currentBlockIndex > block.id}
+        <p
+          class="leading-relaxed transition-all duration-200"
+          style:font-size="{captionFontSize}px"
+          style:color={isActive
+            ? captionColor
+            : isPast
+              ? 'rgba(255,255,255,0.4)'
+              : 'rgba(255,255,255,0.2)'}
+          style:background-color={isActive ? captionBgColor : 'transparent'}
+          style:padding={isActive ? '8px 12px' : '4px 0'}
+          style:border-radius={isActive ? '4px' : '0'}
+          style:font-weight={isActive ? '600' : '400'}
+          style:transform={isActive ? 'scale(1.02)' : 'scale(1)'}
+        >
+          {block.text}
+        </p>
+      {/each}
     </div>
   {/if}
 </div>

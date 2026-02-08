@@ -208,10 +208,10 @@
   }
 
   .layer-wrapper.selected {
-    outline: 4px solid var(--primary-color);
-    outline-offset: 0px;
+    outline-color: var(--primary-color);
+    outline-offset: 4px;
     outline-style: dotted;
-    outline-width: 2px;
+    outline-width: 4px;
   }
 
   .layer-wrapper.locked {

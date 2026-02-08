@@ -103,6 +103,9 @@
     value={value as BackgroundValue}
     onchange={(newValue) => onUpdateProp(metadata.name, newValue)}
   />
+{:else if metadata.meta?.widget === 'custom'}
+  {@const Component = metadata.meta.component}
+  <Component {value} onChange={(newValue) => onUpdateProp(metadata.name, newValue)} {layer} />
 {:else}
   <!-- Default to text input for strings and unknown types -->
   <Input

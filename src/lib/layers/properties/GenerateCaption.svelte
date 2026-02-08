@@ -15,9 +15,11 @@
   } = $props();
 
   async function generateCaptions() {
+    const fileKey = layer.props.fileKey;
     const audioUrl = layer.props.src;
-    if (!audioUrl) {
-      captionError = 'No audio source URL set';
+
+    if (!fileKey && !audioUrl) {
+      captionError = 'No audio file uploaded or URL set';
       return;
     }
 
@@ -28,7 +30,7 @@
       const res = await fetch('/api/captions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ audioUrl })
+        body: JSON.stringify({ fileKey, audioUrl })
       });
 
       if (!res.ok) {
@@ -37,9 +39,13 @@
       }
 
       const data = await res.json();
-      if (data.success && data.captions) {
+      if (data.success && data.words) {
         projectStore.updateLayer(layer.id, {
-          props: { ...layer.props, captionText: data.captions, showCaptions: true }
+          props: {
+            ...layer.props,
+            captionWords: data.words,
+            showCaptions: true
+          }
         });
       }
     } catch (err) {

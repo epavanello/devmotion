@@ -13,6 +13,7 @@ import {
   type Transform,
   type LayerStyle
 } from '$lib/schemas/base';
+import type { Layer } from '$lib/schemas/animation';
 
 /**
  * Per-field UI metadata that layer schemas can opt into via .register(fieldRegistry, …).
@@ -29,6 +30,10 @@ export type FieldMeta = {
   | {
       widget: 'upload';
       mediaType: 'image' | 'video' | 'audio';
+    }
+  | {
+      widget: 'custom';
+      component: Component<{ value: unknown; onChange: (value: unknown) => void; layer: Layer }>;
     }
 );
 
