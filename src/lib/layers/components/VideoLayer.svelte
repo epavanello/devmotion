@@ -135,7 +135,7 @@
   });
 </script>
 
-<div class="overflow-hidden" style:width="{width}px" style:height="{height}px">
+<div class="overflow-hidden rounded-lg shadow-lg" style:width="{width}px" style:height="{height}px">
   {#if src}
     <!-- svelte-ignore a11y_media_has_caption -->
     <video

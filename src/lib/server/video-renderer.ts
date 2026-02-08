@@ -4,6 +4,7 @@ import { PassThrough, Readable } from 'stream';
 import { EventEmitter } from 'events';
 import { generateRenderToken, invalidateRenderToken } from './render-token';
 import { getSignedFileUrl } from './storage';
+import { sanitizeForFFmpeg } from './utils/filename-sanitizer';
 import type { ProjectData } from '$lib/schemas/animation';
 
 interface RenderConfig {
@@ -102,7 +103,6 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
   // Helper to emit progress
   const emitProgress = (progress: RenderProgress) => {
     renderEmitter.emit(`progress:${renderId}`, progress);
-    console.log({ progress });
   };
 
   // Run the render process in the background
@@ -152,11 +152,16 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
       const actualTotalFrames = Math.ceil(actualFps * actualDuration);
 
       // Resolve audio track URLs (convert proxy URLs to presigned URLs)
+      // Also sanitize URLs to ensure FFmpeg compatibility (remove emojis, etc.)
       const resolvedAudioTracks = await Promise.all(
-        audioTracks.map(async (track) => ({
-          ...track,
-          src: await resolveMediaUrl(track.src)
-        }))
+        audioTracks.map(async (track) => {
+          const resolvedUrl = await resolveMediaUrl(track.src);
+          const sanitizedUrl = sanitizeForFFmpeg(resolvedUrl);
+          return {
+            ...track,
+            src: sanitizedUrl
+          };
+        })
       );
 
       // Initialize FFmpeg

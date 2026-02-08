@@ -26,6 +26,7 @@
   import { Settings } from '@lucide/svelte';
   import BackgroundPicker from './panels/background-picker.svelte';
   import { BRAND_COLORS } from '$lib/constants/branding';
+  import type { Project } from '$lib/schemas/animation';
 
   interface Props {
     open: boolean;
@@ -33,7 +34,7 @@
 
   let { open = $bindable() }: Props = $props();
 
-  let formData = $state({
+  let formData: Pick<Project, 'name' | 'width' | 'height' | 'duration' | 'background'> = $derived({
     name: projectStore.project.name,
     width: projectStore.project.width,
     height: projectStore.project.height,
@@ -74,13 +75,11 @@
   function handleOpenChange(newOpen: boolean) {
     if (newOpen) {
       // Reset form to current project state when opening
-      formData = {
-        name: projectStore.project.name,
-        width: projectStore.project.width,
-        height: projectStore.project.height,
-        duration: projectStore.project.duration,
-        background: projectStore.project.background
-      };
+      formData.name = projectStore.project.name;
+      formData.width = projectStore.project.width;
+      formData.height = projectStore.project.height;
+      formData.duration = projectStore.project.duration;
+      formData.background = projectStore.project.background;
 
       const res = commonResolutions.find(
         (r) => r.width === projectStore.project.width && r.height === projectStore.project.height

@@ -21,6 +21,7 @@ import {
   PRIVATE_S3_SECRET_ACCESS_KEY,
   PRIVATE_S3_PUBLIC_URL
 } from '$env/static/private';
+import { sanitizeFilename } from '../utils/filename-sanitizer';
 
 export interface StorageConfig {
   bucket: string;
@@ -152,6 +153,9 @@ export async function uploadFile(
   const config = getConfig();
   const client = getClient();
 
+  // Sanitize the original filename to remove emojis and special characters
+  const sanitizedOriginalName = sanitizeFilename(originalName);
+
   const fileId = nanoid();
   const ext = getExtension(mimeType);
   const prefix = projectId ? `projects/${projectId}` : 'uploads';
@@ -183,7 +187,7 @@ export async function uploadFile(
     fileId,
     key,
     url,
-    originalName,
+    originalName: sanitizedOriginalName,
     mimeType,
     size: file.length,
     mediaType

@@ -8,6 +8,7 @@ import type { RenderProgress } from '$lib/server/video-renderer';
 import { PUBLIC_BASE_URL } from '$env/static/public';
 import type { ProjectData } from '$lib/schemas/animation';
 import { Readable } from 'stream';
+import { sanitizeFilename } from '$lib/server/utils/filename-sanitizer';
 
 export const POST: RequestHandler = async ({ params, request, url, locals }) => {
   // Check authorization
@@ -69,20 +70,14 @@ export const POST: RequestHandler = async ({ params, request, url, locals }) => 
     // Return the stream as response
     const webStream = Readable.toWeb(videoStream) as ReadableStream;
 
-    // Sanitize filename to prevent header injection and filesystem issues
-    const sanitizedName =
-      (dbProject.name || 'video')
-        .replace(/[;="\r\n\\/:<>|?*]/g, '_')
-        .replace(/_{2,}/g, '_')
-        .trim()
-        .substring(0, 100) || 'video';
+    // BRUTALLY sanitize filename - remove ALL emojis and non-ASCII
+    const baseName = dbProject.name || 'video';
+    const sanitizedName = sanitizeFilename(baseName + '.mp4').replace(/\.mp4$/, '') || 'video';
 
     return new Response(webStream, {
       headers: {
         'Content-Type': 'video/mp4',
-        'Content-Disposition': `attachment; filename="${sanitizedName}.mp4"; filename*=UTF-8''${encodeURIComponent(
-          sanitizedName
-        )}.mp4`,
+        'Content-Disposition': `attachment; filename="${sanitizedName}.mp4"`,
         'Cache-Control': 'no-cache',
         'Transfer-Encoding': 'chunked'
       }

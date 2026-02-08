@@ -186,11 +186,12 @@
   });
 
   // Current caption block index based on project time
+  // Note: Caption timestamps are relative to the trimmed audio (start from 0),
+  // so we only need relativeTime = currentTime - enterTime
   const currentBlockIndex = $derived.by(() => {
     if (!showCaptions || captionBlocks.length === 0 || !layer) return -1;
     const enterTime = layer.enterTime ?? 0;
-    const contentOffset = layer.contentOffset ?? 0;
-    const relativeTime = currentTime - enterTime + contentOffset;
+    const relativeTime = currentTime - enterTime;
     return captionBlocks.findIndex((c) => relativeTime >= c.start && relativeTime < c.end);
   });
 
@@ -198,8 +199,7 @@
   const currentWords = $derived.by(() => {
     if (!showCaptions || !captionWords || captionWords.length === 0 || !layer) return [];
     const enterTime = layer.enterTime ?? 0;
-    const contentOffset = layer.contentOffset ?? 0;
-    const relativeTime = currentTime - enterTime + contentOffset;
+    const relativeTime = currentTime - enterTime;
 
     // Return all words up to current time
     return captionWords.filter((w) => w.start <= relativeTime);
@@ -224,8 +224,7 @@
     >
       {#each currentWords as word, i (i)}
         {@const enterTime = layer.enterTime ?? 0}
-        {@const contentOffset = layer.contentOffset ?? 0}
-        {@const relativeTime = currentTime - enterTime + contentOffset}
+        {@const relativeTime = currentTime - enterTime}
         {@const isActive = relativeTime >= word.start && relativeTime < word.end}
         {@const justAppeared = relativeTime - word.start < 0.3}
         <span
