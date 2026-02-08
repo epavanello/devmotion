@@ -7,7 +7,6 @@
     Settings,
     User,
     LogOut,
-    LogIn,
     Keyboard,
     Lock,
     Unlock,
@@ -28,6 +27,7 @@
   } from '$lib/functions/projects.remote';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
+  import { authClient } from '$lib/auth-client';
   import ProjectSwitcher from './project-switcher.svelte';
   import { onMount } from 'svelte';
   import { toast } from 'svelte-sonner';
@@ -61,6 +61,7 @@
   } from '$lib/components/ui/collapsible';
   import { Menu, X } from '@lucide/svelte';
   import TooltipButton from '../ui/tooltip/tooltip-button.svelte';
+  import GoogleIcon from '$lib/assets/svg/google-icon.svelte';
 
   let headerOpen = $state(false);
 
@@ -124,8 +125,11 @@
     showProjectSettings = true;
   }
 
-  function handleLogin() {
-    goto(resolve('/login'));
+  async function handleLogin() {
+    await authClient.signIn.social({
+      provider: 'google',
+      callbackURL: resolve('/')
+    });
   }
 
   async function doSaveToCloud() {
@@ -341,7 +345,7 @@
             </DropdownMenu.Content>
           </DropdownMenu.Root>
         {:else}
-          <Button onclick={handleLogin} icon={LogIn}>Login</Button>
+          <Button onclick={handleLogin} icon={GoogleIcon}>Login</Button>
         {/if}
       </div>
     {/snippet}

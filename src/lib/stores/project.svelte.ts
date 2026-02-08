@@ -7,6 +7,7 @@ import { nanoid } from 'nanoid';
 import { watch } from 'runed';
 import { SvelteSet } from 'svelte/reactivity';
 import { getLayerTransform, getLayerStyle, getLayerProps } from '$lib/engine/layer-rendering';
+import { tick } from 'svelte';
 
 const STORAGE_KEY = 'devmotion_store';
 const DEBOUNCE_MS = 500;
@@ -33,6 +34,7 @@ class ProjectStore {
   project = $state<Project>(undefined!);
   #saveTimeout: ReturnType<typeof setTimeout> | null = null;
   #initialized = false;
+  #isLoading = false;
 
   selectedLayerId = $state<string | null>(null);
   isPlaying = $state(false);
@@ -54,26 +56,33 @@ class ProjectStore {
 
   constructor() {
     // Load first, before setting up the effect
+    this.#isLoading = true;
     this.project = this.loadFromLocalStorage();
     this.#initialized = true;
+    this.#isLoading = false;
 
     $effect.root(() => {
       watch(
         () => $state.snapshot(this.project),
         () => {
-          // Skip saving during initial load
-          if (!this.#initialized) return;
+          // Skip saving during initial load or when explicitly loading
+          if (!this.#initialized || this.#isLoading) {
+            return;
+          }
 
           // Mark as having unsaved changes
           this.hasUnsavedChanges = true;
 
-          // Debounced save
-          if (this.#saveTimeout) {
-            clearTimeout(this.#saveTimeout);
+          // Only save to localStorage if this is NOT a database project
+          if (!this.isDbProject) {
+            // Debounced save
+            if (this.#saveTimeout) {
+              clearTimeout(this.#saveTimeout);
+            }
+            this.#saveTimeout = setTimeout(() => {
+              this.saveToLocalStorage();
+            }, DEBOUNCE_MS);
           }
-          this.#saveTimeout = setTimeout(() => {
-            this.saveToLocalStorage();
-          }, DEBOUNCE_MS);
         }
       );
     });
@@ -145,6 +154,11 @@ class ProjectStore {
     this.isOwner = isOwner;
     this.canEdit = canEdit;
     this.isPublic = isPublic;
+
+    // Clear localStorage when switching to a database project
+    if (projectId && typeof localStorage !== 'undefined') {
+      localStorage.removeItem(STORAGE_KEY);
+    }
   }
 
   resetToNew() {
@@ -371,19 +385,25 @@ class ProjectStore {
   }
 
   // Project operations
-  loadProject(project: Project) {
+  async loadProject(project: Project) {
+    this.#isLoading = true;
     this.project = project;
+    await tick();
     this.selectedLayerId = null;
     this.isPlaying = false;
     this.hasUnsavedChanges = false;
+    this.#isLoading = false;
   }
 
-  newProject() {
+  async newProject() {
+    this.#isLoading = true;
     this.project = this.getDefaultProject();
+    await tick();
     this.currentTime = 0;
     this.selectedLayerId = null;
     this.isPlaying = false;
     this.hasUnsavedChanges = false;
+    this.#isLoading = false;
   }
 
   exportToJSON(): string {

@@ -3,7 +3,6 @@
   import JsonLd from '$lib/components/json-ld.svelte';
   import EditorLayout from '$lib/components/editor/editor-layout.svelte';
   import { projectStore } from '$lib/stores/project.svelte';
-  import { onMount } from 'svelte';
   import { PUBLIC_BASE_URL } from '$env/static/public';
   import type { PageData } from './$types';
 
@@ -17,7 +16,8 @@
   const projectUrl = $derived(`${baseUrl}/p/${data.project.id}`);
   const ogImage = $derived(`${baseUrl}/p/${data.project.id}/og.png`);
 
-  onMount(() => {
+  // Use $effect to react to project changes when switching between projects
+  $effect(() => {
     const projectData = data.project.data;
 
     projectStore.loadProject({
