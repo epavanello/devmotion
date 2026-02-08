@@ -77,6 +77,7 @@
 <script lang="ts">
   import type { Layer } from '$lib/schemas/animation';
   import CaptionsEditor from '../properties/CaptionsEditor.svelte';
+  import { watch } from 'runed';
 
   let {
     src,
@@ -104,39 +105,60 @@
   let audioEl: HTMLAudioElement | undefined = $state();
 
   // Sync audio to project timeline
-  $effect(() => {
-    if (!audioEl || !src || !layer) return;
+  watch(
+    [
+      () => currentTime,
+      () => isPlaying,
+      () => layer.enterTime,
+      () => layer.contentOffset,
+      () => src,
+      () => audioEl
+    ],
+    ([time, playing, enter, offset, source, el], [, prevPlaying]) => {
+      if (!el || !source || !layer) return;
 
-    // Use enterTime passed as prop or fallback to 0
-    const enterTime = layer.enterTime ?? 0;
-    const relativeTime = currentTime - enterTime;
+      // Use enterTime passed as prop or fallback to 0
+      const enterTime = enter ?? 0;
+      const relativeTime = time - enterTime;
 
-    // Apply content offset (where to start in the source audio)
-    const contentOffset = layer.contentOffset ?? 0;
-    const audioTime = contentOffset + relativeTime * (playbackRate ?? 1);
+      // Apply content offset (where to start in the source audio)
+      const contentOffset = offset ?? 0;
+      // Don't multiply by playbackRate here - it's already applied by audioEl.playbackRate
+      const audioTime = contentOffset + relativeTime;
 
-    // Clamp to valid range (up to audio duration)
-    const maxTime = audioEl.duration || Infinity;
-    const clampedTime = Math.max(contentOffset, Math.min(audioTime, maxTime));
+      // Clamp to valid range (up to audio duration)
+      const maxTime = el.duration || Infinity;
+      const clampedTime = Math.max(contentOffset, Math.min(audioTime, maxTime));
 
-    if (isFinite(clampedTime) && Math.abs(audioEl.currentTime - clampedTime) > 0.05) {
-      audioEl.currentTime = clampedTime;
+      // Calculate time difference
+      const timeDiff = Math.abs(el.currentTime - clampedTime);
+      const playStateChanged = playing !== prevPlaying;
+
+      // Only sync when:
+      // 1. Play state changed (user pressed play/pause)
+      // 2. Time difference is very large (> 0.5s) indicating manual seek
+      // This prevents constant micro-adjustments that cause audio glitches
+      const shouldSync = playStateChanged || timeDiff > 0.5;
+
+      if (isFinite(clampedTime) && shouldSync) {
+        el.currentTime = clampedTime;
+      }
+
+      // Sync playback state
+      if (playing && relativeTime >= 0 && audioTime < maxTime) {
+        if (el.paused) el.play().catch(() => {});
+      } else {
+        if (!el.paused) el.pause();
+      }
     }
-
-    // Sync playback state
-    if (isPlaying && relativeTime >= 0 && audioTime < maxTime) {
-      if (audioEl.paused) audioEl.play().catch(() => {});
-    } else {
-      if (!audioEl.paused) audioEl.pause();
-    }
-  });
+  );
 
   // Sync volume/muted/playbackRate
-  $effect(() => {
-    if (!audioEl) return;
-    audioEl.volume = volume;
-    audioEl.muted = muted;
-    audioEl.playbackRate = playbackRate;
+  watch([() => volume, () => muted, () => playbackRate, () => audioEl], ([vol, mute, rate, el]) => {
+    if (!el) return;
+    el.volume = vol;
+    el.muted = mute;
+    el.playbackRate = rate;
   });
 
   // Derive caption blocks from words (for block mode)

@@ -72,6 +72,7 @@
 <script lang="ts">
   import type { Layer } from '$lib/schemas/animation';
   import { projectStore } from '$lib/stores/project.svelte';
+  import { watch } from 'runed';
 
   let {
     src,
@@ -93,44 +94,63 @@
   let videoEl: HTMLVideoElement | undefined = $state();
 
   // Sync the video element's currentTime to the project timeline
-  $effect(() => {
-    if (!videoEl || !src || !layer) return;
+  watch(
+    [
+      () => currentTime,
+      () => isPlaying,
+      () => layer.enterTime,
+      () => layer.contentOffset,
+      () => src,
+      () => videoEl
+    ],
+    ([time, playing, enter, offset, source, el], [, prevPlaying]) => {
+      if (!el || !source || !layer) return;
 
-    // Use enterTime passed as prop or fallback to 0
-    const enterTime = layer.enterTime ?? 0;
-    const relativeTime = currentTime - enterTime;
+      // Use enterTime passed as prop or fallback to 0
+      const enterTime = enter ?? 0;
+      const relativeTime = time - enterTime;
 
-    // Apply content offset (where to start in the source video)
-    const contentOffset = layer.contentOffset ?? 0;
-    const videoTime = contentOffset + relativeTime * (playbackRate ?? 1);
+      // Apply content offset (where to start in the source video)
+      const contentOffset = offset ?? 0;
+      // Don't multiply by playbackRate here - it's already applied by videoEl.playbackRate
+      const videoTime = contentOffset + relativeTime;
 
-    // Clamp to valid range (up to video duration)
-    const maxTime = videoEl.duration || Infinity;
-    const clampedTime = Math.max(contentOffset, Math.min(videoTime, maxTime));
+      // Clamp to valid range (up to video duration)
+      const maxTime = el.duration || Infinity;
+      const clampedTime = Math.max(contentOffset, Math.min(videoTime, maxTime));
 
-    if (isFinite(clampedTime) && Math.abs(videoEl.currentTime - clampedTime) > 0.05) {
-      videoEl.currentTime = clampedTime;
+      // Calculate time difference
+      const timeDiff = Math.abs(el.currentTime - clampedTime);
+      const playStateChanged = playing !== prevPlaying;
+
+      // Only sync when:
+      // 1. Play state changed (user pressed play/pause)
+      // 2. Time difference is very large (> 0.5s) indicating manual seek
+      // This prevents constant micro-adjustments that cause video glitches
+      const shouldSync = playStateChanged || timeDiff > 0.5;
+
+      if (isFinite(clampedTime) && shouldSync) {
+        el.currentTime = clampedTime;
+      }
+
+      // Sync playback state
+      if (playing && relativeTime >= 0 && videoTime < maxTime) {
+        if (el.paused) el.play().catch(() => {});
+      } else {
+        if (!el.paused) el.pause();
+      }
     }
+  );
 
-    // Sync playback state
-    if (isPlaying && relativeTime >= 0 && videoTime < maxTime) {
-      if (videoEl.paused) videoEl.play().catch(() => {});
-    } else {
-      if (!videoEl.paused) videoEl.pause();
+  // Sync volume/muted/playbackRate
+  watch([() => volume, () => muted, () => playbackRate, () => videoEl], ([vol, mute, rate, el]) => {
+    if (!el) return;
+    if (vol) {
+      el.volume = vol;
     }
-  });
-
-  // Sync volume
-  $effect(() => {
-    if (!videoEl) {
-      return;
-    }
-    if (volume) {
-      videoEl.volume = volume;
-    }
-    videoEl.muted = muted;
-    if (playbackRate) {
-      videoEl.playbackRate = playbackRate;
+    el.muted = mute;
+    if (rate) {
+      el.playbackRate = rate;
     }
   });
 </script>
