@@ -28,4 +28,42 @@ const authHandle: Handle = async ({ event, resolve }) => {
   return svelteKitHandler({ event, resolve, auth, building });
 };
 
-export const handle: Handle = sequence(handleParaglide, authHandle);
+/**
+ * SEO-optimized caching handle
+ * Adds cache control headers for public pages to improve performance and SEO
+ */
+const cacheHandle: Handle = async ({ event, resolve }) => {
+  const response = await resolve(event);
+
+  // Only cache GET requests
+  if (event.request.method !== 'GET') return response;
+
+  const path = event.url.pathname;
+
+  // Cache public project pages (1 hour)
+  if (path.startsWith('/p/') && !path.includes('/og.png')) {
+    response.headers.set('Cache-Control', 'public, max-age=3600, s-maxage=7200');
+  }
+
+  // Cache gallery page (30 minutes, stale-while-revalidate for better UX)
+  if (path === '/gallery' || path.startsWith('/gallery?')) {
+    response.headers.set(
+      'Cache-Control',
+      'public, max-age=1800, s-maxage=3600, stale-while-revalidate=600'
+    );
+  }
+
+  // Cache OG images (1 week - they rarely change)
+  if (path.endsWith('/og.png')) {
+    response.headers.set('Cache-Control', 'public, max-age=604800, immutable');
+  }
+
+  // Cache static resources (sitemap, robots.txt)
+  if (path === '/sitemap.xml' || path === '/robots.txt') {
+    response.headers.set('Cache-Control', 'public, max-age=3600, s-maxage=7200');
+  }
+
+  return response;
+};
+
+export const handle: Handle = sequence(handleParaglide, authHandle, cacheHandle);

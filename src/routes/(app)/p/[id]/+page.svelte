@@ -36,9 +36,14 @@
 </script>
 
 <SeoHead
-  title="DevMotion - {projectName}"
+  title="{projectName} - Animation by {data.project.user?.name || 'Community'} | DevMotion"
   description={projectDescription}
   image="/p/{data.project.id}/og.png"
+  type="article"
+  canonical={projectUrl}
+  author={data.project.user?.name || 'Anonymous Creator'}
+  publishedTime={data.project.createdAt.toISOString()}
+  modifiedTime={data.project.updatedAt.toISOString()}
 />
 
 <!-- JSON-LD for specific project -->

@@ -1,12 +1,20 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import SeoHead from '$lib/components/seo-head.svelte';
+  import JsonLd from '$lib/components/json-ld.svelte';
   import { Button } from '$lib/components/ui/button';
   import { goto } from '$app/navigation';
   import { ArrowLeft, ArrowRight, Eye, Film } from '@lucide/svelte';
   import { resolve } from '$app/paths';
+  import { PUBLIC_BASE_URL } from '$env/static/public';
 
   let { data } = $props();
+
+  const baseUrl = PUBLIC_BASE_URL;
+  const galleryUrl = $derived(`${baseUrl}/gallery`);
+  const currentPageUrl = $derived(
+    data.currentPage === 1 ? galleryUrl : `${galleryUrl}?page=${data.currentPage}`
+  );
 
   function changePage(newPage: number) {
     if (newPage < 1 || newPage > data.pages) return;
@@ -17,9 +25,79 @@
   }
 </script>
 
+<svelte:head>
+  <!-- Pagination SEO: Previous page link -->
+  {#if data.currentPage > 1}
+    {#if data.currentPage === 2}
+      <link rel="prev" href={galleryUrl} />
+    {:else}
+      <link rel="prev" href="{galleryUrl}?page={data.currentPage - 1}" />
+    {/if}
+  {/if}
+
+  <!-- Pagination SEO: Next page link -->
+  {#if data.currentPage < data.pages}
+    <link rel="next" href="{galleryUrl}?page={data.currentPage + 1}" />
+  {/if}
+</svelte:head>
+
 <SeoHead
-  title="Community Gallery - DevMotion"
-  description="Explore amazing animations created by the DevMotion community. Search, view, and get inspired by projects from other creators."
+  title="Community Gallery - Explore Animations | DevMotion"
+  description="Discover stunning animations created by the DevMotion community. Browse {data.total} creative projects, view stats, and get inspired by talented creators."
+  canonical={currentPageUrl}
+/>
+
+<!-- JSON-LD: CollectionPage with ItemList for SEO -->
+<JsonLd
+  item={{
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'DevMotion Community Gallery',
+    description:
+      'Explore amazing animations and videos created by the DevMotion community. Discover creative projects, animations, and visual content.',
+    url: galleryUrl,
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: data.total,
+      itemListElement: data.projects.map((project, index) => ({
+        '@type': 'ListItem',
+        position: (data.currentPage - 1) * 12 + index + 1,
+        item: {
+          '@type': 'CreativeWork',
+          name: project.name,
+          url: `${baseUrl}/p/${project.id}`,
+          thumbnailUrl: project.thumbnailUrl || `${baseUrl}/p/${project.id}/og.png`,
+          author: {
+            '@type': 'Person',
+            name: project.user?.name || 'Anonymous Creator'
+          },
+          dateModified: new Date(project.updatedAt).toISOString(),
+          interactionStatistic: {
+            '@type': 'InteractionCounter',
+            interactionType: { '@type': 'WatchAction' },
+            userInteractionCount: project.views
+          }
+        }
+      }))
+    },
+    breadcrumb: {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Home',
+          item: baseUrl
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Gallery',
+          item: galleryUrl
+        }
+      ]
+    }
+  }}
 />
 
 <div class="flex-1 bg-background text-foreground">
