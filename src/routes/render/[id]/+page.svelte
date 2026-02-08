@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import LayersRenderer from '$lib/components/editor/canvas/layers-renderer.svelte';
+  import Watermark from '$lib/components/editor/canvas/watermark.svelte';
   import type { Project } from '$lib/types/animation';
   import { getBackgroundColor, getBackgroundImage } from '$lib/schemas/background';
   import type { PageData } from './$types';
@@ -117,6 +118,8 @@
       disableSelection={true}
     />
   </div>
+
+  <Watermark />
 </div>
 
 <style>
