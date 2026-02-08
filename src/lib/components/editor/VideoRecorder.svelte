@@ -9,6 +9,7 @@
     getSupportedMimeType,
     stopMediaStream
   } from './media-upload-utils';
+  import { getUser } from '$lib/functions/auth.remote';
 
   interface Props {
     /** Callback when recording is complete and uploaded */
@@ -20,6 +21,8 @@
   }
 
   let { onRecordingComplete, projectId, audioEnabled = true }: Props = $props();
+
+  const user = $derived(await getUser());
 
   let isRecording = $state(false);
   let isUploading = $state(false);
@@ -39,9 +42,15 @@
     try {
       recordingError = '';
 
+      // Require user login
+      if (!user) {
+        recordingError = 'Please login to record video';
+        return;
+      }
+
       // Require projectId - user must save project before recording
-      if (!projectId) {
-        recordingError = 'Please save your project before recording video';
+      if (!projectId || projectId.trim() === '') {
+        recordingError = 'Please save your project to the cloud before recording video';
         return;
       }
 
@@ -142,6 +151,11 @@
     recordingError = '';
 
     try {
+      // Double-check projectId exists before upload
+      if (!projectId || projectId.trim() === '') {
+        throw new Error('Please save your project to the cloud before uploading recordings');
+      }
+
       const fileName = generateTimestampedFileName('video', 'webm');
       const result = await uploadMediaBlob(blob, fileName, 'video', projectId, duration);
       onRecordingComplete(result);

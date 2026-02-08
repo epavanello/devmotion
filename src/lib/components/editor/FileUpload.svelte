@@ -4,6 +4,7 @@
   import AudioRecorder from './AudioRecorder.svelte';
   import VideoRecorder from './VideoRecorder.svelte';
   import CameraCapture from './CameraCapture.svelte';
+  import { getUser } from '$lib/functions/auth.remote';
 
   interface Props {
     /** Current file URL (if already uploaded or set) */
@@ -28,6 +29,8 @@
     onRemove,
     projectId
   }: Props = $props();
+
+  const user = $derived(await getUser());
 
   let isUploading = $state(false);
   let uploadError = $state('');
@@ -90,9 +93,16 @@
     const file = input.files?.[0];
     if (!file) return;
 
+    // Require user login
+    if (!user) {
+      uploadError = 'Please login to upload files';
+      if (input) input.value = '';
+      return;
+    }
+
     // Require projectId - user must save project before uploading
-    if (!projectId) {
-      uploadError = 'Please save your project before uploading files';
+    if (!projectId || projectId.trim() === '') {
+      uploadError = 'Please save your project to the cloud before uploading files';
       if (input) input.value = '';
       return;
     }

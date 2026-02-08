@@ -7,6 +7,7 @@
     handleMediaError,
     stopMediaStream
   } from './media-upload-utils';
+  import { getUser } from '$lib/functions/auth.remote';
 
   interface Props {
     /** Callback when photo capture is complete and uploaded */
@@ -16,6 +17,8 @@
   }
 
   let { onCaptureComplete, projectId }: Props = $props();
+
+  const user = $derived(await getUser());
 
   type State = 'idle' | 'preview' | 'review' | 'uploading';
   let cameraState = $state<State>('idle');
@@ -30,9 +33,15 @@
     try {
       captureError = '';
 
+      // Require user login
+      if (!user) {
+        captureError = 'Please login to capture photos';
+        return;
+      }
+
       // Require projectId - user must save project before capturing
-      if (!projectId) {
-        captureError = 'Please save your project before capturing photos';
+      if (!projectId || projectId.trim() === '') {
+        captureError = 'Please save your project to the cloud before capturing photos';
         return;
       }
 
@@ -105,6 +114,11 @@
     captureError = '';
 
     try {
+      // Double-check projectId exists before upload
+      if (!projectId || projectId.trim() === '') {
+        throw new Error('Please save your project to the cloud before uploading photos');
+      }
+
       // Convert canvas to blob
       const blob = await new Promise<Blob | null>((resolve) => {
         canvasEl!.toBlob((b) => resolve(b), 'image/jpeg', 0.92);

@@ -27,7 +27,7 @@
     value={typeof value === 'string' ? value : ''}
     currentFileName={typeof layer.props.fileName === 'string' ? layer.props.fileName : ''}
     mediaType={metadata.meta.mediaType}
-    projectId={projectStore.project.id}
+    projectId={projectStore.dbProjectId ?? undefined}
     onUpload={(result) => {
       onUpdateProp(metadata.name, result.url);
       onUpdateProp('fileKey', result.key);
