@@ -4,15 +4,38 @@
 import { z } from 'zod';
 import type { Component } from 'svelte';
 import type { LayerMeta } from './registry';
+import {
+  AnchorPointSchema,
+  TransformSchema,
+  LayerStyleSchema,
+  BaseLayerFieldsSchema,
+  type AnchorPoint,
+  type Transform,
+  type LayerStyle
+} from '$lib/schemas/base';
+import type { Layer } from '$lib/schemas/animation';
 
 /**
  * Per-field UI metadata that layer schemas can opt into via .register(fieldRegistry, …).
  * Keeps UI-rendering hints out of validation logic and out of .describe() strings.
  */
 export type FieldMeta = {
-  /** Override the default input widget rendered for this field */
-  widget?: 'textarea' | 'background';
-};
+  hidden?: boolean;
+  readOnly?: boolean;
+} & (
+  | {
+      /** Override the default input widget rendered for this field */
+      widget?: 'textarea' | 'background';
+    }
+  | {
+      widget: 'upload';
+      mediaType: 'image' | 'video' | 'audio';
+    }
+  | {
+      widget: 'custom';
+      component: Component<{ value: unknown; onChange: (value: unknown) => void; layer: Layer }>;
+    }
+);
 
 /**
  * Global registry for FieldMeta.  Individual schema fields call
@@ -21,58 +44,23 @@ export type FieldMeta = {
  */
 export const fieldRegistry = z.registry<FieldMeta>();
 
-/**
- * Anchor point options for layer positioning
- */
-export const AnchorPointSchema = z.enum([
-  'top-left',
-  'top-center',
-  'top-right',
-  'center-left',
-  'center',
-  'center-right',
-  'bottom-left',
-  'bottom-center',
-  'bottom-right'
-]);
+// Re-export shared schemas for convenience (with backward-compatible aliases)
+export { AnchorPointSchema };
+export { TransformSchema as BaseTransformSchema };
+export { LayerStyleSchema as BaseStyleSchema };
 
 /**
- * Base transform properties shared by all layers
+ * Complete base schema for all layers.
+ * Combines base fields with transform and style properties.
  */
-export const BaseTransformSchema = z.object({
-  x: z.number().describe('Position X'),
-  y: z.number().describe('Position Y'),
-  z: z.number().describe('Position Z (depth)'),
-  rotationX: z.number().describe('Rotation X (radians)'),
-  rotationY: z.number().describe('Rotation Y (radians)'),
-  rotationZ: z.number().describe('Rotation Z (radians)'),
-  scaleX: z.number().min(0).describe('Scale X'),
-  scaleY: z.number().min(0).describe('Scale Y'),
-  scaleZ: z.number().min(0).describe('Scale Z'),
-  anchor: AnchorPointSchema.describe('Anchor point')
+export const BaseLayerSchema = BaseLayerFieldsSchema.extend({
+  transform: TransformSchema,
+  style: LayerStyleSchema
 });
 
-/**
- * Base style properties shared by all layers
- */
-export const BaseStyleSchema = z.object({
-  opacity: z.number().min(0).max(1).describe('Opacity (0-1)')
-});
-
-/**
- * Complete base schema for all layers
- */
-export const BaseLayerSchema = z.object({
-  id: z.string(),
-  name: z.string().describe('Layer name'),
-  visible: z.boolean().describe('Layer visibility'),
-  locked: z.boolean().describe('Layer locked state'),
-  transform: BaseTransformSchema,
-  style: BaseStyleSchema
-});
-
-export type BaseTransform = z.infer<typeof BaseTransformSchema>;
-export type BaseStyle = z.infer<typeof BaseStyleSchema>;
+// Export types with backward-compatible names
+export type BaseTransform = Transform;
+export type BaseStyle = LayerStyle;
 export type BaseLayerProps = z.infer<typeof BaseLayerSchema>;
 
 /**
@@ -88,7 +76,7 @@ export interface LayerComponentDefinition extends LayerMeta {
 /**
  * Extract property metadata from a Zod schema for dynamic UI generation
  */
-export interface PropertyMetadata {
+export type PropertyMetadata = {
   name: string;
   type: 'string' | 'number' | 'boolean' | 'color' | 'select' | 'background';
   description?: string;
@@ -105,12 +93,8 @@ export interface PropertyMetadata {
    * - 'background': Background/gradient interpolation (discrete for now)
    */
   interpolationType: 'number' | 'color' | 'text' | 'discrete' | 'background';
-  /**
-   * UI-widget override sourced from fieldRegistry.
-   * When present the panel renders this widget instead of the default for the type.
-   */
-  widget?: FieldMeta['widget'];
-}
+  meta?: FieldMeta;
+};
 
 /**
  * Unwrap ZodDefault and ZodOptional to get the inner type
@@ -139,7 +123,7 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
       const zodType = value;
       const unwrapped = unwrapZodType(zodType);
 
-      const meta: PropertyMetadata = {
+      const propertiesMeta: PropertyMetadata = {
         name: key,
         type: 'string',
         interpolationType: 'discrete', // Default to discrete (no interpolation),
@@ -149,20 +133,20 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
 
       // Determine type and interpolation type
       if (unwrapped instanceof z.ZodNumber) {
-        meta.type = 'number';
-        meta.interpolationType = 'number'; // Numbers can be interpolated
+        propertiesMeta.type = 'number';
+        propertiesMeta.interpolationType = 'number'; // Numbers can be interpolated
 
         const min = unwrapped.def.checks?.find((check) => check._zod.def.check === 'greater_than');
         if (min && 'value' in min._zod.def) {
-          meta.min = min._zod.def.value as number;
+          propertiesMeta.min = min._zod.def.value as number;
         }
         const max = unwrapped.def.checks?.find((check) => check._zod.def.check === 'less_than');
         if (max && 'value' in max._zod.def) {
-          meta.max = max._zod.def.value as number;
+          propertiesMeta.max = max._zod.def.value as number;
         }
       } else if (unwrapped instanceof z.ZodBoolean) {
-        meta.type = 'boolean';
-        meta.interpolationType = 'discrete'; // Booleans jump between values
+        propertiesMeta.type = 'boolean';
+        propertiesMeta.interpolationType = 'discrete'; // Booleans jump between values
       } else if (unwrapped instanceof z.ZodUnion) {
         // Check if this is a BackgroundValue union (solid, linear, radial, conic)
         const options = unwrapped.options as z.ZodType[];
@@ -178,45 +162,41 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
         });
 
         if (isBackgroundUnion) {
-          meta.type = 'background';
-          meta.interpolationType = 'discrete'; // Backgrounds use discrete interpolation for now
+          propertiesMeta.type = 'background';
+          propertiesMeta.interpolationType = 'discrete'; // Backgrounds use discrete interpolation for now
         } else {
-          meta.type = 'string';
-          meta.interpolationType = 'discrete';
+          propertiesMeta.type = 'string';
+          propertiesMeta.interpolationType = 'discrete';
         }
       } else if (unwrapped instanceof z.ZodString) {
-        meta.type = 'string';
-        meta.interpolationType = 'discrete'; // Strings jump between values
+        propertiesMeta.type = 'string';
+        propertiesMeta.interpolationType = 'discrete'; // Strings jump between values
 
         // Check if it's a color by convention (field name contains 'color')
         if (key.toLowerCase().includes('color')) {
-          meta.type = 'color';
-          meta.interpolationType = 'color'; // Colors can be interpolated
+          propertiesMeta.type = 'color';
+          propertiesMeta.interpolationType = 'color'; // Colors can be interpolated
         }
         // Check if it's text content (for character-by-character animation)
         else if (key === 'content' || key === 'text') {
-          meta.interpolationType = 'text'; // Text can be interpolated character by character
+          propertiesMeta.interpolationType = 'text'; // Text can be interpolated character by character
         }
       } else if (unwrapped instanceof z.ZodEnum) {
-        meta.type = 'select';
-        meta.interpolationType = 'discrete'; // Enums jump between values
+        propertiesMeta.type = 'select';
+        propertiesMeta.interpolationType = 'discrete'; // Enums jump between values
         // Extract enum values from Zod 4 - uses 'entries' object or 'options' array
         const enumEntries = unwrapped._zod?.def?.entries;
         if (enumEntries && typeof enumEntries === 'object') {
-          meta.options = Object.keys(enumEntries).map((v) => ({
+          propertiesMeta.options = Object.keys(enumEntries).map((v) => ({
             value: v,
             label: String(v).charAt(0).toUpperCase() + String(v).slice(1)
           }));
         }
       }
 
-      // Pull in any UI-widget override registered via fieldRegistry
-      const fieldMeta = fieldRegistry.get(zodType);
-      if (fieldMeta?.widget) {
-        meta.widget = fieldMeta.widget;
-      }
+      propertiesMeta.meta = fieldRegistry.get(zodType);
 
-      metadata.push(meta);
+      metadata.push(propertiesMeta);
     }
   }
 
@@ -246,8 +226,8 @@ export function extractDefaultValues(schema: z.ZodType): Record<string, unknown>
  * Get translate percentages for an anchor point
  * Returns the X and Y percentages to offset the element
  */
-function getAnchorOffset(anchor: z.infer<typeof AnchorPointSchema>): { x: string; y: string } {
-  const offsets: Record<z.infer<typeof AnchorPointSchema>, { x: string; y: string }> = {
+function getAnchorOffset(anchor: AnchorPoint): { x: string; y: string } {
+  const offsets: Record<AnchorPoint, { x: string; y: string }> = {
     'top-left': { x: '0%', y: '0%' },
     'top-center': { x: '-50%', y: '0%' },
     'top-right': { x: '-100%', y: '0%' },
@@ -269,7 +249,7 @@ function getAnchorOffset(anchor: z.infer<typeof AnchorPointSchema>): { x: string
  * Note: The layer element should be positioned at top-1/2 left-1/2 (center of canvas)
  * so that translate3d(0, 0, 0) places it at the canvas center.
  */
-export function generateTransformCSS(transform: BaseTransform): string {
+export function generateTransformCSS(transform: Transform): string {
   const { x, y, z, rotationX, rotationY, rotationZ, scaleX, scaleY, scaleZ, anchor } = transform;
   const anchorOffset = getAnchorOffset(anchor);
 

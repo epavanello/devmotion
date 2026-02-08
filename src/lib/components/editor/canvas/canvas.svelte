@@ -1,12 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { projectStore } from '$lib/stores/project.svelte';
-  import { getLayerTransform, getLayerStyle, getLayerProps } from '$lib/engine/layer-rendering';
   import CanvasControls from './canvas-controls.svelte';
   import PlaybackControls from './playback-controls.svelte';
-  import LayerWrapper from '$lib/layers/LayerWrapper.svelte';
-  import { getLayerComponent } from '$lib/layers/registry';
-  import type { Layer } from '$lib/types/animation';
+  import LayersRenderer from './layers-renderer.svelte';
   import { Fullscreen } from '@lucide/svelte';
   import { getBackgroundColor, getBackgroundImage } from '$lib/schemas/background';
 
@@ -137,27 +134,6 @@
     projectStore.setZoom(Math.max(0.1, Math.min(5, newZoom)));
   }
 
-  /**
-   * Unified function to get all layer rendering data (transform, style, props)
-   * Uses cached data during recording if available, otherwise computes on-demand
-   */
-  function getLayerRenderData(layer: Layer) {
-    // Use cached data during recording if available
-    if (projectStore.isRecording) {
-      const cachedFrame = projectStore.getCachedFrame(projectStore.currentTime);
-      if (cachedFrame?.[layer.id]) {
-        return cachedFrame[layer.id];
-      }
-    }
-    // Otherwise compute using shared rendering functions
-    const currentTime = projectStore.currentTime;
-    return {
-      transform: getLayerTransform(layer, currentTime),
-      style: getLayerStyle(layer, currentTime),
-      customProps: getLayerProps(layer, currentTime)
-    };
-  }
-
   // Calculate scale factor to fit project dimensions in viewport
   // This maintains aspect ratio and leaves some padding
   const VIEWPORT_PADDING = 0.9; // Use 90% of available space for padding
@@ -184,7 +160,7 @@
   });
 </script>
 
-<div class="relative h-full w-full overflow-hidden bg-gray-700" class:recording-mode={isRecording}>
+<div class="relative h-full w-full overflow-hidden" class:recording-mode={isRecording}>
   <!-- Canvas viewport -->
   <div
     bind:this={canvasContainer}
@@ -210,7 +186,7 @@
           style:height="20000px"
           style:left="-10000px"
           style:top="-10000px"
-          style:background-color="rgba(0, 0, 0, 0.6)"
+          style:background-color="rgba(0, 0, 0, 0.2)"
           style:clip-path={`polygon(evenodd, 0 0, 0 20000px, 20000px 20000px, 20000px 0, 0 0, ${10000 - projectStore.project.width / 2}px ${10000 - projectStore.project.height / 2}px, ${10000 - projectStore.project.width / 2}px ${10000 + projectStore.project.height / 2}px, ${10000 + projectStore.project.width / 2}px ${10000 + projectStore.project.height / 2}px, ${10000 + projectStore.project.width / 2}px ${10000 - projectStore.project.height / 2}px, ${10000 - projectStore.project.width / 2}px ${10000 - projectStore.project.height / 2}px)`}
           style:pointer-events="none"
         ></div>
@@ -240,23 +216,15 @@
           style:transform-style="preserve-3d"
           style:pointer-events={projectStore.isRecording ? 'none' : undefined}
         >
-          {#each projectStore.project.layers as layer (layer.id)}
-            {@const { transform, style, customProps } = getLayerRenderData(layer)}
-            {@const component = getLayerComponent(layer.type)}
-            {@const isSelected = projectStore.selectedLayerId === layer.id}
-
-            <LayerWrapper
-              id={layer.id}
-              name={layer.name}
-              visible={layer.visible}
-              locked={layer.locked}
-              selected={isSelected && !projectStore.isRecording}
-              {transform}
-              {style}
-              {component}
-              {customProps}
-            />
-          {/each}
+          <LayersRenderer
+            layers={projectStore.project.layers}
+            currentTime={projectStore.currentTime}
+            duration={projectStore.project.duration}
+            isPlaying={projectStore.isPlaying}
+            selectedLayerId={projectStore.selectedLayerId}
+            disableSelection={projectStore.isRecording}
+            getCachedFrame={projectStore.isRecording ? projectStore.getCachedFrame : undefined}
+          />
         </div>
 
         <!-- Watermark - Always visible, unremovable -->

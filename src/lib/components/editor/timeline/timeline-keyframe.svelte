@@ -1,7 +1,10 @@
 <script lang="ts">
   import type { Keyframe } from '$lib/types/animation';
   import { projectStore } from '$lib/stores/project.svelte';
-  import TooltipWrapper from '$lib/components/ui/tooltip/tooltip-wrapper.svelte';
+  import * as Popover from '$lib/components/ui/popover';
+  import { Button } from '$lib/components/ui/button';
+  import { Clock, Trash2 } from '@lucide/svelte';
+  import KeyframeCard from '../keyframe-card.svelte';
 
   interface Props {
     keyframes: Keyframe[];
@@ -17,41 +20,6 @@
 
   let isDragging = $state(false);
   let startX = 0;
-
-  function getPropertyLabel(property: string): string {
-    const labels: Record<string, string> = {
-      'position.x': 'Position X',
-      'position.y': 'Position Y',
-      'position.z': 'Position Z',
-      'rotation.x': 'Rotation X',
-      'rotation.y': 'Rotation Y',
-      'rotation.z': 'Rotation Z',
-      'scale.x': 'Scale X',
-      'scale.y': 'Scale Y',
-      'scale.z': 'Scale Z',
-      opacity: 'Opacity',
-      color: 'Color'
-    };
-    if (labels[property]) return labels[property];
-
-    // Handle props.* properties - show just the prop name capitalized
-    if (property.startsWith('props.')) {
-      const propName = property.slice(6);
-      return propName.charAt(0).toUpperCase() + propName.slice(1);
-    }
-
-    return property;
-  }
-
-  function formatValue(value: number | string | boolean): string {
-    if (typeof value === 'number') {
-      return value.toFixed(2);
-    }
-    if (typeof value === 'boolean') {
-      return value ? 'true' : 'false';
-    }
-    return value;
-  }
 
   function handleMouseDown(e: MouseEvent) {
     if (projectStore.isRecording) return;
@@ -101,63 +69,94 @@
     }
   }
 
-  function handleDelete(e: MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    const message =
-      keyframes.length === 1
-        ? 'Delete this keyframe?'
-        : `Delete all ${keyframes.length} keyframes at this time?`;
-    if (confirm(message)) {
-      for (const keyframe of keyframes) {
-        projectStore.removeKeyframe(layerId, keyframe.id);
-      }
+  function handleDeleteAll() {
+    for (const keyframe of keyframes) {
+      projectStore.removeKeyframe(layerId, keyframe.id);
     }
   }
 </script>
 
-<TooltipWrapper delayDuration={0}>
-  {#snippet content()}
-    <div class="space-y-1 text-xs">
-      <div class="font-semibold">
-        Time: {firstKeyframe.time.toFixed(2)}s
-      </div>
-      {#if keyframes.length > 1}
-        <div class="text-xs text-muted-foreground">
-          {keyframes.length} keyframes
+<Popover.Root>
+  <Popover.Trigger>
+    {#snippet child({ props })}
+      <div
+        {...props}
+        class="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-sm border-2 transition-transform hover:scale-110 active:cursor-grabbing"
+        class:bg-primary={isSelected}
+        class:bg-muted-foreground={!isSelected}
+        class:border-primary={isSelected}
+        class:border-background={!isSelected}
+        style="left: {position}px"
+        onmousedown={handleMouseDown}
+        onkeydown={handleKeyDown}
+        oncontextmenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        aria-label="Keyframe at {firstKeyframe.time.toFixed(2)}s"
+      ></div>
+    {/snippet}
+  </Popover.Trigger>
+  <Popover.Content side="top" class="w-80">
+    <div class="space-y-3">
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b pb-2">
+        <div class="flex items-center gap-2">
+          <Clock class="h-4 w-4 text-muted-foreground" />
+          <span class="text-sm font-semibold">{firstKeyframe.time.toFixed(2)}s</span>
         </div>
-      {/if}
-      <div class="mt-2 space-y-2">
-        {#each keyframes as keyframe (keyframe.id)}
-          <div class="border-t pt-2 first:border-t-0 first:pt-0">
-            <div class="font-semibold">{getPropertyLabel(keyframe.property)}</div>
-            <div class="text-muted-foreground">
-              Value: <span class="">{formatValue(keyframe.value)}</span>
-            </div>
-            <div class="text-muted-foreground">
-              Easing: <span class="">{keyframe.easing.type}</span>
-            </div>
+        {#if keyframes.length > 1}
+          <div class="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+            {keyframes.length} properties
           </div>
+        {/if}
+      </div>
+
+      <!-- Keyframe Cards -->
+      <div class="space-y-2">
+        {#each keyframes as keyframe (keyframe.id)}
+          <KeyframeCard {keyframe} {layerId} readonlyTime />
         {/each}
       </div>
-      <div class="mt-2 border-t pt-1 text-muted-foreground">
-        {keyframes.length === 1
-          ? 'Right-click to delete'
-          : `Right-click to delete all ${keyframes.length} keyframes`}
-      </div>
+
+      <!-- Delete All Button -->
+      {#if keyframes.length > 1}
+        <div class="border-t pt-2">
+          <Popover.Root>
+            <Popover.Trigger>
+              {#snippet child({ props })}
+                <Button variant="destructive" size="sm" class="w-full" {...props}>
+                  <Trash2 class="mr-2 h-3.5 w-3.5" />
+                  Delete All ({keyframes.length})
+                </Button>
+              {/snippet}
+            </Popover.Trigger>
+            <Popover.Content class="w-72" align="center" side="top">
+              <div class="space-y-2">
+                <h4 class="leading-none font-medium">Delete All Keyframes</h4>
+                <p class="text-sm text-muted-foreground">
+                  Delete all {keyframes.length} keyframes at {firstKeyframe.time.toFixed(2)}s? This
+                  cannot be undone.
+                </p>
+                <div class="flex justify-end gap-2 pt-2">
+                  <Popover.Close>
+                    {#snippet child({ props })}
+                      <Button variant="outline" size="sm" {...props}>Cancel</Button>
+                    {/snippet}
+                  </Popover.Close>
+                  <Popover.Close>
+                    {#snippet child({ props })}
+                      <Button variant="destructive" size="sm" {...props} onclick={handleDeleteAll}>
+                        Delete All
+                      </Button>
+                    {/snippet}
+                  </Popover.Close>
+                </div>
+              </div>
+            </Popover.Content>
+          </Popover.Root>
+        </div>
+      {/if}
     </div>
-  {/snippet}
-  <button
-    class="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-sm border-2 transition-transform hover:scale-110 active:cursor-grabbing"
-    class:bg-primary={isSelected}
-    class:bg-muted-foreground={!isSelected}
-    class:border-primary={isSelected}
-    class:border-background={!isSelected}
-    style="left: {position}px"
-    onmousedown={handleMouseDown}
-    onkeydown={handleKeyDown}
-    oncontextmenu={handleDelete}
-    aria-label="Keyframe at {firstKeyframe.time.toFixed(2)}s"
-  >
-  </button>
-</TooltipWrapper>
+  </Popover.Content>
+</Popover.Root>

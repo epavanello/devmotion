@@ -4,6 +4,7 @@ import { auth } from '$lib/server/auth';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { building } from '$app/environment';
 import { sequence } from '@sveltejs/kit/hooks';
+import '$lib/server/thumbnail-queue';
 
 const handleParaglide: Handle = ({ event, resolve }) =>
   paraglideMiddleware(event.request, ({ request, locale }) => {

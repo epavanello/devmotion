@@ -104,7 +104,19 @@
     }
   }
 
-  function openExportDialog() {
+  async function openExportDialog() {
+    // Check for unsaved changes
+    if (projectStore.hasUnsavedChanges && user) {
+      const shouldSave = confirm(
+        'You have unsaved changes. Please save your project before exporting.'
+      );
+
+      if (!shouldSave) {
+        return;
+      }
+      await handleSaveToCloud();
+    }
+
     showExportDialog = true;
   }
 
@@ -123,6 +135,7 @@
     });
 
     if (result.success && result.data.id) {
+      projectStore.markAsSaved();
       if (!projectId) {
         goto(resolve(`/p/${result.data.id}`));
       }
@@ -209,13 +222,20 @@
             icon={Trash}
           />
 
-          <TooltipButton
-            content="Save to Cloud (Ctrl/Cmd + S)"
-            variant="ghost"
-            onclick={handleSaveToCloud}
-            disabled={isRecording || !canEdit}
-            icon={Save}
-          />
+          <div class="relative">
+            <TooltipButton
+              content="Save to Cloud (Ctrl/Cmd + S)"
+              variant="ghost"
+              onclick={handleSaveToCloud}
+              disabled={isRecording || !canEdit}
+              icon={Save}
+            />
+            {#if projectStore.hasUnsavedChanges}
+              <span
+                class="absolute top-1 right-1 h-2 w-2 rounded-full bg-orange-500 ring-2 ring-background"
+              ></span>
+            {/if}
+          </div>
         </div>
 
         <!-- Share/Fork Actions (Desktop) -->
@@ -360,15 +380,22 @@
           Gallery
         </Button>
 
-        <Button
-          variant="outline"
-          onclick={handleSaveToCloud}
-          disabled={isRecording || !canEdit}
-          icon={Save}
-          class="justify-start"
-        >
-          Save Cloud
-        </Button>
+        <div class="relative">
+          <Button
+            variant="outline"
+            onclick={handleSaveToCloud}
+            disabled={isRecording || !canEdit}
+            icon={Save}
+            class="justify-start"
+          >
+            Save Cloud
+          </Button>
+          {#if projectStore.hasUnsavedChanges}
+            <span
+              class="absolute top-2 right-2 h-2 w-2 rounded-full bg-orange-500 ring-2 ring-background"
+            ></span>
+          {/if}
+        </div>
 
         <Button
           variant="outline"

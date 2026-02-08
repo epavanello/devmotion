@@ -25,7 +25,7 @@ interface LayerFrameCache {
 /**
  * Cache for all layers in a single frame
  */
-interface FrameCache {
+export interface FrameCache {
   [layerId: string]: LayerFrameCache;
 }
 
@@ -50,6 +50,7 @@ class ProjectStore {
   canEdit = $state(true);
   isPublic = $state(false);
   isSaving = $state(false);
+  hasUnsavedChanges = $state(false);
 
   constructor() {
     // Load first, before setting up the effect
@@ -62,6 +63,9 @@ class ProjectStore {
         () => {
           // Skip saving during initial load
           if (!this.#initialized) return;
+
+          // Mark as having unsaved changes
+          this.hasUnsavedChanges = true;
 
           // Debounced save
           if (this.#saveTimeout) {
@@ -128,6 +132,14 @@ class ProjectStore {
     return this.dbProjectId !== null;
   }
 
+  /**
+   * Mark the project as saved (no unsaved changes)
+   * Call this after successfully saving to cloud
+   */
+  markAsSaved() {
+    this.hasUnsavedChanges = false;
+  }
+
   setDbContext(projectId: string | null, isOwner: boolean, canEdit: boolean, isPublic: boolean) {
     this.dbProjectId = projectId;
     this.isOwner = isOwner;
@@ -140,6 +152,7 @@ class ProjectStore {
     this.isOwner = true;
     this.canEdit = true;
     this.isPublic = false;
+    this.hasUnsavedChanges = false;
     this.newProject();
   }
 
@@ -148,7 +161,22 @@ class ProjectStore {
     this.project.layers = [...this.project.layers, layer];
   }
 
-  removeLayer(layerId: string) {
+  async removeLayer(layerId: string) {
+    // Find the layer to check if it has uploaded files to clean up
+    const layer = this.project.layers.find((l) => l.id === layerId);
+
+    // Clean up uploaded files if the layer has a fileKey
+    if (layer && layer.props.fileKey && typeof layer.props.fileKey === 'string') {
+      try {
+        await fetch(`/api/upload/${encodeURIComponent(layer.props.fileKey as string)}`, {
+          method: 'DELETE'
+        });
+      } catch (err) {
+        console.warn('Failed to delete file from storage:', err);
+        // Continue with layer deletion even if file cleanup fails
+      }
+    }
+
     this.project.layers = this.project.layers.filter((l) => l.id !== layerId);
     if (this.selectedLayerId === layerId) {
       this.selectedLayerId = null;
@@ -347,6 +375,7 @@ class ProjectStore {
     this.project = project;
     this.selectedLayerId = null;
     this.isPlaying = false;
+    this.hasUnsavedChanges = false;
   }
 
   newProject() {
@@ -354,6 +383,7 @@ class ProjectStore {
     this.currentTime = 0;
     this.selectedLayerId = null;
     this.isPlaying = false;
+    this.hasUnsavedChanges = false;
   }
 
   exportToJSON(): string {
@@ -372,6 +402,281 @@ class ProjectStore {
   get selectedLayer(): Layer | null {
     if (!this.selectedLayerId) return null;
     return this.project.layers.find((l) => l.id === this.selectedLayerId) || null;
+  }
+
+  // ========================================
+  // Enter/Exit Time Operations
+  // ========================================
+
+  /**
+   * Set the enter time for a layer (when it becomes visible)
+   * For media layers (video/audio), also adjusts contentOffset to shift the content.
+   * When contentOffset reaches 0, shifts exitTime to maintain visible duration (sliding mode).
+   */
+  setLayerEnterTime(layerId: string, enterTime: number) {
+    this.project.layers = this.project.layers.map((layer) => {
+      if (layer.id !== layerId) return layer;
+
+      const oldEnterTime = layer.enterTime ?? 0;
+      const oldExitTime = layer.exitTime ?? this.project.duration;
+      const isMediaLayer = layer.type === 'video' || layer.type === 'audio';
+
+      // For media layers with content duration, adjust content offset
+      if (isMediaLayer && layer.contentDuration !== undefined) {
+        const contentDuration = layer.contentDuration;
+        const currentContentOffset = layer.contentOffset ?? 0;
+        const enterTimeDelta = enterTime - oldEnterTime;
+
+        // Calculate desired content offset
+        let newContentOffset = currentContentOffset + enterTimeDelta;
+
+        // If dragging left (decreasing enterTime) and contentOffset would go below 0
+        if (enterTimeDelta < 0 && newContentOffset < 0) {
+          // Slide mode: maintain visible duration and shift exit time
+          const remainingDelta = newContentOffset; // negative value
+          newContentOffset = 0;
+
+          const validEnterTime = Math.max(0, enterTime);
+          let newExitTime = oldExitTime + remainingDelta; // shift exit left by remaining delta
+
+          // Ensure exit time stays valid
+          newExitTime = Math.max(
+            validEnterTime + 0.1,
+            Math.min(newExitTime, this.project.duration)
+          );
+
+          // Ensure visible duration doesn't exceed content duration
+          if (newExitTime - validEnterTime > contentDuration) {
+            newExitTime = validEnterTime + contentDuration;
+          }
+
+          return {
+            ...layer,
+            enterTime: validEnterTime,
+            exitTime: newExitTime,
+            contentOffset: 0
+          };
+        }
+
+        // Normal mode: clamp content offset and adjust enter time
+        newContentOffset = Math.max(0, Math.min(newContentOffset, contentDuration - 0.01));
+
+        // Calculate actual enter time based on content offset constraints
+        const actualDelta = newContentOffset - currentContentOffset;
+        let validEnterTime = oldEnterTime + actualDelta;
+
+        // Ensure enter time is within bounds and before exit time
+        validEnterTime = Math.max(
+          0,
+          Math.min(validEnterTime, oldExitTime - 0.1, this.project.duration)
+        );
+
+        // Ensure visible duration doesn't exceed available content
+        const visibleDuration = oldExitTime - validEnterTime;
+        const availableContent = contentDuration - newContentOffset;
+        if (visibleDuration > availableContent) {
+          validEnterTime = oldExitTime - availableContent;
+        }
+
+        return {
+          ...layer,
+          enterTime: validEnterTime,
+          exitTime: oldExitTime,
+          contentOffset: newContentOffset
+        };
+      }
+
+      // For non-media layers, use simple logic
+      const clampedEnterTime = Math.max(0, Math.min(enterTime, this.project.duration));
+      const validEnterTime = Math.min(clampedEnterTime, oldExitTime - 0.1);
+      return { ...layer, enterTime: validEnterTime };
+    });
+  }
+
+  /**
+   * Set the exit time for a layer (when it becomes hidden)
+   * For media layers (video/audio), respects contentDuration constraints
+   */
+  setLayerExitTime(layerId: string, exitTime: number) {
+    this.project.layers = this.project.layers.map((layer) => {
+      if (layer.id !== layerId) return layer;
+
+      const enterTime = layer.enterTime ?? 0;
+      const isMediaLayer = layer.type === 'video' || layer.type === 'audio';
+
+      // Calculate max exit time for media layers
+      let maxExitTime = this.project.duration;
+      if (isMediaLayer && layer.contentDuration !== undefined) {
+        const contentOffset = layer.contentOffset ?? 0;
+        const availableContent = layer.contentDuration - contentOffset;
+        maxExitTime = Math.min(this.project.duration, enterTime + availableContent);
+      }
+
+      // Clamp and validate exit time
+      const clampedExitTime = Math.max(0, Math.min(exitTime, maxExitTime));
+      const validExitTime = Math.max(clampedExitTime, enterTime + 0.1);
+
+      return { ...layer, exitTime: validExitTime };
+    });
+  }
+
+  /**
+   * Set both enter and exit times for a layer (e.g., when dragging the bar)
+   * For media layers, this maintains the content offset while moving the time range
+   * @param shiftKeyframes If true, shift all keyframes by the time delta (default: false)
+   */
+  setLayerTimeRange(layerId: string, enterTime: number, exitTime: number, shiftKeyframes = false) {
+    this.project.layers = this.project.layers.map((layer) => {
+      if (layer.id !== layerId) return layer;
+
+      const oldEnterTime = layer.enterTime ?? 0;
+      const isMediaLayer = layer.type === 'video' || layer.type === 'audio';
+      const duration = exitTime - enterTime;
+
+      // For media layers, respect content duration
+      if (isMediaLayer && layer.contentDuration !== undefined) {
+        const contentOffset = layer.contentOffset ?? 0;
+        const availableContent = layer.contentDuration - contentOffset;
+        const maxDuration = Math.min(duration, availableContent);
+
+        let clampedEnterTime = Math.max(0, Math.min(enterTime, this.project.duration));
+        let clampedExitTime = clampedEnterTime + maxDuration;
+
+        // Ensure exit time doesn't exceed project duration
+        if (clampedExitTime > this.project.duration) {
+          clampedExitTime = this.project.duration;
+          clampedEnterTime = Math.max(0, clampedExitTime - maxDuration);
+        }
+
+        // Shift keyframes if requested
+        const timeDelta = shiftKeyframes ? clampedEnterTime - oldEnterTime : 0;
+        const shiftedKeyframes =
+          timeDelta !== 0
+            ? layer.keyframes
+                .map((kf) => ({
+                  ...kf,
+                  time: Math.max(0, Math.min(this.project.duration, kf.time + timeDelta))
+                }))
+                .sort((a, b) => a.time - b.time)
+            : layer.keyframes;
+
+        return {
+          ...layer,
+          enterTime: clampedEnterTime,
+          exitTime: Math.max(clampedExitTime, clampedEnterTime + 0.1),
+          keyframes: shiftedKeyframes
+        };
+      }
+
+      // For non-media layers, use simple logic
+      const clampedEnterTime = Math.max(0, Math.min(enterTime, this.project.duration));
+      const clampedExitTime = Math.max(0, Math.min(exitTime, this.project.duration));
+      const validExitTime = Math.max(clampedExitTime, clampedEnterTime + 0.1);
+
+      // Shift keyframes if requested
+      const timeDelta = shiftKeyframes ? clampedEnterTime - oldEnterTime : 0;
+      const shiftedKeyframes =
+        timeDelta !== 0
+          ? layer.keyframes
+              .map((kf) => ({
+                ...kf,
+                time: Math.max(0, Math.min(this.project.duration, kf.time + timeDelta))
+              }))
+              .sort((a, b) => a.time - b.time)
+          : layer.keyframes;
+
+      return {
+        ...layer,
+        enterTime: clampedEnterTime,
+        exitTime: validExitTime,
+        keyframes: shiftedKeyframes
+      };
+    });
+  }
+
+  // ========================================
+  // Media Layer Operations (Split/Crop/Resize)
+  // ========================================
+
+  /**
+   * Split a media layer (video/audio) at the current time
+   * Creates two layers from one, each with appropriate time ranges
+   */
+  splitLayer(layerId: string, splitTime?: number) {
+    const layer = this.project.layers.find((l) => l.id === layerId);
+    if (!layer) return;
+
+    const time = splitTime ?? this.currentTime;
+    const enterTime = layer.enterTime ?? 0;
+    const exitTime = layer.exitTime ?? this.project.duration;
+
+    // Don't split if time is outside the layer's range
+    if (time <= enterTime || time >= exitTime) return;
+
+    // Calculate how much content was played before the split
+    const playedDuration = time - enterTime;
+    const contentOffset = layer.contentOffset ?? 0;
+
+    // Create the second half as a new layer
+    const secondHalf: Layer = {
+      ...JSON.parse(JSON.stringify(layer)),
+      id: nanoid(),
+      name: `${layer.name} (2)`,
+      enterTime: time,
+      exitTime: exitTime,
+      // Shift content offset by the amount already played
+      contentOffset: contentOffset + playedDuration,
+      keyframes: layer.keyframes.filter((k) => k.time > time).map((k) => ({ ...k }))
+    };
+
+    // Update the first half (original layer) - keep same contentOffset, just trim exit time
+    this.project.layers = this.project.layers.map((l) => {
+      if (l.id === layerId) {
+        return {
+          ...l,
+          exitTime: time,
+          keyframes: l.keyframes.filter((k) => k.time <= time)
+        };
+      }
+      return l;
+    });
+
+    // Add the second half after the original
+    const insertIndex = this.project.layers.findIndex((l) => l.id === layerId) + 1;
+    const layers = [...this.project.layers];
+    layers.splice(insertIndex, 0, secondHalf);
+    this.project.layers = layers;
+  }
+
+  /**
+   * Trim/crop a media layer's source time range
+   */
+  trimMediaLayer(layerId: string, mediaStartTime: number, mediaEndTime: number) {
+    this.project.layers = this.project.layers.map((layer) => {
+      if (layer.id === layerId && (layer.type === 'video' || layer.type === 'audio')) {
+        return {
+          ...layer,
+          props: {
+            ...layer.props,
+            mediaStartTime: Math.max(0, mediaStartTime),
+            mediaEndTime: mediaEndTime > 0 ? mediaEndTime : 0
+          }
+        };
+      }
+      return layer;
+    });
+  }
+
+  /**
+   * Check if a layer is visible at the current time based on enter/exit times
+   */
+  isLayerVisibleAtTime(layerId: string, time?: number): boolean {
+    const layer = this.project.layers.find((l) => l.id === layerId);
+    if (!layer) return false;
+    const t = time ?? this.currentTime;
+    const enterTime = layer.enterTime ?? 0;
+    const exitTime = layer.exitTime ?? this.project.duration;
+    return t >= enterTime && t <= exitTime;
   }
 
   /**

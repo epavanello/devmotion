@@ -183,25 +183,24 @@
   }
 </script>
 
-{#if visible}
-  <div
-    class="layer-wrapper absolute top-1/2 left-1/2"
-    class:selected
-    class:locked
-    data-layer-id={id}
-    style:transform={transformCSS}
-    style:transform-style="preserve-3d"
-    style:cursor={locked ? 'not-allowed' : 'move'}
-    onmousedown={onMouseDown}
-    role="button"
-    tabindex="0"
-    style:--primary-color={BRAND_COLORS.blue}
-  >
-    <div class="layer-content" style:opacity={style.opacity}>
-      <C {...customProps} />
-    </div>
+<div
+  class="layer-wrapper absolute top-1/2 left-1/2 *:pointer-events-none"
+  class:selected
+  class:locked
+  data-layer-id={id}
+  style:transform={transformCSS}
+  style:transform-style="preserve-3d"
+  style:cursor={locked ? 'not-allowed' : 'move'}
+  onmousedown={onMouseDown}
+  role="button"
+  tabindex="0"
+  style:--primary-color={BRAND_COLORS.blue}
+  style:visibility={visible ? 'visible' : 'hidden'}
+>
+  <div class="layer-content" style:opacity={style.opacity}>
+    <C {...customProps} />
   </div>
-{/if}
+</div>
 
 <style>
   .layer-wrapper {
@@ -209,8 +208,10 @@
   }
 
   .layer-wrapper.selected {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 0px;
+    outline-color: var(--primary-color);
+    outline-offset: 4px;
+    outline-style: dotted;
+    outline-width: 4px;
   }
 
   .layer-wrapper.locked {

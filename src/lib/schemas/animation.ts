@@ -5,6 +5,7 @@
 import { getAvailableLayerTypes } from '$lib/layers/registry';
 import { z } from 'zod';
 import { BackgroundValueSchema } from './background';
+import { TransformSchema, LayerStyleSchema, BaseLayerFieldsSchema } from './base';
 
 // ============================================
 // Easing
@@ -90,38 +91,8 @@ export type {
   BackgroundValue
 } from './background';
 
-// ============================================
-// Transform & Style
-// ============================================
-
-export const AnchorPointSchema = z.enum([
-  'top-left',
-  'top-center',
-  'top-right',
-  'center-left',
-  'center',
-  'center-right',
-  'bottom-left',
-  'bottom-center',
-  'bottom-right'
-]);
-
-export const TransformSchema = z.object({
-  x: z.number(),
-  y: z.number(),
-  z: z.number(),
-  rotationX: z.number(),
-  rotationY: z.number(),
-  rotationZ: z.number(),
-  scaleX: z.number(),
-  scaleY: z.number(),
-  scaleZ: z.number(),
-  anchor: AnchorPointSchema
-});
-
-export const LayerStyleSchema = z.object({
-  opacity: z.number().min(0).max(1)
-});
+// Re-export base schemas for backward compatibility
+export { AnchorPointSchema, TransformSchema, LayerStyleSchema } from './base';
 
 // ============================================
 // Keyframe
@@ -145,21 +116,70 @@ export const LayerTypeSchema = z.enum(getAvailableLayerTypes());
 // Layer
 // ============================================
 
-export const LayerSchema = z.object({
-  id: z.string(),
-  name: z.string(),
+export const LayerSchema = BaseLayerFieldsSchema.extend({
   type: LayerTypeSchema,
   transform: TransformSchema,
   style: LayerStyleSchema,
-  visible: z.boolean(),
-  locked: z.boolean(),
   keyframes: z.array(KeyframeSchema),
   /**
    * Layer-specific properties validated by the component's Zod schema.
    * Kept flexible to allow each layer type to define its own props.
    */
-  props: z.record(z.string(), z.unknown())
-});
+  props: z.record(z.string(), z.unknown()),
+  /**
+   * Enter time - when this layer becomes visible in the timeline (seconds).
+   * If undefined, the layer is visible from the start.
+   */
+  enterTime: z.number().min(0).optional(),
+  /**
+   * Exit time - when this layer stops being visible in the timeline (seconds).
+   * If undefined, the layer is visible until the project ends.
+   */
+  exitTime: z.number().min(0).optional(),
+  /**
+   * Content duration - the total duration of the layer's content in seconds.
+   * For video/audio layers, this is the media file duration.
+   * For other layers, this may be undefined (infinite duration).
+   * Used to constrain enter/exit times and content offset.
+   */
+  contentDuration: z.number().min(0).optional(),
+  /**
+   * Content offset - how much to trim/skip from the start of the content (seconds).
+   * For video/audio layers, this is where playback starts in the source media.
+   * Combined with enter/exit times, this determines what portion of content is shown.
+   * Only applicable when contentDuration is defined.
+   */
+  contentOffset: z.number().min(0).optional()
+}).refine(
+  (data) => {
+    // Validate contentOffset doesn't exceed contentDuration
+    if (
+      data.contentDuration !== undefined &&
+      data.contentOffset !== undefined &&
+      data.contentOffset > data.contentDuration
+    ) {
+      return false;
+    }
+    // Validate visible duration doesn't exceed available content
+    if (
+      data.contentDuration !== undefined &&
+      data.enterTime !== undefined &&
+      data.exitTime !== undefined
+    ) {
+      const visibleDuration = data.exitTime - data.enterTime;
+      const contentOffset = data.contentOffset ?? 0;
+      const availableContent = data.contentDuration - contentOffset;
+      if (visibleDuration > availableContent) {
+        return false;
+      }
+    }
+    return true;
+  },
+  {
+    message:
+      'Content duration and offset constraints violated: offset must be < duration, and visible duration must fit within available content'
+  }
+);
 
 // ============================================
 // Project
@@ -217,9 +237,8 @@ export type PropsAnimatableProperty = z.infer<typeof PropsAnimatablePropertySche
 export type AnimatableProperty = z.infer<typeof AnimatablePropertySchema>;
 export type InterpolationType = z.infer<typeof InterpolationTypeSchema>;
 
-export type AnchorPoint = z.infer<typeof AnchorPointSchema>;
-export type Transform = z.infer<typeof TransformSchema>;
-export type LayerStyle = z.infer<typeof LayerStyleSchema>;
+// Re-export base types for backward compatibility
+export type { AnchorPoint, Transform, LayerStyle } from './base';
 
 export type Keyframe = z.infer<typeof KeyframeSchema>;
 

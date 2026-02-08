@@ -1,12 +1,14 @@
 import { command, getRequestEvent, query } from '$app/server';
 import { db } from '$lib/server/db';
-import { project } from '$lib/server/db/schema';
+import { project, asset } from '$lib/server/db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { withErrorHandling } from '.';
 import { nanoid } from 'nanoid';
 import { invalid } from '@sveltejs/kit';
 import { projectDataSchema } from '$lib/schemas/animation';
+import { thumbnailQueue } from '$lib/server/thumbnail-queue';
+import { deleteFile } from '$lib/server/storage';
 
 export const saveProject = command(
   z.object({
@@ -41,6 +43,17 @@ export const saveProject = command(
         data
       });
     }
+
+    thumbnailQueue.enqueue({
+      projectId,
+      projectData: {
+        width: data.width,
+        height: data.height,
+        fps: data.fps,
+        duration: data.duration
+      },
+      addedAt: new Date()
+    });
 
     return { id: projectId };
   })
@@ -90,7 +103,8 @@ export const getUserProjects = query(async () => {
       id: true,
       name: true,
       isPublic: true,
-      updatedAt: true
+      updatedAt: true,
+      thumbnailUrl: true
     }
   });
 });
@@ -154,6 +168,31 @@ export const forkProject = command(
   })
 );
 
+export const renameProject = command(
+  z.object({ id: z.string(), name: z.string().min(1) }),
+  withErrorHandling(async ({ id, name }) => {
+    const { locals } = getRequestEvent();
+    if (!locals.user) {
+      throw new Error('Not authenticated');
+    }
+
+    const existing = await db.query.project.findFirst({
+      where: and(eq(project.id, id), eq(project.userId, locals.user.id))
+    });
+
+    if (!existing) {
+      throw new Error('Project not found or access denied');
+    }
+
+    await db
+      .update(project)
+      .set({ name, data: { ...existing.data, name }, updatedAt: new Date() })
+      .where(eq(project.id, id));
+
+    return { success: true };
+  })
+);
+
 export const deleteProject = command(
   z.object({ id: z.string() }),
   withErrorHandling(async ({ id }) => {
@@ -162,6 +201,23 @@ export const deleteProject = command(
       throw new Error('Not authenticated');
     }
 
+    // Get all assets for this project before deleting
+    const projectAssets = await db.query.asset.findMany({
+      where: eq(asset.projectId, id)
+    });
+
+    // Delete files from S3 storage
+    // Continue even if some deletions fail to avoid orphaned database records
+    const deletePromises = projectAssets.map(async (a) => {
+      try {
+        await deleteFile(a.storageKey);
+      } catch (err) {
+        console.error(`Failed to delete S3 file ${a.storageKey}:`, err);
+      }
+    });
+    await Promise.allSettled(deletePromises);
+
+    // Delete project (will cascade delete asset records)
     await db.delete(project).where(and(eq(project.id, id), eq(project.userId, locals.user.id)));
 
     return { success: true };
@@ -195,7 +251,8 @@ export const getPublicProjects = query(
         views: true,
         updatedAt: true,
         userId: true,
-        isMcp: true
+        isMcp: true,
+        thumbnailUrl: true
       }
     });
 

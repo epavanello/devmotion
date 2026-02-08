@@ -3,6 +3,8 @@ import ffmpeg from 'fluent-ffmpeg';
 import { PassThrough, Readable } from 'stream';
 import { EventEmitter } from 'events';
 import { generateRenderToken, invalidateRenderToken } from './render-token';
+import { getSignedFileUrl } from './storage';
+import type { ProjectData } from '$lib/schemas/animation';
 
 interface RenderConfig {
   projectId: string;
@@ -12,6 +14,8 @@ interface RenderConfig {
   fps: number;
   duration: number;
   baseUrl: string;
+  /** Optional project data for extracting audio tracks */
+  projectData?: ProjectData;
 }
 
 export interface RenderProgress {
@@ -22,24 +26,83 @@ export interface RenderProgress {
   error?: string;
 }
 
+interface AudioTrackInfo {
+  src: string;
+  enterTime: number;
+  mediaStartTime: number;
+  mediaEndTime: number;
+  volume: number;
+}
+
+/**
+ * Convert a URL to a format that FFmpeg can use.
+ * If the URL is a local proxy endpoint (/api/upload/...), convert it to a presigned S3 URL.
+ */
+async function resolveMediaUrl(url: string): Promise<string> {
+  // If it's a local API proxy URL, extract the key and get a presigned URL
+  if (url.startsWith('/api/upload/')) {
+    const encodedKey = url.replace('/api/upload/', '');
+    const key = decodeURIComponent(encodedKey);
+    console.log('Converting proxy URL to presigned URL:', { url, key });
+    return await getSignedFileUrl(key, 7200); // 2 hours expiry for long renders
+  }
+  // Otherwise, return the URL as-is (it's already a public URL)
+  return url;
+}
+
+/**
+ * Extract audio tracks from project data (video and audio layers)
+ */
+function extractAudioTracks(projectData: ProjectData): AudioTrackInfo[] {
+  const tracks: AudioTrackInfo[] = [];
+
+  for (const layer of projectData.layers) {
+    if ((layer.type === 'video' || layer.type === 'audio') && layer.props.src) {
+      if ((layer.props.muted as boolean) ?? false) continue;
+
+      const enterTime = layer.enterTime ?? 0;
+      const exitTime = layer.exitTime ?? projectData.duration;
+      const contentOffset = layer.contentOffset ?? 0;
+      const layerDuration = exitTime - enterTime;
+
+      tracks.push({
+        src: layer.props.src as string,
+        enterTime,
+        mediaStartTime: contentOffset,
+        mediaEndTime: contentOffset + layerDuration,
+        volume: (layer.props.volume as number) ?? 1
+      });
+    }
+  }
+
+  return tracks;
+}
+
 // Global emitter for render progress
 export const renderEmitter = new EventEmitter();
 
 /**
  * Render a project to video using Playwright screenshots and FFmpeg.
  * Returns a Readable stream that will yield the MP4 data.
+ *
+ * When projectData is provided, audio tracks from video and audio layers
+ * are extracted and mixed into the final output.
  */
 export async function renderProjectToVideoStream(config: RenderConfig): Promise<Readable> {
-  const { projectId, renderId, width, height, fps, duration, baseUrl } = config;
+  const { projectId, renderId, width, height, fps, duration, baseUrl, projectData } = config;
   const totalFrames = Math.ceil(fps * duration);
 
   const videoStream = new PassThrough();
   const token = generateRenderToken(projectId);
   const renderUrl = `${baseUrl}/render/${projectId}?token=${token}`;
 
+  // Extract audio tracks if project data is available
+  const audioTracks = projectData ? extractAudioTracks(projectData) : [];
+
   // Helper to emit progress
   const emitProgress = (progress: RenderProgress) => {
     renderEmitter.emit(`progress:${renderId}`, progress);
+    console.log({ progress });
   };
 
   // Run the render process in the background
@@ -88,21 +151,71 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
       const actualDuration = pageConfig?.duration || duration;
       const actualTotalFrames = Math.ceil(actualFps * actualDuration);
 
+      // Resolve audio track URLs (convert proxy URLs to presigned URLs)
+      const resolvedAudioTracks = await Promise.all(
+        audioTracks.map(async (track) => ({
+          ...track,
+          src: await resolveMediaUrl(track.src)
+        }))
+      );
+
       // Initialize FFmpeg
       const frameStream = new PassThrough();
 
-      ffmpegCommand = ffmpeg()
-        .input(frameStream)
-        .inputFormat('image2pipe')
-        .inputFPS(actualFps)
-        .outputOptions([
-          '-c:v libx264',
-          '-preset ultrafast', // Ultrafast for streaming efficiency
-          '-crf 18',
-          '-pix_fmt yuv420p',
-          `-s ${width}x${height}`,
-          '-movflags +faststart+frag_keyframe+empty_moov'
-        ])
+      ffmpegCommand = ffmpeg().input(frameStream).inputFormat('image2pipe').inputFPS(actualFps);
+
+      // Add audio tracks as additional inputs (no input-level seeking)
+      for (const track of resolvedAudioTracks) {
+        ffmpegCommand = ffmpegCommand.input(track.src);
+      }
+
+      // Build output options
+      const outputOptions = [
+        '-c:v libx264',
+        '-preset ultrafast',
+        '-crf 18',
+        '-pix_fmt yuv420p',
+        `-s ${width}x${height}`,
+        '-movflags +faststart+frag_keyframe+empty_moov'
+      ];
+
+      // If we have audio tracks, build a complex filter for mixing
+      if (resolvedAudioTracks.length > 0) {
+        const filterParts: string[] = [];
+        const audioInputs: string[] = [];
+
+        resolvedAudioTracks.forEach((track, i) => {
+          const inputIndex = i + 1; // 0 is the video frame stream
+          const delay = Math.round(track.enterTime * 1000); // ms
+
+          // atrim extracts the correct portion, asetpts=N/SR rebuilds PTS from scratch
+          let filter = `[${inputIndex}:a]`;
+          filter += `atrim=start=${track.mediaStartTime}:end=${track.mediaEndTime},`;
+          filter += 'asetpts=N/SR,';
+
+          if (delay > 0) {
+            filter += `adelay=${delay}|${delay},`;
+          }
+
+          filter += `volume=${track.volume}[a${i}]`;
+
+          filterParts.push(filter);
+          audioInputs.push(`[a${i}]`);
+        });
+
+        // Mix all audio tracks together and trim to video duration
+        if (audioInputs.length > 0) {
+          filterParts.push(
+            `${audioInputs.join('')}amix=inputs=${audioInputs.length}:duration=longest,atrim=duration=${actualDuration}[aout]`
+          );
+          outputOptions.push('-filter_complex', filterParts.join(';'));
+          outputOptions.push('-map', '0:v', '-map', '[aout]');
+          outputOptions.push('-c:a aac', '-b:a 192k');
+        }
+      }
+
+      ffmpegCommand = ffmpegCommand
+        .outputOptions(outputOptions)
         .format('mp4')
         .on('error', (err) => {
           console.error('FFmpeg error:', err);

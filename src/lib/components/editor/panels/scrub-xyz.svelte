@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { cn } from '$lib/utils';
   import { Move3d } from '@lucide/svelte';
 
   interface Props {
@@ -126,16 +127,20 @@
 
 <button
   type="button"
-  class="scrub-xyz flex items-center justify-center rounded p-1 transition-colors select-none {isDragging
-    ? 'bg-primary/20 text-primary'
-    : 'hover:bg-muted/50'}"
+  class={cn(
+    'scrub-xyz flex items-center justify-center rounded p-1 transition-colors select-none',
+    {
+      'bg-primary/20 text-primary': isDragging,
+      'hover:bg-muted/50': !isDragging
+    }
+  )}
   onmousedown={handleMouseDown}
   title="Drag: X/Y, Cmd/Ctrl+drag: Z, Shift: fine, Alt: coarse"
 >
   <Move3d
-    class="size-3.5 opacity-50 transition-opacity hover:opacity-80 {isDragging
-      ? 'opacity-100'
-      : ''}"
+    class={cn('size-3.5 opacity-50 transition-opacity hover:opacity-80', {
+      'opacity-100': isDragging
+    })}
   />
 </button>
 

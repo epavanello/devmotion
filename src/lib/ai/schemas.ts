@@ -72,9 +72,63 @@ const AnimationSchema = z
   .describe('Animation to apply on creation. Every layer should be animated');
 
 // ============================================
+// Common Timing Fields
+// ============================================
+
+/**
+ * Shared timing fields (optional).
+ * Cross-field validation is applied at the schema level.
+ */
+const TimingFieldsSchema = z.object({
+  enterTime: z
+    .number()
+    .min(0)
+    .optional()
+    .describe('When layer enters the timeline (seconds, default: 0)'),
+  exitTime: z
+    .number()
+    .min(0)
+    .optional()
+    .describe('When layer exits the timeline (seconds, default: project duration)'),
+  contentDuration: z
+    .number()
+    .min(0)
+    .optional()
+    .describe('Total content duration for media layers (video/audio duration in seconds)'),
+  contentOffset: z
+    .number()
+    .min(0)
+    .optional()
+    .describe('Start offset for trimming media content (seconds)')
+});
+
+/**
+ * Validates that enterTime < exitTime when both are provided.
+ * Returns true if validation passes (either fields missing or enterTime < exitTime).
+ */
+const validateTimingFields = (data: { enterTime?: number; exitTime?: number }) => {
+  // Only validate when both fields are present
+  if (data.enterTime !== undefined && data.exitTime !== undefined) {
+    return data.enterTime < data.exitTime;
+  }
+  return true;
+};
+
+// ============================================
 // Layer Creation Tool Generator
 // ============================================
 
+const CreateLayerInputSchema = z
+  .object({
+    name: z.string().optional().describe('Layer name for identification'),
+    position: PositionSchema,
+    animation: AnimationSchema
+  })
+  .extend(TimingFieldsSchema.shape)
+  .refine(validateTimingFields, {
+    message: 'enterTime must be less than exitTime',
+    path: ['enterTime']
+  });
 /**
  * Generate tool definitions for all layer types from the registry.
  * Key props and defaults are derived directly from each layer's Zod schema,
@@ -99,20 +153,15 @@ function generateLayerCreationTools(): Record<string, Tool> {
       })
       .join(', ');
 
-    const inputSchema = z.object({
-      name: z.string().optional().describe('Layer name for identification'),
-      position: PositionSchema,
-      props: definition.schema.describe(`Properties for ${definition.label} layer`),
-      animation: AnimationSchema
-    });
-
     const description =
       `Create a ${definition.label} layer. ${definition.description}\n` +
       `Key props: ${keyPropsDescription}`;
 
     tools[toolName] = tool({
       description,
-      inputSchema
+      inputSchema: CreateLayerInputSchema.extend({
+        props: definition.schema.describe(`Properties for ${definition.label} layer`)
+      })
     });
   }
 
@@ -123,24 +172,16 @@ function generateLayerCreationTools(): Record<string, Tool> {
 // Input/Output Types for Layer Creation
 // ============================================
 
-export interface CreateLayerInput {
+export type CreateLayerInput = z.infer<typeof CreateLayerInputSchema> & {
   type: string;
-  name?: string;
-  position?: { x: number; y: number };
   props: Record<string, unknown>;
-  animation?: {
-    preset: string;
-    startTime?: number;
-    duration?: number;
-  };
-}
-
+};
 export interface CreateLayerOutput {
   success: boolean;
+  message: string;
   layerId?: string;
   layerIndex?: number;
   layerName?: string;
-  message: string;
   error?: string;
 }
 
@@ -191,26 +232,32 @@ export interface AnimateLayerOutput {
 
 export const EditLayerInputSchema = z.object({
   layerId: z.string().describe('Layer ID or reference'),
-  updates: z.object({
-    name: z.string().optional(),
-    visible: z.boolean().optional(),
-    locked: z.boolean().optional(),
-    position: z
-      .object({
-        x: z.number().optional(),
-        y: z.number().optional()
-      })
-      .optional(),
-    scale: z
-      .object({
-        x: z.number().optional(),
-        y: z.number().optional()
-      })
-      .optional(),
-    rotation: z.number().optional().describe('Rotation in degrees'),
-    opacity: z.number().min(0).max(1).optional(),
-    props: z.record(z.string(), z.unknown()).optional()
-  })
+  updates: z
+    .object({
+      name: z.string().optional(),
+      visible: z.boolean().optional(),
+      locked: z.boolean().optional(),
+      position: z
+        .object({
+          x: z.number().optional(),
+          y: z.number().optional()
+        })
+        .optional(),
+      scale: z
+        .object({
+          x: z.number().optional(),
+          y: z.number().optional()
+        })
+        .optional(),
+      rotation: z.number().optional().describe('Rotation in degrees'),
+      opacity: z.number().min(0).max(1).optional(),
+      props: z.record(z.string(), z.unknown()).optional()
+    })
+    .extend(TimingFieldsSchema.shape)
+    .refine(validateTimingFields, {
+      message: 'enterTime must be less than exitTime',
+      path: ['enterTime']
+    })
 });
 
 export type EditLayerInput = z.infer<typeof EditLayerInputSchema>;

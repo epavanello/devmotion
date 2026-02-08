@@ -15,7 +15,7 @@ const defaultEasing: Easing = { type: 'ease-in-out' };
  * Create a new layer of the specified type
  * @param type - The layer type from the registry
  * @param propsOverrides - Optional props to override defaults
- * @param position - Initial position {x, y}
+ * @param position - Initial position {x, y} or full CreateLayerOptions
  */
 export function createLayer(
   type: LayerType,
@@ -71,6 +71,9 @@ export function createLayer(
     props: {
       ...defaultProps,
       ...propsOverrides
-    }
+    },
+    ...(type === 'video' || type === 'audio'
+      ? { contentDuration: 0, enterTime: 0, exitTime: 0, contentOffset: 0 }
+      : {})
   };
 }
