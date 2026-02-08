@@ -29,7 +29,7 @@
   import { resolve } from '$app/paths';
   import { authClient } from '$lib/auth-client';
   import ProjectSwitcher from './project-switcher.svelte';
-  import { onMount } from 'svelte';
+  import { onMount, type Component } from 'svelte';
   import { toast } from 'svelte-sonner';
 
   interface Props {
@@ -167,6 +167,95 @@
   function handleFork() {
     uiStore.requireLogin('fork this project', doFork);
   }
+
+  type ToolbarButton = {
+    id: string;
+    label: string;
+    tooltip: string;
+    icon: Component;
+    variant?: 'ghost' | 'outline';
+    onclick?: () => void;
+    href?: string;
+    target?: string;
+    disabled: boolean;
+    visible: boolean;
+    showIndicator?: boolean;
+  };
+
+  const buttons = $derived<ToolbarButton[]>([
+    {
+      id: 'gallery',
+      label: 'Gallery',
+      tooltip: 'Explore Community Gallery',
+      icon: Globe,
+      variant: 'ghost',
+      href: '/gallery',
+      target: '_blank',
+      disabled: isRecording,
+      visible: true
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      tooltip: 'Project Settings (Dimensions, Duration, etc.)',
+      icon: Settings,
+      variant: 'ghost',
+      onclick: openProjectSettings,
+      disabled: isRecording || !canEdit,
+      visible: true
+    },
+    {
+      id: 'new',
+      label: 'New',
+      tooltip: 'New Project (Ctrl/Cmd + N)',
+      icon: Trash,
+      variant: 'ghost',
+      onclick: newProject,
+      disabled: isRecording,
+      visible: true
+    },
+    {
+      id: 'save',
+      label: 'Save Cloud',
+      tooltip: 'Save to Cloud (Ctrl/Cmd + S)',
+      icon: Save,
+      variant: 'ghost',
+      onclick: handleSaveToCloud,
+      disabled: isRecording || !canEdit,
+      visible: true,
+      showIndicator: projectStore.hasUnsavedChanges
+    },
+    {
+      id: 'visibility',
+      label: isPublic ? 'Private' : 'Public',
+      tooltip: isPublic ? 'Make Private' : 'Make Public',
+      icon: isPublic ? Unlock : Lock,
+      variant: 'ghost',
+      onclick: handleToggleVisibility,
+      disabled: isRecording,
+      visible: !!projectId && !!isOwner && !!user
+    },
+    {
+      id: 'fork',
+      label: 'Fork',
+      tooltip: 'Fork Project',
+      icon: GitFork,
+      variant: 'ghost',
+      onclick: handleFork,
+      disabled: isRecording,
+      visible: !!projectId && !isOwner
+    },
+    {
+      id: 'export',
+      label: 'Export Video',
+      tooltip: 'Export as MP4 or WebM (Ctrl/Cmd + E)',
+      icon: Download,
+      variant: 'outline',
+      onclick: openExportDialog,
+      disabled: isRecording,
+      visible: true
+    }
+  ]);
 </script>
 
 <Collapsible bind:open={headerOpen} class="w-full">
@@ -202,69 +291,25 @@
       {#if !isMobile}
         <!-- Project Actions (Desktop) -->
         <div class="flex items-center gap-1">
-          <TooltipButton
-            content="Explore Community Gallery"
-            variant="ghost"
-            href="/gallery"
-            target="_blank"
-            disabled={isRecording}
-            icon={Globe}
-          />
-
-          <TooltipButton
-            content="Project Settings (Dimensions, Duration, etc.)"
-            variant="ghost"
-            onclick={() => openProjectSettings()}
-            disabled={isRecording || !canEdit}
-            icon={Settings}
-          />
-
-          <TooltipButton
-            content="New Project (Ctrl/Cmd + N)"
-            variant="ghost"
-            onclick={newProject}
-            disabled={isRecording}
-            icon={Trash}
-          />
-
-          <div class="relative">
-            <TooltipButton
-              content="Save to Cloud (Ctrl/Cmd + S)"
-              variant="ghost"
-              onclick={handleSaveToCloud}
-              disabled={isRecording || !canEdit}
-              icon={Save}
-            />
-            {#if projectStore.hasUnsavedChanges}
-              <span
-                class="absolute top-1 right-1 h-2 w-2 rounded-full bg-orange-500 ring-2 ring-background"
-              ></span>
-            {/if}
-          </div>
+          {#each buttons.filter((b) => b.visible && b.id !== 'export') as button (button.id)}
+            <div class="relative">
+              <TooltipButton
+                content={button.tooltip}
+                variant={button.variant}
+                onclick={button.onclick}
+                href={button.href}
+                target={button.target}
+                disabled={button.disabled}
+                icon={button.icon}
+              />
+              {#if button.showIndicator}
+                <span
+                  class="absolute top-1 right-1 h-2 w-2 rounded-full bg-orange-500 ring-2 ring-background"
+                ></span>
+              {/if}
+            </div>
+          {/each}
         </div>
-
-        <!-- Share/Fork Actions (Desktop) -->
-        {#if projectId}
-          <div class="flex items-center gap-1">
-            {#if isOwner && user}
-              <TooltipButton
-                content={isPublic ? 'Make Private' : 'Make Public'}
-                variant="ghost"
-                onclick={handleToggleVisibility}
-                disabled={isRecording}
-                icon={isPublic ? Unlock : Lock}
-              />
-            {:else if !isOwner}
-              <TooltipButton
-                content="Fork Project"
-                variant="ghost"
-                onclick={handleFork}
-                disabled={isRecording}
-                icon={GitFork}
-              />
-            {/if}
-          </div>
-        {/if}
       {/if}
     {/snippet}
 
@@ -304,15 +349,17 @@
           </DropdownMenu.Root>
 
           <!-- Export (Desktop) -->
-          <TooltipButton
-            content="Export as MP4 or WebM (Ctrl/Cmd + E)"
-            variant="outline"
-            onclick={openExportDialog}
-            disabled={isRecording}
-            icon={Download}
-          >
-            Export Video
-          </TooltipButton>
+          {#each buttons.filter((b) => b.visible && b.id === 'export') as button (button.id)}
+            <TooltipButton
+              content={button.tooltip}
+              variant={button.variant}
+              onclick={button.onclick}
+              disabled={button.disabled}
+              icon={button.icon}
+            >
+              {button.label}
+            </TooltipButton>
+          {/each}
         {/if}
 
         <!-- User Menu (Always Visible) -->
@@ -353,88 +400,27 @@
 
   <CollapsibleContent>
     <div class="flex flex-col gap-2 border-b bg-muted/30 p-4">
-      <!-- Mobile Specific Actions -->
+      <!-- Mobile Actions -->
       <div class="grid grid-cols-2 gap-2">
-        <Button
-          variant="outline"
-          onclick={openExportDialog}
-          disabled={isRecording}
-          icon={Download}
-          class="justify-start"
-        >
-          Export Video
-        </Button>
-
-        <Button
-          variant="outline"
-          onclick={() => openProjectSettings()}
-          disabled={isRecording || !canEdit}
-          icon={Settings}
-          class="justify-start"
-        >
-          Settings
-        </Button>
-
-        <Button
-          variant="outline"
-          href="/gallery"
-          disabled={isRecording}
-          icon={Globe}
-          class="justify-start"
-        >
-          Gallery
-        </Button>
-
-        <div class="relative">
-          <Button
-            variant="outline"
-            onclick={handleSaveToCloud}
-            disabled={isRecording || !canEdit}
-            icon={Save}
-            class="justify-start"
-          >
-            Save Cloud
-          </Button>
-          {#if projectStore.hasUnsavedChanges}
-            <span
-              class="absolute top-2 right-2 h-2 w-2 rounded-full bg-orange-500 ring-2 ring-background"
-            ></span>
-          {/if}
-        </div>
-
-        <Button
-          variant="outline"
-          onclick={newProject}
-          disabled={isRecording}
-          icon={Trash}
-          class="justify-start"
-        >
-          New
-        </Button>
-
-        {#if projectId}
-          {#if isOwner && user}
+        {#each buttons.filter((b) => b.visible) as button (button.id)}
+          <div class="relative">
             <Button
               variant="outline"
-              onclick={handleToggleVisibility}
-              disabled={isRecording}
-              icon={isPublic ? Unlock : Lock}
-              class="justify-start"
+              onclick={button.onclick}
+              href={button.href}
+              disabled={button.disabled}
+              icon={button.icon}
+              class="w-full"
             >
-              {isPublic ? 'Private' : 'Public'}
+              {button.label}
             </Button>
-          {:else if !isOwner}
-            <Button
-              variant="outline"
-              onclick={handleFork}
-              disabled={isRecording}
-              icon={GitFork}
-              class="justify-start"
-            >
-              Fork
-            </Button>
-          {/if}
-        {/if}
+            {#if button.showIndicator}
+              <span
+                class="absolute top-2 right-2 h-2 w-2 rounded-full bg-orange-500 ring-2 ring-background"
+              ></span>
+            {/if}
+          </div>
+        {/each}
       </div>
     </div>
   </CollapsibleContent>
