@@ -202,6 +202,7 @@
             content="Explore Community Gallery"
             variant="ghost"
             href="/gallery"
+            target="_blank"
             disabled={isRecording}
             icon={Globe}
           />

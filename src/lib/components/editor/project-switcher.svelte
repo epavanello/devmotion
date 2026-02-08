@@ -26,10 +26,18 @@
 
   let { currentProjectId = null }: Props = $props();
 
+  let inputElement = $state<HTMLInputElement | null>(null);
   let isOpen = $state(false);
   let editingProjectId = $state<string | null>(null);
   let editingName = $state('');
   let renaming = $state(false);
+
+  $effect(() => {
+    if (editingProjectId && inputElement) {
+      inputElement.focus();
+      inputElement.select();
+    }
+  });
 
   const projects = $derived(await getUserProjects());
   const user = $derived(await getUser());
@@ -107,6 +115,24 @@
       {#each projects as proj (proj.id)}
         <DropdownMenu.Item
           onclick={() => handleOpenProject(proj.id)}
+          onpointermove={(e) => {
+            if (editingProjectId) {
+              e.stopPropagation();
+              e.preventDefault();
+            }
+          }}
+          onmousemove={(e) => {
+            if (editingProjectId) {
+              e.stopPropagation();
+              e.preventDefault();
+            }
+          }}
+          onmouseenter={(e) => {
+            if (editingProjectId) {
+              e.stopPropagation();
+              e.preventDefault();
+            }
+          }}
           class="flex items-center gap-2 p-2 {currentProjectId === proj.id
             ? 'border-l-2 border-l-primary bg-accent/50'
             : ''}"
@@ -144,11 +170,21 @@
           {#if editingProjectId === proj.id}
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div onclick={(e) => e.stopPropagation()}>
+            <div
+              class="flex items-center gap-2"
+              onclick={(e) => e.stopPropagation()}
+              onmousedown={(e) => {
+                e.stopPropagation();
+                // Only prevent default if not clicking the input
+                if (e.target !== inputElement) {
+                  e.preventDefault();
+                }
+              }}
+            >
               <Input
                 type="text"
                 bind:value={editingName}
-                disabled={renaming}
+                bind:ref={inputElement}
                 onkeydown={(e) => {
                   if (e.key === 'Enter') {
                     saveRename(e);
