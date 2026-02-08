@@ -4,6 +4,15 @@
 import { z } from 'zod';
 import type { Component } from 'svelte';
 import type { LayerMeta } from './registry';
+import {
+  AnchorPointSchema,
+  TransformSchema,
+  LayerStyleSchema,
+  BaseLayerFieldsSchema,
+  type AnchorPoint,
+  type Transform,
+  type LayerStyle
+} from '$lib/schemas/base';
 
 /**
  * Per-field UI metadata that layer schemas can opt into via .register(fieldRegistry, …).
@@ -30,58 +39,23 @@ export type FieldMeta = {
  */
 export const fieldRegistry = z.registry<FieldMeta>();
 
-/**
- * Anchor point options for layer positioning
- */
-export const AnchorPointSchema = z.enum([
-  'top-left',
-  'top-center',
-  'top-right',
-  'center-left',
-  'center',
-  'center-right',
-  'bottom-left',
-  'bottom-center',
-  'bottom-right'
-]);
+// Re-export shared schemas for convenience (with backward-compatible aliases)
+export { AnchorPointSchema };
+export { TransformSchema as BaseTransformSchema };
+export { LayerStyleSchema as BaseStyleSchema };
 
 /**
- * Base transform properties shared by all layers
+ * Complete base schema for all layers.
+ * Combines base fields with transform and style properties.
  */
-export const BaseTransformSchema = z.object({
-  x: z.number().describe('Position X'),
-  y: z.number().describe('Position Y'),
-  z: z.number().describe('Position Z (depth)'),
-  rotationX: z.number().describe('Rotation X (radians)'),
-  rotationY: z.number().describe('Rotation Y (radians)'),
-  rotationZ: z.number().describe('Rotation Z (radians)'),
-  scaleX: z.number().min(0).describe('Scale X'),
-  scaleY: z.number().min(0).describe('Scale Y'),
-  scaleZ: z.number().min(0).describe('Scale Z'),
-  anchor: AnchorPointSchema.describe('Anchor point')
+export const BaseLayerSchema = BaseLayerFieldsSchema.extend({
+  transform: TransformSchema,
+  style: LayerStyleSchema
 });
 
-/**
- * Base style properties shared by all layers
- */
-export const BaseStyleSchema = z.object({
-  opacity: z.number().min(0).max(1).describe('Opacity (0-1)')
-});
-
-/**
- * Complete base schema for all layers
- */
-export const BaseLayerSchema = z.object({
-  id: z.string(),
-  name: z.string().describe('Layer name'),
-  visible: z.boolean().describe('Layer visibility'),
-  locked: z.boolean().describe('Layer locked state'),
-  transform: BaseTransformSchema,
-  style: BaseStyleSchema
-});
-
-export type BaseTransform = z.infer<typeof BaseTransformSchema>;
-export type BaseStyle = z.infer<typeof BaseStyleSchema>;
+// Export types with backward-compatible names
+export type BaseTransform = Transform;
+export type BaseStyle = LayerStyle;
 export type BaseLayerProps = z.infer<typeof BaseLayerSchema>;
 
 /**
@@ -247,8 +221,8 @@ export function extractDefaultValues(schema: z.ZodType): Record<string, unknown>
  * Get translate percentages for an anchor point
  * Returns the X and Y percentages to offset the element
  */
-function getAnchorOffset(anchor: z.infer<typeof AnchorPointSchema>): { x: string; y: string } {
-  const offsets: Record<z.infer<typeof AnchorPointSchema>, { x: string; y: string }> = {
+function getAnchorOffset(anchor: AnchorPoint): { x: string; y: string } {
+  const offsets: Record<AnchorPoint, { x: string; y: string }> = {
     'top-left': { x: '0%', y: '0%' },
     'top-center': { x: '-50%', y: '0%' },
     'top-right': { x: '-100%', y: '0%' },
@@ -270,7 +244,7 @@ function getAnchorOffset(anchor: z.infer<typeof AnchorPointSchema>): { x: string
  * Note: The layer element should be positioned at top-1/2 left-1/2 (center of canvas)
  * so that translate3d(0, 0, 0) places it at the canvas center.
  */
-export function generateTransformCSS(transform: BaseTransform): string {
+export function generateTransformCSS(transform: Transform): string {
   const { x, y, z, rotationX, rotationY, rotationZ, scaleX, scaleY, scaleZ, anchor } = transform;
   const anchorOffset = getAnchorOffset(anchor);
 

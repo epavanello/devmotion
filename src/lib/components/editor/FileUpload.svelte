@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
-  import { Upload, Trash2, Loader2, Check } from '@lucide/svelte';
+  import { Upload, Trash2, Loader2 } from '@lucide/svelte';
   import AudioRecorder from './AudioRecorder.svelte';
   import VideoRecorder from './VideoRecorder.svelte';
   import CameraCapture from './CameraCapture.svelte';
@@ -143,7 +143,7 @@
 </script>
 
 <div class="space-y-2">
-  <!-- Media preview (if uploaded) -->
+  <!-- Media preview with filename (if uploaded) -->
   {#if value && (mediaType === 'image' || mediaType === 'video')}
     <div class="relative overflow-hidden rounded border bg-black">
       {#if mediaType === 'image'}
@@ -153,7 +153,7 @@
           class="h-auto w-full"
           style="max-height: 180px; object-fit: contain;"
         />
-      {:else if mediaType === 'video'}
+      {:else}
         <!-- svelte-ignore a11y_media_has_caption -->
         <video
           src={value}
@@ -163,61 +163,49 @@
           preload="metadata"
         ></video>
       {/if}
+      <div class="absolute right-0 bottom-0 left-0 bg-black/70 px-2 py-1">
+        <p class="truncate text-[10px] text-white">{displayName}</p>
+      </div>
     </div>
   {/if}
 
-  <!-- Upload button with status -->
-  <Button
-    variant="outline"
-    size="sm"
-    class="w-full justify-start text-xs"
-    disabled={isUploading}
-    onclick={() => fileInputEl?.click()}
-  >
-    {#if isUploading}
-      <Loader2 class="mr-2 size-3 animate-spin" />
-      <span>Uploading...</span>
-    {:else if value && displayName}
-      <Check class="mr-2 size-3 text-green-500" />
-      <span class="flex-1 truncate text-left">{displayName}</span>
-      <button
-        type="button"
-        class="ml-2 rounded p-0.5 hover:bg-muted"
-        onclick={(e) => {
-          e.stopPropagation();
-          handleRemove();
-        }}
+  <!-- Upload/Replace button -->
+  <div class="flex gap-1.5">
+    <Button
+      variant="outline"
+      size="sm"
+      class="flex-1 justify-start text-xs"
+      disabled={isUploading}
+      onclick={() => fileInputEl?.click()}
+    >
+      {#if isUploading}
+        <Loader2 class="mr-2 size-3 animate-spin" />
+        <span>Uploading...</span>
+      {:else}
+        <Upload class="mr-2 size-3" />
+        <span>{value ? 'Replace' : `Upload ${mediaType}`}</span>
+      {/if}
+    </Button>
+
+    {#if value}
+      <Button
+        variant="outline"
+        size="sm"
+        class="text-xs text-destructive hover:bg-destructive/10"
+        onclick={handleRemove}
       >
         <Trash2 class="size-3" />
-      </button>
-    {:else}
-      <Upload class="mr-2 size-3" />
-      <span>Upload {mediaType}</span>
+      </Button>
     {/if}
-  </Button>
+  </div>
 
-  <!-- Media capture options based on type -->
+  <!-- Record/Capture option -->
   {#if mediaType === 'audio'}
-    <AudioRecorder
-      {projectId}
-      onRecordingComplete={(result) => {
-        onUpload(result);
-      }}
-    />
+    <AudioRecorder {projectId} onRecordingComplete={(result) => onUpload(result)} />
   {:else if mediaType === 'video'}
-    <VideoRecorder
-      {projectId}
-      onRecordingComplete={(result) => {
-        onUpload(result);
-      }}
-    />
+    <VideoRecorder {projectId} onRecordingComplete={(result) => onUpload(result)} />
   {:else if mediaType === 'image'}
-    <CameraCapture
-      {projectId}
-      onCaptureComplete={(result) => {
-        onUpload(result);
-      }}
-    />
+    <CameraCapture {projectId} onCaptureComplete={(result) => onUpload(result)} />
   {/if}
 
   <!-- File input (hidden) -->

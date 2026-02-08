@@ -48,6 +48,9 @@
         contentDuration: 0,
         contentOffset: 0
       });
+      // Reset exit time to match enter time (empty timeline)
+      const enterTime = layer.enterTime ?? 0;
+      projectStore.setLayerExitTime(layer.id, enterTime);
     }}
   />
 {:else if metadata.type === 'number'}
