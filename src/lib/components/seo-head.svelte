@@ -18,9 +18,18 @@
   } = $props();
 
   let absoluteImage = $derived(image.startsWith('http') ? image : `${page.url.origin}${image}`);
-  let canonicalUrl = $derived(
-    canonical || page.url.pathname === '/' ? page.url.origin : page.url.href
-  );
+  let canonicalUrl = $derived.by(() => {
+    // If explicit canonical provided, use it
+    if (canonical) {
+      return canonical;
+    }
+    // For homepage, use origin only
+    if (page.url.pathname === '/') {
+      return page.url.origin;
+    }
+    // For all other pages, use origin + pathname (no query params or hash)
+    return `${page.url.origin}${page.url.pathname}`;
+  });
 </script>
 
 <svelte:head>

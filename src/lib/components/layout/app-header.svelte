@@ -1,7 +1,7 @@
 <script lang="ts">
   import Logo from '../editor/Logo.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Github } from '@lucide/svelte';
+  import { Github, Image } from '@lucide/svelte';
 
   interface Props {
     /**
@@ -20,6 +20,12 @@
   <!-- Left Section: Logo & Branding -->
   <div class="flex items-center gap-2">
     <Logo />
+
+    <!-- SEO: Internal link to gallery for better crawling -->
+    <Button variant="ghost" size="sm" href="/gallery" class="hidden text-xs md:flex">
+      <Image class="mr-1.5 h-3.5 w-3.5" />
+      Gallery
+    </Button>
 
     <Button
       variant="ghost"
