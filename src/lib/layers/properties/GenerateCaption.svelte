@@ -16,12 +16,6 @@
 
   async function generateCaptions() {
     const fileKey = layer.props.fileKey;
-    const audioUrl = layer.props.src;
-
-    if (!fileKey && !audioUrl) {
-      captionError = 'No audio file uploaded or URL set';
-      return;
-    }
 
     isGeneratingCaptions = true;
     captionError = '';
@@ -30,7 +24,7 @@
       const res = await fetch('/api/captions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileKey, audioUrl })
+        body: JSON.stringify({ fileKey })
       });
 
       if (!res.ok) {

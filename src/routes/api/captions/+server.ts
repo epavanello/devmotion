@@ -14,8 +14,7 @@ import { getSignedFileUrl } from '$lib/server/storage';
 
 /** Input validation schema */
 const CaptionRequestSchema = z.object({
-  fileKey: z.string().optional(),
-  audioUrl: z.string().optional(),
+  fileKey: z.string().min(1, 'File key is required'),
   language: z.string().optional(),
   style: z.enum(['subtitle', 'caption', 'lyrics']).optional()
 });
@@ -23,10 +22,10 @@ const CaptionRequestSchema = z.object({
 /**
  * POST /api/captions
  *
- * Accepts an audio URL (or relative path) and generates timed captions using OpenAI Whisper.
- * The audio is downloaded and sent to Whisper for real speech-to-text transcription.
+ * Generates timed captions for uploaded audio files using OpenAI Whisper.
+ * Only accepts files from trusted storage via fileKey.
  */
-export const POST: RequestHandler = async ({ request, locals, url }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
   // Check authentication
   if (!locals.user?.id) {
     error(401, 'Unauthorized');
@@ -41,23 +40,10 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
       error(400, `Invalid request: ${result.error.message}`);
     }
 
-    const { fileKey, audioUrl, language } = result.data;
+    const { fileKey, language } = result.data;
 
-    // Determine the audio URL to use (prefer fileKey for uploaded files)
-    let finalAudioUrl: string;
-    if (fileKey) {
-      // Get signed URL for the uploaded file
-      finalAudioUrl = await getSignedFileUrl(fileKey, 3600);
-    } else if (audioUrl) {
-      // If audioUrl is a relative path, compose it into a full URL
-      if (audioUrl.startsWith('/')) {
-        finalAudioUrl = `${url.origin}${audioUrl}`;
-      } else {
-        finalAudioUrl = audioUrl;
-      }
-    } else {
-      error(400, 'Either fileKey or audioUrl must be provided');
-    }
+    // Get signed URL for the uploaded file from trusted storage
+    const finalAudioUrl = await getSignedFileUrl(fileKey, 3600);
 
     const apiKey = env.OPENAI_API_KEY;
     if (!apiKey) {

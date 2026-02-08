@@ -50,6 +50,7 @@ class ProjectStore {
   canEdit = $state(true);
   isPublic = $state(false);
   isSaving = $state(false);
+  hasUnsavedChanges = $state(false);
 
   constructor() {
     // Load first, before setting up the effect
@@ -62,6 +63,9 @@ class ProjectStore {
         () => {
           // Skip saving during initial load
           if (!this.#initialized) return;
+
+          // Mark as having unsaved changes
+          this.hasUnsavedChanges = true;
 
           // Debounced save
           if (this.#saveTimeout) {
@@ -128,6 +132,14 @@ class ProjectStore {
     return this.dbProjectId !== null;
   }
 
+  /**
+   * Mark the project as saved (no unsaved changes)
+   * Call this after successfully saving to cloud
+   */
+  markAsSaved() {
+    this.hasUnsavedChanges = false;
+  }
+
   setDbContext(projectId: string | null, isOwner: boolean, canEdit: boolean, isPublic: boolean) {
     this.dbProjectId = projectId;
     this.isOwner = isOwner;
@@ -140,6 +152,7 @@ class ProjectStore {
     this.isOwner = true;
     this.canEdit = true;
     this.isPublic = false;
+    this.hasUnsavedChanges = false;
     this.newProject();
   }
 
@@ -362,6 +375,7 @@ class ProjectStore {
     this.project = project;
     this.selectedLayerId = null;
     this.isPlaying = false;
+    this.hasUnsavedChanges = false;
   }
 
   newProject() {
@@ -369,6 +383,7 @@ class ProjectStore {
     this.currentTime = 0;
     this.selectedLayerId = null;
     this.isPlaying = false;
+    this.hasUnsavedChanges = false;
   }
 
   exportToJSON(): string {
