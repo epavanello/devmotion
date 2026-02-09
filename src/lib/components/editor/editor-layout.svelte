@@ -4,6 +4,7 @@
   import Timeline from './timeline/timeline.svelte';
   import LayersPanel from './panels/layers-panel.svelte';
   import PropertiesPanel from './panels/properties-panel.svelte';
+  import Panel from './panels/panel.svelte';
   import KeyboardHandler from './keyboard-handler.svelte';
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from '$lib/components/ui/resizable';
   import { projectStore } from '$lib/stores/project.svelte';
@@ -12,10 +13,13 @@
     CollapsibleTrigger,
     CollapsibleContent
   } from '$lib/components/ui/collapsible';
-  import { ChevronDown, Layers, Settings, Clock } from '@lucide/svelte';
+  import { ChevronDown, Layers, Settings, Clock, Sparkles } from '@lucide/svelte';
   import AiChat from '$lib/components/ai/ai-chat.svelte';
+  import ModelSelector from '$lib/components/ai/model-selector.svelte';
+  import { DEFAULT_MODEL_ID } from '$lib/ai/models';
   import type { Component, Snippet } from 'svelte';
   import { MediaQuery } from 'svelte/reactivity';
+  import AddLayer from './panels/add-layer.svelte';
 
   interface Props {
     projectId?: string | null;
@@ -37,6 +41,9 @@
   const mediaQuery = new MediaQuery('max-width: 768px');
   const isMobile = $derived(mediaQuery.current);
   const isRecording = $derived(projectStore.isRecording);
+
+  // AI Chat model selection
+  let aiChatModelId = $state(DEFAULT_MODEL_ID);
 </script>
 
 {#snippet canvasSection()}
@@ -45,25 +52,47 @@
 
 {#snippet timelineSection()}
   {#if !isRecording}
-    <Timeline />
+    <Panel title="Timeline" disableScroll={true}>
+      {#snippet content()}
+        <Timeline />
+      {/snippet}
+      {#snippet headerExtra()}
+        {projectStore.currentTime.toFixed(2)}s / {projectStore.project.duration}s
+      {/snippet}
+    </Panel>
   {/if}
 {/snippet}
 
 {#snippet layersSection()}
-  <LayersPanel />
+  <Panel title="Layers ({projectStore.project.layers.length})" actionsComponent={AddLayer}>
+    {#snippet content()}
+      <LayersPanel />
+    {/snippet}
+  </Panel>
 {/snippet}
 
 {#snippet propertiesSection()}
   {#if !isRecording}
-    <PropertiesPanel />
+    <Panel title="Properties">
+      {#snippet content()}
+        <PropertiesPanel />
+      {/snippet}
+    </Panel>
   {/if}
 {/snippet}
 
 {#snippet chatSection()}
-  <AiChat />
+  <Panel title="AI Chat">
+    {#snippet content()}
+      <AiChat bind:selectedModelId={aiChatModelId} />
+    {/snippet}
+    {#snippet actionsSnippet()}
+      <ModelSelector selectedModelId={aiChatModelId} onModelChange={(id) => (aiChatModelId = id)} />
+    {/snippet}
+  </Panel>
 {/snippet}
 
-{#snippet collapsiblePane(title: string, Icon: Component, content: Snippet)}
+{#snippet collapsiblePane(title: string, Icon: Component, content: Snippet, Actions?: Component)}
   <Collapsible class="border-b">
     <CollapsibleTrigger
       class="flex w-full items-center justify-between p-4 font-medium hover:bg-muted/50 data-[state=open]:bg-muted/50"
@@ -71,11 +100,14 @@
       <div class="flex items-center gap-2">
         <Icon class="size-4" />
         {title}
+        {#if Actions}
+          <Actions />
+        {/if}
       </div>
       <ChevronDown class="size-4 transition-transform duration-200 data-[state=open]:rotate-180" />
     </CollapsibleTrigger>
     <CollapsibleContent>
-      <div class="h-75 border-t">
+      <div class="border-t">
         {@render content()}
       </div>
     </CollapsibleContent>
@@ -101,15 +133,12 @@
     {#if isMobile}
       <!-- Mobile Layout: Simplified vertical scrollable list -->
       <div class="flex h-full flex-col overflow-y-auto">
-        <div style="height: 40vh" class="shrink-0 border-b bg-muted/20">
+        <div style="height: 60vh" class="shrink-0 border-b bg-muted/20">
           {@render canvasSection()}
         </div>
 
-        <div class="relative shrink-0 border-b" style="height: 40vh">
-          {@render chatSection()}
-        </div>
-
-        {@render collapsiblePane('Layers', Layers, layersSection)}
+        {@render collapsiblePane('AI Chat', Sparkles, chatSection)}
+        {@render collapsiblePane('Layers', Layers, layersSection, AddLayer)}
 
         {#if !isRecording}
           {@render collapsiblePane('Timeline', Clock, timelineSection)}

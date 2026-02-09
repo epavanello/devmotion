@@ -1,7 +1,7 @@
 <script lang="ts">
   import { projectStore } from '$lib/stores/project.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Sparkles, ChevronDown, Bot, Loader2, User } from '@lucide/svelte';
+  import { Bot, Loader2, User } from '@lucide/svelte';
   import { AI_MODELS, DEFAULT_MODEL_ID } from '$lib/ai/models';
   import { Chat } from '@ai-sdk/svelte';
   import { DefaultChatTransport, isToolUIPart, type UIMessage, type UIDataTypes } from 'ai';
@@ -32,11 +32,13 @@
   import { PersistedState } from 'runed';
   import ToolPart from './tool-part.svelte';
 
-  let prompt = new PersistedState('prompt', '');
-  let showModelSelector = $state(false);
-  let selectedModelId = $state(DEFAULT_MODEL_ID);
+  interface Props {
+    selectedModelId?: string;
+  }
 
-  const models = Object.values(AI_MODELS);
+  let { selectedModelId = $bindable(DEFAULT_MODEL_ID) }: Props = $props();
+  let prompt = new PersistedState('prompt', '');
+
   const selectedModel = $derived(AI_MODELS[selectedModelId] || AI_MODELS[DEFAULT_MODEL_ID]);
 
   let messagesContainer: HTMLDivElement | null = $state(null);
@@ -134,50 +136,7 @@
   });
 </script>
 
-<div class="flex h-full flex-col border-t bg-background">
-  <!-- Header -->
-  <div class="flex items-center justify-between border-b px-4 py-2">
-    <label class="flex items-center gap-2 text-xs font-medium">
-      <Sparkles class="h-3 w-3" />
-      AI Animation Generator
-    </label>
-
-    <!-- Model selector -->
-    <div class="relative">
-      <button
-        type="button"
-        class="flex items-center gap-1 rounded-md px-2 py-1 text-xs hover:bg-muted"
-        onclick={() => (showModelSelector = !showModelSelector)}
-      >
-        {selectedModel.name}
-        <ChevronDown class="h-3 w-3" />
-      </button>
-
-      {#if showModelSelector}
-        <div
-          class="absolute top-full right-0 z-10 mt-1 w-48 rounded-md border bg-popover p-1 shadow-md"
-        >
-          {#each models as model (model.id)}
-            <button
-              type="button"
-              class="flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left text-xs hover:bg-muted"
-              class:bg-muted={model.id === selectedModelId}
-              onclick={() => {
-                selectedModelId = model.id;
-                showModelSelector = false;
-              }}
-            >
-              <span>{model.name}</span>
-              {#if model.recommended}
-                <span class="text-[10px] text-primary">Recommended</span>
-              {/if}
-            </button>
-          {/each}
-        </div>
-      {/if}
-    </div>
-  </div>
-
+<div class="flex h-full flex-col">
   <!-- Messages -->
   <div bind:this={messagesContainer} class="flex-1 overflow-y-auto p-4">
     {#if chat.messages.length === 0}

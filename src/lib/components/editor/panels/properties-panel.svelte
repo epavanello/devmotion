@@ -1,6 +1,5 @@
 <script lang="ts">
   import { projectStore } from '$lib/stores/project.svelte';
-  import { ScrollArea } from '$lib/components/ui/scroll-area';
   import { Label } from '$lib/components/ui/label';
   import { Input } from '$lib/components/ui/input';
   import { Button } from '$lib/components/ui/button';
@@ -303,407 +302,392 @@
 {/snippet}
 
 <div
-  class="flex h-full flex-col overflow-y-auto bg-background"
   class:pointer-events-none={projectStore.isRecording}
   class:opacity-50={projectStore.isRecording}
 >
-  <!-- Panel Header -->
-  <div class="border-b bg-muted/50 px-4 py-3">
-    <h2 class="text-sm font-semibold">Properties</h2>
-  </div>
-
   {#if selectedLayer}
-    <ScrollArea class="flex-1">
-      <div class="space-y-4 p-4">
-        <!-- Layer Name -->
-        <div class="space-y-2">
-          <Label for="layer-name">Name</Label>
-          <Input
-            id="layer-name"
-            value={selectedLayer.name}
-            oninput={(e) => updateLayerProperty('name', e.currentTarget.value)}
-          />
+    <div class="space-y-4 p-4">
+      <!-- Layer Name -->
+      <div class="space-y-2">
+        <Label for="layer-name">Name</Label>
+        <Input
+          id="layer-name"
+          value={selectedLayer.name}
+          oninput={(e) => updateLayerProperty('name', e.currentTarget.value)}
+        />
+      </div>
+
+      <Separator />
+
+      <!-- Enter/Exit Time -->
+      <PropertiesGroup>
+        {#snippet label()}
+          <div class="flex items-center justify-between">
+            <Label class="font-semibold">Time Range</Label>
+            {#if selectedLayer.contentDuration !== undefined}
+              {@const contentDuration = selectedLayer.contentDuration}
+              {@const contentOffset = selectedLayer.contentOffset ?? 0}
+              {@const availableContent = contentDuration - contentOffset}
+              <span class="text-[10px] text-muted-foreground/60">
+                Max: {availableContent.toFixed(1)}s
+              </span>
+            {/if}
+          </div>
+        {/snippet}
+        <div class="grid grid-cols-2 gap-2">
+          <div class="space-y-1">
+            <Label class="text-xs text-muted-foreground">Enter (s)</Label>
+            <ScrubInput
+              id="enter-time"
+              value={selectedLayer.enterTime ?? 0}
+              min={0}
+              max={selectedLayer.contentDuration !== undefined
+                ? Math.min(
+                    projectStore.project.duration,
+                    projectStore.project.duration -
+                      (selectedLayer.contentDuration - (selectedLayer.contentOffset ?? 0))
+                  )
+                : projectStore.project.duration}
+              step={0.1}
+              onchange={(v) => projectStore.setLayerEnterTime(selectedLayer.id, v)}
+            />
+          </div>
+          <div class="space-y-1">
+            <Label class="text-xs text-muted-foreground">Exit (s)</Label>
+            <ScrubInput
+              id="exit-time"
+              value={selectedLayer.exitTime ?? projectStore.project.duration}
+              min={0}
+              max={projectStore.project.duration}
+              step={0.1}
+              onchange={(v) => projectStore.setLayerExitTime(selectedLayer.id, v)}
+            />
+          </div>
         </div>
 
-        <Separator />
-
-        <!-- Enter/Exit Time -->
-        <PropertiesGroup>
-          {#snippet label()}
+        <!-- Content offset control for time-based layers -->
+        {#if selectedLayer.type === 'video' || selectedLayer.type === 'audio'}
+          {@const contentDuration = selectedLayer.contentDuration ?? 0}
+          {@const contentOffset = selectedLayer.contentOffset ?? 0}
+          {@const hasDuration = contentDuration > 0}
+          <div class="space-y-2">
             <div class="flex items-center justify-between">
-              <Label class="font-semibold">Time Range</Label>
-              {#if selectedLayer.contentDuration !== undefined}
-                {@const contentDuration = selectedLayer.contentDuration}
-                {@const contentOffset = selectedLayer.contentOffset ?? 0}
-                {@const availableContent = contentDuration - contentOffset}
+              <Label class="text-xs text-muted-foreground">Content Trim</Label>
+              {#if hasDuration}
                 <span class="text-[10px] text-muted-foreground/60">
-                  Max: {availableContent.toFixed(1)}s
+                  Duration: {contentDuration.toFixed(1)}s
                 </span>
               {/if}
             </div>
-          {/snippet}
-          <div class="grid grid-cols-2 gap-2">
             <div class="space-y-1">
-              <Label class="text-xs text-muted-foreground">Enter (s)</Label>
+              <Label class="text-[10px] text-muted-foreground">Start offset (s)</Label>
               <ScrubInput
-                id="enter-time"
-                value={selectedLayer.enterTime ?? 0}
+                id="content-offset"
+                value={contentOffset}
                 min={0}
-                max={selectedLayer.contentDuration !== undefined
-                  ? Math.min(
-                      projectStore.project.duration,
-                      projectStore.project.duration -
-                        (selectedLayer.contentDuration - (selectedLayer.contentOffset ?? 0))
-                    )
-                  : projectStore.project.duration}
+                max={hasDuration ? contentDuration - 0.1 : undefined}
                 step={0.1}
-                onchange={(v) => projectStore.setLayerEnterTime(selectedLayer.id, v)}
-              />
-            </div>
-            <div class="space-y-1">
-              <Label class="text-xs text-muted-foreground">Exit (s)</Label>
-              <ScrubInput
-                id="exit-time"
-                value={selectedLayer.exitTime ?? projectStore.project.duration}
-                min={0}
-                max={projectStore.project.duration}
-                step={0.1}
-                onchange={(v) => projectStore.setLayerExitTime(selectedLayer.id, v)}
-              />
-            </div>
-          </div>
+                onchange={(v) => {
+                  const clamped = hasDuration ? Math.min(v, contentDuration - 0.1) : Math.max(0, v);
+                  projectStore.updateLayer(selectedLayer.id, { contentOffset: clamped });
 
-          <!-- Content offset control for time-based layers -->
-          {#if selectedLayer.type === 'video' || selectedLayer.type === 'audio'}
-            {@const contentDuration = selectedLayer.contentDuration ?? 0}
-            {@const contentOffset = selectedLayer.contentOffset ?? 0}
-            {@const hasDuration = contentDuration > 0}
-            <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <Label class="text-xs text-muted-foreground">Content Trim</Label>
-                {#if hasDuration}
-                  <span class="text-[10px] text-muted-foreground/60">
-                    Duration: {contentDuration.toFixed(1)}s
-                  </span>
-                {/if}
-              </div>
-              <div class="space-y-1">
-                <Label class="text-[10px] text-muted-foreground">Start offset (s)</Label>
-                <ScrubInput
-                  id="content-offset"
-                  value={contentOffset}
-                  min={0}
-                  max={hasDuration ? contentDuration - 0.1 : undefined}
-                  step={0.1}
-                  onchange={(v) => {
-                    const clamped = hasDuration
-                      ? Math.min(v, contentDuration - 0.1)
-                      : Math.max(0, v);
-                    projectStore.updateLayer(selectedLayer.id, { contentOffset: clamped });
-
-                    // Auto-adjust exitTime if it would exceed available content
-                    if (hasDuration && selectedLayer.exitTime !== undefined) {
-                      const enterTime = selectedLayer.enterTime ?? 0;
-                      const maxVisibleDuration = contentDuration - clamped;
-                      const maxExitTime = enterTime + maxVisibleDuration;
-                      if (selectedLayer.exitTime > maxExitTime) {
-                        projectStore.setLayerExitTime(selectedLayer.id, maxExitTime);
-                      }
+                  // Auto-adjust exitTime if it would exceed available content
+                  if (hasDuration && selectedLayer.exitTime !== undefined) {
+                    const enterTime = selectedLayer.enterTime ?? 0;
+                    const maxVisibleDuration = contentDuration - clamped;
+                    const maxExitTime = enterTime + maxVisibleDuration;
+                    if (selectedLayer.exitTime > maxExitTime) {
+                      projectStore.setLayerExitTime(selectedLayer.id, maxExitTime);
                     }
-                  }}
-                />
-                <p class="text-[10px] text-muted-foreground/70">
-                  Where to start playing in the source media
-                </p>
-              </div>
-              {#if !hasDuration && selectedLayer.props.src}
-                <p class="text-[10px] text-muted-foreground/70">
-                  Upload a new file to detect duration
-                </p>
-              {/if}
-              <Button
-                variant="outline"
-                size="sm"
-                class="w-full text-xs"
-                onclick={() => projectStore.splitLayer(selectedLayer.id)}
-              >
-                Split at Playhead
-              </Button>
+                  }
+                }}
+              />
+              <p class="text-[10px] text-muted-foreground/70">
+                Where to start playing in the source media
+              </p>
             </div>
-          {/if}
-        </PropertiesGroup>
-
-        <Separator />
-
-        <!-- Transform -->
-        <PropertiesGroup label="Transform">
-          <!-- Position -->
-          <InputsWrapper
-            fields={[
-              { prop: 'position.x' as AnimatableProperty, label: 'X' },
-              { prop: 'position.y' as AnimatableProperty, label: 'Y' },
-              { prop: 'position.z' as AnimatableProperty, label: 'Z' }
-            ].map((f) => ({
-              id: f.prop,
-              labels: f.label,
-              property: f.prop,
-              addKeyframe: addKeyframe,
-              hasKeyframes: selectedLayer?.keyframes.some((k) => k.property === f.prop)
-            }))}
-          >
-            {#snippet prefix()}
-              <Label class="text-xs text-muted-foreground">Position</Label>
-              <ScrubXyz
-                valueX={currentTransform?.x ?? 0}
-                valueY={currentTransform?.y ?? 0}
-                valueZ={currentTransform?.z ?? 0}
-                stepXY={1}
-                stepZ={1}
-                onchangeX={(v: number) => updateTransformProperty('x', v)}
-                onchangeY={(v: number) => updateTransformProperty('y', v)}
-                onchangeZ={(v: number) => updateTransformProperty('z', v)}
-              />
-            {/snippet}
-
-            <ScrubInput
-              id="pos-x"
-              value={currentTransform?.x ?? 0}
-              onchange={(v) => updateTransformProperty('x', v)}
-            />
-
-            <ScrubInput
-              id="pos-y"
-              value={currentTransform?.y ?? 0}
-              onchange={(v) => updateTransformProperty('y', v)}
-            />
-            <ScrubInput
-              id="pos-z"
-              value={currentTransform?.z ?? 0}
-              onchange={(v) => updateTransformProperty('z', v)}
-            />
-          </InputsWrapper>
-
-          <!-- Scale -->
-          <InputsWrapper
-            fields={[
-              { prop: 'scale.x' as AnimatableProperty, label: 'X' },
-              { prop: 'scale.y' as AnimatableProperty, label: 'Y' },
-              { prop: 'scale.z' as AnimatableProperty, label: 'Z' }
-            ].map((f) => ({
-              id: f.prop,
-              labels: f.label,
-              property: f.prop,
-              addKeyframe: addKeyframe,
-              hasKeyframes: selectedLayer?.keyframes.some((k) => k.property === f.prop)
-            }))}
-          >
-            {#snippet prefix()}
-              <Label class="text-xs text-muted-foreground">Scale</Label>
-              <ScrubXyz
-                valueX={currentTransform?.scaleX ?? 1}
-                valueY={currentTransform?.scaleY ?? 1}
-                valueZ={currentTransform?.scaleZ ?? 1}
-                stepXY={0.1}
-                stepZ={0.1}
-                onchangeX={(v: number) => updateTransformProperty('scaleX', v || 1)}
-                onchangeY={(v: number) => updateTransformProperty('scaleY', v || 1)}
-                onchangeZ={(v: number) => updateTransformProperty('scaleZ', v || 1)}
-              />
-            {/snippet}
-            <ScrubInput
-              id="scale-x"
-              value={currentTransform?.scaleX ?? 1}
-              step={0.1}
-              onchange={(v) => updateTransformProperty('scaleX', v || 1)}
-            />
-            <ScrubInput
-              id="scale-y"
-              value={currentTransform?.scaleY ?? 1}
-              step={0.1}
-              onchange={(v) => updateTransformProperty('scaleY', v || 1)}
-            />
-            <ScrubInput
-              id="scale-z"
-              value={currentTransform?.scaleZ ?? 1}
-              step={0.1}
-              onchange={(v) => updateTransformProperty('scaleZ', v || 1)}
-            />
-          </InputsWrapper>
-
-          <!-- Rotation -->
-          <InputsWrapper
-            fields={[
-              { prop: 'rotation.x' as AnimatableProperty, label: 'X' },
-              { prop: 'rotation.y' as AnimatableProperty, label: 'Y' },
-              { prop: 'rotation.z' as AnimatableProperty, label: 'Z' }
-            ].map((f) => ({
-              id: f.prop,
-              labels: f.label,
-              property: f.prop,
-              addKeyframe: addKeyframe,
-              hasKeyframes: selectedLayer?.keyframes.some((k) => k.property === f.prop)
-            }))}
-          >
-            {#snippet prefix()}
-              <Label class="text-xs text-muted-foreground">Rotation (radians)</Label>
-              <ScrubXyz
-                valueX={currentTransform?.rotationY ?? 0}
-                valueY={currentTransform?.rotationX ?? 0}
-                valueZ={currentTransform?.rotationZ ?? 0}
-                stepXY={0.1}
-                stepZ={0.1}
-                invertY={true}
-                onchangeX={(v: number) => updateTransformProperty('rotationY', v)}
-                onchangeY={(v: number) => updateTransformProperty('rotationX', v)}
-                onchangeZ={(v: number) => updateTransformProperty('rotationZ', v)}
-              />
-            {/snippet}
-            <ScrubInput
-              id="rot-x"
-              value={currentTransform?.rotationX ?? 0}
-              step={0.1}
-              onchange={(v) => updateTransformProperty('rotationX', v)}
-            />
-            <ScrubInput
-              id="rot-y"
-              value={currentTransform?.rotationY ?? 0}
-              step={0.1}
-              onchange={(v) => updateTransformProperty('rotationY', v)}
-            />
-            <ScrubInput
-              id="rot-z"
-              value={currentTransform?.rotationZ ?? 0}
-              step={0.1}
-              onchange={(v) => updateTransformProperty('rotationZ', v)}
-            />
-          </InputsWrapper>
-
-          <!-- Anchor Point -->
-          <InputWrapper id="anchor-point" label="Anchor Point">
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                {#snippet child({ props })}
-                  <Button variant="outline" class="w-full justify-between" {...props}>
-                    {currentAnchorLabel}
-                    <ChevronDown class="ml-2 h-4 w-4 opacity-50" />
-                  </Button>
-                {/snippet}
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content class="w-56" align="end">
-                <div class="grid grid-cols-3 gap-0">
-                  {#each anchorOptions as option (option.value)}
-                    {@const isSelected = selectedLayer?.transform.anchor === option.value}
-                    {@const Icon = option.icon}
-                    <DropdownMenu.Item onclick={() => updateAnchor(option.value)}>
-                      {#snippet child({ props })}
-                        <Button variant={isSelected ? 'outline' : 'ghost'} icon={Icon} {...props} />
-                      {/snippet}
-                    </DropdownMenu.Item>
-                  {/each}
-                </div>
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
-          </InputWrapper>
-        </PropertiesGroup>
-
-        <Separator />
-
-        <!-- Style -->
-        <PropertiesGroup label="Style">
-          <InputWrapper id="opacity" label="Opacity" property="opacity" {addKeyframe}>
-            <ScrubInput
-              id="opacity"
-              value={currentStyle?.opacity ?? 1}
-              step={0.1}
-              min={0}
-              max={1}
-              onchange={(v) => updateStyle('opacity', v || 0)}
-            />
-          </InputWrapper>
-        </PropertiesGroup>
-
-        <!-- Layer-specific properties (dynamic based on schema) -->
-        {#if layerPropertyMetadata.length > 0}
-          <Separator />
-          <PropertiesGroup label="Layer Properties">
-            {#each layerPropertyMetadata as propMetadata (propMetadata.name)}
-              {#if !propMetadata.meta?.hidden}
-                {@const metadata = propMetadata}
-                <InputWrapper
-                  id={metadata.name}
-                  label={metadata.description || metadata.name}
-                  property={metadata.name}
-                  {addKeyframe}
-                >
-                  <InputPropery
-                    metadata={propMetadata}
-                    value={currentAnimatedProps[propMetadata.name]}
-                    onUpdateProp={(name, v) => updateLayerProps(name, v)}
-                    layer={selectedLayer}
-                  />
-                </InputWrapper>
-              {/if}
-            {/each}
-            {#each layerCustomPropertyComponents as [name, { component: PropertyComponent, label }] (name)}
-              {#snippet content()}
-                <PropertyComponent layer={selectedLayer} />
-              {/snippet}
-              {@render basicProperyfield({
-                label,
-                name,
-                content
-              })}
-            {/each}
-          </PropertiesGroup>
-        {/if}
-
-        <Separator />
-
-        <!-- Animation Presets -->
-        <PropertiesGroup label="Animation Presets">
-          <InputWrapper id="animation-presets" label="Animation Presets">
-            <select
-              bind:value={selectedPresetId}
-              class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+            {#if !hasDuration && selectedLayer.props.src}
+              <p class="text-[10px] text-muted-foreground/70">
+                Upload a new file to detect duration
+              </p>
+            {/if}
+            <Button
+              variant="outline"
+              size="sm"
+              class="w-full text-xs"
+              onclick={() => projectStore.splitLayer(selectedLayer.id)}
             >
-              <option value="">Select...</option>
-              {#each animationPresets as preset (preset.id)}
-                <option value={preset.id}>{preset.name}</option>
-              {/each}
-            </select>
-          </InputWrapper>
+              Split at Playhead
+            </Button>
+          </div>
+        {/if}
+      </PropertiesGroup>
 
-          <InputWrapper id="preset-duration" label="Duration (s)">
-            <ScrubInput
-              id="preset-duration"
-              value={presetDuration}
-              min={0.1}
-              step={0.1}
-              onchange={(v) => (presetDuration = v)}
+      <Separator />
+
+      <!-- Transform -->
+      <PropertiesGroup label="Transform">
+        <!-- Position -->
+        <InputsWrapper
+          fields={[
+            { prop: 'position.x' as AnimatableProperty, label: 'X' },
+            { prop: 'position.y' as AnimatableProperty, label: 'Y' },
+            { prop: 'position.z' as AnimatableProperty, label: 'Z' }
+          ].map((f) => ({
+            id: f.prop,
+            labels: f.label,
+            property: f.prop,
+            addKeyframe: addKeyframe,
+            hasKeyframes: selectedLayer?.keyframes.some((k) => k.property === f.prop)
+          }))}
+        >
+          {#snippet prefix()}
+            <Label class="text-xs text-muted-foreground">Position</Label>
+            <ScrubXyz
+              valueX={currentTransform?.x ?? 0}
+              valueY={currentTransform?.y ?? 0}
+              valueZ={currentTransform?.z ?? 0}
+              stepXY={1}
+              stepZ={1}
+              onchangeX={(v: number) => updateTransformProperty('x', v)}
+              onchangeY={(v: number) => updateTransformProperty('y', v)}
+              onchangeZ={(v: number) => updateTransformProperty('z', v)}
             />
-          </InputWrapper>
+          {/snippet}
 
-          <Button
-            variant="default"
-            class="w-full"
-            onclick={applyPreset}
-            disabled={!selectedPresetId}
-          >
-            <Sparkles class="mr-2 h-4 w-4" />
-            Apply Preset
-          </Button>
-        </PropertiesGroup>
+          <ScrubInput
+            id="pos-x"
+            value={currentTransform?.x ?? 0}
+            onchange={(v) => updateTransformProperty('x', v)}
+          />
 
+          <ScrubInput
+            id="pos-y"
+            value={currentTransform?.y ?? 0}
+            onchange={(v) => updateTransformProperty('y', v)}
+          />
+          <ScrubInput
+            id="pos-z"
+            value={currentTransform?.z ?? 0}
+            onchange={(v) => updateTransformProperty('z', v)}
+          />
+        </InputsWrapper>
+
+        <!-- Scale -->
+        <InputsWrapper
+          fields={[
+            { prop: 'scale.x' as AnimatableProperty, label: 'X' },
+            { prop: 'scale.y' as AnimatableProperty, label: 'Y' },
+            { prop: 'scale.z' as AnimatableProperty, label: 'Z' }
+          ].map((f) => ({
+            id: f.prop,
+            labels: f.label,
+            property: f.prop,
+            addKeyframe: addKeyframe,
+            hasKeyframes: selectedLayer?.keyframes.some((k) => k.property === f.prop)
+          }))}
+        >
+          {#snippet prefix()}
+            <Label class="text-xs text-muted-foreground">Scale</Label>
+            <ScrubXyz
+              valueX={currentTransform?.scaleX ?? 1}
+              valueY={currentTransform?.scaleY ?? 1}
+              valueZ={currentTransform?.scaleZ ?? 1}
+              stepXY={0.1}
+              stepZ={0.1}
+              onchangeX={(v: number) => updateTransformProperty('scaleX', v || 1)}
+              onchangeY={(v: number) => updateTransformProperty('scaleY', v || 1)}
+              onchangeZ={(v: number) => updateTransformProperty('scaleZ', v || 1)}
+            />
+          {/snippet}
+          <ScrubInput
+            id="scale-x"
+            value={currentTransform?.scaleX ?? 1}
+            step={0.1}
+            onchange={(v) => updateTransformProperty('scaleX', v || 1)}
+          />
+          <ScrubInput
+            id="scale-y"
+            value={currentTransform?.scaleY ?? 1}
+            step={0.1}
+            onchange={(v) => updateTransformProperty('scaleY', v || 1)}
+          />
+          <ScrubInput
+            id="scale-z"
+            value={currentTransform?.scaleZ ?? 1}
+            step={0.1}
+            onchange={(v) => updateTransformProperty('scaleZ', v || 1)}
+          />
+        </InputsWrapper>
+
+        <!-- Rotation -->
+        <InputsWrapper
+          fields={[
+            { prop: 'rotation.x' as AnimatableProperty, label: 'X' },
+            { prop: 'rotation.y' as AnimatableProperty, label: 'Y' },
+            { prop: 'rotation.z' as AnimatableProperty, label: 'Z' }
+          ].map((f) => ({
+            id: f.prop,
+            labels: f.label,
+            property: f.prop,
+            addKeyframe: addKeyframe,
+            hasKeyframes: selectedLayer?.keyframes.some((k) => k.property === f.prop)
+          }))}
+        >
+          {#snippet prefix()}
+            <Label class="text-xs text-muted-foreground">Rotation (radians)</Label>
+            <ScrubXyz
+              valueX={currentTransform?.rotationY ?? 0}
+              valueY={currentTransform?.rotationX ?? 0}
+              valueZ={currentTransform?.rotationZ ?? 0}
+              stepXY={0.1}
+              stepZ={0.1}
+              invertY={true}
+              onchangeX={(v: number) => updateTransformProperty('rotationY', v)}
+              onchangeY={(v: number) => updateTransformProperty('rotationX', v)}
+              onchangeZ={(v: number) => updateTransformProperty('rotationZ', v)}
+            />
+          {/snippet}
+          <ScrubInput
+            id="rot-x"
+            value={currentTransform?.rotationX ?? 0}
+            step={0.1}
+            onchange={(v) => updateTransformProperty('rotationX', v)}
+          />
+          <ScrubInput
+            id="rot-y"
+            value={currentTransform?.rotationY ?? 0}
+            step={0.1}
+            onchange={(v) => updateTransformProperty('rotationY', v)}
+          />
+          <ScrubInput
+            id="rot-z"
+            value={currentTransform?.rotationZ ?? 0}
+            step={0.1}
+            onchange={(v) => updateTransformProperty('rotationZ', v)}
+          />
+        </InputsWrapper>
+
+        <!-- Anchor Point -->
+        <InputWrapper id="anchor-point" label="Anchor Point">
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger>
+              {#snippet child({ props })}
+                <Button variant="outline" class="w-full justify-between" {...props}>
+                  {currentAnchorLabel}
+                  <ChevronDown class="ml-2 h-4 w-4 opacity-50" />
+                </Button>
+              {/snippet}
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content class="w-56" align="end">
+              <div class="grid grid-cols-3 gap-0">
+                {#each anchorOptions as option (option.value)}
+                  {@const isSelected = selectedLayer?.transform.anchor === option.value}
+                  {@const Icon = option.icon}
+                  <DropdownMenu.Item onclick={() => updateAnchor(option.value)}>
+                    {#snippet child({ props })}
+                      <Button variant={isSelected ? 'outline' : 'ghost'} icon={Icon} {...props} />
+                    {/snippet}
+                  </DropdownMenu.Item>
+                {/each}
+              </div>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        </InputWrapper>
+      </PropertiesGroup>
+
+      <Separator />
+
+      <!-- Style -->
+      <PropertiesGroup label="Style">
+        <InputWrapper id="opacity" label="Opacity" property="opacity" {addKeyframe}>
+          <ScrubInput
+            id="opacity"
+            value={currentStyle?.opacity ?? 1}
+            step={0.1}
+            min={0}
+            max={1}
+            onchange={(v) => updateStyle('opacity', v || 0)}
+          />
+        </InputWrapper>
+      </PropertiesGroup>
+
+      <!-- Layer-specific properties (dynamic based on schema) -->
+      {#if layerPropertyMetadata.length > 0}
         <Separator />
-
-        <!-- Keyframes -->
-        <PropertiesGroup label={`Keyframes ${selectedLayer.keyframes.length}`}>
-          <LayerKeyframes layer={selectedLayer} />
+        <PropertiesGroup label="Layer Properties">
+          {#each layerPropertyMetadata as propMetadata (propMetadata.name)}
+            {#if !propMetadata.meta?.hidden}
+              {@const metadata = propMetadata}
+              <InputWrapper
+                id={metadata.name}
+                label={metadata.description || metadata.name}
+                property={metadata.name}
+                {addKeyframe}
+              >
+                <InputPropery
+                  metadata={propMetadata}
+                  value={currentAnimatedProps[propMetadata.name]}
+                  onUpdateProp={(name, v) => updateLayerProps(name, v)}
+                  layer={selectedLayer}
+                />
+              </InputWrapper>
+            {/if}
+          {/each}
+          {#each layerCustomPropertyComponents as [name, { component: PropertyComponent, label }] (name)}
+            {#snippet content()}
+              <PropertyComponent layer={selectedLayer} />
+            {/snippet}
+            {@render basicProperyfield({
+              label,
+              name,
+              content
+            })}
+          {/each}
         </PropertiesGroup>
-      </div>
-    </ScrollArea>
+      {/if}
+
+      <Separator />
+
+      <!-- Animation Presets -->
+      <PropertiesGroup label="Animation Presets">
+        <InputWrapper id="animation-presets" label="Animation Presets">
+          <select
+            bind:value={selectedPresetId}
+            class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            <option value="">Select...</option>
+            {#each animationPresets as preset (preset.id)}
+              <option value={preset.id}>{preset.name}</option>
+            {/each}
+          </select>
+        </InputWrapper>
+
+        <InputWrapper id="preset-duration" label="Duration (s)">
+          <ScrubInput
+            id="preset-duration"
+            value={presetDuration}
+            min={0.1}
+            step={0.1}
+            onchange={(v) => (presetDuration = v)}
+          />
+        </InputWrapper>
+
+        <Button variant="default" class="w-full" onclick={applyPreset} disabled={!selectedPresetId}>
+          <Sparkles class="mr-2 h-4 w-4" />
+          Apply Preset
+        </Button>
+      </PropertiesGroup>
+
+      <Separator />
+
+      <!-- Keyframes -->
+      <PropertiesGroup label={`Keyframes ${selectedLayer.keyframes.length}`}>
+        <LayerKeyframes layer={selectedLayer} />
+      </PropertiesGroup>
+    </div>
   {:else}
-    <div class="flex flex-1 items-center justify-center p-4">
+    <div class="flex items-center justify-center p-8">
       <div class="text-center text-sm text-muted-foreground">
         <p>No layer selected</p>
         <p class="mt-1 text-xs">Select a layer to edit its properties</p>
