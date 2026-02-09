@@ -116,6 +116,7 @@
       {currentTime}
       duration={project.duration}
       disableSelection={true}
+      isServerSideRendering={true}
     />
   </div>
 
@@ -136,5 +137,9 @@
     inset: 0;
     transform-style: preserve-3d;
     pointer-events: none;
+  }
+
+  :global(#svelte-inspector-host) {
+    display: none;
   }
 </style>

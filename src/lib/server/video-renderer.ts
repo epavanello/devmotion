@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { chromium, type Browser, type Page } from 'playwright';
 import ffmpeg from 'fluent-ffmpeg';
 import { PassThrough, Readable } from 'stream';
 import { EventEmitter } from 'events';
@@ -107,8 +107,8 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
 
   // Run the render process in the background
   (async () => {
-    let browser = null;
-    let page = null;
+    let browser: Browser | null = null;
+    let page: Page | null = null;
     let ffmpegCommand: ffmpeg.FfmpegCommand | null = null;
 
     const MAX_RENDER_DURATION_MS = 10 * 60 * 1000; // 10 minutes max
@@ -134,7 +134,7 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
       }
 
       browser = await chromium.launch({
-        headless: true,
+        headless: process.env.NODE_ENV === 'production',
         args: launchArgs
       });
 
@@ -143,8 +143,8 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
         deviceScaleFactor: 1
       });
 
-      await page.goto(renderUrl, { waitUntil: 'networkidle' });
-      await page.waitForFunction(() => window.__DEVMOTION__?.ready, { timeout: 30000 });
+      await page.goto(renderUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+      await page.waitForFunction(() => window.__DEVMOTION__?.ready, { timeout: 30_000 });
 
       const pageConfig = await page.evaluate(() => window.__DEVMOTION__?.getConfig());
       const actualFps = pageConfig?.fps || fps;
@@ -252,22 +252,67 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
       });
 
       let clientDisconnected = false;
+      let isAborting = false;
+
+      const cleanup = async () => {
+        if (isAborting) return;
+        isAborting = true;
+
+        console.log('Cleaning up render resources');
+
+        // Kill FFmpeg first
+        if (ffmpegCommand) {
+          try {
+            ffmpegCommand.kill('SIGKILL');
+          } catch (err) {
+            console.error('Error killing FFmpeg:', err);
+          }
+        }
+
+        // Close frame stream
+        if (!frameStream.destroyed) {
+          frameStream.destroy();
+        }
+
+        // Close page
+        if (page && !page.isClosed()) {
+          try {
+            await page.close();
+          } catch (err) {
+            console.error('Error closing page:', err);
+          }
+        }
+
+        // Close browser
+        if (browser) {
+          try {
+            await browser.close();
+            browser = null;
+          } catch (err) {
+            console.error('Error closing browser:', err);
+          }
+        }
+      };
+
       videoStream.on('close', () => {
         clientDisconnected = true;
+        cleanup();
       });
       videoStream.on('error', () => {
         clientDisconnected = true;
+        cleanup();
       });
 
       // Capture frames and pipe to FFmpeg
       for (let frameIndex = 0; frameIndex < actualTotalFrames; frameIndex++) {
-        if (clientDisconnected || videoStream.destroyed || frameStream.destroyed) {
+        if (clientDisconnected || videoStream.destroyed || frameStream.destroyed || isAborting) {
           console.log('Stopping render: client disconnected or stream destroyed');
-          break;
+          await cleanup();
+          return;
         }
 
         const time = frameIndex / actualFps;
-        await page.evaluate((t) => window.__DEVMOTION__?.seek(t), time);
+        await page.evaluate((t: number) => window.__DEVMOTION__?.seek(t), time);
 
         // Wait ~2 frames at 60fps for JS/canvas updates to settle after seek
         const FRAME_SETTLE_DELAY_MS = 32;
@@ -312,6 +357,11 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
       }
 
       frameStream.end();
+
+      if (page && !page.isClosed()) {
+        await page.close();
+        page = null;
+      }
 
       await browser.close();
       browser = null;

@@ -12,7 +12,8 @@
     isPlaying = false,
     selectedLayerId = null,
     disableSelection = false,
-    getCachedFrame
+    getCachedFrame,
+    isServerSideRendering = false
   }: {
     layers: Layer[];
     currentTime: number;
@@ -21,6 +22,7 @@
     selectedLayerId?: string | null;
     disableSelection?: boolean;
     getCachedFrame?: (time: number) => FrameCache | null;
+    isServerSideRendering?: boolean;
   } = $props();
 
   /**
@@ -59,7 +61,8 @@
       ...customProps,
       layer,
       currentTime,
-      isPlaying
+      isPlaying,
+      isServerSideRendering
     }}
 
     <LayerWrapper

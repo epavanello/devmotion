@@ -23,7 +23,8 @@
   import {
     saveProject as saveProjectToDb,
     toggleVisibility,
-    forkProject
+    forkProject,
+    getUserProjects
   } from '$lib/functions/projects.remote';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
@@ -101,6 +102,7 @@
   function newProject() {
     if (confirm('Create new project? Unsaved changes will be lost.')) {
       projectStore.newProject();
+      getUserProjects().refresh();
       goto(resolve('/'));
     }
   }

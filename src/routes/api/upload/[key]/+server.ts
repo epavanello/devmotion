@@ -33,8 +33,6 @@ export const GET: RequestHandler = async ({ params }) => {
     // Generate presigned URL valid for 1 hour
     const signedUrl = await getSignedFileUrl(decodedKey, 3600);
 
-    console.log('Generated signed URL:', signedUrl);
-
     // Redirect to the presigned URL
     throw redirect(302, signedUrl);
   } catch (err) {

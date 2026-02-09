@@ -20,8 +20,8 @@ import { project, asset } from '$lib/server/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
-const MAX_REQUEST_SIZE = 10 * 1024 * 1024; // 10MB
-const MAX_USER_STORAGE = 10 * 1024 * 1024; // 10MB per user
+const MAX_REQUEST_SIZE = 40 * 1024 * 1024; // 10MB
+const MAX_USER_STORAGE = 40 * 1024 * 1024; // 10MB per user
 
 export const POST: RequestHandler = async ({ request, locals }) => {
   // Check authentication

@@ -84,11 +84,13 @@
     playbackRate,
     layer,
     currentTime,
-    isPlaying
+    isPlaying,
+    isServerSideRendering = false
   }: Props & {
     layer: Layer;
     currentTime: number;
     isPlaying: boolean;
+    isServerSideRendering?: boolean;
   } = $props();
 
   let videoEl: HTMLVideoElement | undefined = $state();
@@ -101,56 +103,50 @@
       () => layer.enterTime,
       () => layer.contentOffset,
       () => src,
-      () => videoEl
+      () => videoEl,
+      () => isServerSideRendering
     ],
-    ([time, playing, enter, offset, source, el], [, prevPlaying]) => {
-      if (!el || !source || !layer) return;
+    (_, [, prevPlaying]) => {
+      if (!videoEl || !src || !layer) return;
 
-      // Use enterTime passed as prop or fallback to 0
-      const enterTime = enter ?? 0;
-      const relativeTime = time - enterTime;
+      const relativeTime = currentTime - (layer.enterTime ?? 0);
+      const videoTime = (layer.contentOffset ?? 0) + relativeTime;
+      const clampedTime = Math.max(
+        layer.contentOffset ?? 0,
+        Math.min(videoTime, videoEl.duration || Infinity)
+      );
 
-      // Apply content offset (where to start in the source video)
-      const contentOffset = offset ?? 0;
-      // Don't multiply by playbackRate here - it's already applied by videoEl.playbackRate
-      const videoTime = contentOffset + relativeTime;
+      const timeDiff = Math.abs(videoEl.currentTime - clampedTime);
+      const playStateChanged = isPlaying !== prevPlaying;
 
-      // Clamp to valid range (up to video duration)
-      const maxTime = el.duration || Infinity;
-      const clampedTime = Math.max(contentOffset, Math.min(videoTime, maxTime));
-
-      // Calculate time difference
-      const timeDiff = Math.abs(el.currentTime - clampedTime);
-      const playStateChanged = playing !== prevPlaying;
-
-      // Only sync when:
-      // 1. Play state changed (user pressed play/pause)
-      // 2. Time difference is very large (> 0.5s) indicating manual seek
-      // This prevents constant micro-adjustments that cause video glitches
-      const shouldSync = playStateChanged || timeDiff > 0.5;
+      // Determine if we should sync:
+      // - Server-side rendering: always sync (frame-by-frame capture)
+      // - Client-side: only sync when play state changes or large drift (> 0.5s)
+      //   This prevents video glitches during normal playback
+      const shouldSync = isServerSideRendering || playStateChanged || timeDiff > 0.5;
 
       if (isFinite(clampedTime) && shouldSync) {
-        el.currentTime = clampedTime;
+        videoEl.currentTime = clampedTime;
       }
 
       // Sync playback state
-      if (playing && relativeTime >= 0 && videoTime < maxTime) {
-        if (el.paused) el.play().catch(() => {});
+      if (isPlaying && relativeTime >= 0 && videoTime < (videoEl.duration || Infinity)) {
+        if (videoEl.paused) videoEl.play().catch(() => {});
       } else {
-        if (!el.paused) el.pause();
+        if (!videoEl.paused) videoEl.pause();
       }
     }
   );
 
   // Sync volume/muted/playbackRate
-  watch([() => volume, () => muted, () => playbackRate, () => videoEl], ([vol, mute, rate, el]) => {
-    if (!el) return;
-    if (vol) {
-      el.volume = vol;
+  watch([() => volume, () => muted, () => playbackRate, () => videoEl], () => {
+    if (!videoEl) return;
+    if (volume) {
+      videoEl.volume = volume;
     }
-    el.muted = mute;
-    if (rate) {
-      el.playbackRate = rate;
+    videoEl.muted = muted;
+    if (playbackRate) {
+      videoEl.playbackRate = playbackRate;
     }
   });
 </script>

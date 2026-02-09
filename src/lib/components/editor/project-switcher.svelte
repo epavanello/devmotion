@@ -27,7 +27,6 @@
   let { currentProjectId = null }: Props = $props();
 
   let inputElement = $state<HTMLInputElement | null>(null);
-  let isOpen = $state(false);
   let editingProjectId = $state<string | null>(null);
   let editingName = $state('');
   let renaming = $state(false);
@@ -92,7 +91,7 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open={isOpen}>
+<DropdownMenu.Root>
   <DropdownMenu.Trigger disabled={!user}>
     {#snippet child({ props })}
       <Button variant="outline" size="sm" class="max-w-48" {...props}>
