@@ -6,6 +6,7 @@ import type { Session, User } from 'better-auth';
 interface DevMotionAPI {
   ready: Promise<void>;
   seek: (time: number) => void;
+  seekAndWait: (time: number) => Promise<void>;
   getConfig: () => {
     width: number;
     height: number;

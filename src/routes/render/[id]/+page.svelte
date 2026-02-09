@@ -30,6 +30,44 @@
       seek: (time: number) => {
         currentTime = Math.max(0, Math.min(time, project.duration));
       },
+      seekAndWait: async (time: number) => {
+        // Update current time
+        currentTime = Math.max(0, Math.min(time, project.duration));
+
+        // Wait for Svelte to react and update DOM
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+
+        // Wait for all video elements to be ready at the new time
+        const videoElements = document.querySelectorAll('video');
+        if (videoElements.length > 0) {
+          await Promise.all(
+            Array.from(videoElements).map(
+              (video) =>
+                new Promise<void>((resolve) => {
+                  const checkReady = () => {
+                    // Video is ready when:
+                    // - Not seeking (seek operation complete)
+                    // - Has current frame data (readyState >= 2 = HAVE_CURRENT_DATA)
+                    if (!video.seeking && video.readyState >= 2) {
+                      resolve();
+                    } else {
+                      // Check again next frame
+                      requestAnimationFrame(checkReady);
+                    }
+                  };
+
+                  checkReady();
+
+                  // Safety timeout: don't wait forever (max 1 second)
+                  setTimeout(resolve, 1000);
+                })
+            )
+          );
+        }
+
+        // Wait one more frame to ensure rendering is complete
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      },
       getConfig: () => ({
         width: project.width,
         height: project.height,

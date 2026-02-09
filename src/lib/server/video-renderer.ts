@@ -193,10 +193,10 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
           const inputIndex = i + 1; // 0 is the video frame stream
           const delay = Math.round(track.enterTime * 1000); // ms
 
-          // atrim extracts the correct portion, asetpts=N/SR rebuilds PTS from scratch
+          // atrim extracts the correct portion, then use asetpts=PTS-STARTPTS to reset timestamps to 0
           let filter = `[${inputIndex}:a]`;
           filter += `atrim=start=${track.mediaStartTime}:end=${track.mediaEndTime},`;
-          filter += 'asetpts=N/SR,';
+          filter += 'asetpts=PTS-STARTPTS,';
 
           if (delay > 0) {
             filter += `adelay=${delay}|${delay},`;
@@ -312,11 +312,9 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
         }
 
         const time = frameIndex / actualFps;
-        await page.evaluate((t: number) => window.__DEVMOTION__?.seek(t), time);
 
-        // Wait ~2 frames at 60fps for JS/canvas updates to settle after seek
-        const FRAME_SETTLE_DELAY_MS = 32;
-        await new Promise((resolve) => setTimeout(resolve, FRAME_SETTLE_DELAY_MS));
+        // Use seekAndWait which waits for videos to be ready before capturing
+        await page.evaluate((t: number) => window.__DEVMOTION__?.seekAndWait?.(t), time);
 
         const screenshot = await page.screenshot({
           type: 'png',
