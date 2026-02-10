@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const staticLayers = import.meta.glob('./components/*.svelte', { eager: true });
 
-import type { Layer } from '$lib/schemas/animation';
+import type { Layer, AnimatableProperty } from '$lib/schemas/animation';
 import type { LayerComponentDefinition } from './base';
 import type { Component } from 'svelte';
 import type z from 'zod';
@@ -14,7 +14,13 @@ export type LayerMeta = {
   icon: Component;
   customPropertyComponents?: Record<
     string,
-    { label: string; component: Component<{ layer: Layer }> }
+    {
+      component: Component<{
+        layer: Layer;
+        onUpdateProp: (name: string, value: unknown) => void;
+        addKeyframe: (property: AnimatableProperty) => void;
+      }>;
+    }
   >;
 };
 

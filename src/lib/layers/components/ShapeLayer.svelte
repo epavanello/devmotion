@@ -4,6 +4,7 @@
   import { Square } from '@lucide/svelte';
   import { BackgroundValueSchema, getStyleProperties } from '$lib/schemas/background';
   import { fieldRegistry } from '../base';
+  import SizeField from '../properties/SizeField.svelte';
 
   /**
    * Schema for Shape Layer custom properties
@@ -19,8 +20,20 @@
       .enum(['rectangle', 'circle', 'triangle', 'polygon'])
       .default('rectangle')
       .describe('Shape type'),
-    width: z.number().min(1).max(2000).default(200).describe('Width (px)'),
-    height: z.number().min(1).max(2000).default(200).describe('Height (px)'),
+    width: z
+      .number()
+      .min(1)
+      .max(2000)
+      .default(200)
+      .describe('Width (px)')
+      .register(fieldRegistry, { hidden: true }),
+    height: z
+      .number()
+      .min(1)
+      .max(2000)
+      .default(200)
+      .describe('Height (px)')
+      .register(fieldRegistry, { hidden: true }),
     background: BackgroundValueSchema.optional()
       .default('#4a90e2')
       .describe('Fill background (solid color or gradient)')
@@ -43,7 +56,10 @@
     label: 'Shape',
     icon: Square,
     description:
-      'Geometric shapes (rectangle, circle, triangle, polygon) with background and stroke'
+      'Geometric shapes (rectangle, circle, triangle, polygon) with background and stroke',
+    customPropertyComponents: {
+      size: { label: 'Size', component: SizeField }
+    }
   };
 
   type Props = z.infer<typeof schema>;

@@ -67,7 +67,7 @@
     icon: Music,
     description: 'Audio tracks with captions',
     customPropertyComponents: {
-      generateCaptions: { label: 'Generate captions', component: GenerateCaption }
+      generateCaptions: { component: GenerateCaption }
     }
   };
 

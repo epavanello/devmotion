@@ -279,28 +279,6 @@
   }
 </script>
 
-{#snippet basicProperyfield({
-  label,
-  name,
-  labelExtra,
-  content
-}: {
-  label: string;
-  name?: string;
-  labelExtra?: Snippet;
-  content: Snippet;
-})}
-  <div class="space-y-2">
-    <Label for={name} class="text-xs"
-      >{label}
-      {#if labelExtra}
-        {@render labelExtra()}
-      {/if}
-    </Label>
-    {@render content()}
-  </div>
-{/snippet}
-
 <div
   class:pointer-events-none={projectStore.isRecording}
   class:opacity-50={projectStore.isRecording}
@@ -634,15 +612,12 @@
               </InputWrapper>
             {/if}
           {/each}
-          {#each layerCustomPropertyComponents as [name, { component: PropertyComponent, label }] (name)}
-            {#snippet content()}
-              <PropertyComponent layer={selectedLayer} />
-            {/snippet}
-            {@render basicProperyfield({
-              label,
-              name,
-              content
-            })}
+          {#each layerCustomPropertyComponents as [name, { component: CustomPropertyComponent }] (name)}
+            <CustomPropertyComponent
+              layer={selectedLayer}
+              onUpdateProp={(name, v) => updateLayerProps(name, v)}
+              {addKeyframe}
+            />
           {/each}
         </PropertiesGroup>
       {/if}
