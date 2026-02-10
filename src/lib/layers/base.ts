@@ -34,7 +34,7 @@ export type FieldMeta = {
 } & (
   | {
       /** Override the default input widget rendered for this field */
-      widget?: 'textarea' | 'background';
+      widget?: 'textarea' | 'background' | 'color';
     }
   | {
       widget: 'upload';
@@ -87,7 +87,7 @@ export interface LayerComponentDefinition extends LayerMeta {
  */
 export type PropertyMetadata = {
   name: string;
-  type: 'string' | 'number' | 'boolean' | 'color' | 'select' | 'background';
+  type: 'string' | 'number' | 'boolean' | 'select';
   description?: string;
   min?: number;
   max?: number;
@@ -98,16 +98,6 @@ export type PropertyMetadata = {
    * Can be a single family or an array of families if multiple are supported
    */
   interpolationFamily: InterpolationFamily | InterpolationFamily[];
-  /**
-   * @deprecated Use interpolationFamily instead
-   * How this property should be interpolated between keyframes
-   * - 'number': Linear interpolation
-   * - 'color': RGB color interpolation
-   * - 'text': Character-by-character text reveal
-   * - 'discrete': Jump to new value (no smooth transition)
-   * - 'background': Background/gradient interpolation (discrete for now)
-   */
-  interpolationType: 'number' | 'color' | 'text' | 'discrete' | 'background';
   meta?: FieldMeta;
 };
 
@@ -214,14 +204,12 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
         name: key,
         type: 'string',
         interpolationFamily,
-        interpolationType: 'discrete', // Deprecated, kept for backward compatibility
         description: zodType.meta()?.description
       };
 
       // Determine type and deprecated interpolation type
       if (unwrapped instanceof z.ZodNumber) {
         propertiesMeta.type = 'number';
-        propertiesMeta.interpolationType = 'number';
 
         const min = unwrapped.def.checks?.find((check) => check._zod.def.check === 'greater_than');
         if (min && 'value' in min._zod.def) {
@@ -231,46 +219,18 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
         if (max && 'value' in max._zod.def) {
           propertiesMeta.max = max._zod.def.value as number;
         }
+        const step = unwrapped.def.checks?.find((check) => check._zod.def.check === 'multiple_of');
+        if (step && 'value' in step._zod.def) {
+          propertiesMeta.step = step._zod.def.value as number;
+        }
       } else if (unwrapped instanceof z.ZodBoolean) {
         propertiesMeta.type = 'boolean';
-        propertiesMeta.interpolationType = 'discrete';
       } else if (unwrapped instanceof z.ZodUnion) {
-        // Check if this is a BackgroundValue union (solid, linear, radial, conic)
-        const options = unwrapped.options as z.ZodType[];
-        const isBackgroundUnion = options.every((opt) => {
-          if (opt instanceof z.ZodObject) {
-            const typeField = (opt.shape as Record<string, z.ZodType>)['type'];
-            if (typeField instanceof z.ZodLiteral) {
-              const val = typeField.value;
-              return ['solid', 'linear', 'radial', 'conic'].includes(val as string);
-            }
-          }
-          return false;
-        });
-
-        if (isBackgroundUnion) {
-          propertiesMeta.type = 'background';
-          propertiesMeta.interpolationType = 'discrete';
-        } else {
-          propertiesMeta.type = 'string';
-          propertiesMeta.interpolationType = 'discrete';
-        }
+        propertiesMeta.type = 'string';
       } else if (unwrapped instanceof z.ZodString) {
         propertiesMeta.type = 'string';
-        propertiesMeta.interpolationType = 'discrete';
-
-        // Check if it's a color by convention (field name contains 'color')
-        if (key.toLowerCase().includes('color')) {
-          propertiesMeta.type = 'color';
-          propertiesMeta.interpolationType = 'color';
-        }
-        // Check if it's text content (for character-by-character animation)
-        else if (key === 'content' || key === 'text') {
-          propertiesMeta.interpolationType = 'text';
-        }
       } else if (unwrapped instanceof z.ZodEnum) {
         propertiesMeta.type = 'select';
-        propertiesMeta.interpolationType = 'discrete';
         // Extract enum values from Zod 4 - uses 'entries' object or 'options' array
         const enumEntries = unwrapped._zod?.def?.entries;
         if (enumEntries && typeof enumEntries === 'object') {

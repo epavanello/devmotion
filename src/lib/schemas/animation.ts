@@ -83,14 +83,6 @@ export const AnimatablePropertySchema = z.union([
   PropsAnimatablePropertySchema
 ]);
 
-export const InterpolationTypeSchema = z.enum([
-  'number',
-  'color',
-  'text',
-  'discrete',
-  'background'
-]);
-
 // Re-export background schemas from the cycle-free module.
 // animation.ts → registry.ts → layer components → animation.ts would break if
 // these schemas lived here, so they live in background.ts and are re-exported.
@@ -260,7 +252,6 @@ export type InterpolationFamily = Interpolation['family'];
 export type BuiltInAnimatableProperty = z.infer<typeof BuiltInAnimatablePropertySchema>;
 export type PropsAnimatableProperty = z.infer<typeof PropsAnimatablePropertySchema>;
 export type AnimatableProperty = z.infer<typeof AnimatablePropertySchema>;
-export type InterpolationType = z.infer<typeof InterpolationTypeSchema>;
 
 // Re-export base types for backward compatibility
 export type { AnchorPoint, Transform, LayerStyle } from './base';

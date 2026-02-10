@@ -2,19 +2,74 @@
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
   import { Smartphone } from '@lucide/svelte';
+  import { fieldRegistry } from '../base';
+  import { sizeMiddleware } from '$lib/schemas/size';
+  import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
 
   /**
    * Schema for Phone Layer custom properties
    */
   const schema = z.object({
     url: z.string().default('https://example.com').describe('URL to display in iframe'),
-    width: z.number().min(200).max(600).default(375).describe('Phone width (px)'),
-    height: z.number().min(400).max(1200).default(667).describe('Phone height (px)'),
-    phoneColor: z.string().default('#1f2937').describe('Phone frame color'),
-    borderRadius: z.number().min(20).max(60).default(40).describe('Screen border radius (px)'),
-    notchHeight: z.number().min(20).max(40).default(28).describe('Notch height (px)'),
-    showNotch: z.boolean().default(true).describe('Show device notch'),
-    bezelWidth: z.number().min(8).max(20).default(12).describe('Bezel width (px)')
+    width: z
+      .number()
+      .min(200)
+      .max(600)
+      .default(375)
+      .describe('Phone width (px)')
+      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+    height: z
+      .number()
+      .min(400)
+      .max(1200)
+      .default(667)
+      .describe('Phone height (px)')
+      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+    phoneColor: z
+      .string()
+      .default('#1f2937')
+      .describe('Phone frame color')
+      .register(fieldRegistry, {
+        group: 'appearance',
+        interpolationFamily: 'continuous',
+        widget: 'color'
+      }),
+    notchHeight: z
+      .number()
+      .min(20)
+      .max(40)
+      .default(28)
+      .describe('Notch height (px)')
+      .register(fieldRegistry, { group: 'appearance', interpolationFamily: 'continuous' }),
+    showNotch: z
+      .boolean()
+      .default(true)
+      .describe('Show device notch')
+      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+    borderRadius: z
+      .number()
+      .min(20)
+      .max(60)
+      .default(40)
+      .describe('Screen border radius (px)')
+      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
+    bezelWidth: z
+      .number()
+      .min(8)
+      .max(20)
+      .default(12)
+      .describe('Bezel width (px)')
+      .register(fieldRegistry, { group: 'appearance', interpolationFamily: 'continuous' }),
+    _aspectRatioLocked: z
+      .boolean()
+      .default(false)
+      .describe('Aspect ratio locked')
+      .register(fieldRegistry, { hidden: true }),
+    _aspectRatio: z
+      .number()
+      .default(1)
+      .describe('Aspect ratio value')
+      .register(fieldRegistry, { hidden: true })
   });
 
   export const meta: LayerMeta = {
@@ -22,7 +77,14 @@
     type: 'phone',
     label: 'Phone',
     icon: Smartphone,
-    description: 'Mobile phone mockup with notch, bezel, and iframe for app/website previews'
+    description: 'Mobile phone mockup with notch, bezel, and iframe for app/website previews',
+
+    propertyGroups: [
+      { id: 'size', label: 'Size', widget: AspectRatioToggle },
+      { id: 'appearance', label: 'Appearance' }
+    ],
+
+    middleware: sizeMiddleware
   };
 
   type Props = z.infer<typeof schema>;

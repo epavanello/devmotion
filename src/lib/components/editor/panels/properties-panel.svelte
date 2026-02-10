@@ -422,6 +422,7 @@
         </div>
 
         <!-- Content offset control for time-based layers -->
+        <!-- TODO: manage like audio/video middleware -->
         {#if selectedLayer.type === 'video' || selectedLayer.type === 'audio'}
           {@const contentDuration = selectedLayer.contentDuration ?? 0}
           {@const contentOffset = selectedLayer.contentOffset ?? 0}
@@ -484,6 +485,7 @@
       <!-- Transform -->
       <PropertiesGroup label="Transform">
         <!-- Position -->
+        <!-- TODO: manage like groups -->
         <InputsWrapper
           fields={[
             { prop: 'position.x' as AnimatableProperty, label: 'X' },
@@ -702,13 +704,11 @@
                 {/snippet}
 
                 {#each item.fields as field (field.name)}
-                  <ScrubInput
-                    id={`props-${field.name}`}
-                    value={(currentValues?.props[field.name] as number) ?? 0}
-                    min={field.min}
-                    max={field.max}
-                    step={field.step || 1}
-                    onchange={(v) => updateProperty(field.name, v, 'props')}
+                  <InputPropery
+                    metadata={field}
+                    value={currentValues?.props[field.name]}
+                    onUpdateProp={(name, v) => updateProperty(name, v, 'props')}
+                    layer={selectedLayer}
                   />
                 {/each}
               </InputsWrapper>
@@ -773,7 +773,7 @@
       <Separator />
 
       <!-- Keyframes -->
-      <PropertiesGroup label={`Keyframes ${selectedLayer.keyframes.length}`}>
+      <PropertiesGroup label={`Keyframes (${selectedLayer.keyframes.length})`}>
         <LayerKeyframes layer={selectedLayer} />
       </PropertiesGroup>
     </div>

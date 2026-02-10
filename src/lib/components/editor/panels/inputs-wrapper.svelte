@@ -54,7 +54,7 @@
     {/each}
   </div>
 
-  <ButtonGroup.Root>
+  <ButtonGroup.Root class="w-full">
     {@render children()}
   </ButtonGroup.Root>
 </div>

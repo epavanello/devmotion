@@ -4,6 +4,8 @@
   import type { LayerMeta } from '../registry';
   import { fieldRegistry } from '../base';
   import { Code2 } from '@lucide/svelte';
+  import { sizeMiddleware } from '$lib/schemas/size';
+  import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
 
   /**
    * Schema for HTML Layer custom properties
@@ -14,7 +16,7 @@
       .string()
       .default('<div class="container">Hello World</div>')
       .describe('HTML content - use {{varName}} for variable interpolation')
-      .register(fieldRegistry, { widget: 'textarea' }),
+      .register(fieldRegistry, { widget: 'textarea', interpolationFamily: 'discrete' }),
     css: z
       .string()
       .default(
@@ -27,25 +29,95 @@
 }`
       )
       .describe('CSS styles (scoped to this layer)')
-      .register(fieldRegistry, { widget: 'textarea' }),
-    width: z.number().min(10).max(5000).default(400).describe('Container width (px)'),
-    height: z.number().min(10).max(5000).default(200).describe('Container height (px)'),
+      .register(fieldRegistry, { widget: 'textarea', interpolationFamily: 'discrete' }),
+    width: z
+      .number()
+      .min(10)
+      .max(5000)
+      .default(400)
+      .describe('Container width (px)')
+      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+    height: z
+      .number()
+      .min(10)
+      .max(5000)
+      .default(200)
+      .describe('Container height (px)')
+      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
     // Dynamic variables that can be interpolated and animated
-    var1: z.string().default('').describe('Variable {{var1}} for interpolation'),
-    var2: z.string().default('').describe('Variable {{var2}} for interpolation'),
-    var3: z.string().default('').describe('Variable {{var3}} for interpolation'),
-    var4: z.string().default('').describe('Variable {{var4}} for interpolation'),
-    var5: z.string().default('').describe('Variable {{var5}} for interpolation'),
+    var1: z
+      .string()
+      .default('')
+      .describe('Variable {{var1}} for interpolation')
+      .register(fieldRegistry, { interpolationFamily: 'text' }),
+    var2: z
+      .string()
+      .default('')
+      .describe('Variable {{var2}} for interpolation')
+      .register(fieldRegistry, { interpolationFamily: 'text' }),
+    var3: z
+      .string()
+      .default('')
+      .describe('Variable {{var3}} for interpolation')
+      .register(fieldRegistry, { interpolationFamily: 'text' }),
+    var4: z
+      .string()
+      .default('')
+      .describe('Variable {{var4}} for interpolation')
+      .register(fieldRegistry, { interpolationFamily: 'text' }),
+    var5: z
+      .string()
+      .default('')
+      .describe('Variable {{var5}} for interpolation')
+      .register(fieldRegistry, { interpolationFamily: 'text' }),
     // Numeric variables for animations
-    num1: z.number().default(0).describe('Numeric variable {{num1}} for animations'),
-    num2: z.number().default(0).describe('Numeric variable {{num2}} for animations'),
-    num3: z.number().default(0).describe('Numeric variable {{num3}} for animations'),
+    num1: z
+      .number()
+      .default(0)
+      .describe('Numeric variable {{num1}} for animations')
+      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
+    num2: z
+      .number()
+      .default(0)
+      .describe('Numeric variable {{num2}} for animations')
+      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
+    num3: z
+      .number()
+      .default(0)
+      .describe('Numeric variable {{num3}} for animations')
+      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
     // Color variables
-    color1: z.string().default('#ffffff').describe('Color variable {{color1}}'),
-    color2: z.string().default('#000000').describe('Color variable {{color2}}'),
+    color1: z
+      .string()
+      .default('#ffffff')
+      .describe('Color variable {{color1}}')
+      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
+    color2: z
+      .string()
+      .default('#000000')
+      .describe('Color variable {{color2}}')
+      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
     // Boolean for conditional rendering
-    show1: z.boolean().default(true).describe('Boolean {{show1}} for conditional display'),
-    show2: z.boolean().default(true).describe('Boolean {{show2}} for conditional display')
+    show1: z
+      .boolean()
+      .default(true)
+      .describe('Boolean {{show1}} for conditional display')
+      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+    show2: z
+      .boolean()
+      .default(true)
+      .describe('Boolean {{show2}} for conditional display')
+      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+    _aspectRatioLocked: z
+      .boolean()
+      .default(false)
+      .describe('Aspect ratio locked')
+      .register(fieldRegistry, { hidden: true }),
+    _aspectRatio: z
+      .number()
+      .default(1)
+      .describe('Aspect ratio value')
+      .register(fieldRegistry, { hidden: true })
   });
 
   export const meta: LayerMeta = {
@@ -53,7 +125,14 @@
     type: 'html',
     label: 'HTML/CSS',
     icon: Code2,
-    description: 'Custom HTML/CSS content with variable interpolation for dynamic elements'
+    description: 'Custom HTML/CSS content with variable interpolation for dynamic elements',
+
+    propertyGroups: [
+      { id: 'size', label: 'Size', widget: AspectRatioToggle },
+      { id: 'variables', label: 'Variables' }
+    ],
+
+    middleware: sizeMiddleware
   };
 
   type Props = z.infer<typeof schema>;
