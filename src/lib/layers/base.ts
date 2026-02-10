@@ -22,6 +22,8 @@ import type { Layer } from '$lib/schemas/animation';
 export type FieldMeta = {
   hidden?: boolean;
   readOnly?: boolean;
+  /** Assign this field to a property group (e.g., 'size') for grouped rendering */
+  group?: string;
 } & (
   | {
       /** Override the default input widget rendered for this field */

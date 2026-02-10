@@ -4,7 +4,7 @@
   import { Square } from '@lucide/svelte';
   import { BackgroundValueSchema, getStyleProperties } from '$lib/schemas/background';
   import { fieldRegistry } from '../base';
-  import SizeField from '../properties/SizeField.svelte';
+  import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
 
   /**
    * Schema for Shape Layer custom properties
@@ -26,14 +26,14 @@
       .max(2000)
       .default(200)
       .describe('Width (px)')
-      .register(fieldRegistry, { hidden: true }),
+      .register(fieldRegistry, { group: 'size' }),
     height: z
       .number()
       .min(1)
       .max(2000)
       .default(200)
       .describe('Height (px)')
-      .register(fieldRegistry, { hidden: true }),
+      .register(fieldRegistry, { group: 'size' }),
     background: BackgroundValueSchema.optional()
       .default('#4a90e2')
       .describe('Fill background (solid color or gradient)')
@@ -47,7 +47,17 @@
       .default(100)
       .optional()
       .describe('Radius for circle/polygon (px)'),
-    sides: z.number().min(3).max(12).default(6).optional().describe('Number of sides for polygon')
+    sides: z.number().min(3).max(12).default(6).optional().describe('Number of sides for polygon'),
+    _aspectRatioLocked: z
+      .boolean()
+      .default(false)
+      .describe('Aspect ratio locked')
+      .register(fieldRegistry, { hidden: true }),
+    _aspectRatio: z
+      .number()
+      .default(1)
+      .describe('Aspect ratio value')
+      .register(fieldRegistry, { hidden: true })
   });
 
   export const meta: LayerMeta = {
@@ -57,8 +67,23 @@
     icon: Square,
     description:
       'Geometric shapes (rectangle, circle, triangle, polygon) with background and stroke',
-    customPropertyComponents: {
-      size: { label: 'Size', component: SizeField }
+
+    propertyGroups: [{ id: 'size', label: 'Size', widget: AspectRatioToggle }],
+
+    middleware: (propName, value, currentValues) => {
+      const updates: Record<string, unknown> = { [propName]: value };
+      const props = currentValues.props;
+
+      if (props._aspectRatioLocked && (propName === 'width' || propName === 'height')) {
+        const ratio = (props._aspectRatio as number) || 1;
+        if (propName === 'width') {
+          updates.height = (value as number) / ratio;
+        } else {
+          updates.width = (value as number) * ratio;
+        }
+      }
+
+      return updates;
     }
   };
 
