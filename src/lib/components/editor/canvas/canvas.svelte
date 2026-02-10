@@ -160,7 +160,7 @@
   });
 </script>
 
-<div class="relative h-full w-full overflow-hidden" class:recording-mode={isRecording}>
+<div class="relative h-full w-full overflow-hidden bg-white" class:recording-mode={isRecording}>
   <!-- Canvas viewport -->
   <div
     bind:this={canvasContainer}

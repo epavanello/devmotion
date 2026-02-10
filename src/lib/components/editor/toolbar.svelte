@@ -12,7 +12,8 @@
     Unlock,
     GitFork,
     Trash,
-    Globe
+    Globe,
+    Github
   } from '@lucide/svelte';
   import { projectStore } from '$lib/stores/project.svelte';
   import ExportDialog from './export-dialog.svelte';
@@ -274,20 +275,6 @@
             MCP
           </div>
         {/if}
-
-        {#if isMobile}
-          <CollapsibleTrigger>
-            {#snippet child({ props })}
-              <Button variant="ghost" size="icon" {...props}>
-                {#if headerOpen}
-                  <X class="size-4" />
-                {:else}
-                  <Menu class="size-4" />
-                {/if}
-              </Button>
-            {/snippet}
-          </CollapsibleTrigger>
-        {/if}
       </div>
 
       {#if !isMobile}
@@ -396,6 +383,20 @@
         {:else}
           <Button onclick={handleLogin} icon={GoogleIcon}>Login</Button>
         {/if}
+
+        {#if isMobile}
+          <CollapsibleTrigger>
+            {#snippet child({ props })}
+              <Button variant="ghost" size="icon" {...props}>
+                {#if headerOpen}
+                  <X class="size-4" />
+                {:else}
+                  <Menu class="size-4" />
+                {/if}
+              </Button>
+            {/snippet}
+          </CollapsibleTrigger>
+        {/if}
       </div>
     {/snippet}
   </AppHeader>
@@ -423,6 +424,18 @@
             {/if}
           </div>
         {/each}
+
+        <!-- GitHub Link (Mobile Only) -->
+        <Button
+          variant="outline"
+          href="https://github.com/epavanello/devmotion"
+          target="_blank"
+          rel="noreferrer"
+          icon={Github}
+          class="w-full"
+        >
+          GitHub
+        </Button>
       </div>
     </div>
   </CollapsibleContent>

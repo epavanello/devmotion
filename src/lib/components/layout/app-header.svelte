@@ -34,6 +34,7 @@
       target="_blank"
       rel="noreferrer"
       icon={Github}
+      class="hidden md:inline-flex"
     />
 
     {#if leftContent}
