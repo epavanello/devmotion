@@ -24,7 +24,9 @@
     Transform,
     LayerStyle,
     Layer,
-    AnchorPoint
+    AnchorPoint,
+    Interpolation,
+    InterpolationFamily
   } from '$lib/types/animation';
   import {
     getAnimatedTransform,
@@ -182,6 +184,41 @@
   }
 
   /**
+   * Get default interpolation for a property based on its metadata
+   */
+  function getDefaultInterpolationForProperty(property: AnimatableProperty): Interpolation {
+    // Extract property name from animatable property (e.g., "props.fontSize" -> "fontSize")
+    const propertyName = property.includes('.') ? property.split('.').pop()! : property;
+
+    // Find metadata for this property
+    const metadata = layerPropertyMetadata.find((m) => m.name === propertyName);
+
+    if (!metadata) {
+      // Default for built-in properties (position, scale, rotation, opacity)
+      return { family: 'continuous', strategy: 'ease-in-out' };
+    }
+
+    // Get first family if array, otherwise use the family
+    const family: InterpolationFamily = Array.isArray(metadata.interpolationFamily)
+      ? metadata.interpolationFamily[0]
+      : metadata.interpolationFamily;
+
+    // Return appropriate default based on family
+    switch (family) {
+      case 'continuous':
+        return { family: 'continuous', strategy: 'linear' };
+      case 'discrete':
+        return { family: 'discrete', strategy: 'step-end' };
+      case 'quantized':
+        return { family: 'quantized', strategy: 'integer' };
+      case 'text':
+        return { family: 'text', strategy: 'char-reveal' };
+      default:
+        return { family: 'continuous', strategy: 'linear' };
+    }
+  }
+
+  /**
    * Helper to update an animatable property - handles keyframe logic.
    * If the property has keyframes, updates/creates keyframe at current time.
    * If updateBase is provided and no keyframes exist, calls updateBase.
@@ -204,12 +241,14 @@
       if (keyframeAtTime) {
         projectStore.updateKeyframe(layer.id, keyframeAtTime.id, { value });
       } else {
+        // Get default interpolation based on property metadata
+        const interpolation = getDefaultInterpolationForProperty(animatableProperty);
         projectStore.addKeyframe(layer.id, {
           id: nanoid(),
           time: currentTime,
           property: animatableProperty,
           value,
-          easing: { type: 'ease-in-out' }
+          interpolation
         });
       }
     } else {
@@ -677,7 +716,7 @@
               <InputWrapper
                 id={item.field.name}
                 label={item.field.description || item.field.name}
-                property={item.field.name}
+                property={`props.${item.field.name}`}
                 {addKeyframe}
               >
                 <InputPropery

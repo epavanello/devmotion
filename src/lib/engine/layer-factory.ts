@@ -2,14 +2,14 @@
  * Generic layer factory using the component registry
  */
 import { nanoid } from 'nanoid';
-import type { Layer, LayerType, Keyframe, Easing } from '$lib/types/animation';
+import type { Layer, LayerType, Keyframe, Interpolation } from '$lib/types/animation';
 import { getLayerDefinition } from '$lib/layers/registry';
 import { extractDefaultValues } from '$lib/layers/base';
 
 /**
- * Default easing for initial keyframes
+ * Default interpolation for initial keyframes
  */
-const defaultEasing: Easing = { type: 'ease-in-out' };
+const defaultInterpolation: Interpolation = { family: 'continuous', strategy: 'ease-in-out' };
 
 /**
  * Create a new layer of the specified type
@@ -35,14 +35,14 @@ export function createLayer(
       time: 0,
       property: 'position.x',
       value: x,
-      easing: defaultEasing
+      interpolation: defaultInterpolation
     },
     {
       id: nanoid(),
       time: 0,
       property: 'position.y',
       value: y,
-      easing: defaultEasing
+      interpolation: defaultInterpolation
     }
   ];
 

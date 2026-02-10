@@ -349,7 +349,7 @@ class ProjectStore {
         time: clampedTime,
         property: kf.property,
         value,
-        easing: kf.easing
+        interpolation: kf.interpolation
       });
     }
   }

@@ -5,7 +5,7 @@
  * Each layer type has its own creation tool (create_text_layer, create_icon_layer, etc.)
  */
 import { z } from 'zod';
-import { EasingSchema } from '$lib/schemas/animation';
+import { InterpolationSchema } from '$lib/schemas/animation';
 import { getPresetIds } from '$lib/engine/presets';
 import { tool, type InferUITools, type Tool } from 'ai';
 import { layerRegistry, getAvailableLayerTypes, type LayerType } from '$lib/layers/registry';
@@ -209,7 +209,7 @@ export const AnimateLayerInputSchema = z.object({
             'Property: position.x, position.y, scale.x, scale.y, rotation.z, opacity, props.*'
           ),
         value: z.union([z.number(), z.string(), z.boolean()]),
-        easing: EasingSchema.optional()
+        interpolation: InterpolationSchema.optional()
       })
     )
     .optional()

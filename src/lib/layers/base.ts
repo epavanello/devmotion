@@ -16,6 +16,11 @@ import {
 import type { Layer } from '$lib/schemas/animation';
 
 /**
+ * Interpolation family types for animation properties
+ */
+export type InterpolationFamily = 'continuous' | 'discrete' | 'quantized' | 'text';
+
+/**
  * Per-field UI metadata that layer schemas can opt into via .register(fieldRegistry, …).
  * Keeps UI-rendering hints out of validation logic and out of .describe() strings.
  */
@@ -24,6 +29,8 @@ export type FieldMeta = {
   readOnly?: boolean;
   /** Assign this field to a property group (e.g., 'size') for grouped rendering */
   group?: string;
+  /** Supported interpolation families for this field (e.g., ['continuous', 'quantized']) */
+  interpolationFamily?: InterpolationFamily | InterpolationFamily[];
 } & (
   | {
       /** Override the default input widget rendered for this field */
@@ -87,6 +94,12 @@ export type PropertyMetadata = {
   step?: number;
   options?: Array<{ value: string | number; label: string }>;
   /**
+   * Supported interpolation family/families for this property
+   * Can be a single family or an array of families if multiple are supported
+   */
+  interpolationFamily: InterpolationFamily | InterpolationFamily[];
+  /**
+   * @deprecated Use interpolationFamily instead
    * How this property should be interpolated between keyframes
    * - 'number': Linear interpolation
    * - 'color': RGB color interpolation
@@ -112,6 +125,73 @@ function unwrapZodType(zodType: z.ZodType): z.ZodType {
 }
 
 /**
+ * Infer interpolation family from a Zod field schema
+ */
+function inferInterpolationFamily(
+  fieldSchema: z.ZodType,
+  fieldName: string
+): InterpolationFamily | InterpolationFamily[] {
+  const unwrapped = unwrapZodType(fieldSchema);
+
+  // Number (float) → continuous
+  if (unwrapped instanceof z.ZodNumber) {
+    // Check if it looks like an integer field
+    const checks = unwrapped._zod?.def?.checks || [];
+    const hasIntegerCheck = checks.some(
+      (check) => check._zod?.def?.check === 'int' || check._zod?.def?.check === 'integer'
+    );
+    if (hasIntegerCheck || fieldName === 'sides') {
+      return ['quantized', 'continuous']; // Integer-like numbers support both
+    }
+    return 'continuous';
+  }
+
+  // String (check if long text)
+  if (unwrapped instanceof z.ZodString) {
+    if (fieldName === 'content' || fieldName === 'text') {
+      return 'text';
+    }
+    // Color strings can use continuous interpolation
+    if (fieldName.toLowerCase().includes('color')) {
+      return 'continuous';
+    }
+    return 'discrete'; // Font names, URLs, etc.
+  }
+
+  // Enum → discrete
+  if (unwrapped instanceof z.ZodEnum) {
+    return 'discrete';
+  }
+
+  // Boolean → discrete
+  if (unwrapped instanceof z.ZodBoolean) {
+    return 'discrete';
+  }
+
+  // Union (check if background)
+  if (unwrapped instanceof z.ZodUnion) {
+    const options = unwrapped.options as z.ZodType[];
+    const isBackgroundUnion = options.every((opt) => {
+      if (opt instanceof z.ZodObject) {
+        const typeField = (opt.shape as Record<string, z.ZodType>)['type'];
+        if (typeField instanceof z.ZodLiteral) {
+          const val = typeField.value;
+          return ['solid', 'linear', 'radial', 'conic'].includes(val as string);
+        }
+      }
+      return false;
+    });
+
+    if (isBackgroundUnion) {
+      return 'discrete'; // Backgrounds use discrete for now
+    }
+  }
+
+  // Default
+  return 'discrete';
+}
+
+/**
  * Extract property metadata from a Zod schema for UI generation
  * Uses Zod 4 internals (_zod.def) as there's no public API for this
  */
@@ -124,19 +204,24 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
     for (const [key, value] of Object.entries(shape)) {
       const zodType = value;
       const unwrapped = unwrapZodType(zodType);
+      const fieldMeta = fieldRegistry.get(zodType);
+
+      // Get interpolation family from field meta or infer it
+      const interpolationFamily =
+        fieldMeta?.interpolationFamily ?? inferInterpolationFamily(zodType, key);
 
       const propertiesMeta: PropertyMetadata = {
         name: key,
         type: 'string',
-        interpolationType: 'discrete', // Default to discrete (no interpolation),
-        // THis is ok, dont change zodType.meta()?.description
+        interpolationFamily,
+        interpolationType: 'discrete', // Deprecated, kept for backward compatibility
         description: zodType.meta()?.description
       };
 
-      // Determine type and interpolation type
+      // Determine type and deprecated interpolation type
       if (unwrapped instanceof z.ZodNumber) {
         propertiesMeta.type = 'number';
-        propertiesMeta.interpolationType = 'number'; // Numbers can be interpolated
+        propertiesMeta.interpolationType = 'number';
 
         const min = unwrapped.def.checks?.find((check) => check._zod.def.check === 'greater_than');
         if (min && 'value' in min._zod.def) {
@@ -148,7 +233,7 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
         }
       } else if (unwrapped instanceof z.ZodBoolean) {
         propertiesMeta.type = 'boolean';
-        propertiesMeta.interpolationType = 'discrete'; // Booleans jump between values
+        propertiesMeta.interpolationType = 'discrete';
       } else if (unwrapped instanceof z.ZodUnion) {
         // Check if this is a BackgroundValue union (solid, linear, radial, conic)
         const options = unwrapped.options as z.ZodType[];
@@ -165,27 +250,27 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
 
         if (isBackgroundUnion) {
           propertiesMeta.type = 'background';
-          propertiesMeta.interpolationType = 'discrete'; // Backgrounds use discrete interpolation for now
+          propertiesMeta.interpolationType = 'discrete';
         } else {
           propertiesMeta.type = 'string';
           propertiesMeta.interpolationType = 'discrete';
         }
       } else if (unwrapped instanceof z.ZodString) {
         propertiesMeta.type = 'string';
-        propertiesMeta.interpolationType = 'discrete'; // Strings jump between values
+        propertiesMeta.interpolationType = 'discrete';
 
         // Check if it's a color by convention (field name contains 'color')
         if (key.toLowerCase().includes('color')) {
           propertiesMeta.type = 'color';
-          propertiesMeta.interpolationType = 'color'; // Colors can be interpolated
+          propertiesMeta.interpolationType = 'color';
         }
         // Check if it's text content (for character-by-character animation)
         else if (key === 'content' || key === 'text') {
-          propertiesMeta.interpolationType = 'text'; // Text can be interpolated character by character
+          propertiesMeta.interpolationType = 'text';
         }
       } else if (unwrapped instanceof z.ZodEnum) {
         propertiesMeta.type = 'select';
-        propertiesMeta.interpolationType = 'discrete'; // Enums jump between values
+        propertiesMeta.interpolationType = 'discrete';
         // Extract enum values from Zod 4 - uses 'entries' object or 'options' array
         const enumEntries = unwrapped._zod?.def?.entries;
         if (enumEntries && typeof enumEntries === 'object') {
@@ -196,7 +281,7 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
         }
       }
 
-      propertiesMeta.meta = fieldRegistry.get(zodType);
+      propertiesMeta.meta = fieldMeta;
 
       metadata.push(propertiesMeta);
     }

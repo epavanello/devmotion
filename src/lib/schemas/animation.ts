@@ -8,28 +8,54 @@ import { BackgroundValueSchema } from './background';
 import { TransformSchema, LayerStyleSchema, BaseLayerFieldsSchema } from './base';
 
 // ============================================
-// Easing
+// Interpolation
 // ============================================
 
-export const CubicBezierPointsSchema = z.object({
-  x1: z.number(),
-  y1: z.number(),
-  x2: z.number(),
-  y2: z.number()
+// Continuous interpolation (smooth numeric transitions with easing)
+const ContinuousInterpolationSchema = z.object({
+  family: z.literal('continuous'),
+  strategy: z.enum(['linear', 'ease-in', 'ease-out', 'ease-in-out'])
 });
 
-export const EasingTypeSchema = z.enum([
-  'linear',
-  'ease-in',
-  'ease-out',
-  'ease-in-out',
-  'cubic-bezier'
+// Discrete interpolation (instant value changes)
+const DiscreteInterpolationSchema = z.object({
+  family: z.literal('discrete'),
+  strategy: z.enum(['step-end', 'step-start', 'step-mid'])
+});
+
+// Quantized interpolation (continuous but rounded)
+const QuantizedIntegerSchema = z.object({
+  family: z.literal('quantized'),
+  strategy: z.literal('integer')
+});
+
+const QuantizedSnapGridSchema = z.object({
+  family: z.literal('quantized'),
+  strategy: z.literal('snap-grid'),
+  increment: z.number().positive()
+});
+
+// Text interpolation (string transitions)
+const TextCharRevealSchema = z.object({
+  family: z.literal('text'),
+  strategy: z.literal('char-reveal')
+});
+
+const TextWordRevealSchema = z.object({
+  family: z.literal('text'),
+  strategy: z.literal('word-reveal'),
+  separator: z.string().optional()
+});
+
+// Union of all interpolation types
+export const InterpolationSchema = z.union([
+  ContinuousInterpolationSchema,
+  DiscreteInterpolationSchema,
+  QuantizedIntegerSchema,
+  QuantizedSnapGridSchema,
+  TextCharRevealSchema,
+  TextWordRevealSchema
 ]);
-
-export const EasingSchema = z.object({
-  type: EasingTypeSchema,
-  bezier: CubicBezierPointsSchema.optional()
-});
 
 // ============================================
 // Animatable Properties
@@ -103,7 +129,7 @@ export const KeyframeSchema = z.object({
   time: z.number().min(0),
   property: AnimatablePropertySchema,
   value: z.union([z.number(), z.string(), z.boolean()]),
-  easing: EasingSchema
+  interpolation: InterpolationSchema
 });
 
 // ============================================
@@ -228,9 +254,8 @@ export const ExportSettingsSchema = z.object({
 // TypeScript Types (inferred from schemas)
 // ============================================
 
-export type CubicBezierPoints = z.infer<typeof CubicBezierPointsSchema>;
-export type EasingType = z.infer<typeof EasingTypeSchema>;
-export type Easing = z.infer<typeof EasingSchema>;
+export type Interpolation = z.infer<typeof InterpolationSchema>;
+export type InterpolationFamily = Interpolation['family'];
 
 export type BuiltInAnimatableProperty = z.infer<typeof BuiltInAnimatablePropertySchema>;
 export type PropsAnimatableProperty = z.infer<typeof PropsAnimatablePropertySchema>;

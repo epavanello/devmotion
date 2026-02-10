@@ -67,7 +67,7 @@
 
   <div class="space-y-2">
     {#if filteredKeyframes.length === 0}
-      <p class="text-sm text-muted-foreground text-center py-4">No keyframes found</p>
+      <p class="py-4 text-center text-sm text-muted-foreground">No keyframes found</p>
     {:else}
       {#each filteredKeyframes as keyframe (keyframe.id)}
         <KeyframeCard {keyframe} layerId={layer.id} />
