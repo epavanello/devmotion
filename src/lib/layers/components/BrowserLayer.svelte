@@ -2,20 +2,71 @@
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
   import { Globe } from '@lucide/svelte';
+  import { fieldRegistry } from '../base';
+  import { sizeMiddleware } from '$lib/schemas/size';
+  import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
 
   /**
    * Schema for Browser Layer custom properties
    */
   const schema = z.object({
     url: z.string().default('https://example.com').describe('URL to display in iframe'),
-    width: z.number().min(300).max(2000).default(1024).describe('Browser width (px)'),
-    height: z.number().min(300).max(1200).default(600).describe('Browser height (px)'),
-    browserColor: z.string().default('#f3f4f6').describe('Browser chrome color'),
-    barBackgroundColor: z.string().default('#ffffff').describe('Address bar background'),
-    textColor: z.string().default('#1f2937').describe('Text color in chrome'),
-    showDevTools: z.boolean().default(false).describe('Show dev tools panel'),
-    devToolsHeight: z.number().min(100).max(600).default(200).describe('Dev tools height (px)'),
-    showTabs: z.boolean().default(true).describe('Show tab bar')
+    width: z
+      .number()
+      .min(300)
+      .max(2000)
+      .default(1024)
+      .describe('Browser width (px)')
+      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+    height: z
+      .number()
+      .min(300)
+      .max(1200)
+      .default(600)
+      .describe('Browser height (px)')
+      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+    browserColor: z
+      .string()
+      .default('#f3f4f6')
+      .describe('Browser chrome color')
+      .register(fieldRegistry, {
+        group: 'chrome',
+        interpolationFamily: 'continuous',
+        widget: 'color'
+      }),
+    barBackgroundColor: z
+      .string()
+      .default('#ffffff')
+      .describe('Address bar background')
+      .register(fieldRegistry, {
+        group: 'chrome',
+        interpolationFamily: 'continuous',
+        widget: 'color'
+      }),
+    textColor: z
+      .string()
+      .default('#1f2937')
+      .describe('Text color in chrome')
+      .register(fieldRegistry, {
+        group: 'chrome',
+        interpolationFamily: 'continuous',
+        widget: 'color'
+      }),
+    showTabs: z
+      .boolean()
+      .default(true)
+      .describe('Show tab bar')
+      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+    _aspectRatioLocked: z
+      .boolean()
+      .default(false)
+      .describe('Aspect ratio locked')
+      .register(fieldRegistry, { hidden: true }),
+    _aspectRatio: z
+      .number()
+      .default(1)
+      .describe('Aspect ratio value')
+      .register(fieldRegistry, { hidden: true })
   });
 
   export const meta: LayerMeta = {
@@ -23,32 +74,28 @@
     type: 'browser',
     label: 'Browser',
     icon: Globe,
-    description: 'Browser window mockup with address bar, tabs, and iframe to display websites'
+    description: 'Browser window mockup with address bar, tabs, and iframe to display websites',
+
+    propertyGroups: [
+      { id: 'size', label: 'Size', widget: AspectRatioToggle },
+      { id: 'chrome', label: 'Chrome' }
+    ],
+
+    middleware: sizeMiddleware
   };
 
   type Props = z.infer<typeof schema>;
 </script>
 
 <script lang="ts">
-  let {
-    url,
-    width,
-    height,
-    browserColor,
-    barBackgroundColor,
-    textColor,
-    showDevTools,
-    devToolsHeight,
-    showTabs
-  }: Props = $props();
-
-  const contentHeight = $derived(showDevTools ? height - 90 - devToolsHeight : height - 90);
+  let { url, width, height, browserColor, barBackgroundColor, textColor, showTabs }: Props =
+    $props();
 </script>
 
 <div
   class="flex flex-col overflow-hidden rounded-lg border border-gray-300 shadow-2xl"
   style:width="{width}px"
-  style:height={showDevTools ? `${height}px` : `${height}px`}
+  style:height="{height}px"
   style:background-color={browserColor}
 >
   <!-- Browser controls -->
@@ -185,34 +232,8 @@
       src={url}
       title="Browser content"
       class="pointer-events-none h-full w-full border-none"
-      style:height="{contentHeight}px"
+      style:height="{height}px"
       sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-presentation allow-modals"
     ></iframe>
   </div>
-
-  <!-- Dev tools -->
-  {#if showDevTools}
-    <div
-      class="flex flex-col border-t"
-      style:border-color={textColor}
-      style:background-color={barBackgroundColor}
-      style:height="{devToolsHeight}px"
-    >
-      <div
-        class="flex items-center gap-2 border-b px-4 py-2 text-xs font-semibold"
-        style:border-color={textColor}
-        style:color={textColor}
-      >
-        <span>Elements</span>
-        <span>Console</span>
-        <span>Sources</span>
-      </div>
-      <div class="flex-1 overflow-auto px-4 py-2 font-mono text-xs" style:color={textColor}>
-        <div>&lt;html&gt;</div>
-        <div class="ml-4">&lt;head&gt; ... &lt;/head&gt;</div>
-        <div class="ml-4">&lt;body&gt; ... &lt;/body&gt;</div>
-        <div>&lt;/html&gt;</div>
-      </div>
-    </div>
-  {/if}
 </div>

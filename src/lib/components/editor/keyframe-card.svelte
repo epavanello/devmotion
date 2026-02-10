@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Keyframe, EasingType, Easing } from '$lib/types/animation';
+  import type { Keyframe, Interpolation } from '$lib/types/animation';
   import { projectStore } from '$lib/stores/project.svelte';
   import { Button } from '$lib/components/ui/button';
   import * as Popover from '$lib/components/ui/popover';
@@ -14,12 +14,57 @@
 
   let { keyframe, layerId, readonlyTime = false }: Props = $props();
 
-  const easingOptions: { value: EasingType; label: string }[] = [
-    { value: 'linear', label: 'Linear' },
-    { value: 'ease-in', label: 'Ease In' },
-    { value: 'ease-out', label: 'Ease Out' },
-    { value: 'ease-in-out', label: 'Ease In-Out' }
-  ];
+  // Type-safe strategy labels - ensures all strategies have corresponding labels
+  type ContinuousStrategy = Extract<Interpolation, { family: 'continuous' }>['strategy'];
+  type DiscreteStrategy = Extract<Interpolation, { family: 'discrete' }>['strategy'];
+  type QuantizedStrategy = Extract<Interpolation, { family: 'quantized' }>['strategy'];
+  type TextStrategy = Extract<Interpolation, { family: 'text' }>['strategy'];
+
+  const continuousStrategyLabels: Record<ContinuousStrategy, string> = {
+    linear: 'Linear',
+    'ease-in': 'Ease In',
+    'ease-out': 'Ease Out',
+    'ease-in-out': 'Ease In-Out'
+  };
+
+  const discreteStrategyLabels: Record<DiscreteStrategy, string> = {
+    'step-end': 'Step End',
+    'step-start': 'Step Start',
+    'step-mid': 'Step Mid'
+  };
+
+  const quantizedStrategyLabels: Record<QuantizedStrategy, string> = {
+    integer: 'Integer',
+    'snap-grid': 'Snap Grid'
+  };
+
+  const textStrategyLabels: Record<TextStrategy, string> = {
+    'char-reveal': 'Char Reveal',
+    'word-reveal': 'Word Reveal'
+  };
+
+  const interpolation: Interpolation = $derived.by(() => {
+    if (!keyframe.interpolation) {
+      return { family: 'continuous', strategy: 'linear' };
+    }
+    return keyframe.interpolation;
+  });
+
+  // Get strategy options based on interpolation family - convert Record to array format
+  const strategyOptions = $derived.by(() => {
+    const labels =
+      interpolation.family === 'continuous'
+        ? continuousStrategyLabels
+        : interpolation.family === 'discrete'
+          ? discreteStrategyLabels
+          : interpolation.family === 'quantized'
+            ? quantizedStrategyLabels
+            : interpolation.family === 'text'
+              ? textStrategyLabels
+              : continuousStrategyLabels;
+
+    return Object.entries(labels).map(([value, label]) => ({ value, label }));
+  });
 
   function getPropertyLabel(property: string): string {
     const labels: Record<string, string> = {
@@ -77,9 +122,48 @@
     projectStore.updateKeyframe(layerId, keyframe.id, { time: clampedTime });
   }
 
-  function handleEasingChange(easingType: EasingType) {
-    const newEasing: Easing = { type: easingType };
-    projectStore.updateKeyframe(layerId, keyframe.id, { easing: newEasing });
+  function handleStrategyChange(strategy: string) {
+    // Reconstruct interpolation with proper types based on family
+    const family = interpolation.family;
+    let newInterpolation: Interpolation;
+
+    switch (family) {
+      case 'continuous':
+        newInterpolation = {
+          family: 'continuous',
+          strategy: strategy as 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out'
+        };
+        break;
+
+      case 'discrete':
+        newInterpolation = {
+          family: 'discrete',
+          strategy: strategy as 'step-end' | 'step-start' | 'step-mid'
+        };
+        break;
+
+      case 'quantized':
+        if (strategy === 'integer') {
+          newInterpolation = { family: 'quantized', strategy: 'integer' };
+        } else {
+          // For snap-grid, preserve increment if exists, otherwise use default
+          const increment = 'increment' in interpolation ? interpolation.increment : 10;
+          newInterpolation = { family: 'quantized', strategy: 'snap-grid', increment };
+        }
+        break;
+
+      case 'text':
+        if (strategy === 'char-reveal') {
+          newInterpolation = { family: 'text', strategy: 'char-reveal' };
+        } else {
+          // For word-reveal, preserve separator if exists, otherwise use default
+          const separator = 'separator' in interpolation ? interpolation.separator : ' ';
+          newInterpolation = { family: 'text', strategy: 'word-reveal', separator };
+        }
+        break;
+    }
+
+    projectStore.updateKeyframe(layerId, keyframe.id, { interpolation: newInterpolation });
   }
 
   const Icon = $derived(getPropertyIcon(keyframe.property));
@@ -164,13 +248,15 @@
     </div>
 
     <div class="flex items-center gap-2 text-xs">
-      <span class="text-muted-foreground">Easing:</span>
+      <span class="text-muted-foreground">
+        {interpolation.family === 'continuous' ? 'Easing:' : 'Strategy:'}
+      </span>
       <select
-        value={keyframe.easing.type}
-        onchange={(e) => handleEasingChange(e.currentTarget.value as EasingType)}
+        value={interpolation.strategy}
+        onchange={(e) => handleStrategyChange(e.currentTarget.value)}
         class="h-7 flex-1 rounded-md border border-input bg-background px-2 text-xs focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
       >
-        {#each easingOptions as option (option.value)}
+        {#each strategyOptions as option (option.value)}
           <option value={option.value}>{option.label}</option>
         {/each}
       </select>

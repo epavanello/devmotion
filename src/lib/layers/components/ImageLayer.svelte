@@ -5,6 +5,8 @@
   import { calculateCoverDimensions, ASPECT_RATIOS } from '$lib/utils/media';
   import { projectStore } from '$lib/stores/project.svelte';
   import { fieldRegistry } from '../base';
+  import { sizeMiddleware } from '$lib/schemas/size';
+  import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
 
   /**
    * Schema for Image Layer custom properties
@@ -29,7 +31,8 @@
             ASPECT_RATIOS.IMAGE_DEFAULT
           ).width
       )
-      .describe('Width (px)'),
+      .describe('Width (px)')
+      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
     height: z
       .number()
       .min(1)
@@ -42,15 +45,35 @@
             ASPECT_RATIOS.IMAGE_DEFAULT
           ).height
       )
-      .describe('Height (px)'),
+      .describe('Height (px)')
+      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
     objectFit: z
       .enum(['contain', 'cover', 'fill', 'none', 'scale-down'])
       .default('cover')
-      .describe('Object fit mode'),
+      .describe('Object fit mode')
+      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+    _aspectRatioLocked: z
+      .boolean()
+      .default(false)
+      .describe('Aspect ratio locked')
+      .register(fieldRegistry, { hidden: true }),
+    _aspectRatio: z
+      .number()
+      .default(1)
+      .describe('Aspect ratio value')
+      .register(fieldRegistry, { hidden: true }),
     /** The storage key if file was uploaded (used for cleanup) */
-    fileKey: z.string().default('').describe('Storage key (for uploaded files)'),
+    fileKey: z
+      .string()
+      .default('')
+      .describe('Storage key (for uploaded files)')
+      .register(fieldRegistry, { hidden: true }),
     /** Original filename if uploaded */
-    fileName: z.string().default('').describe('Original filename')
+    fileName: z
+      .string()
+      .default('')
+      .describe('Original filename')
+      .register(fieldRegistry, { hidden: true })
   });
 
   export const meta: LayerMeta = {
@@ -59,7 +82,11 @@
     label: 'Image',
     icon: Image,
     description:
-      'Display images from URL or uploaded files with configurable size and object-fit modes'
+      'Display images from URL or uploaded files with configurable size and object-fit modes',
+
+    propertyGroups: [{ id: 'size', label: 'Size', widget: AspectRatioToggle }],
+
+    middleware: sizeMiddleware
   };
 
   type Props = z.infer<typeof schema>;

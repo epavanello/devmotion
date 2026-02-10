@@ -136,7 +136,7 @@
             time: currentTime,
             property: 'position.x',
             value: currentX + movementX,
-            easing: { type: 'ease-in-out' }
+            interpolation: { family: 'continuous', strategy: 'ease-in-out' }
           });
         }
       }
@@ -156,7 +156,7 @@
             time: currentTime,
             property: 'position.y',
             value: currentY + movementY,
-            easing: { type: 'ease-in-out' }
+            interpolation: { family: 'continuous', strategy: 'ease-in-out' }
           });
         }
       }

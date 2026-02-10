@@ -4,6 +4,8 @@
   import { Square } from '@lucide/svelte';
   import { BackgroundValueSchema, getStyleProperties } from '$lib/schemas/background';
   import { fieldRegistry } from '../base';
+  import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
+  import { SizeWithAspectRatioSchema, sizeMiddleware } from '$lib/schemas/size';
 
   /**
    * Schema for Shape Layer custom properties
@@ -14,27 +16,45 @@
    * - Radial gradient: { type: 'radial', shape: 'circle', position: {...}, stops: [...] }
    * - Conic gradient: { type: 'conic', angle: 0, position: {...}, stops: [...] }
    */
-  const schema = z.object({
+  const schema = SizeWithAspectRatioSchema.extend({
     shapeType: z
       .enum(['rectangle', 'circle', 'triangle', 'polygon'])
       .default('rectangle')
-      .describe('Shape type'),
-    width: z.number().min(1).max(2000).default(200).describe('Width (px)'),
-    height: z.number().min(1).max(2000).default(200).describe('Height (px)'),
+      .describe('Shape type')
+      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+
     background: BackgroundValueSchema.optional()
       .default('#4a90e2')
       .describe('Fill background (solid color or gradient)')
-      .register(fieldRegistry, { widget: 'background' }),
-    stroke: z.string().default('#000000').describe('Stroke color'),
-    strokeWidth: z.number().min(0).max(50).default(2).describe('Stroke width (px)'),
+      .register(fieldRegistry, { widget: 'background', interpolationFamily: 'discrete' }),
+    stroke: z.string().default('#000000').describe('Stroke color').register(fieldRegistry, {
+      group: 'stroke',
+      interpolationFamily: 'continuous',
+      widget: 'color'
+    }),
+    strokeWidth: z
+      .number()
+      .min(0)
+      .max(50)
+      .default(2)
+      .describe('Stroke width (px)')
+      .register(fieldRegistry, { group: 'stroke', interpolationFamily: 'continuous' }),
     radius: z
       .number()
       .min(0)
       .max(1000)
       .default(100)
       .optional()
-      .describe('Radius for circle/polygon (px)'),
-    sides: z.number().min(3).max(12).default(6).optional().describe('Number of sides for polygon')
+      .describe('Radius for circle/polygon (px)')
+      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
+    sides: z
+      .number()
+      .min(3)
+      .max(12)
+      .default(6)
+      .optional()
+      .describe('Number of sides for polygon')
+      .register(fieldRegistry, { interpolationFamily: ['quantized', 'continuous'] })
   });
 
   export const meta: LayerMeta = {
@@ -43,7 +63,14 @@
     label: 'Shape',
     icon: Square,
     description:
-      'Geometric shapes (rectangle, circle, triangle, polygon) with background and stroke'
+      'Geometric shapes (rectangle, circle, triangle, polygon) with background and stroke',
+
+    propertyGroups: [
+      { id: 'size', label: 'Size', widget: AspectRatioToggle },
+      { id: 'stroke', label: 'Stroke' }
+    ],
+
+    middleware: sizeMiddleware
   };
 
   type Props = z.infer<typeof schema>;

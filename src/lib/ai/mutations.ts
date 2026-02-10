@@ -11,7 +11,7 @@
  * resolving temporary layer references (layer_0, layer_1, etc.).
  */
 import { nanoid } from 'nanoid';
-import type { LayerType, Easing, AnimatableProperty, Keyframe } from '$lib/types/animation';
+import type { LayerType, Interpolation, AnimatableProperty, Keyframe } from '$lib/types/animation';
 import { createLayer } from '$lib/engine/layer-factory';
 import { getPresetById } from '$lib/engine/presets';
 import type {
@@ -218,9 +218,11 @@ export function mutateAnimateLayer(
     // Add custom keyframes
     if (input.keyframes) {
       for (const kf of input.keyframes) {
-        const easing: Easing = kf.easing
-          ? { type: kf.easing.type as Easing['type'], bezier: kf.easing.bezier }
-          : { type: 'ease-in-out' };
+        // Default to continuous ease-in-out interpolation
+        const interpolation: Interpolation = kf.interpolation ?? {
+          family: 'continuous',
+          strategy: 'ease-in-out'
+        };
 
         const clampedTime = Math.max(0, Math.min(kf.time, ctx.project.duration));
 
@@ -229,7 +231,7 @@ export function mutateAnimateLayer(
           time: clampedTime,
           property: kf.property as AnimatableProperty,
           value: kf.value as number | string | boolean,
-          easing
+          interpolation
         });
         keyframesAdded++;
       }
@@ -443,7 +445,7 @@ function applyPresetToProject(
       time: clampedTime,
       property: kf.property,
       value,
-      easing: kf.easing
+      interpolation: kf.interpolation
     });
   }
 }

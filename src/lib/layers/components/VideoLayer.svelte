@@ -4,6 +4,8 @@
   import { fieldRegistry } from '../base';
   import { Video } from '@lucide/svelte';
   import { calculateCoverDimensions, ASPECT_RATIOS } from '$lib/utils/media';
+  import { sizeMiddleware } from '$lib/schemas/size';
+  import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
 
   /**
    * Schema for Video Layer custom properties
@@ -26,7 +28,8 @@
             ASPECT_RATIOS.VIDEO_DEFAULT
           ).width
       )
-      .describe('Width (px)'),
+      .describe('Width (px)')
+      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
     height: z
       .number()
       .min(1)
@@ -39,17 +42,54 @@
             ASPECT_RATIOS.VIDEO_DEFAULT
           ).height
       )
-      .describe('Height (px)'),
+      .describe('Height (px)')
+      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+    borderRadius: z
+      .number()
+      .min(0)
+      .max(2_000)
+      .default(40)
+      .describe('Border radius (px)')
+      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
     objectFit: z
-      .enum(['contain', 'cover', 'fill', 'none', 'scale-down'])
+      .enum(['contain', 'cover', 'none'])
       .default('cover')
-      .describe('Object fit mode'),
+      .describe('Object fit mode')
+      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
     /** Playback volume (0-1) */
-    volume: z.number().min(0).max(1).default(1).describe('Volume (0-1)'),
+    volume: z
+      .number()
+      .min(0)
+      .max(1)
+      .multipleOf(0.1)
+      .default(1)
+      .describe('Volume (0-1)')
+      .register(fieldRegistry, { group: 'playback', interpolationFamily: 'continuous' }),
     /** Whether the video is muted */
-    muted: z.boolean().default(false).describe('Mute audio'),
+    muted: z
+      .boolean()
+      .default(false)
+      .describe('Mute audio')
+      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
     /** Playback rate */
-    playbackRate: z.number().min(0.1).max(4).default(1).describe('Playback rate'),
+    playbackRate: z
+      .number()
+      .min(0.1)
+      .max(4)
+      .multipleOf(0.1)
+      .default(1)
+      .describe('Playback rate')
+      .register(fieldRegistry, { group: 'playback', interpolationFamily: 'continuous' }),
+    _aspectRatioLocked: z
+      .boolean()
+      .default(false)
+      .describe('Aspect ratio locked')
+      .register(fieldRegistry, { hidden: true }),
+    _aspectRatio: z
+      .number()
+      .default(1)
+      .describe('Aspect ratio value')
+      .register(fieldRegistry, { hidden: true }),
     /** The storage key if file was uploaded (used for cleanup) */
     fileKey: z
       .string()
@@ -63,7 +103,14 @@
     type: 'video',
     label: 'Video',
     icon: Video,
-    description: 'Embed video files with trimming, volume control, and playback options'
+    description: 'Embed video files with trimming, volume control, and playback options',
+
+    propertyGroups: [
+      { id: 'size', label: 'Size', widget: AspectRatioToggle },
+      { id: 'playback', label: 'Playback' }
+    ],
+
+    middleware: sizeMiddleware
   };
 
   type Props = z.infer<typeof schema>;
@@ -78,6 +125,7 @@
     src,
     width,
     height,
+    borderRadius,
     objectFit,
     volume,
     muted,
@@ -151,7 +199,12 @@
   });
 </script>
 
-<div class="overflow-hidden rounded-lg shadow-lg" style:width="{width}px" style:height="{height}px">
+<div
+  class="overflow-hidden shadow-lg"
+  style:width="{width}px"
+  style:height="{height}px"
+  style:border-radius="{borderRadius}px"
+>
   {#if src}
     <!-- svelte-ignore a11y_media_has_caption -->
     <video

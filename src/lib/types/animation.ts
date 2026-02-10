@@ -5,13 +5,11 @@
 
 // Re-export all types from schemas (single source of truth)
 export type {
-  CubicBezierPoints,
-  EasingType,
-  Easing,
+  InterpolationFamily,
+  Interpolation,
   BuiltInAnimatableProperty,
   PropsAnimatableProperty,
   AnimatableProperty,
-  InterpolationType,
   AnchorPoint,
   Transform,
   LayerStyle,
@@ -26,13 +24,10 @@ export type {
 
 // Re-export schemas for validation
 export {
-  CubicBezierPointsSchema,
-  EasingTypeSchema,
-  EasingSchema,
+  InterpolationSchema,
   BuiltInAnimatablePropertySchema,
   PropsAnimatablePropertySchema,
   AnimatablePropertySchema,
-  InterpolationTypeSchema,
   AnchorPointSchema,
   TransformSchema,
   LayerStyleSchema,

@@ -98,7 +98,7 @@ export const getUserProjects = query(async () => {
 
   return db.query.project.findMany({
     where: eq(project.userId, locals.user.id),
-    orderBy: [desc(project.updatedAt)],
+    orderBy: [desc(project.createdAt)],
     columns: {
       id: true,
       name: true,

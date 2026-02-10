@@ -2,6 +2,7 @@
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
   import { Type } from '@lucide/svelte';
+  import { fieldRegistry } from '../base';
 
   /**
    * Popular Google Fonts enum
@@ -45,7 +46,9 @@
    * Schema for Text Layer custom properties
    */
   const schema = z.object({
-    content: z.string().default('New Text').describe('Text content'),
+    content: z.string().default('New Text').describe('Text content').register(fieldRegistry, {
+      interpolationFamily: 'text'
+    }),
     fontSize: z.number().min(8).max(500).default(48).describe('Font size (px)'),
     fontFamily: z.enum(googleFontValues).default('Inter').describe('Font family'),
     fontWeight: z

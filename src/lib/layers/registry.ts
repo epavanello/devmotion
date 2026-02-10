@@ -1,10 +1,37 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const staticLayers = import.meta.glob('./components/*.svelte', { eager: true });
 
-import type { Layer } from '$lib/schemas/animation';
+import type { Layer, AnimatableProperty, Transform, LayerStyle } from '$lib/schemas/animation';
 import type { LayerComponentDefinition } from './base';
 import type { Component } from 'svelte';
 import type z from 'zod';
+
+/** Widget component rendered in the prefix area of a property group */
+export type PropertyGroupWidget = Component<{
+  layer: Layer;
+  groupId: string;
+  currentValues: Record<string, unknown>;
+  onUpdate: (propertyName: string, value: unknown) => void;
+}>;
+
+/** Definition for a group of related properties (e.g., width+height as "Size") */
+export type PropertyGroup = {
+  id: string;
+  label: string;
+  /** Optional widget in the group header (e.g., AspectRatioToggle) */
+  widget?: PropertyGroupWidget;
+};
+
+/** Middleware receives a property change and can return additional linked updates */
+export type PropertyMiddleware = (
+  propertyName: string,
+  value: unknown,
+  currentValues: {
+    transform: Transform;
+    style: LayerStyle;
+    props: Record<string, unknown>;
+  }
+) => Record<string, unknown>;
 
 export type LayerMeta = {
   schema: z.ZodObject<z.ZodRawShape>;
@@ -12,9 +39,19 @@ export type LayerMeta = {
   label: string;
   description: string;
   icon: Component;
+  /** Groups of related custom properties for grouped rendering */
+  propertyGroups?: PropertyGroup[];
+  /** Middleware for linked property updates (e.g., aspect ratio) */
+  middleware?: PropertyMiddleware;
   customPropertyComponents?: Record<
     string,
-    { label: string; component: Component<{ layer: Layer }> }
+    {
+      component: Component<{
+        layer: Layer;
+        onUpdateProp: (name: string, value: unknown) => void;
+        addKeyframe: (property: AnimatableProperty) => void;
+      }>;
+    }
   >;
 };
 
@@ -37,6 +74,8 @@ export const layerRegistry: Record<string, LayerComponentDefinition> = (
       schema: layer.meta.schema,
       component: layer.default,
       icon: layer.meta.icon,
+      propertyGroups: layer.meta.propertyGroups,
+      middleware: layer.meta.middleware,
       customPropertyComponents: layer.meta.customPropertyComponents
     };
     return registry;

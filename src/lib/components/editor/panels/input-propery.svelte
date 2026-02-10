@@ -62,13 +62,6 @@
     step={metadata.step || 1}
     onchange={(v) => onUpdateProp(metadata.name, v)}
   />
-{:else if metadata.type === 'color'}
-  <Input
-    id={metadata.name}
-    type="color"
-    value={typeof value === 'string' ? value : '#000000'}
-    oninput={(e) => onUpdateProp(metadata.name, e.currentTarget.value)}
-  />
 {:else if metadata.type === 'boolean'}
   <label class="flex items-center gap-2">
     <input
@@ -102,6 +95,14 @@
   <BackgroundPicker
     value={value as BackgroundValue}
     onchange={(newValue) => onUpdateProp(metadata.name, newValue)}
+  />
+{:else if metadata.meta?.widget === 'color'}
+  <Input
+    id={metadata.name}
+    type="color"
+    value={typeof value === 'string' ? value : '#000000'}
+    oninput={(e) => onUpdateProp(metadata.name, e.currentTarget.value)}
+    class="min-w-20 p-1"
   />
 {:else if metadata.meta?.widget === 'custom'}
   {@const Component = metadata.meta.component}
