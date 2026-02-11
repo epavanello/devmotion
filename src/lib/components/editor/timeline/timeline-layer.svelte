@@ -1,9 +1,12 @@
 <script lang="ts">
   import type { Keyframe } from '$lib/types/animation';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import TimelineKeyframe from './timeline-keyframe.svelte';
   import { onDestroy } from 'svelte';
   import type { TypedLayer } from '$lib/layers/typed-registry';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   interface Props {
     layer: TypedLayer;

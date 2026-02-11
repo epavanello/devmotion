@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Label } from '$lib/components/ui/label';
   import { Input } from '$lib/components/ui/input';
   import { Button } from '$lib/components/ui/button';
@@ -47,6 +47,8 @@
   import LayerKeyframes from './layer-keyframes.svelte';
   import type { TypedLayer } from '$lib/layers/typed-registry';
 
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
   const selectedLayer = $derived(projectStore.selectedLayer);
 
   // Extract property metadata from the layer's Zod schema

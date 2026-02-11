@@ -4,7 +4,7 @@
  * Handles progressive tool execution with layer ID tracking across tool calls.
  * Refactored to use shared 'mutations.ts' logic.
  */
-import { projectStore } from '$lib/stores/project.svelte';
+import type { ProjectStore } from '$lib/stores/project.svelte';
 import type {
   CreateLayerInput,
   CreateLayerOutput,
@@ -48,7 +48,7 @@ export function resetLayerTracking() {
 // Context Helper
 // ============================================
 
-function getContext(): MutationContext {
+function getContext(projectStore: ProjectStore): MutationContext {
   return {
     project: projectStore.state,
     layerIdMap: layerIdMap,
@@ -63,8 +63,11 @@ function getContext(): MutationContext {
 /**
  * Execute create_layer tool
  */
-export function executeCreateLayer(input: CreateLayerInput): CreateLayerOutput {
-  const ctx = getContext();
+export function executeCreateLayer(
+  projectStore: ProjectStore,
+  input: CreateLayerInput
+): CreateLayerOutput {
+  const ctx = getContext(projectStore);
   const result = mutateCreateLayer(ctx, input);
 
   // Update local index tracker
@@ -86,26 +89,36 @@ export function executeCreateLayer(input: CreateLayerInput): CreateLayerOutput {
 /**
  * Execute animate_layer tool
  */
-export function executeAnimateLayer(input: AnimateLayerInput): AnimateLayerOutput {
-  return mutateAnimateLayer(getContext(), input);
+export function executeAnimateLayer(
+  projectStore: ProjectStore,
+  input: AnimateLayerInput
+): AnimateLayerOutput {
+  return mutateAnimateLayer(getContext(projectStore), input);
 }
 
 /**
  * Execute edit_layer tool
  */
-export function executeEditLayer(input: EditLayerInput): EditLayerOutput {
-  return mutateEditLayer(getContext(), input);
+export function executeEditLayer(
+  projectStore: ProjectStore,
+  input: EditLayerInput
+): EditLayerOutput {
+  return mutateEditLayer(getContext(projectStore), input);
 }
 
 /**
  * Execute remove_layer tool
  */
-export function executeRemoveLayer(input: RemoveLayerInput): RemoveLayerOutput {
-  const result = mutateRemoveLayer(getContext(), input);
+export function executeRemoveLayer(
+  projectStore: ProjectStore,
+  input: RemoveLayerInput
+): RemoveLayerOutput {
+  const result = mutateRemoveLayer(getContext(projectStore), input);
   if (result.success) {
     if (
       projectStore.selectedLayerId &&
-      getContext().project.layers.find((l) => l.id === projectStore.selectedLayerId) === undefined
+      getContext(projectStore).project.layers.find((l) => l.id === projectStore.selectedLayerId) ===
+        undefined
     ) {
       projectStore.selectedLayerId = null;
     }
@@ -116,6 +129,9 @@ export function executeRemoveLayer(input: RemoveLayerInput): RemoveLayerOutput {
 /**
  * Execute configure_project tool
  */
-export function executeConfigureProject(input: ConfigureProjectInput): ConfigureProjectOutput {
-  return mutateConfigureProject(getContext(), input);
+export function executeConfigureProject(
+  projectStore: ProjectStore,
+  input: ConfigureProjectInput
+): ConfigureProjectOutput {
+  return mutateConfigureProject(getContext(projectStore), input);
 }

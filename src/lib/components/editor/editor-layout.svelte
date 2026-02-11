@@ -7,13 +7,16 @@
   import Panel from './panels/panel.svelte';
   import KeyboardHandler from './keyboard-handler.svelte';
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from '$lib/components/ui/resizable';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Layers, Settings, Clock, Sparkles } from '@lucide/svelte';
   import AiChat from '$lib/components/ai/ai-chat.svelte';
   import ModelSelector from '$lib/components/ai/model-selector.svelte';
   import { DEFAULT_MODEL_ID } from '$lib/ai/models';
   import AddLayer from './panels/add-layer.svelte';
   import { IsMobile } from '$lib/hooks/is-mobile.svelte';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   interface Props {
     projectId?: string | null;

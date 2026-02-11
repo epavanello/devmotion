@@ -1,10 +1,13 @@
 <script lang="ts">
   import type { Keyframe } from '$lib/types/animation';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import * as Popover from '$lib/components/ui/popover';
   import { Button } from '$lib/components/ui/button';
   import { Clock, Trash2 } from '@lucide/svelte';
   import KeyframeCard from '../keyframe-card.svelte';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   interface Props {
     keyframes: Keyframe[];

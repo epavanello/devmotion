@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { Code, Film, LayoutGrid, Plus, Shapes, Type } from '@lucide/svelte';
@@ -10,6 +10,9 @@
   import type { LayerCategory } from '$lib/layers/base';
   import { SvelteMap } from 'svelte/reactivity';
   import type { Component } from 'svelte';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   function addLayer(type: LiteralUnion<LayerTypeString, string>) {
     const layer = createLayer(type, { trasform: { x: 0, y: 0 } });

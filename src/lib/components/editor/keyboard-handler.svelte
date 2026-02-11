@@ -1,7 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { createLayer } from '$lib/engine/layer-factory';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   onMount(() => {
     function handleKeyDown(e: KeyboardEvent) {

@@ -7,6 +7,7 @@
   import { sizeMiddleware } from '$lib/schemas/size';
   import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
   import GenerateCaption from '../properties/GenerateCaption.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
 
   /**
    * Schema for Video Layer custom properties
@@ -21,28 +22,28 @@
       .number()
       .min(1)
       .max(5000)
-      .default(
-        () =>
-          calculateCoverDimensions(
-            projectStore.state.width,
-            projectStore.state.height,
-            ASPECT_RATIOS.VIDEO_DEFAULT
-          ).width
-      )
+      .default(() => {
+        const editorState = getEditorState();
+        return calculateCoverDimensions(
+          editorState.project.state.width,
+          editorState.project.state.height,
+          ASPECT_RATIOS.VIDEO_DEFAULT
+        ).width;
+      })
       .describe('Width (px)')
       .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
     height: z
       .number()
       .min(1)
       .max(5000)
-      .default(
-        () =>
-          calculateCoverDimensions(
-            projectStore.state.width,
-            projectStore.state.height,
-            ASPECT_RATIOS.VIDEO_DEFAULT
-          ).height
-      )
+      .default(() => {
+        const editorState = getEditorState();
+        return calculateCoverDimensions(
+          editorState.project.state.width,
+          editorState.project.state.height,
+          ASPECT_RATIOS.VIDEO_DEFAULT
+        ).height;
+      })
       .describe('Height (px)')
       .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
     borderRadius: z
@@ -125,7 +126,6 @@
 
 <script lang="ts">
   import type { TypedLayer } from '$lib/layers/typed-registry';
-  import { projectStore } from '$lib/stores/project.svelte';
   import { watch } from 'runed';
 
   let {

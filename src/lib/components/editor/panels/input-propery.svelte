@@ -4,10 +4,13 @@
   import type { PropertyMetadata } from '$lib/layers/base';
   import type { TypedLayer } from '$lib/layers/typed-registry';
   import type { BackgroundValue } from '$lib/schemas/animation';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import FileUpload from '../FileUpload.svelte';
   import BackgroundPicker from './background-picker.svelte';
   import ScrubInput from './scrub-input.svelte';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   const {
     metadata,
@@ -28,7 +31,7 @@
     value={typeof value === 'string' ? value : ''}
     currentFileName={typeof layer.props.fileName === 'string' ? layer.props.fileName : ''}
     mediaType={metadata.meta.mediaType}
-    projectId={projectStore.dbProjectId ?? undefined}
+    projectId={editorState.dbProjectId ?? undefined}
     onUpload={(result) => {
       onUpdateProp(metadata.name, result.url);
       onUpdateProp('fileKey', result.key);

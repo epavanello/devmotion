@@ -11,9 +11,12 @@
   import { Label } from '$lib/components/ui/label';
   import { Input } from '$lib/components/ui/input';
   import { Progress } from '$lib/components/ui/progress';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { VideoCapture } from '$lib/utils/video-capture';
   import { Loader2, AlertCircle, Monitor, Server } from '@lucide/svelte';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   interface Props {
     open: boolean;

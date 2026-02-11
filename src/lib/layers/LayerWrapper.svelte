@@ -1,10 +1,13 @@
 <script lang="ts" generics="T extends Record<string, unknown>">
   import { generateTransformCSS, type BaseLayerProps } from './base';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { getAnimatedTransform } from '$lib/engine/interpolation';
   import { nanoid } from 'nanoid';
   import type { Component } from 'svelte';
   import { BRAND_COLORS } from '$lib/constants/branding';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   interface Props extends BaseLayerProps {
     /**

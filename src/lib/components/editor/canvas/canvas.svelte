@@ -1,11 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import CanvasControls from './canvas-controls.svelte';
   import PlaybackControls from './playback-controls.svelte';
   import LayersRenderer from './layers-renderer.svelte';
   import Watermark from './watermark.svelte';
   import { getBackgroundColor, getBackgroundImage } from '$lib/schemas/background';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   let canvasContainer: HTMLDivElement | undefined = $state();
 

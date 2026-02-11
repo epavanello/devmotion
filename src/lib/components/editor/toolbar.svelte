@@ -14,8 +14,11 @@
     Globe,
     Github
   } from '@lucide/svelte';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import ExportDialog from './export-dialog.svelte';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import ProjectSettingsDialog from './project-settings-dialog.svelte';
   import { uiStore } from '$lib/stores/ui.svelte';
@@ -23,7 +26,8 @@
   import {
     saveProject as saveProjectToDb,
     toggleVisibility,
-    forkProject
+    forkProject,
+    getUserProjects
   } from '$lib/functions/projects.remote';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
@@ -97,7 +101,7 @@
 
   async function openExportDialog() {
     // Check for unsaved changes
-    if (projectStore.hasUnsavedChanges && user) {
+    if (editorState.hasUnsavedChanges && user) {
       const shouldSave = confirm(
         'You have unsaved changes. Please save your project before exporting.'
       );
@@ -127,9 +131,9 @@
       id: projectId || undefined,
       data: projectStore.state
     });
-
+    getUserProjects().refresh();
     if (result.success && result.data.id) {
-      projectStore.markAsSaved();
+      editorState.markAsSaved();
       if (!projectId) {
         goto(resolve(`/p/${result.data.id}`));
       }
@@ -203,7 +207,7 @@
       onclick: handleSaveToCloud,
       disabled: isRecording || !canEdit,
       visible: true,
-      showIndicator: projectStore.hasUnsavedChanges
+      showIndicator: editorState.hasUnsavedChanges
     },
     {
       id: 'visibility',

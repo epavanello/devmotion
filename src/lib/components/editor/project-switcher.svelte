@@ -15,10 +15,12 @@
   } from '@lucide/svelte';
   import { getUserProjects, deleteProject, renameProject } from '$lib/functions/projects.remote';
   import { goto } from '$app/navigation';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { resolve } from '$app/paths';
   import { getUser } from '$lib/functions/auth.remote';
   import Input from '../ui/input/input.svelte';
+
+  const editorState = $derived(getEditorState());
 
   interface Props {
     currentProjectId?: string | null;
@@ -42,7 +44,7 @@
   const user = $derived(await getUser());
 
   function handleNewProject() {
-    projectStore.resetToNew();
+    editorState.resetToNew();
     goto(resolve('/'));
   }
 

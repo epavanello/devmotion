@@ -1,7 +1,10 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
   import { ZoomIn, ZoomOut, Maximize } from '@lucide/svelte';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   function zoomIn() {
     projectStore.setZoom(projectStore.viewport.zoom * 1.25);

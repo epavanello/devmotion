@@ -2,25 +2,27 @@
   import SeoHead from '$lib/components/seo-head.svelte';
   import JsonLd from '$lib/components/json-ld.svelte';
   import EditorLayout from '$lib/components/editor/editor-layout.svelte';
-  import { projectStore } from '$lib/stores/project.svelte';
   import { PUBLIC_BASE_URL } from '$env/static/public';
   import type { PageData } from './$types';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
 
   let { data }: { data: PageData } = $props();
 
+  const editorState = $derived(getEditorState());
+
   const baseUrl = PUBLIC_BASE_URL;
-  const projectName = $derived(data.project.data.name || 'Untitled Project');
+  const projectName = $derived(editorState.project.state.name || 'Untitled Project');
   const projectDescription = $derived(
     `${projectName} - Animated video created with DevMotion. Design with manual controls or use AI-powered suggestions.`
   );
   const projectUrl = $derived(`${baseUrl}/p/${data.project.id}`);
   const ogImage = $derived(`${baseUrl}/p/${data.project.id}/og.png`);
 
-  // Use $effect to react to project changes when switching between projects
+  // Load project data when route changes
   $effect(() => {
     const projectData = data.project.data;
 
-    projectStore.loadProject({
+    editorState.project.loadProject({
       id: data.project.id,
       name: projectData.name,
       width: projectData.width,
@@ -31,7 +33,9 @@
       layers: projectData.layers
     });
 
-    projectStore.setDbContext(data.project.id, data.isOwner, data.canEdit, data.project.isPublic);
+    editorState.setDbContext(data.project.id, data.isOwner, data.canEdit, data.project.isPublic);
+
+    editorState.isMcp = data.project.isMcp;
   });
 </script>
 

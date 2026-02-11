@@ -1,17 +1,14 @@
 /**
- * Global project store using Svelte 5 runes
+ * Project store using Svelte 5 runes
+ * Manages project state and operations without persistence logic
  */
 import { getPresetById } from '$lib/engine/presets';
 import type { Project, Keyframe, ViewportSettings, Transform } from '$lib/types/animation';
 import { nanoid } from 'nanoid';
-import { watch } from 'runed';
 import { SvelteSet } from 'svelte/reactivity';
 import { getLayerTransform, getLayerStyle, getLayerProps } from '$lib/engine/layer-rendering';
 import { tick } from 'svelte';
 import type { TypedLayer } from '$lib/layers/typed-registry';
-
-const STORAGE_KEY = 'devmotion_store';
-const DEBOUNCE_MS = 500;
 
 /**
  * Cached layer data for a single frame
@@ -33,9 +30,6 @@ export interface FrameCache {
 
 export class ProjectStore {
   state = $state<Project>(undefined!);
-  #saveTimeout: ReturnType<typeof setTimeout> | null = null;
-  #initialized = false;
-  #isLoading = false;
 
   selectedLayerId = $state<string | null>(null);
   isPlaying = $state(false);
@@ -47,68 +41,8 @@ export class ProjectStore {
   frameCache = $state<Map<number, FrameCache> | null>(null);
   preparingProgress = $state(0);
 
-  // DB context state
-  dbProjectId = $state<string | null>(null);
-  isOwner = $state(true);
-  canEdit = $state(true);
-  isPublic = $state(false);
-  isSaving = $state(false);
-  hasUnsavedChanges = $state(false);
-
-  constructor() {
-    // Load first, before setting up the effect
-    this.#isLoading = true;
-    this.state = this.loadFromLocalStorage();
-    this.#initialized = true;
-    this.#isLoading = false;
-
-    $effect.root(() => {
-      watch(
-        () => $state.snapshot(this.state),
-        () => {
-          // Skip saving during initial load or when explicitly loading
-          if (!this.#initialized || this.#isLoading) {
-            return;
-          }
-
-          // Mark as having unsaved changes
-          this.hasUnsavedChanges = true;
-
-          // Only save to localStorage if this is NOT a database project
-          if (!this.isDbProject) {
-            // Debounced save
-            if (this.#saveTimeout) {
-              clearTimeout(this.#saveTimeout);
-            }
-            this.#saveTimeout = setTimeout(() => {
-              this.saveToLocalStorage();
-            }, DEBOUNCE_MS);
-          }
-        }
-      );
-    });
-  }
-
-  private loadFromLocalStorage(): Project {
-    if (typeof localStorage === 'undefined') {
-      return this.getDefaultProject();
-    }
-
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        return parsed;
-      }
-    } catch (error) {
-      console.error('Failed to load project from localStorage:', error);
-    }
-
-    return this.getDefaultProject();
-  }
-
-  private getDefaultProject(): Project {
-    return {
+  constructor(initialProject?: Project) {
+    this.state = initialProject ?? {
       id: nanoid(),
       name: 'Untitled Project',
       width: 720,
@@ -120,56 +54,12 @@ export class ProjectStore {
     };
   }
 
-  private saveToLocalStorage() {
-    if (typeof localStorage === 'undefined') return;
-
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
-      console.log('Project saved to localStorage');
-    } catch (error) {
-      console.error('Failed to save project to localStorage:', error);
-    }
-  }
-
   viewport = $state<ViewportSettings>({
     zoom: 1,
     pan: { x: 0, y: 0 },
     showGuides: true,
     snapToGrid: false
   });
-
-  get isDbProject(): boolean {
-    return this.dbProjectId !== null;
-  }
-
-  /**
-   * Mark the project as saved (no unsaved changes)
-   * Call this after successfully saving to cloud
-   */
-  markAsSaved() {
-    this.hasUnsavedChanges = false;
-  }
-
-  setDbContext(projectId: string | null, isOwner: boolean, canEdit: boolean, isPublic: boolean) {
-    this.dbProjectId = projectId;
-    this.isOwner = isOwner;
-    this.canEdit = canEdit;
-    this.isPublic = isPublic;
-
-    // Clear localStorage when switching to a database project
-    if (projectId && typeof localStorage !== 'undefined') {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }
-
-  resetToNew() {
-    this.dbProjectId = null;
-    this.isOwner = true;
-    this.canEdit = true;
-    this.isPublic = false;
-    this.hasUnsavedChanges = false;
-    this.newProject();
-  }
 
   // Layer operations
   addLayer(layer: TypedLayer) {
@@ -387,24 +277,10 @@ export class ProjectStore {
 
   // Project operations
   async loadProject(project: Project) {
-    this.#isLoading = true;
     this.state = project;
     await tick();
     this.selectedLayerId = null;
     this.isPlaying = false;
-    this.hasUnsavedChanges = false;
-    this.#isLoading = false;
-  }
-
-  async newProject() {
-    this.#isLoading = true;
-    this.state = this.getDefaultProject();
-    await tick();
-    this.currentTime = 0;
-    this.selectedLayerId = null;
-    this.isPlaying = false;
-    this.hasUnsavedChanges = false;
-    this.#isLoading = false;
   }
 
   exportToJSON(): string {
@@ -704,6 +580,7 @@ export class ProjectStore {
    */
   async prepareRecording(): Promise<void> {
     const totalFrames = Math.ceil(this.state.fps * this.state.duration);
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
     this.frameCache = new Map();
     this.preparingProgress = 0;
 
@@ -753,5 +630,3 @@ export class ProjectStore {
     return this.frameCache.get(frameIndex) ?? null;
   }
 }
-
-export const projectStore = new ProjectStore();

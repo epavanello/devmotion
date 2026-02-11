@@ -1,10 +1,13 @@
 <script lang="ts">
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { ScrollArea } from '$lib/components/ui/scroll-area';
   import TimelineRuler from './timeline-ruler.svelte';
   import TimelineLayer from './timeline-layer.svelte';
   import TimelinePlayhead from './timeline-playhead.svelte';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   let timelineContainer: HTMLDivElement;
   let isDraggingPlayhead = $state(false);

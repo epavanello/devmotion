@@ -1,11 +1,14 @@
 <script lang="ts">
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Eye, EyeOff, Lock, Unlock, Trash2 } from '@lucide/svelte';
   import * as Popover from '$lib/components/ui/popover';
   import { getLayerDefinition } from '$lib/layers/registry';
   import { cn } from '$lib/utils';
   import type { TypedLayer } from '$lib/layers/typed-registry';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   let deletePopoverOpenLayerId = $state<string | null>(null);
 

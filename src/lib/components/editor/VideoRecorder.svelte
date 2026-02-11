@@ -245,7 +245,9 @@
         <!-- Recording indicator overlay -->
         <div class="absolute top-2 left-2 flex items-center gap-2 rounded bg-black/50 px-2 py-1">
           <div class="h-2 w-2 animate-pulse rounded-full bg-destructive"></div>
-          <span class="text-xs font-medium text-white">Recording {recordingMode === 'screen' ? 'Screen' : 'Camera'}</span>
+          <span class="text-xs font-medium text-white"
+            >Recording {recordingMode === 'screen' ? 'Screen' : 'Camera'}</span
+          >
         </div>
 
         <!-- Duration overlay -->
@@ -291,16 +293,22 @@
     <div class="flex gap-1 rounded border bg-muted/30 p-1">
       <button
         type="button"
-        class="flex flex-1 items-center justify-center gap-1 rounded px-2 py-1.5 text-xs transition-colors {recordingMode === 'camera' ? 'bg-background shadow-sm' : 'hover:bg-background/50'}"
-        onclick={() => recordingMode = 'camera'}
+        class="flex flex-1 items-center justify-center gap-1 rounded px-2 py-1.5 text-xs transition-colors {recordingMode ===
+        'camera'
+          ? 'bg-background shadow-sm'
+          : 'hover:bg-background/50'}"
+        onclick={() => (recordingMode = 'camera')}
       >
         <Camera class="size-3" />
         Camera
       </button>
       <button
         type="button"
-        class="flex flex-1 items-center justify-center gap-1 rounded px-2 py-1.5 text-xs transition-colors {recordingMode === 'screen' ? 'bg-background shadow-sm' : 'hover:bg-background/50'}"
-        onclick={() => recordingMode = 'screen'}
+        class="flex flex-1 items-center justify-center gap-1 rounded px-2 py-1.5 text-xs transition-colors {recordingMode ===
+        'screen'
+          ? 'bg-background shadow-sm'
+          : 'hover:bg-background/50'}"
+        onclick={() => (recordingMode = 'screen')}
       >
         <Monitor class="size-3" />
         Screen

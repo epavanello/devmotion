@@ -22,11 +22,14 @@
   import { Label } from '$lib/components/ui/label';
   import { Input } from '$lib/components/ui/input';
   import { Select } from '$lib/components/ui/select';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Settings } from '@lucide/svelte';
   import BackgroundPicker from './panels/background-picker.svelte';
   import { BRAND_COLORS } from '$lib/constants/branding';
   import type { Project } from '$lib/schemas/animation';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   interface Props {
     open: boolean;

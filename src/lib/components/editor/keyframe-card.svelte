@@ -1,10 +1,13 @@
 <script lang="ts">
   import type { Keyframe, Interpolation } from '$lib/types/animation';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
   import * as Popover from '$lib/components/ui/popover';
   import { Trash2, Palette, Move, RotateCw, Scale, Eye, Clock } from '@lucide/svelte';
   import ScrubInput from './panels/scrub-input.svelte';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   interface Props {
     keyframe: Keyframe;

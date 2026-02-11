@@ -3,7 +3,7 @@
   import type { LayerMeta } from '../registry';
   import { Image } from '@lucide/svelte';
   import { calculateCoverDimensions, ASPECT_RATIOS } from '$lib/utils/media';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { fieldRegistry } from '../base';
   import { sizeMiddleware } from '$lib/schemas/size';
   import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
@@ -23,28 +23,28 @@
       .number()
       .min(1)
       .max(5000)
-      .default(
-        () =>
-          calculateCoverDimensions(
-            projectStore.state.width,
-            projectStore.state.height,
-            ASPECT_RATIOS.IMAGE_DEFAULT
-          ).width
-      )
+      .default(() => {
+        const editorState = getEditorState();
+        return calculateCoverDimensions(
+          editorState.project.state.width,
+          editorState.project.state.height,
+          ASPECT_RATIOS.IMAGE_DEFAULT
+        ).width;
+      })
       .describe('Width (px)')
       .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
     height: z
       .number()
       .min(1)
       .max(5000)
-      .default(
-        () =>
-          calculateCoverDimensions(
-            projectStore.state.width,
-            projectStore.state.height,
-            ASPECT_RATIOS.IMAGE_DEFAULT
-          ).height
-      )
+      .default(() => {
+        const editorState = getEditorState();
+        return calculateCoverDimensions(
+          editorState.project.state.width,
+          editorState.project.state.height,
+          ASPECT_RATIOS.IMAGE_DEFAULT
+        ).height;
+      })
       .describe('Height (px)')
       .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
     objectFit: z
