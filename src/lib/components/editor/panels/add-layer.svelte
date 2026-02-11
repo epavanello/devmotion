@@ -23,6 +23,7 @@
     {/snippet}
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start" class="max-h-80 overflow-y-auto">
+    <!-- TODO: Group layers by category -->
     {#each Object.values(layerRegistry) as layer (layer.type)}
       <DropdownMenu.Item onclick={() => addLayer(layer.type)}>
         {#if layer.icon}

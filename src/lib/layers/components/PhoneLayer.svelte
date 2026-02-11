@@ -73,6 +73,7 @@
   });
 
   export const meta: LayerMeta = {
+    category: 'ui',
     schema,
     type: 'phone',
     label: 'Phone',

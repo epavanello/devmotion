@@ -70,6 +70,7 @@
   });
 
   export const meta: LayerMeta = {
+    category: 'ui',
     schema,
     type: 'browser',
     label: 'Browser',

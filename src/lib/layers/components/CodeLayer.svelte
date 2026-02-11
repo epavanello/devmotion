@@ -33,6 +33,7 @@
   });
 
   export const meta: LayerMeta = {
+    category: 'ui',
     schema,
     type: 'code',
     label: 'Code Block',

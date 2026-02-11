@@ -4,6 +4,8 @@
   import { fieldRegistry } from '../base';
   import { Music } from '@lucide/svelte';
   import GenerateCaption from '../properties/GenerateCaption.svelte';
+  import { sizeMiddleware } from '$lib/schemas/size';
+  import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
 
   /**
    * Schema for Audio Layer custom properties
@@ -18,24 +20,59 @@
       .describe('Audio source URL or uploaded file URL')
       .register(fieldRegistry, { widget: 'upload', mediaType: 'audio' }),
     /** Display label shown on canvas */
-    label: z.string().default('Audio').describe('Display label'),
+    label: z
+      .string()
+      .default('Audio')
+      .describe('Display label')
+      .register(fieldRegistry, { interpolationFamily: 'text' }),
     /** Width of the visual representation */
-    width: z.number().min(50).max(5000).default(400).describe('Width (px)'),
+    width: z
+      .number()
+      .min(50)
+      .max(5000)
+      .default(400)
+      .describe('Width (px)')
+      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
     /** Height of the visual representation */
-    height: z.number().min(20).max(500).default(60).describe('Height (px)'),
+    height: z
+      .number()
+      .min(20)
+      .max(500)
+      .default(60)
+      .describe('Height (px)')
+      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
     /** Playback volume */
-    volume: z.number().min(0).max(1).default(1).describe('Volume (0-1)'),
+    volume: z
+      .number()
+      .min(0)
+      .max(1)
+      .multipleOf(0.1)
+      .default(1)
+      .describe('Volume (0-1)')
+      .register(fieldRegistry, { group: 'playback', interpolationFamily: 'continuous' }),
     /** Whether audio is muted */
-    muted: z.boolean().default(false).describe('Mute audio'),
+    muted: z
+      .boolean()
+      .default(false)
+      .describe('Mute audio')
+      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
     /** Playback rate */
-    playbackRate: z.number().min(0.1).max(4).default(1).describe('Playback rate'),
+    playbackRate: z
+      .number()
+      .min(0.1)
+      .max(4)
+      .multipleOf(0.1)
+      .default(1)
+      .describe('Playback rate')
+      .register(fieldRegistry, { group: 'playback', interpolationFamily: 'continuous' }),
     /** Show captions overlay */
-    showCaptions: z.boolean().default(false).describe('Show captions'),
+
     /** Caption display mode */
     captionMode: z
       .enum(['block', 'word-by-word'])
       .default('word-by-word')
-      .describe('Caption display mode'),
+      .describe('Caption display mode')
+      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
     /** Word-level caption data (single source of truth) */
     captionWords: z
       .array(
@@ -49,9 +86,42 @@
       .describe('Caption words with timestamps')
       .register(fieldRegistry, { widget: 'custom', component: CaptionsEditor }),
     /** Caption style */
-    captionFontSize: z.number().min(8).max(120).default(24).describe('Caption font size'),
-    captionColor: z.string().default('#ffffff').describe('Caption text color'),
-    captionBgColor: z.string().default('rgba(0,0,0,0.7)').describe('Caption background color'),
+    captionFontSize: z
+      .number()
+      .min(8)
+      .max(120)
+      .default(24)
+      .describe('Font size')
+      .register(fieldRegistry, { group: 'captions', interpolationFamily: 'continuous' }),
+    captionColor: z.string().default('#ffffff').describe('Text color').register(fieldRegistry, {
+      group: 'captions',
+      interpolationFamily: 'continuous',
+      widget: 'color'
+    }),
+    captionBgColor: z
+      .string()
+      .default('rgba(0,0,0,0.7)')
+      .describe('Background color')
+      .register(fieldRegistry, {
+        group: 'captions',
+        interpolationFamily: 'continuous',
+        widget: 'color'
+      }),
+    showCaptions: z
+      .boolean()
+      .default(false)
+      .describe('Show captions')
+      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+    _aspectRatioLocked: z
+      .boolean()
+      .default(false)
+      .describe('Aspect ratio locked')
+      .register(fieldRegistry, { hidden: true }),
+    _aspectRatio: z
+      .number()
+      .default(1)
+      .describe('Aspect ratio value')
+      .register(fieldRegistry, { hidden: true }),
     /** The storage key if file was uploaded (used for cleanup) */
     fileKey: z
       .string()
@@ -61,6 +131,7 @@
   });
 
   export const meta: LayerMeta = {
+    category: 'media',
     schema,
     type: 'audio',
     label: 'Audio',
@@ -68,7 +139,15 @@
     description: 'Audio tracks with captions',
     customPropertyComponents: {
       generateCaptions: { component: GenerateCaption }
-    }
+    },
+
+    propertyGroups: [
+      { id: 'size', label: 'Size', widget: AspectRatioToggle },
+      { id: 'playback', label: 'Playback' },
+      { id: 'captions', label: 'Captions' }
+    ],
+
+    middleware: sizeMiddleware
   };
 
   type Props = z.infer<typeof schema>;

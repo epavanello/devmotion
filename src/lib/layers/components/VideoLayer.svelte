@@ -99,6 +99,7 @@
   });
 
   export const meta: LayerMeta = {
+    category: 'media',
     schema,
     type: 'video',
     label: 'Video',

@@ -3,34 +3,101 @@
   import type { LayerMeta } from '../registry';
   import { Zap } from '@lucide/svelte';
   import { BRAND_COLORS } from '$lib/constants/branding';
+  import { fieldRegistry } from '../base';
+  import { sizeMiddleware } from '$lib/schemas/size';
+  import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
 
   /**
    * Schema for Button Layer custom properties
    */
   const schema = z.object({
-    text: z.string().default('Click me').describe('Button text'),
-    width: z.number().min(50).max(500).default(120).describe('Width (px)'),
-    height: z.number().min(30).max(150).default(48).describe('Height (px)'),
-    backgroundColor: z.string().default(BRAND_COLORS.blue).describe('Background color'),
-    textColor: z.string().default('#ffffff').describe('Text color'),
-    fontSize: z.number().min(10).max(32).default(16).describe('Font size (px)'),
-    borderRadius: z.number().min(0).max(100).default(8).describe('Border radius (px)'),
+    text: z
+      .string()
+      .default('Click me')
+      .describe('Button text')
+      .register(fieldRegistry, { interpolationFamily: 'text' }),
+    width: z
+      .number()
+      .min(50)
+      .max(500)
+      .default(120)
+      .describe('Width (px)')
+      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+    height: z
+      .number()
+      .min(30)
+      .max(150)
+      .default(48)
+      .describe('Height (px)')
+      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+    fontSize: z
+      .number()
+      .min(10)
+      .max(32)
+      .default(16)
+      .describe('Font size (px)')
+      .register(fieldRegistry, { group: 'typography', interpolationFamily: 'continuous' }),
     fontWeight: z
       .enum(['normal', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900'])
       .default('bold')
-      .describe('Font weight'),
-    style: z.enum(['solid', 'outline', 'ghost']).default('solid').describe('Button style variant'),
-    borderColor: z.string().default(BRAND_COLORS.blue).describe('Border color (for outline/ghost)'),
-    shadow: z.boolean().default(true).describe('Show shadow')
+      .describe('Font weight')
+      .register(fieldRegistry, { group: 'typography', interpolationFamily: 'discrete' }),
+    backgroundColor: z
+      .string()
+      .default(BRAND_COLORS.blue)
+      .describe('Background color')
+      .register(fieldRegistry, { group: 'appearance', interpolationFamily: 'continuous', widget: 'color' }),
+    textColor: z
+      .string()
+      .default('#ffffff')
+      .describe('Text color')
+      .register(fieldRegistry, { group: 'appearance', interpolationFamily: 'continuous', widget: 'color' }),
+    borderColor: z
+      .string()
+      .default(BRAND_COLORS.blue)
+      .describe('Border color (for outline/ghost)')
+      .register(fieldRegistry, { group: 'appearance', interpolationFamily: 'continuous', widget: 'color' }),
+    borderRadius: z
+      .number()
+      .min(0)
+      .max(100)
+      .default(8)
+      .describe('Border radius (px)')
+      .register(fieldRegistry, { group: 'appearance', interpolationFamily: 'continuous' }),
+    style: z
+      .enum(['solid', 'outline', 'ghost'])
+      .default('solid')
+      .describe('Button style variant')
+      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+    shadow: z
+      .boolean()
+      .default(true)
+      .describe('Show shadow')
+      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+    _aspectRatioLocked: z
+      .boolean()
+      .default(false)
+      .describe('Aspect ratio locked')
+      .register(fieldRegistry, { hidden: true }),
+    _aspectRatio: z.number().default(1).describe('Aspect ratio value').register(fieldRegistry, { hidden: true })
   });
 
   export const meta: LayerMeta = {
+    category: 'ui',
     schema,
     type: 'button',
     label: 'Button',
     icon: Zap,
     description:
-      'Interactive button with solid, outline, or ghost styles and customizable appearance'
+      'Interactive button with solid, outline, or ghost styles and customizable appearance',
+
+    propertyGroups: [
+      { id: 'size', label: 'Size', widget: AspectRatioToggle },
+      { id: 'typography', label: 'Typography' },
+      { id: 'appearance', label: 'Appearance' }
+    ],
+
+    middleware: sizeMiddleware
   };
 
   type Props = z.infer<typeof schema>;

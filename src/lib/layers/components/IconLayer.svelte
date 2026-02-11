@@ -126,6 +126,7 @@
   });
 
   export const meta: LayerMeta = {
+    category: 'ui',
     schema,
     type: 'icon',
     label: 'Icon',

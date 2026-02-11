@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 const staticLayers = import.meta.glob('./components/*.svelte', { eager: true });
 
 import type { Layer, AnimatableProperty, Transform, LayerStyle } from '$lib/schemas/animation';
-import type { LayerComponentDefinition } from './base';
+import type { LayerCategory, LayerComponentDefinition } from './base';
 import type { Component } from 'svelte';
 import type z from 'zod';
 
@@ -34,6 +33,7 @@ export type PropertyMiddleware = (
 ) => Record<string, unknown>;
 
 export type LayerMeta = {
+  category: LayerCategory;
   schema: z.ZodObject<z.ZodRawShape>;
   type: string;
   label: string;
@@ -56,7 +56,7 @@ export type LayerMeta = {
 };
 
 type LayerModule = {
-  default: Component<any>;
+  default: Component<Record<string, unknown>>;
   meta: LayerMeta;
 };
 
@@ -68,6 +68,7 @@ export const layerRegistry: Record<string, LayerComponentDefinition> = (
 ).reduce(
   (registry, layer) => {
     registry[layer.meta.type] = {
+      category: layer.meta.category,
       type: layer.meta.type,
       label: layer.meta.label,
       description: layer.meta.description,

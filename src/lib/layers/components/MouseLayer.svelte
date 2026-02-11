@@ -2,6 +2,7 @@
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
   import { MousePointer } from '@lucide/svelte';
+  import { fieldRegistry } from '../base';
 
   /**
    * Schema for Mouse Layer custom properties
@@ -10,18 +11,36 @@
     pointerType: z
       .enum(['arrow', 'pointer', 'hand', 'crosshair', 'text'])
       .default('arrow')
-      .describe('Mouse pointer type'),
-    size: z.number().min(16).max(64).default(24).describe('Pointer size (px)'),
-    color: z.string().default('#ffffff').describe('Pointer color'),
-    backgroundColor: z.string().default('#000000').describe('Background circle color')
+      .describe('Mouse pointer type')
+      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+    size: z
+      .number()
+      .min(16)
+      .max(64)
+      .default(24)
+      .describe('Pointer size (px)')
+      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
+    color: z
+      .string()
+      .default('#ffffff')
+      .describe('Pointer color')
+      .register(fieldRegistry, { group: 'appearance', interpolationFamily: 'continuous', widget: 'color' }),
+    backgroundColor: z
+      .string()
+      .default('#000000')
+      .describe('Background circle color')
+      .register(fieldRegistry, { group: 'appearance', interpolationFamily: 'continuous', widget: 'color' })
   });
 
   export const meta: LayerMeta = {
+    category: 'ui',
     schema,
     type: 'mouse',
     label: 'Mouse Cursor',
     icon: MousePointer,
-    description: 'Mouse cursor pointer (arrow, hand, crosshair, text) for UI demonstrations'
+    description: 'Mouse cursor pointer (arrow, hand, crosshair, text) for UI demonstrations',
+
+    propertyGroups: [{ id: 'appearance', label: 'Appearance' }]
   };
 
   type Props = z.infer<typeof schema>;

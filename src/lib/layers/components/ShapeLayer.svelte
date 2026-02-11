@@ -58,6 +58,7 @@
   });
 
   export const meta: LayerMeta = {
+    category: 'shape',
     schema,
     type: 'shape',
     label: 'Shape',

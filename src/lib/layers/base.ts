@@ -15,6 +15,8 @@ import {
 } from '$lib/schemas/base';
 import type { Layer } from '$lib/schemas/animation';
 
+export type LayerCategory = 'media' | 'text' | 'shape' | 'ui' | 'code' | 'browser';
+
 /**
  * Interpolation family types for animation properties
  */

@@ -77,6 +77,7 @@
   });
 
   export const meta: LayerMeta = {
+    category: 'media',
     schema,
     type: 'image',
     label: 'Image',
