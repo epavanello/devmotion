@@ -50,7 +50,7 @@ export function resetLayerTracking() {
 
 function getContext(): MutationContext {
   return {
-    project: projectStore.project,
+    project: projectStore.state,
     layerIdMap: layerIdMap,
     layerCreationIndex: layerCreationIndex
   };

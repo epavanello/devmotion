@@ -48,7 +48,7 @@
       api: resolve('/(app)/chat'),
       get body() {
         return {
-          project: projectStore.project,
+          project: projectStore.state,
           modelId: selectedModelId
         } satisfies Omit<GenerateRequest, 'messages'>;
       }

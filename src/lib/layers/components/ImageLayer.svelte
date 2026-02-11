@@ -26,8 +26,8 @@
       .default(
         () =>
           calculateCoverDimensions(
-            projectStore.project.width,
-            projectStore.project.height,
+            projectStore.state.width,
+            projectStore.state.height,
             ASPECT_RATIOS.IMAGE_DEFAULT
           ).width
       )
@@ -40,8 +40,8 @@
       .default(
         () =>
           calculateCoverDimensions(
-            projectStore.project.width,
-            projectStore.project.height,
+            projectStore.state.width,
+            projectStore.state.height,
             ASPECT_RATIOS.IMAGE_DEFAULT
           ).height
       )

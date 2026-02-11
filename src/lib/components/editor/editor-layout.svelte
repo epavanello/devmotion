@@ -102,7 +102,7 @@
 
         <!-- Layers Panel -->
         <Panel
-          title="Layers ({projectStore.project.layers.length})"
+          title="Layers ({projectStore.state.layers.length})"
           icon={Layers}
           actionsComponent={AddLayer}
           collapsible={true}
@@ -132,7 +132,7 @@
             {/snippet}
             {#snippet actionsSnippet()}
               <span class="text-xs text-muted-foreground">
-                {projectStore.currentTime.toFixed(2)}s / {projectStore.project.duration}s
+                {projectStore.currentTime.toFixed(2)}s / {projectStore.state.duration}s
               </span>
             {/snippet}
           </Panel>
@@ -164,7 +164,7 @@
           <ResizablePaneGroup direction="vertical">
             <ResizablePane defaultSize={60} minSize={30}>
               <Panel
-                title="Layers ({projectStore.project.layers.length})"
+                title="Layers ({projectStore.state.layers.length})"
                 actionsComponent={AddLayer}
               >
                 {#snippet content()}
@@ -208,7 +208,7 @@
                   {/snippet}
                   {#snippet actionsSnippet()}
                     <span class="text-xs text-muted-foreground">
-                      {projectStore.currentTime.toFixed(2)}s / {projectStore.project.duration}s
+                      {projectStore.currentTime.toFixed(2)}s / {projectStore.state.duration}s
                     </span>
                   {/snippet}
                 </Panel>

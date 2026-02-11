@@ -16,8 +16,8 @@
 
   // Enter/exit time for the layer
   const enterTime = $derived(layer.enterTime ?? 0);
-  const exitTime = $derived(layer.exitTime ?? projectStore.project.duration);
-  const hasTimeRange = $derived(enterTime > 0 || exitTime < projectStore.project.duration);
+  const exitTime = $derived(layer.exitTime ?? projectStore.state.duration);
+  const hasTimeRange = $derived(enterTime > 0 || exitTime < projectStore.state.duration);
 
   const isMediaLayer = $derived(
     layer.type === 'video' || layer.type === 'audio' || layer.type === 'captions'
@@ -103,7 +103,7 @@
     } else if (isDraggingExit) {
       const newExit = Math.max(
         enterTime + 0.1,
-        Math.min(dragStartExit + deltaTime, projectStore.project.duration)
+        Math.min(dragStartExit + deltaTime, projectStore.state.duration)
       );
       projectStore.setLayerExitTime(layer.id, newExit);
     } else if (isDraggingBar) {
@@ -115,8 +115,8 @@
         newEnter = 0;
         newExit = duration;
       }
-      if (newExit > projectStore.project.duration) {
-        newExit = projectStore.project.duration;
+      if (newExit > projectStore.state.duration) {
+        newExit = projectStore.state.duration;
         newEnter = newExit - duration;
       }
 

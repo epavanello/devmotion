@@ -31,8 +31,8 @@ export interface FrameCache {
   [layerId: string]: LayerFrameCache;
 }
 
-class ProjectStore {
-  project = $state<Project>(undefined!);
+export class ProjectStore {
+  state = $state<Project>(undefined!);
   #saveTimeout: ReturnType<typeof setTimeout> | null = null;
   #initialized = false;
   #isLoading = false;
@@ -58,13 +58,13 @@ class ProjectStore {
   constructor() {
     // Load first, before setting up the effect
     this.#isLoading = true;
-    this.project = this.loadFromLocalStorage();
+    this.state = this.loadFromLocalStorage();
     this.#initialized = true;
     this.#isLoading = false;
 
     $effect.root(() => {
       watch(
-        () => $state.snapshot(this.project),
+        () => $state.snapshot(this.state),
         () => {
           // Skip saving during initial load or when explicitly loading
           if (!this.#initialized || this.#isLoading) {
@@ -124,7 +124,7 @@ class ProjectStore {
     if (typeof localStorage === 'undefined') return;
 
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.project));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
       console.log('Project saved to localStorage');
     } catch (error) {
       console.error('Failed to save project to localStorage:', error);
@@ -173,12 +173,12 @@ class ProjectStore {
 
   // Layer operations
   addLayer(layer: TypedLayer) {
-    this.project.layers = [...this.project.layers, layer];
+    this.state.layers = [...this.state.layers, layer];
   }
 
   async removeLayer(layerId: string) {
     // Find the layer to check if it has uploaded files to clean up
-    const layer = this.project.layers.find((l) => l.id === layerId);
+    const layer = this.state.layers.find((l) => l.id === layerId);
 
     // Clean up uploaded files if the layer has a fileKey
     if (layer && layer.props.fileKey && typeof layer.props.fileKey === 'string') {
@@ -192,28 +192,28 @@ class ProjectStore {
       }
     }
 
-    this.project.layers = this.project.layers.filter((l) => l.id !== layerId);
+    this.state.layers = this.state.layers.filter((l) => l.id !== layerId);
     if (this.selectedLayerId === layerId) {
       this.selectedLayerId = null;
     }
   }
 
   updateLayer(layerId: string, updates: Partial<TypedLayer>) {
-    this.project.layers = this.project.layers.map((layer) =>
+    this.state.layers = this.state.layers.map((layer) =>
       layer.id === layerId ? { ...layer, ...updates } : layer
     );
   }
 
   reorderLayers(fromIndex: number, toIndex: number) {
-    const layers = [...this.project.layers];
+    const layers = [...this.state.layers];
     const [movedLayer] = layers.splice(fromIndex, 1);
     layers.splice(toIndex, 0, movedLayer);
-    this.project.layers = layers;
+    this.state.layers = layers;
   }
 
   // Keyframe operations
   addKeyframe(layerId: string, keyframe: Keyframe) {
-    this.project.layers = this.project.layers.map((layer) => {
+    this.state.layers = this.state.layers.map((layer) => {
       if (layer.id === layerId) {
         return {
           ...layer,
@@ -225,7 +225,7 @@ class ProjectStore {
   }
 
   removeKeyframe(layerId: string, keyframeId: string) {
-    this.project.layers = this.project.layers.map((layer) => {
+    this.state.layers = this.state.layers.map((layer) => {
       if (layer.id === layerId) {
         return {
           ...layer,
@@ -237,7 +237,7 @@ class ProjectStore {
   }
 
   updateKeyframe(layerId: string, keyframeId: string, updates: Partial<Keyframe>) {
-    this.project.layers = this.project.layers.map((layer) => {
+    this.state.layers = this.state.layers.map((layer) => {
       if (layer.id === layerId) {
         return {
           ...layer,
@@ -276,7 +276,7 @@ class ProjectStore {
     const start = Math.min(startTime, endTime);
     const end = Math.max(startTime, endTime);
 
-    for (const layer of this.project.layers) {
+    for (const layer of this.state.layers) {
       if (layerIds && !layerIds.has(layer.id)) continue;
 
       for (const kf of layer.keyframes) {
@@ -290,10 +290,10 @@ class ProjectStore {
   shiftSelectedKeyframes(deltaTime: number) {
     if (this.selectedKeyframeIds.size === 0) return;
 
-    this.project.layers = this.project.layers.map((layer) => {
+    this.state.layers = this.state.layers.map((layer) => {
       const layerKeyframes = layer.keyframes.map((kf) => {
         if (this.selectedKeyframeIds.has(kf.id)) {
-          const newTime = Math.max(0, Math.min(this.project.duration, kf.time + deltaTime));
+          const newTime = Math.max(0, Math.min(this.state.duration, kf.time + deltaTime));
           return { ...kf, time: newTime };
         }
         return kf;
@@ -314,7 +314,7 @@ class ProjectStore {
    * @param duration - Duration of the animation in seconds
    */
   applyPreset(layerId: string, presetId: string, startTime?: number, duration: number = 1) {
-    const layer = this.project.layers.find((l) => l.id === layerId);
+    const layer = this.state.layers.find((l) => l.id === layerId);
     if (!layer) {
       console.warn(`Layer not found: ${layerId}`);
       return;
@@ -335,7 +335,7 @@ class ProjectStore {
       const scaledTime = actualStartTime + kf.time * duration;
 
       // Clamp to project duration
-      const clampedTime = Math.max(0, Math.min(scaledTime, this.project.duration));
+      const clampedTime = Math.max(0, Math.min(scaledTime, this.state.duration));
 
       // Get the base position from the layer's transform if it's a position property
       let value = kf.value;
@@ -357,7 +357,7 @@ class ProjectStore {
 
   // Timeline operations
   setCurrentTime(time: number) {
-    this.currentTime = Math.max(0, Math.min(time, this.project.duration));
+    this.currentTime = Math.max(0, Math.min(time, this.state.duration));
   }
 
   play() {
@@ -388,7 +388,7 @@ class ProjectStore {
   // Project operations
   async loadProject(project: Project) {
     this.#isLoading = true;
-    this.project = project;
+    this.state = project;
     await tick();
     this.selectedLayerId = null;
     this.isPlaying = false;
@@ -398,7 +398,7 @@ class ProjectStore {
 
   async newProject() {
     this.#isLoading = true;
-    this.project = this.getDefaultProject();
+    this.state = this.getDefaultProject();
     await tick();
     this.currentTime = 0;
     this.selectedLayerId = null;
@@ -408,7 +408,7 @@ class ProjectStore {
   }
 
   exportToJSON(): string {
-    return JSON.stringify(this.project, null, 2);
+    return JSON.stringify(this.state, null, 2);
   }
 
   importFromJSON(json: string) {
@@ -422,7 +422,7 @@ class ProjectStore {
 
   get selectedLayer(): TypedLayer | null {
     if (!this.selectedLayerId) return null;
-    return this.project.layers.find((l) => l.id === this.selectedLayerId) || null;
+    return this.state.layers.find((l) => l.id === this.selectedLayerId) || null;
   }
 
   // ========================================
@@ -435,11 +435,11 @@ class ProjectStore {
    * When contentOffset reaches 0, shifts exitTime to maintain visible duration (sliding mode).
    */
   setLayerEnterTime(layerId: string, enterTime: number) {
-    this.project.layers = this.project.layers.map((layer) => {
+    this.state.layers = this.state.layers.map((layer) => {
       if (layer.id !== layerId) return layer;
 
       const oldEnterTime = layer.enterTime ?? 0;
-      const oldExitTime = layer.exitTime ?? this.project.duration;
+      const oldExitTime = layer.exitTime ?? this.state.duration;
       const isMediaLayer = layer.type === 'video' || layer.type === 'audio';
 
       // For media layers with content duration, adjust content offset
@@ -461,10 +461,7 @@ class ProjectStore {
           let newExitTime = oldExitTime + remainingDelta; // shift exit left by remaining delta
 
           // Ensure exit time stays valid
-          newExitTime = Math.max(
-            validEnterTime + 0.1,
-            Math.min(newExitTime, this.project.duration)
-          );
+          newExitTime = Math.max(validEnterTime + 0.1, Math.min(newExitTime, this.state.duration));
 
           // Ensure visible duration doesn't exceed content duration
           if (newExitTime - validEnterTime > contentDuration) {
@@ -489,7 +486,7 @@ class ProjectStore {
         // Ensure enter time is within bounds and before exit time
         validEnterTime = Math.max(
           0,
-          Math.min(validEnterTime, oldExitTime - 0.1, this.project.duration)
+          Math.min(validEnterTime, oldExitTime - 0.1, this.state.duration)
         );
 
         // Ensure visible duration doesn't exceed available content
@@ -508,7 +505,7 @@ class ProjectStore {
       }
 
       // For non-media layers, use simple logic
-      const clampedEnterTime = Math.max(0, Math.min(enterTime, this.project.duration));
+      const clampedEnterTime = Math.max(0, Math.min(enterTime, this.state.duration));
       const validEnterTime = Math.min(clampedEnterTime, oldExitTime - 0.1);
       return { ...layer, enterTime: validEnterTime };
     });
@@ -519,18 +516,18 @@ class ProjectStore {
    * For media layers (video/audio), respects contentDuration constraints
    */
   setLayerExitTime(layerId: string, exitTime: number) {
-    this.project.layers = this.project.layers.map((layer) => {
+    this.state.layers = this.state.layers.map((layer) => {
       if (layer.id !== layerId) return layer;
 
       const enterTime = layer.enterTime ?? 0;
       const isMediaLayer = layer.type === 'video' || layer.type === 'audio';
 
       // Calculate max exit time for media layers
-      let maxExitTime = this.project.duration;
+      let maxExitTime = this.state.duration;
       if (isMediaLayer && layer.contentDuration !== undefined) {
         const contentOffset = layer.contentOffset ?? 0;
         const availableContent = layer.contentDuration - contentOffset;
-        maxExitTime = Math.min(this.project.duration, enterTime + availableContent);
+        maxExitTime = Math.min(this.state.duration, enterTime + availableContent);
       }
 
       // Clamp and validate exit time
@@ -547,7 +544,7 @@ class ProjectStore {
    * @param shiftKeyframes If true, shift all keyframes by the time delta (default: false)
    */
   setLayerTimeRange(layerId: string, enterTime: number, exitTime: number, shiftKeyframes = false) {
-    this.project.layers = this.project.layers.map((layer) => {
+    this.state.layers = this.state.layers.map((layer) => {
       if (layer.id !== layerId) return layer;
 
       const oldEnterTime = layer.enterTime ?? 0;
@@ -560,12 +557,12 @@ class ProjectStore {
         const availableContent = layer.contentDuration - contentOffset;
         const maxDuration = Math.min(duration, availableContent);
 
-        let clampedEnterTime = Math.max(0, Math.min(enterTime, this.project.duration));
+        let clampedEnterTime = Math.max(0, Math.min(enterTime, this.state.duration));
         let clampedExitTime = clampedEnterTime + maxDuration;
 
         // Ensure exit time doesn't exceed project duration
-        if (clampedExitTime > this.project.duration) {
-          clampedExitTime = this.project.duration;
+        if (clampedExitTime > this.state.duration) {
+          clampedExitTime = this.state.duration;
           clampedEnterTime = Math.max(0, clampedExitTime - maxDuration);
         }
 
@@ -576,7 +573,7 @@ class ProjectStore {
             ? layer.keyframes
                 .map((kf) => ({
                   ...kf,
-                  time: Math.max(0, Math.min(this.project.duration, kf.time + timeDelta))
+                  time: Math.max(0, Math.min(this.state.duration, kf.time + timeDelta))
                 }))
                 .sort((a, b) => a.time - b.time)
             : layer.keyframes;
@@ -590,8 +587,8 @@ class ProjectStore {
       }
 
       // For non-media layers, use simple logic
-      const clampedEnterTime = Math.max(0, Math.min(enterTime, this.project.duration));
-      const clampedExitTime = Math.max(0, Math.min(exitTime, this.project.duration));
+      const clampedEnterTime = Math.max(0, Math.min(enterTime, this.state.duration));
+      const clampedExitTime = Math.max(0, Math.min(exitTime, this.state.duration));
       const validExitTime = Math.max(clampedExitTime, clampedEnterTime + 0.1);
 
       // Shift keyframes if requested
@@ -601,7 +598,7 @@ class ProjectStore {
           ? layer.keyframes
               .map((kf) => ({
                 ...kf,
-                time: Math.max(0, Math.min(this.project.duration, kf.time + timeDelta))
+                time: Math.max(0, Math.min(this.state.duration, kf.time + timeDelta))
               }))
               .sort((a, b) => a.time - b.time)
           : layer.keyframes;
@@ -624,12 +621,12 @@ class ProjectStore {
    * Creates two layers from one, each with appropriate time ranges
    */
   splitLayer(layerId: string, splitTime?: number) {
-    const layer = this.project.layers.find((l) => l.id === layerId);
+    const layer = this.state.layers.find((l) => l.id === layerId);
     if (!layer) return;
 
     const time = splitTime ?? this.currentTime;
     const enterTime = layer.enterTime ?? 0;
-    const exitTime = layer.exitTime ?? this.project.duration;
+    const exitTime = layer.exitTime ?? this.state.duration;
 
     // Don't split if time is outside the layer's range
     if (time <= enterTime || time >= exitTime) return;
@@ -651,7 +648,7 @@ class ProjectStore {
     };
 
     // Update the first half (original layer) - keep same contentOffset, just trim exit time
-    this.project.layers = this.project.layers.map((l) => {
+    this.state.layers = this.state.layers.map((l) => {
       if (l.id === layerId) {
         return {
           ...l,
@@ -663,17 +660,17 @@ class ProjectStore {
     });
 
     // Add the second half after the original
-    const insertIndex = this.project.layers.findIndex((l) => l.id === layerId) + 1;
-    const layers = [...this.project.layers];
+    const insertIndex = this.state.layers.findIndex((l) => l.id === layerId) + 1;
+    const layers = [...this.state.layers];
     layers.splice(insertIndex, 0, secondHalf);
-    this.project.layers = layers;
+    this.state.layers = layers;
   }
 
   /**
    * Trim/crop a media layer's source time range
    */
   trimMediaLayer(layerId: string, mediaStartTime: number, mediaEndTime: number) {
-    this.project.layers = this.project.layers.map((layer) => {
+    this.state.layers = this.state.layers.map((layer) => {
       if (layer.id === layerId && (layer.type === 'video' || layer.type === 'audio')) {
         return {
           ...layer,
@@ -692,11 +689,11 @@ class ProjectStore {
    * Check if a layer is visible at the current time based on enter/exit times
    */
   isLayerVisibleAtTime(layerId: string, time?: number): boolean {
-    const layer = this.project.layers.find((l) => l.id === layerId);
+    const layer = this.state.layers.find((l) => l.id === layerId);
     if (!layer) return false;
     const t = time ?? this.currentTime;
     const enterTime = layer.enterTime ?? 0;
-    const exitTime = layer.exitTime ?? this.project.duration;
+    const exitTime = layer.exitTime ?? this.state.duration;
     return t >= enterTime && t <= exitTime;
   }
 
@@ -706,16 +703,16 @@ class ProjectStore {
    * @returns Promise that resolves when preparation is complete
    */
   async prepareRecording(): Promise<void> {
-    const totalFrames = Math.ceil(this.project.fps * this.project.duration);
+    const totalFrames = Math.ceil(this.state.fps * this.state.duration);
     this.frameCache = new Map();
     this.preparingProgress = 0;
 
     for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
-      const time = frameIndex / this.project.fps;
+      const time = frameIndex / this.state.fps;
       const frameData: FrameCache = {};
 
       // Pre-calculate values for all layers using shared rendering functions
-      for (const layer of this.project.layers) {
+      for (const layer of this.state.layers) {
         frameData[layer.id] = {
           transform: getLayerTransform(layer, time),
           style: getLayerStyle(layer, time),
@@ -752,7 +749,7 @@ class ProjectStore {
    */
   getCachedFrame(time: number): FrameCache | null {
     if (!this.frameCache) return null;
-    const frameIndex = Math.floor(time * this.project.fps);
+    const frameIndex = Math.floor(time * this.state.fps);
     return this.frameCache.get(frameIndex) ?? null;
   }
 }

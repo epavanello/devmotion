@@ -125,7 +125,7 @@
   async function doSaveToCloud() {
     const result = await saveProjectToDb({
       id: projectId || undefined,
-      data: projectStore.project
+      data: projectStore.state
     });
 
     if (result.success && result.data.id) {

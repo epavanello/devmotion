@@ -20,7 +20,7 @@
     const rect = timelineContainer.getBoundingClientRect();
     const x = e.clientX - rect.left - 200; // 200px for layer names column
     const time = Math.max(0, x / pixelsPerSecond);
-    projectStore.setCurrentTime(Math.min(time, projectStore.project.duration));
+    projectStore.setCurrentTime(Math.min(time, projectStore.state.duration));
   }
 
   function handleTimelineMouseDown(e: MouseEvent) {
@@ -80,7 +80,7 @@
       const layerHeight = 49; // 48px + 1px border
       const activeLayerIds = new SvelteSet<string>();
 
-      projectStore.project.layers.forEach((layer, index) => {
+      projectStore.state.layers.forEach((layer, index) => {
         const layerTop = layerOffset + index * layerHeight;
         const layerBottom = layerTop + layerHeight;
 
@@ -154,7 +154,7 @@
     <div
       bind:this={timelineContainer}
       class="relative min-h-full select-none"
-      style="min-width: {projectStore.project.duration * pixelsPerSecond + 200}px"
+      style="min-width: {projectStore.state.duration * pixelsPerSecond + 200}px"
       onmousedown={handleTimelineMouseDown}
       onkeydown={handleKeyDown}
       role="button"
@@ -162,16 +162,16 @@
     >
       <!-- Ruler -->
       <div class="sticky top-0 z-10 border-b bg-background">
-        <TimelineRuler {pixelsPerSecond} duration={projectStore.project.duration} />
+        <TimelineRuler {pixelsPerSecond} duration={projectStore.state.duration} />
       </div>
 
       <!-- Layers -->
       <div class="relative">
-        {#each projectStore.project.layers as layer (layer.id)}
+        {#each projectStore.state.layers as layer (layer.id)}
           <TimelineLayer {layer} {pixelsPerSecond} />
         {/each}
 
-        {#if projectStore.project.layers.length === 0}
+        {#if projectStore.state.layers.length === 0}
           <div class="flex h-32 items-center justify-center text-sm text-muted-foreground">
             No layers yet. Add a layer to start animating.
           </div>

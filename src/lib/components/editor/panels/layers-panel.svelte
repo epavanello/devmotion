@@ -58,7 +58,7 @@
   class:pointer-events-none={projectStore.isRecording}
   class:opacity-50={projectStore.isRecording}
 >
-  {#each projectStore.project.layers as layer, index (layer.id)}
+  {#each projectStore.state.layers as layer, index (layer.id)}
     {@const Icon = getLayerDefinition(layer.type).icon}
     <div
       class="group flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 transition-colors hover:bg-muted/50"
@@ -162,7 +162,7 @@
     </div>
   {/each}
 
-  {#if projectStore.project.layers.length === 0}
+  {#if projectStore.state.layers.length === 0}
     <div class="py-8 text-center text-sm text-muted-foreground">
       <p>No layers yet</p>
       <p class="mt-1 text-xs">Add layers from the toolbar</p>

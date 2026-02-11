@@ -71,21 +71,21 @@
       // End - Go to end
       if (e.code === 'End') {
         e.preventDefault();
-        projectStore.setCurrentTime(projectStore.project.duration);
+        projectStore.setCurrentTime(projectStore.state.duration);
       }
 
       // Arrow Left - Step backward
       if (e.code === 'ArrowLeft' && !projectStore.isPlaying) {
         e.preventDefault();
-        const newTime = projectStore.currentTime - 1 / projectStore.project.fps;
+        const newTime = projectStore.currentTime - 1 / projectStore.state.fps;
         projectStore.setCurrentTime(Math.max(0, newTime));
       }
 
       // Arrow Right - Step forward
       if (e.code === 'ArrowRight' && !projectStore.isPlaying) {
         e.preventDefault();
-        const newTime = projectStore.currentTime + 1 / projectStore.project.fps;
-        projectStore.setCurrentTime(Math.min(newTime, projectStore.project.duration));
+        const newTime = projectStore.currentTime + 1 / projectStore.state.fps;
+        projectStore.setCurrentTime(Math.min(newTime, projectStore.state.duration));
       }
 
       // + / = - Zoom in

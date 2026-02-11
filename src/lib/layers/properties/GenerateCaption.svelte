@@ -32,7 +32,7 @@
     try {
       // Calculate timing parameters based on layer properties
       const enterTime = layer.enterTime ?? 0;
-      const exitTime = layer.exitTime ?? projectStore.project.duration;
+      const exitTime = layer.exitTime ?? projectStore.state.duration;
       const contentOffset = layer.contentOffset ?? 0;
       const layerDuration = exitTime - enterTime;
 

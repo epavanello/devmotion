@@ -10,7 +10,7 @@
 
   const sourceLayer = $derived.by(() => {
     if (!sourceLayerId) return null;
-    return projectStore.project.layers.find((l) => l.id === sourceLayerId);
+    return projectStore.state.layers.find((l) => l.id === sourceLayerId);
   });
 
   function handleActivateSource() {

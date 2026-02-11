@@ -402,11 +402,11 @@
               min={0}
               max={selectedLayer.contentDuration !== undefined
                 ? Math.min(
-                    projectStore.project.duration,
-                    projectStore.project.duration -
+                    projectStore.state.duration,
+                    projectStore.state.duration -
                       (selectedLayer.contentDuration - (selectedLayer.contentOffset ?? 0))
                   )
-                : projectStore.project.duration}
+                : projectStore.state.duration}
               step={0.1}
               onchange={(v) => projectStore.setLayerEnterTime(selectedLayer.id, v)}
             />
@@ -415,9 +415,9 @@
             <Label class="text-xs text-muted-foreground">Exit (s)</Label>
             <ScrubInput
               id="exit-time"
-              value={selectedLayer.exitTime ?? projectStore.project.duration}
+              value={selectedLayer.exitTime ?? projectStore.state.duration}
               min={0}
-              max={projectStore.project.duration}
+              max={projectStore.state.duration}
               step={0.1}
               onchange={(v) => projectStore.setLayerExitTime(selectedLayer.id, v)}
             />

@@ -118,7 +118,7 @@
   }
 
   function handleTimeChange(newTime: number) {
-    const clampedTime = Math.max(0, Math.min(newTime, projectStore.project.duration));
+    const clampedTime = Math.max(0, Math.min(newTime, projectStore.state.duration));
     projectStore.updateKeyframe(layerId, keyframe.id, { time: clampedTime });
   }
 
@@ -231,7 +231,7 @@
             value={keyframe.time}
             step={0.01}
             min={0}
-            max={projectStore.project.duration}
+            max={projectStore.state.duration}
             onchange={handleTimeChange}
           />
           <span

@@ -35,16 +35,16 @@
   let { open = $bindable() }: Props = $props();
 
   let formData: Pick<Project, 'name' | 'width' | 'height' | 'duration' | 'background'> = $derived({
-    name: projectStore.project.name,
-    width: projectStore.project.width,
-    height: projectStore.project.height,
-    duration: projectStore.project.duration,
-    background: projectStore.project.background
+    name: projectStore.state.name,
+    width: projectStore.state.width,
+    height: projectStore.state.height,
+    duration: projectStore.state.duration,
+    background: projectStore.state.background
   });
 
   let selectedResolution = $derived.by(() => {
     const res = commonResolutions.find(
-      (r) => r.width === projectStore.project.width && r.height === projectStore.project.height
+      (r) => r.width === projectStore.state.width && r.height === projectStore.state.height
     );
     return res ? `${res.width}x${res.height}` : 'custom';
   });
@@ -63,11 +63,11 @@
   }
 
   function handleSave() {
-    projectStore.project.name = formData.name;
-    projectStore.project.width = formData.width;
-    projectStore.project.height = formData.height;
-    projectStore.project.duration = formData.duration;
-    projectStore.project.background = formData.background;
+    projectStore.state.name = formData.name;
+    projectStore.state.width = formData.width;
+    projectStore.state.height = formData.height;
+    projectStore.state.duration = formData.duration;
+    projectStore.state.background = formData.background;
 
     open = false;
   }
@@ -75,14 +75,14 @@
   function handleOpenChange(newOpen: boolean) {
     if (newOpen) {
       // Reset form to current project state when opening
-      formData.name = projectStore.project.name;
-      formData.width = projectStore.project.width;
-      formData.height = projectStore.project.height;
-      formData.duration = projectStore.project.duration;
-      formData.background = projectStore.project.background;
+      formData.name = projectStore.state.name;
+      formData.width = projectStore.state.width;
+      formData.height = projectStore.state.height;
+      formData.duration = projectStore.state.duration;
+      formData.background = projectStore.state.background;
 
       const res = commonResolutions.find(
-        (r) => r.width === projectStore.project.width && r.height === projectStore.project.height
+        (r) => r.width === projectStore.state.width && r.height === projectStore.state.height
       );
       selectedResolution = res ? `${res.width}x${res.height}` : 'custom';
     }
