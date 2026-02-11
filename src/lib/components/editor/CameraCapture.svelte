@@ -177,7 +177,7 @@
 <div class="space-y-2">
   {#if cameraState === 'idle'}
     <!-- Take photo button -->
-    <Button variant="outline" size="sm" class="w-full text-xs" onclick={startPreview}>
+    <Button variant="default" size="sm" class="w-full text-xs" onclick={startPreview}>
       <Camera class="mr-1 size-3" />
       Take Photo
     </Button>

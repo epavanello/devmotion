@@ -22,10 +22,7 @@
     <Logo />
 
     <!-- SEO: Internal link to gallery for better crawling -->
-    <Button variant="ghost" size="sm" href="/gallery" class="hidden text-xs md:flex">
-      <Image class="mr-1.5 h-3.5 w-3.5" />
-      Gallery
-    </Button>
+    <Button variant="ghost" size="sm" href="/gallery" class="hidden">Gallery</Button>
 
     <Button
       variant="ghost"

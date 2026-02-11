@@ -78,7 +78,7 @@
   });
 
   export const meta = {
-    category: 'ui',
+    category: 'code',
     schema,
     type: 'terminal',
     label: 'Terminal',

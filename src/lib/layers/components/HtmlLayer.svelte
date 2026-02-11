@@ -121,7 +121,7 @@
   });
 
   export const meta = {
-    category: 'ui',
+    category: 'code',
     schema,
     type: 'html',
     label: 'HTML/CSS',

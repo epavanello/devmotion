@@ -70,7 +70,7 @@
   });
 
   export const meta = {
-    category: 'ui',
+    category: 'code',
     schema,
     type: 'browser',
     label: 'Browser',

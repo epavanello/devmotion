@@ -11,7 +11,6 @@
     Lock,
     Unlock,
     GitFork,
-    Trash,
     Globe,
     Github
   } from '@lucide/svelte';
@@ -24,8 +23,7 @@
   import {
     saveProject as saveProjectToDb,
     toggleVisibility,
-    forkProject,
-    getUserProjects
+    forkProject
   } from '$lib/functions/projects.remote';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
@@ -85,12 +83,9 @@
     }
 
     const onSave = () => handleSaveToCloud();
-    const onNewProject = () => newProject();
     window.addEventListener('devmotion:save', onSave);
-    window.addEventListener('devmotion:new-project', onNewProject);
     return () => {
       window.removeEventListener('devmotion:save', onSave);
-      window.removeEventListener('devmotion:new-project', onNewProject);
     };
   });
 
@@ -99,14 +94,6 @@
     { key: 'Ctrl/Cmd + N', description: 'New Project' },
     { key: 'Ctrl/Cmd + E', description: 'Export Video' }
   ];
-
-  function newProject() {
-    if (confirm('Create new project? Unsaved changes will be lost.')) {
-      projectStore.newProject();
-      getUserProjects().refresh();
-      goto(resolve('/'));
-    }
-  }
 
   async function openExportDialog() {
     // Check for unsaved changes
@@ -205,16 +192,6 @@
       variant: 'ghost',
       onclick: openProjectSettings,
       disabled: isRecording || !canEdit,
-      visible: true
-    },
-    {
-      id: 'new',
-      label: 'New',
-      tooltip: 'New Project (Ctrl/Cmd + N)',
-      icon: Trash,
-      variant: 'ghost',
-      onclick: newProject,
-      disabled: isRecording,
       visible: true
     },
     {

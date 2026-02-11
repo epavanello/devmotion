@@ -33,7 +33,7 @@
   });
 
   export const meta = {
-    category: 'ui',
+    category: 'code',
     schema,
     type: 'code',
     label: 'Code Block',

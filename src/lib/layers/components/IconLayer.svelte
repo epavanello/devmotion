@@ -126,7 +126,7 @@
   });
 
   export const meta = {
-    category: 'ui',
+    category: 'shape',
     schema,
     type: 'icon',
     label: 'Icon',

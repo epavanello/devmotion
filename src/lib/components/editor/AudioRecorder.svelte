@@ -179,7 +179,7 @@
     </div>
   {:else}
     <!-- Start recording button -->
-    <Button variant="outline" size="sm" class="w-full text-xs" onclick={startRecording}>
+    <Button variant="default" size="sm" class="w-full text-xs" onclick={startRecording}>
       <Mic class="mr-1 size-3" />
       Record Audio
     </Button>
