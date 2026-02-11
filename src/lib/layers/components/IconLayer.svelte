@@ -125,14 +125,14 @@
     backgroundPadding: z.number().min(0).max(64).default(0).describe('Background padding')
   });
 
-  export const meta: LayerMeta = {
+  export const meta = {
     category: 'ui',
     schema,
     type: 'icon',
     label: 'Icon',
     icon: Star,
     description: 'Lucide icons with customizable size, color, stroke, and optional background'
-  };
+  } as const satisfies LayerMeta;
 
   type Props = z.infer<typeof schema>;
 </script>

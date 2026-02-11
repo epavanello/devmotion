@@ -92,7 +92,7 @@
       .register(fieldRegistry, { interpolationFamily: 'discrete' })
   });
 
-  export const meta: LayerMeta = {
+  export const meta = {
     category: 'text',
     schema,
     type: 'text',
@@ -104,7 +104,7 @@
       { id: 'typography', label: 'Typography' },
       { id: 'layout', label: 'Layout' }
     ]
-  };
+  } as const satisfies LayerMeta;
 
   type Props = z.infer<typeof schema>;
 </script>

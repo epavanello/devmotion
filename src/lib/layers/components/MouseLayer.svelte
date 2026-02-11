@@ -36,7 +36,7 @@
       })
   });
 
-  export const meta: LayerMeta = {
+  export const meta = {
     category: 'ui',
     schema,
     type: 'mouse',
@@ -45,7 +45,7 @@
     description: 'Mouse cursor pointer (arrow, hand, crosshair, text) for UI demonstrations',
 
     propertyGroups: [{ id: 'appearance', label: 'Appearance' }]
-  };
+  } as const satisfies LayerMeta;
 
   type Props = z.infer<typeof schema>;
 </script>

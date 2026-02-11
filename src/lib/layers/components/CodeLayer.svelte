@@ -32,7 +32,7 @@
     headerColor: z.string().default('#2d2d2d').describe('Header background color')
   });
 
-  export const meta: LayerMeta = {
+  export const meta = {
     category: 'ui',
     schema,
     type: 'code',
@@ -40,7 +40,7 @@
     icon: Code,
     description:
       'Code editor window with syntax highlighting for multiple languages and line numbers'
-  };
+  } as const satisfies LayerMeta;
 
   type Props = z.infer<typeof schema>;
 </script>

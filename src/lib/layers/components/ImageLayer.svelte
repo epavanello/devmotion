@@ -76,7 +76,7 @@
       .register(fieldRegistry, { hidden: true })
   });
 
-  export const meta: LayerMeta = {
+  export const meta = {
     category: 'media',
     schema,
     type: 'image',
@@ -88,7 +88,7 @@
     propertyGroups: [{ id: 'size', label: 'Size', widget: AspectRatioToggle }],
 
     middleware: sizeMiddleware
-  };
+  } as const satisfies LayerMeta;
 
   type Props = z.infer<typeof schema>;
 </script>

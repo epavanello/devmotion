@@ -69,7 +69,7 @@
       .register(fieldRegistry, { hidden: true })
   });
 
-  export const meta: LayerMeta = {
+  export const meta = {
     category: 'ui',
     schema,
     type: 'browser',
@@ -83,7 +83,7 @@
     ],
 
     middleware: sizeMiddleware
-  };
+  } as const satisfies LayerMeta;
 
   type Props = z.infer<typeof schema>;
 </script>
