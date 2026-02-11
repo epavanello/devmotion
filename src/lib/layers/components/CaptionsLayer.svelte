@@ -124,7 +124,6 @@
     if (!words || words.length === 0) {
       return [];
     }
-    console.log('currentWords', words);
     return words.filter((w) => w.start <= relativeTime) as CaptionWord[];
   });
 

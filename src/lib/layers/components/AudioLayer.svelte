@@ -26,23 +26,6 @@
       .default('Audio')
       .describe('Display label')
       .register(fieldRegistry, { interpolationFamily: 'text' }),
-    /** Width of the visual representation */
-    width: z
-      .number()
-      .min(50)
-      .max(5000)
-      .default(400)
-      .describe('Width (px)')
-      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
-    /** Height of the visual representation */
-    height: z
-      .number()
-      .min(20)
-      .max(500)
-      .default(60)
-      .describe('Height (px)')
-      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
-    /** Playback volume */
     volume: z
       .number()
       .min(0)
@@ -95,10 +78,7 @@
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       generateCaptions: { component: GenerateCaption as any }
     },
-    propertyGroups: [
-      { id: 'size', label: 'Size', widget: AspectRatioToggle },
-      { id: 'playback', label: 'Playback' }
-    ],
+    propertyGroups: [{ id: 'playback', label: 'Playback' }],
 
     middleware: sizeMiddleware
   } as const satisfies LayerMeta;
@@ -111,8 +91,6 @@
 
   let {
     src,
-    width,
-    height,
     volume,
     muted,
     playbackRate,
@@ -185,13 +163,3 @@
 {#if src}
   <audio bind:this={audioEl} {src} preload="auto"></audio>
 {/if}
-
-<div
-  class="flex items-center justify-center rounded bg-gradient-to-br from-purple-500/20 to-pink-500/20 p-4"
-  style:width="{width}px"
-  style:min-height="{height}px"
->
-  <div class="text-center">
-    <div class="text-sm font-medium text-white/80">🎵 Audio Layer</div>
-  </div>
-</div>
