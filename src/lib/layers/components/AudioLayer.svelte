@@ -130,7 +130,7 @@
       .register(fieldRegistry, { hidden: true })
   });
 
-  export const meta: LayerMeta = {
+  export const meta = {
     category: 'media',
     schema,
     type: 'audio',
@@ -140,7 +140,6 @@
     customPropertyComponents: {
       generateCaptions: { component: GenerateCaption }
     },
-
     propertyGroups: [
       { id: 'size', label: 'Size', widget: AspectRatioToggle },
       { id: 'playback', label: 'Playback' },
@@ -148,7 +147,7 @@
     ],
 
     middleware: sizeMiddleware
-  };
+  } as const satisfies LayerMeta;
 
   type Props = z.infer<typeof schema>;
 </script>

@@ -17,11 +17,11 @@ import {
 } from '$lib/server/storage';
 import { db } from '$lib/server/db';
 import { project, asset } from '$lib/server/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
+import { checkStorageQuota } from '$lib/server/utils/storage-quota';
 import { nanoid } from 'nanoid';
 
 const MAX_REQUEST_SIZE = 40 * 1024 * 1024; // 10MB
-const MAX_USER_STORAGE = 40 * 1024 * 1024; // 10MB per user
 
 export const POST: RequestHandler = async ({ request, locals }) => {
   // Check authentication
@@ -75,23 +75,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       error(403, 'You do not have permission to upload files to this project');
     }
 
-    // Check user's total storage quota
-    const userStorageResult = await db
-      .select({ total: sql<number>`COALESCE(SUM(${asset.size}), 0)` })
-      .from(asset)
-      .where(eq(asset.userId, locals.user.id));
-
-    const currentUsage = Number(userStorageResult[0]?.total || 0);
-    const willExceed = currentUsage + file.size > MAX_USER_STORAGE;
-
-    if (willExceed) {
-      const usedMB = (currentUsage / (1024 * 1024)).toFixed(2);
-      const maxMB = (MAX_USER_STORAGE / (1024 * 1024)).toFixed(0);
-      error(
-        413,
-        `Storage quota exceeded. You've used ${usedMB}MB of ${maxMB}MB. Please delete some files to upload new ones.`
-      );
-    }
+    // Check user's storage quota
+    await checkStorageQuota(locals.user.id, file.size);
 
     // Validate and use mediaTypeHint if provided, otherwise detect from MIME
     let mediaType: MediaType | null = null;

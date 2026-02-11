@@ -8,7 +8,7 @@
   import { createLayer } from '$lib/engine/layer-factory';
 
   function addLayer(type: string) {
-    const layer = createLayer(type as LayerType, {}, { x: 0, y: 0 });
+    const layer = createLayer(type as LayerType, { trasform: { x: 0, y: 0 } });
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }

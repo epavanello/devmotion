@@ -112,11 +112,10 @@ export function mutateCreateLayer(
   input: CreateLayerInput
 ): MutationResult<CreateLayerOutput> {
   try {
-    const layer = createLayer(
-      input.type as LayerType,
-      input.props || {},
-      input.position || { x: 0, y: 0 }
-    );
+    const layer = createLayer(input.type as LayerType, {
+      props: input.props,
+      trasform: input.position
+    });
 
     if (input.name) {
       layer.name = input.name;

@@ -2,7 +2,7 @@
  * Generic layer factory using the component registry
  */
 import { nanoid } from 'nanoid';
-import type { Layer, LayerType, Keyframe, Interpolation } from '$lib/types/animation';
+import type { Layer, LayerType, Keyframe, Interpolation, Transform } from '$lib/types/animation';
 import { getLayerDefinition } from '$lib/layers/registry';
 import { extractDefaultValues } from '$lib/layers/base';
 
@@ -19,10 +19,13 @@ const defaultInterpolation: Interpolation = { family: 'continuous', strategy: 'e
  */
 export function createLayer(
   type: LayerType,
-  propsOverrides: Record<string, unknown> = {},
-  position: { x?: number; y?: number } = {}
+  override?: {
+    props?: Record<string, unknown>;
+    trasform?: Partial<Transform>;
+    layer?: Partial<Omit<Layer, 'transform' | 'style' | 'keyframes' | 'props'>>;
+  }
 ): Layer {
-  const { x = 0, y = 0 } = position;
+  const { x = 0, y = 0 } = override?.trasform || {};
   const definition = getLayerDefinition(type);
 
   // Extract default values from the Zod schema
@@ -60,7 +63,8 @@ export function createLayer(
       scaleX: 1,
       scaleY: 1,
       scaleZ: 1,
-      anchor: 'center'
+      anchor: 'center',
+      ...override?.trasform
     },
     style: {
       opacity: 1
@@ -70,10 +74,11 @@ export function createLayer(
     keyframes: initialKeyframes,
     props: {
       ...defaultProps,
-      ...propsOverrides
+      ...override?.props
     },
     ...(type === 'video' || type === 'audio'
       ? { contentDuration: 0, enterTime: 0, exitTime: 0, contentOffset: 0 }
-      : {})
+      : {}),
+    ...override?.layer
   };
 }
