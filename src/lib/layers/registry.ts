@@ -85,14 +85,9 @@ export const layerRegistry: Record<string, LayerComponentDefinition> = (
 );
 
 /**
- * Layer type derived from registry keys
- */
-export type LayerType = keyof typeof layerRegistry;
-
-/**
  * Get layer component definition by type
  */
-export function getLayerDefinition(type: LayerType): LayerComponentDefinition {
+export function getLayerDefinition(type: string): LayerComponentDefinition {
   const definition = layerRegistry[type];
   if (!definition) {
     throw new Error(`Unknown layer type: ${type}`);
@@ -103,20 +98,20 @@ export function getLayerDefinition(type: LayerType): LayerComponentDefinition {
 /**
  * Get all available layer types
  */
-export function getAvailableLayerTypes(): LayerType[] {
-  return Object.keys(layerRegistry) as LayerType[];
+export function getAvailableLayerTypes(): string[] {
+  return Object.keys(layerRegistry);
 }
 
 /**
  * Get layer component by type
  */
-export function getLayerComponent(type: LayerType) {
+export function getLayerComponent(type: string) {
   return getLayerDefinition(type).component;
 }
 
 /**
  * Get layer schema by type
  */
-export function getLayerSchema(type: LayerType) {
+export function getLayerSchema(type: string) {
   return getLayerDefinition(type).schema;
 }

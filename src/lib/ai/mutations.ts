@@ -11,7 +11,7 @@
  * resolving temporary layer references (layer_0, layer_1, etc.).
  */
 import { nanoid } from 'nanoid';
-import type { LayerType, Interpolation, AnimatableProperty, Keyframe } from '$lib/types/animation';
+import type { Interpolation, AnimatableProperty, Keyframe } from '$lib/types/animation';
 import { createLayer } from '$lib/engine/layer-factory';
 import { getPresetById } from '$lib/engine/presets';
 import type {
@@ -112,7 +112,7 @@ export function mutateCreateLayer(
   input: CreateLayerInput
 ): MutationResult<CreateLayerOutput> {
   try {
-    const layer = createLayer(input.type as LayerType, {
+    const layer = createLayer(input.type, {
       props: input.props,
       trasform: input.position
     });

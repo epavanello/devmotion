@@ -4,11 +4,12 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { Plus } from '@lucide/svelte';
   import { layerRegistry } from '$lib/layers/registry';
-  import type { LayerType } from '$lib/types/animation';
   import { createLayer } from '$lib/engine/layer-factory';
+  import type { LayerTypeString } from '$lib/layers/layer-types';
+  import type { LiteralUnion } from 'type-fest';
 
-  function addLayer(type: string) {
-    const layer = createLayer(type as LayerType, { trasform: { x: 0, y: 0 } });
+  function addLayer(type: LiteralUnion<LayerTypeString, string>) {
+    const layer = createLayer(type, { trasform: { x: 0, y: 0 } });
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }

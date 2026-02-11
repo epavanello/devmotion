@@ -2,7 +2,8 @@
   import Input from '$lib/components/ui/input/input.svelte';
   import Textarea from '$lib/components/ui/textarea/textarea.svelte';
   import type { PropertyMetadata } from '$lib/layers/base';
-  import type { BackgroundValue, Layer } from '$lib/schemas/animation';
+  import type { TypedLayer } from '$lib/layers/typed-registry';
+  import type { BackgroundValue } from '$lib/schemas/animation';
   import { projectStore } from '$lib/stores/project.svelte';
   import FileUpload from '../FileUpload.svelte';
   import BackgroundPicker from './background-picker.svelte';
@@ -16,7 +17,7 @@
   }: {
     metadata: PropertyMetadata;
     value: unknown;
-    layer: Layer;
+    layer: TypedLayer;
     onUpdateProp: (prop: string, value: unknown) => void;
   } = $props();
 </script>

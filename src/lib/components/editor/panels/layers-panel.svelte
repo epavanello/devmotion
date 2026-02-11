@@ -2,10 +2,10 @@
   import { projectStore } from '$lib/stores/project.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Eye, EyeOff, Lock, Unlock, Trash2 } from '@lucide/svelte';
-  import type { Layer } from '$lib/types/animation';
   import * as Popover from '$lib/components/ui/popover';
   import { getLayerDefinition } from '$lib/layers/registry';
   import { cn } from '$lib/utils';
+  import type { TypedLayer } from '$lib/layers/typed-registry';
 
   let deletePopoverOpenLayerId = $state<string | null>(null);
 
@@ -13,12 +13,12 @@
     projectStore.selectedLayerId = layerId;
   }
 
-  function toggleLayerVisibility(layer: Layer, e: Event) {
+  function toggleLayerVisibility(layer: TypedLayer, e: Event) {
     e.stopPropagation();
     projectStore.updateLayer(layer.id, { visible: !layer.visible });
   }
 
-  function toggleLayerLock(layer: Layer, e: Event) {
+  function toggleLayerLock(layer: TypedLayer, e: Event) {
     e.stopPropagation();
     projectStore.updateLayer(layer.id, { locked: !layer.locked });
   }

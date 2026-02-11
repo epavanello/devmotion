@@ -258,7 +258,9 @@ export type { AnchorPoint, Transform, LayerStyle } from './base';
 
 export type Keyframe = z.infer<typeof KeyframeSchema>;
 
-export type LayerType = z.infer<typeof LayerTypeSchema>;
+/**
+ * Base layer type from schema (without generic typing)
+ */
 export type Layer = z.infer<typeof LayerSchema>;
 
 export type Project = z.infer<typeof ProjectSchema>;

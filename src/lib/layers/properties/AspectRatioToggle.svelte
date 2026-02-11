@@ -1,14 +1,14 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
   import { Link, Unlink } from '@lucide/svelte';
-  import type { Layer } from '$lib/schemas/animation';
+  import type { TypedLayer } from '$lib/layers/typed-registry';
 
   let {
     layer,
     currentValues,
     onUpdate
   }: {
-    layer: Layer;
+    layer: TypedLayer;
     groupId: string;
     currentValues: Record<string, unknown>;
     onUpdate: (propertyName: string, value: unknown) => void;

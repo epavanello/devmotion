@@ -13,7 +13,7 @@ import {
   type Transform,
   type LayerStyle
 } from '$lib/schemas/base';
-import type { Layer } from '$lib/schemas/animation';
+import type { TypedLayer } from './typed-registry';
 
 export type LayerCategory = 'media' | 'text' | 'shape' | 'ui' | 'code' | 'browser';
 
@@ -25,7 +25,7 @@ export type InterpolationFamily = 'continuous' | 'discrete' | 'quantized' | 'tex
 export type CustomPropertyComponentProps = {
   value: unknown;
   onChange: (value: unknown) => void;
-  layer: Layer;
+  layer: TypedLayer;
 };
 
 /**

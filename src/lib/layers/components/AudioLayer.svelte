@@ -6,6 +6,7 @@
   import GenerateCaption from '../properties/GenerateCaption.svelte';
   import { sizeMiddleware } from '$lib/schemas/size';
   import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
+  import type { Layer } from '$lib/schemas/animation';
 
   /**
    * Schema for Audio Layer custom properties
@@ -91,7 +92,8 @@
     icon: Music,
     description: 'Audio tracks with captions',
     customPropertyComponents: {
-      generateCaptions: { component: GenerateCaption }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      generateCaptions: { component: GenerateCaption as any }
     },
     propertyGroups: [
       { id: 'size', label: 'Size', widget: AspectRatioToggle },
@@ -105,7 +107,6 @@
 </script>
 
 <script lang="ts">
-  import type { Layer } from '$lib/schemas/animation';
   import { watch } from 'runed';
 
   let {

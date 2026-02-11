@@ -14,8 +14,6 @@ export type {
   Transform,
   LayerStyle,
   Keyframe,
-  LayerType,
-  Layer,
   Project,
   ViewportSettings,
   AnimationPreset,

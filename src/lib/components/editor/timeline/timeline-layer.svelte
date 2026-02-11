@@ -1,11 +1,12 @@
 <script lang="ts">
-  import type { Layer, Keyframe } from '$lib/types/animation';
+  import type { Keyframe } from '$lib/types/animation';
   import { projectStore } from '$lib/stores/project.svelte';
   import TimelineKeyframe from './timeline-keyframe.svelte';
   import { onDestroy } from 'svelte';
+  import type { TypedLayer } from '$lib/layers/typed-registry';
 
   interface Props {
-    layer: Layer;
+    layer: TypedLayer;
     pixelsPerSecond: number;
   }
 

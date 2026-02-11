@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type { Layer } from '$lib/types/animation';
   import KeyframeCard from '../keyframe-card.svelte';
   import Select from '$lib/components/ui/select/select.svelte';
   import { SvelteSet } from 'svelte/reactivity';
+  import type { TypedLayer } from '$lib/layers/typed-registry';
 
-  let { layer }: { layer: Layer } = $props();
+  let { layer }: { layer: TypedLayer } = $props();
 
   let selectedProperty = $state<string>('all');
 

@@ -113,7 +113,8 @@
     ],
 
     customPropertyComponents: {
-      generateCaptions: { component: GenerateCaption }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      generateCaptions: { component: GenerateCaption as any }
     },
 
     middleware: sizeMiddleware
@@ -123,7 +124,7 @@
 </script>
 
 <script lang="ts">
-  import type { Layer } from '$lib/schemas/animation';
+  import type { TypedLayer } from '$lib/layers/typed-registry';
   import { projectStore } from '$lib/stores/project.svelte';
   import { watch } from 'runed';
 
@@ -141,7 +142,7 @@
     isPlaying,
     isServerSideRendering = false
   }: Props & {
-    layer: Layer;
+    layer: TypedLayer;
     currentTime: number;
     isPlaying: boolean;
     isServerSideRendering?: boolean;

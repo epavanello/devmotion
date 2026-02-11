@@ -2,7 +2,7 @@
   import LayerWrapper from '$lib/layers/LayerWrapper.svelte';
   import { getLayerComponent } from '$lib/layers/registry';
   import { getLayerTransform, getLayerStyle, getLayerProps } from '$lib/engine/layer-rendering';
-  import type { Layer } from '$lib/types/animation';
+  import type { TypedLayer } from '$lib/layers/typed-registry';
   import type { FrameCache } from '$lib/stores/project.svelte';
 
   let {
@@ -15,7 +15,7 @@
     getCachedFrame,
     isServerSideRendering = false
   }: {
-    layers: Layer[];
+    layers: TypedLayer[];
     currentTime: number;
     duration: number;
     isPlaying?: boolean;
@@ -29,7 +29,7 @@
    * Get layer rendering data (transform, style, props)
    * Uses cached data if available, otherwise computes on-demand
    */
-  function getLayerRenderData(layer: Layer) {
+  function getLayerRenderData(layer: TypedLayer) {
     // Use cached data if available
     if (getCachedFrame) {
       const cachedFrame = getCachedFrame(currentTime);

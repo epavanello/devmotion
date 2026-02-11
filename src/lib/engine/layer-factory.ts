@@ -2,9 +2,11 @@
  * Generic layer factory using the component registry
  */
 import { nanoid } from 'nanoid';
-import type { Layer, LayerType, Keyframe, Interpolation, Transform } from '$lib/types/animation';
+import type { Keyframe, Interpolation, Transform } from '$lib/types/animation';
 import { getLayerDefinition } from '$lib/layers/registry';
 import { extractDefaultValues } from '$lib/layers/base';
+import type { LayerProps, LayerTypeString } from '$lib/layers/layer-types';
+import type { TypedLayer } from '$lib/layers/typed-registry';
 
 /**
  * Default interpolation for initial keyframes
@@ -14,17 +16,17 @@ const defaultInterpolation: Interpolation = { family: 'continuous', strategy: 'e
 /**
  * Create a new layer of the specified type
  * @param type - The layer type from the registry
- * @param propsOverrides - Optional props to override defaults
- * @param position - Initial position {x, y} or full CreateLayerOptions
+ * @param override - Optional overrides for props, transform, and layer fields
+ * @returns A new layer with inferred prop types based on the layer type
  */
-export function createLayer(
-  type: LayerType,
+export function createLayer<T extends LayerTypeString>(
+  type: T | string,
   override?: {
-    props?: Record<string, unknown>;
+    props?: Partial<LayerProps<T>>;
     trasform?: Partial<Transform>;
-    layer?: Partial<Omit<Layer, 'transform' | 'style' | 'keyframes' | 'props'>>;
+    layer?: Partial<Omit<TypedLayer, 'transform' | 'style' | 'keyframes' | 'props'>>;
   }
-): Layer {
+): TypedLayer {
   const { x = 0, y = 0 } = override?.trasform || {};
   const definition = getLayerDefinition(type);
 

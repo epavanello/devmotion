@@ -89,7 +89,7 @@
 </script>
 
 <script lang="ts">
-  import type { Layer } from '$lib/schemas/animation';
+  import type { TypedLayer } from '$lib/layers/typed-registry';
   import CaptionsEditor from '../properties/CaptionsEditor.svelte';
 
   type CaptionWord = z.infer<typeof CaptionWordSchema>;
@@ -104,7 +104,7 @@
     layer,
     currentTime
   }: Props & {
-    layer: Layer;
+    layer: TypedLayer;
     currentTime: number;
   } = $props();
 

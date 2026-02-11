@@ -23,7 +23,6 @@
     AnimatableProperty,
     Transform,
     LayerStyle,
-    Layer,
     AnchorPoint,
     Interpolation,
     InterpolationFamily
@@ -46,6 +45,7 @@
   import InputsWrapper from './inputs-wrapper.svelte';
   import InputPropery from './input-propery.svelte';
   import LayerKeyframes from './layer-keyframes.svelte';
+  import type { TypedLayer } from '$lib/layers/typed-registry';
 
   const selectedLayer = $derived(projectStore.selectedLayer);
 
@@ -156,7 +156,10 @@
     projectStore.updateLayer(selectedLayer.id, { transform: newTransform });
   }
 
-  function updateLayerProperty<K extends keyof Pick<Layer, 'name'>>(property: K, value: Layer[K]) {
+  function updateLayerProperty<K extends keyof Pick<TypedLayer, 'name'>>(
+    property: K,
+    value: TypedLayer[K]
+  ) {
     if (!selectedLayer) return;
     projectStore.updateLayer(selectedLayer.id, { [property]: value });
   }
@@ -225,7 +228,7 @@
    * If updateBase is not provided, always creates/updates keyframe.
    */
   function updateAnimatableValue(
-    layer: Layer,
+    layer: TypedLayer,
     animatableProperty: AnimatableProperty,
     value: number | string | boolean,
     updateBase?: () => void

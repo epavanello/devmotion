@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Layer } from '$lib/schemas/animation';
+  import type { TypedLayer } from '$lib/layers/typed-registry';
   import Button from '$lib/components/ui/button/button.svelte';
   import ScrubInput from '$lib/components/editor/panels/scrub-input.svelte';
   import { Trash2 } from '@lucide/svelte';
@@ -16,7 +16,7 @@
     value,
     onChange,
     layer: _layer
-  }: { value: unknown; onChange: (value: unknown) => void; layer: Layer } = $props();
+  }: { value: unknown; onChange: (value: unknown) => void; layer: TypedLayer } = $props();
 
   // Ensure value is an array of caption words
   let words = $derived(Array.isArray(value) ? (value as CaptionWord[]) : []);

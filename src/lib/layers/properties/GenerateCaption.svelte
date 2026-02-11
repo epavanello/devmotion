@@ -1,28 +1,11 @@
 <script lang="ts">
   import Button from '$lib/components/ui/button/button.svelte';
   import Textarea from '$lib/components/ui/textarea/textarea.svelte';
-  import type { Layer } from '$lib/schemas/animation';
   import { projectStore } from '$lib/stores/project.svelte';
   import { Sparkles } from '@lucide/svelte';
   import { createLayer } from '$lib/engine/layer-factory';
-  import type { CaptionWordSchema } from '$lib/layers/components/CaptionsLayer.svelte';
-  import { z } from 'zod';
   import { generateCaptions } from '$lib/functions/captions.remote';
-  import { meta } from '$lib/layers/components/CaptionsLayer.svelte';
-
-  type CaptionItem = z.infer<typeof CaptionWordSchema>;
-
-  // Infer types from generateCaptions return type
-  type GenerateCaptionsResult = Awaited<ReturnType<typeof generateCaptions>>;
-  type GenerateCaptionsData = Extract<GenerateCaptionsResult, { success: true }>['data'];
-  type WordData = GenerateCaptionsData['words'][number];
-
-  // Internal working type for grouping words into captions
-  type CurrentCaption = {
-    start: number;
-    end: number;
-    words: string[];
-  };
+  import type { TypedLayer } from '../typed-registry';
 
   // Caption generation state
   let isGeneratingCaptions = $state(false);
@@ -32,11 +15,11 @@
   const {
     layer
   }: {
-    layer: Layer;
+    layer: TypedLayer<'video' | 'audio'>;
   } = $props();
 
   async function handleGenerateCaptions() {
-    const fileKey = layer.props.fileKey;
+    const fileKey = layer.props.fileKey as string | undefined;
 
     if (!fileKey) {
       captionError = 'No media file available for caption generation';
@@ -70,47 +53,12 @@
 
       const data = result.data;
       if (data.success && data.words) {
-        // // Convert word-level data to caption items
-        // // Group words into caption blocks (every 5-10 words or when there's a gap > 1s)
-        // const captions: CaptionItem[] = [];
-        // let currentCaption: CurrentCaption | null = null;
-
-        // data.words.forEach((word: WordData, index: number) => {
-        //   const prevWord = index > 0 ? data.words[index - 1] : null;
-        //   const gap = prevWord ? word.start - prevWord.end : 0;
-
-        //   // Start new caption if gap > 1 second or if we have 10 words already
-        //   if (!currentCaption || gap > 1 || currentCaption.words.length >= 10) {
-        //     if (currentCaption) {
-        //       captions.push({
-        //         start: currentCaption.start,
-        //         end: currentCaption.end,
-        //         word: currentCaption.words.join(' ')
-        //       });
-        //     }
-        //     currentCaption = { start: word.start, end: word.end, words: [word.word] };
-        //   } else {
-        //     currentCaption.words.push(word.word);
-        //     currentCaption.end = word.end;
-        //   }
-        // });
-
-        // // Add final caption
-        // if (currentCaption) {
-        //   const { start, end, words } = currentCaption as CurrentCaption;
-        //   captions.push({
-        //     start,
-        //     end,
-        //     word: words.join(' ')
-        //   });
-        // }
-
         // Create a new CaptionsLayer linked to this source layer
-        const captionsLayer: Layer = createLayer('captions', {
+        const captionsLayer: TypedLayer = createLayer('captions', {
           props: {
             sourceLayerId: layer.id,
             words: data.words
-          } as z.infer<typeof meta.schema>,
+          },
           layer: {
             enterTime: layer.enterTime,
             exitTime: layer.exitTime,

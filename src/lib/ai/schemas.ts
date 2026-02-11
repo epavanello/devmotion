@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { InterpolationSchema } from '$lib/schemas/animation';
 import { getPresetIds } from '$lib/engine/presets';
 import { tool, type InferUITools, type Tool } from 'ai';
-import { layerRegistry, getAvailableLayerTypes, type LayerType } from '$lib/layers/registry';
+import { layerRegistry, getAvailableLayerTypes } from '$lib/layers/registry';
 import { extractDefaultValues } from '$lib/layers/base';
 
 // ============================================
@@ -138,7 +138,7 @@ function generateLayerCreationTools(): Record<string, Tool> {
   const tools: Record<string, Tool> = {};
 
   for (const layerType of getAvailableLayerTypes()) {
-    const definition = layerRegistry[layerType as LayerType];
+    const definition = layerRegistry[layerType];
     if (!definition) continue;
 
     const toolName = `create_${layerType}_layer`;

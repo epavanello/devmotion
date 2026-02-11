@@ -2,12 +2,13 @@
  * Global project store using Svelte 5 runes
  */
 import { getPresetById } from '$lib/engine/presets';
-import type { Project, Layer, Keyframe, ViewportSettings, Transform } from '$lib/types/animation';
+import type { Project, Keyframe, ViewportSettings, Transform } from '$lib/types/animation';
 import { nanoid } from 'nanoid';
 import { watch } from 'runed';
 import { SvelteSet } from 'svelte/reactivity';
 import { getLayerTransform, getLayerStyle, getLayerProps } from '$lib/engine/layer-rendering';
 import { tick } from 'svelte';
+import type { TypedLayer } from '$lib/layers/typed-registry';
 
 const STORAGE_KEY = 'devmotion_store';
 const DEBOUNCE_MS = 500;
@@ -171,7 +172,7 @@ class ProjectStore {
   }
 
   // Layer operations
-  addLayer(layer: Layer) {
+  addLayer(layer: TypedLayer) {
     this.project.layers = [...this.project.layers, layer];
   }
 
@@ -197,7 +198,7 @@ class ProjectStore {
     }
   }
 
-  updateLayer(layerId: string, updates: Partial<Layer>) {
+  updateLayer(layerId: string, updates: Partial<TypedLayer>) {
     this.project.layers = this.project.layers.map((layer) =>
       layer.id === layerId ? { ...layer, ...updates } : layer
     );
@@ -419,7 +420,7 @@ class ProjectStore {
     }
   }
 
-  get selectedLayer(): Layer | null {
+  get selectedLayer(): TypedLayer | null {
     if (!this.selectedLayerId) return null;
     return this.project.layers.find((l) => l.id === this.selectedLayerId) || null;
   }
@@ -638,7 +639,7 @@ class ProjectStore {
     const contentOffset = layer.contentOffset ?? 0;
 
     // Create the second half as a new layer
-    const secondHalf: Layer = {
+    const secondHalf: TypedLayer = {
       ...JSON.parse(JSON.stringify(layer)),
       id: nanoid(),
       name: `${layer.name} (2)`,

@@ -2,7 +2,8 @@
  * Shared layer rendering utilities
  * Used by both canvas rendering and frame cache preparation
  */
-import type { Layer, Transform } from '$lib/types/animation';
+import type { Transform } from '$lib/types/animation';
+import type { TypedLayer } from '$lib/layers/typed-registry';
 import { getAnimatedTransform, getAnimatedStyle, getAnimatedProps } from './interpolation';
 import { getLayerSchema } from '$lib/layers/registry';
 import { extractPropertyMetadata } from '$lib/layers/base';
@@ -10,7 +11,7 @@ import { extractPropertyMetadata } from '$lib/layers/base';
 /**
  * Get animated transform for a layer, merging base transform with animated values
  */
-export function getLayerTransform(layer: Layer, currentTime: number): Transform {
+export function getLayerTransform(layer: TypedLayer, currentTime: number): Transform {
   const animatedTransform = getAnimatedTransform(layer.keyframes, currentTime);
 
   return {
@@ -30,7 +31,7 @@ export function getLayerTransform(layer: Layer, currentTime: number): Transform 
 /**
  * Get animated style for a layer
  */
-export function getLayerStyle(layer: Layer, currentTime: number) {
+export function getLayerStyle(layer: TypedLayer, currentTime: number) {
   const animatedStyle = getAnimatedStyle(layer.keyframes, currentTime);
 
   return {
@@ -41,7 +42,7 @@ export function getLayerStyle(layer: Layer, currentTime: number) {
 /**
  * Get animated props for a layer, merging base props with animated values
  */
-export function getLayerProps(layer: Layer, currentTime: number): Record<string, unknown> {
+export function getLayerProps(layer: TypedLayer, currentTime: number): Record<string, unknown> {
   const schema = getLayerSchema(layer.type);
   const propsMetadata = extractPropertyMetadata(schema);
   return getAnimatedProps(layer.keyframes, layer.props, propsMetadata, currentTime);
