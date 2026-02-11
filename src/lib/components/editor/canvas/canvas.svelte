@@ -152,7 +152,7 @@
   );
 
   // Calculate scale for recording mode to fit viewport while maintaining aspect ratio
-  const recordingScale = $derived(() => {
+  const recordingScale = $derived.by(() => {
     if (typeof window === 'undefined') return 1;
     const scaleX = window.innerWidth / projectStore.project.width;
     const scaleY = window.innerHeight / projectStore.project.height;
@@ -201,7 +201,7 @@
         style:height="{projectStore.project.height}px"
         style:left={isRecording ? 'auto' : `-${projectStore.project.width / 2}px`}
         style:top={isRecording ? 'auto' : `-${projectStore.project.height / 2}px`}
-        style:transform={isRecording ? `scale(${recordingScale()})` : undefined}
+        style:transform={isRecording ? `scale(${recordingScale})` : undefined}
         style:perspective="1000px"
         style:perspective-origin="center center"
         style:transform-style="preserve-3d"

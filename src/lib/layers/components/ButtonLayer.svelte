@@ -46,17 +46,25 @@
       .string()
       .default(BRAND_COLORS.blue)
       .describe('Background color')
-      .register(fieldRegistry, { group: 'appearance', interpolationFamily: 'continuous', widget: 'color' }),
-    textColor: z
-      .string()
-      .default('#ffffff')
-      .describe('Text color')
-      .register(fieldRegistry, { group: 'appearance', interpolationFamily: 'continuous', widget: 'color' }),
+      .register(fieldRegistry, {
+        group: 'appearance',
+        interpolationFamily: 'continuous',
+        widget: 'color'
+      }),
+    textColor: z.string().default('#ffffff').describe('Text color').register(fieldRegistry, {
+      group: 'appearance',
+      interpolationFamily: 'continuous',
+      widget: 'color'
+    }),
     borderColor: z
       .string()
       .default(BRAND_COLORS.blue)
       .describe('Border color (for outline/ghost)')
-      .register(fieldRegistry, { group: 'appearance', interpolationFamily: 'continuous', widget: 'color' }),
+      .register(fieldRegistry, {
+        group: 'appearance',
+        interpolationFamily: 'continuous',
+        widget: 'color'
+      }),
     borderRadius: z
       .number()
       .min(0)
@@ -79,7 +87,11 @@
       .default(false)
       .describe('Aspect ratio locked')
       .register(fieldRegistry, { hidden: true }),
-    _aspectRatio: z.number().default(1).describe('Aspect ratio value').register(fieldRegistry, { hidden: true })
+    _aspectRatio: z
+      .number()
+      .default(1)
+      .describe('Aspect ratio value')
+      .register(fieldRegistry, { hidden: true })
   });
 
   export const meta: LayerMeta = {

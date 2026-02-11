@@ -20,16 +20,20 @@
       .default(24)
       .describe('Pointer size (px)')
       .register(fieldRegistry, { interpolationFamily: 'continuous' }),
-    color: z
-      .string()
-      .default('#ffffff')
-      .describe('Pointer color')
-      .register(fieldRegistry, { group: 'appearance', interpolationFamily: 'continuous', widget: 'color' }),
+    color: z.string().default('#ffffff').describe('Pointer color').register(fieldRegistry, {
+      group: 'appearance',
+      interpolationFamily: 'continuous',
+      widget: 'color'
+    }),
     backgroundColor: z
       .string()
       .default('#000000')
       .describe('Background circle color')
-      .register(fieldRegistry, { group: 'appearance', interpolationFamily: 'continuous', widget: 'color' })
+      .register(fieldRegistry, {
+        group: 'appearance',
+        interpolationFamily: 'continuous',
+        widget: 'color'
+      })
   });
 
   export const meta: LayerMeta = {

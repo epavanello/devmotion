@@ -18,15 +18,16 @@
   const exitTime = $derived(layer.exitTime ?? projectStore.project.duration);
   const hasTimeRange = $derived(enterTime > 0 || exitTime < projectStore.project.duration);
 
-  // Media layer detection
-  const isMediaLayer = $derived(layer.type === 'video' || layer.type === 'audio');
+  const isMediaLayer = $derived(
+    layer.type === 'video' || layer.type === 'audio' || layer.type === 'captions'
+  );
 
   // Duration bar position and width
   const barLeft = $derived(enterTime * pixelsPerSecond);
   const barWidth = $derived((exitTime - enterTime) * pixelsPerSecond);
 
   // Group keyframes by timestamp
-  const keyframeGroups = $derived(() => {
+  const keyframeGroups = $derived.by(() => {
     // eslint-disable-next-line svelte/prefer-svelte-reactivity
     const groups = new Map<number, Keyframe[]>();
     for (const keyframe of layer.keyframes) {
@@ -213,7 +214,7 @@
     {/if}
 
     <!-- Keyframes -->
-    {#each keyframeGroups() as group (group.time)}
+    {#each keyframeGroups as group (group.time)}
       <TimelineKeyframe keyframes={group.keyframes} {pixelsPerSecond} layerId={layer.id} />
     {/each}
   </div>

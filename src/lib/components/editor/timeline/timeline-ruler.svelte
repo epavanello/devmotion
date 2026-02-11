@@ -6,7 +6,7 @@
 
   let { pixelsPerSecond, duration }: Props = $props();
 
-  const markers = $derived(() => {
+  const markers = $derived.by(() => {
     const marks = [];
     const totalSeconds = Math.ceil(duration);
     for (let i = 0; i <= totalSeconds; i++) {
@@ -22,7 +22,7 @@
 
   <!-- Time markers -->
   <div class="relative flex-1">
-    {#each markers() as second, index (index)}
+    {#each markers as second, index (index)}
       <div
         class="absolute h-full border-l border-muted-foreground/20"
         style="left: {second * pixelsPerSecond}px"
