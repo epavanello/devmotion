@@ -1,22 +1,22 @@
 /**
- * AI Caption Generation API
+ * AI Caption Generation Remote Functions
  *
  * Generates timed captions/subtitles for audio files using OpenAI Whisper.
- * Returns captions in the timed format expected by AudioLayer:
- *   "MM:SS.ms - MM:SS.ms | caption text"
+ * Returns captions in word-level format with timestamps.
  */
-import { error, json } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
+import { command, getRequestEvent } from '$app/server';
+import { z } from 'zod';
+import { withErrorHandling } from '.';
+import { invalid } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import OpenAI from 'openai';
-import { z } from 'zod';
 import { getSignedFileUrl } from '$lib/server/storage';
 import { sanitizeForFFmpeg } from '$lib/server/utils/filename-sanitizer';
 import ffmpeg from 'fluent-ffmpeg';
 import { PassThrough } from 'stream';
 
 /** Input validation schema */
-const CaptionRequestSchema = z.object({
+const GenerateCaptionsSchema = z.object({
   fileKey: z.string().min(1, 'File key is required'),
   language: z.string().optional(),
   style: z.enum(['subtitle', 'caption', 'lyrics']).optional(),
@@ -57,35 +57,24 @@ async function trimAudio(audioUrl: string, startTime: number, endTime: number): 
 }
 
 /**
- * POST /api/captions
- *
- * Generates timed captions for uploaded audio files using OpenAI Whisper.
- * Only accepts files from trusted storage via fileKey.
- * Supports trimming audio to specific time ranges via mediaStartTime/mediaEndTime.
+ * Generate captions for audio files using OpenAI Whisper
  */
-export const POST: RequestHandler = async ({ request, locals }) => {
-  // Check authentication
-  if (!locals.user?.id) {
-    error(401, 'Unauthorized');
-  }
+export const generateCaptions = command(
+  GenerateCaptionsSchema,
+  withErrorHandling(async ({ fileKey, language, mediaStartTime, mediaEndTime, prompt }) => {
+    const { locals } = getRequestEvent();
 
-  try {
-    const body = await request.json();
-
-    // Validate request body
-    const result = CaptionRequestSchema.safeParse(body);
-    if (!result.success) {
-      error(400, `Invalid request: ${result.error.message}`);
+    // Check authentication
+    if (!locals.user?.id) {
+      invalid('Not authenticated');
     }
-
-    const { fileKey, language, mediaStartTime, mediaEndTime, prompt } = result.data;
 
     // Get signed URL for the uploaded file from trusted storage
     const finalAudioUrl = await getSignedFileUrl(fileKey, 3600);
 
     const apiKey = env.OPENAI_API_KEY;
     if (!apiKey) {
-      error(503, 'AI service not configured (OPENAI_API_KEY missing)');
+      invalid('AI service not configured (OPENAI_API_KEY missing)');
     }
 
     let audioBuffer: ArrayBuffer;
@@ -105,7 +94,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       // Use full audio file
       const audioResponse = await fetch(finalAudioUrl);
       if (!audioResponse.ok) {
-        error(400, `Failed to fetch audio from URL: ${audioResponse.status}`);
+        throw new Error(`Failed to fetch audio from URL: ${audioResponse.status}`);
       }
 
       audioBuffer = await audioResponse.arrayBuffer();
@@ -132,15 +121,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       ...(prompt ? { prompt } : {})
     });
 
-    // Extract both word-level and segment-level data
+    // Extract word-level data
     const words = transcription.words || [];
 
     if (words.length === 0) {
-      return json({
+      return {
         success: true,
         words: [],
         language: language || transcription.language || 'en'
-      });
+      };
     }
 
     // Format word-level data (single source of truth)
@@ -150,19 +139,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       end: w.end
     }));
 
-    return json({
+    return {
       success: true,
       words: wordData,
       language: language || transcription.language || 'en'
-    });
-  } catch (err) {
-    if (err && typeof err === 'object' && 'status' in err) {
-      throw err;
-    }
-    console.error('Caption generation error:', err);
-    error(
-      500,
-      `Failed to generate captions: ${err instanceof Error ? err.message : 'Unknown error'}`
-    );
-  }
-};
+    };
+  })
+);

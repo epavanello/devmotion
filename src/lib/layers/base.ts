@@ -22,6 +22,12 @@ export type LayerCategory = 'media' | 'text' | 'shape' | 'ui' | 'code' | 'browse
  */
 export type InterpolationFamily = 'continuous' | 'discrete' | 'quantized' | 'text';
 
+export type CustomPropertyComponentProps = {
+  value: unknown;
+  onChange: (value: unknown) => void;
+  layer: Layer;
+};
+
 /**
  * Per-field UI metadata that layer schemas can opt into via .register(fieldRegistry, …).
  * Keeps UI-rendering hints out of validation logic and out of .describe() strings.
@@ -44,7 +50,7 @@ export type FieldMeta = {
     }
   | {
       widget: 'custom';
-      component: Component<{ value: unknown; onChange: (value: unknown) => void; layer: Layer }>;
+      component: Component<CustomPropertyComponentProps>;
     }
 );
 

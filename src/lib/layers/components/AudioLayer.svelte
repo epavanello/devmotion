@@ -65,53 +65,6 @@
       .default(1)
       .describe('Playback rate')
       .register(fieldRegistry, { group: 'playback', interpolationFamily: 'continuous' }),
-    /** Show captions overlay */
-
-    /** Caption display mode */
-    captionMode: z
-      .enum(['block', 'word-by-word'])
-      .default('word-by-word')
-      .describe('Caption display mode')
-      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
-    /** Word-level caption data (single source of truth) */
-    captionWords: z
-      .array(
-        z.object({
-          word: z.string(),
-          start: z.number(),
-          end: z.number()
-        })
-      )
-      .default([])
-      .describe('Caption words with timestamps')
-      .register(fieldRegistry, { widget: 'custom', component: CaptionsEditor }),
-    /** Caption style */
-    captionFontSize: z
-      .number()
-      .min(8)
-      .max(120)
-      .default(24)
-      .describe('Font size')
-      .register(fieldRegistry, { group: 'captions', interpolationFamily: 'continuous' }),
-    captionColor: z.string().default('#ffffff').describe('Text color').register(fieldRegistry, {
-      group: 'captions',
-      interpolationFamily: 'continuous',
-      widget: 'color'
-    }),
-    captionBgColor: z
-      .string()
-      .default('rgba(0,0,0,0.7)')
-      .describe('Background color')
-      .register(fieldRegistry, {
-        group: 'captions',
-        interpolationFamily: 'continuous',
-        widget: 'color'
-      }),
-    showCaptions: z
-      .boolean()
-      .default(false)
-      .describe('Show captions')
-      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
     _aspectRatioLocked: z
       .boolean()
       .default(false)
@@ -142,8 +95,7 @@
     },
     propertyGroups: [
       { id: 'size', label: 'Size', widget: AspectRatioToggle },
-      { id: 'playback', label: 'Playback' },
-      { id: 'captions', label: 'Captions' }
+      { id: 'playback', label: 'Playback' }
     ],
 
     middleware: sizeMiddleware
@@ -154,7 +106,6 @@
 
 <script lang="ts">
   import type { Layer } from '$lib/schemas/animation';
-  import CaptionsEditor from '../properties/CaptionsEditor.svelte';
   import { watch } from 'runed';
 
   let {
@@ -164,12 +115,6 @@
     volume,
     muted,
     playbackRate,
-    showCaptions,
-    captionMode,
-    captionWords,
-    captionFontSize,
-    captionColor,
-    captionBgColor,
     fileKey: _fileKey,
     layer,
     currentTime,
@@ -234,72 +179,6 @@
     audioEl.muted = muted;
     audioEl.playbackRate = playbackRate;
   });
-
-  // Derive caption blocks from words (for block mode)
-  // Group words into sentences/segments based on timing gaps
-  const captionBlocks = $derived.by(() => {
-    if (!captionWords || captionWords.length === 0) return [];
-
-    type Block = { start: number; end: number; words: string[] };
-    const blocks: Array<{ id: number; start: number; end: number; text: string }> = [];
-    let currentBlock: Block | null = null;
-
-    captionWords.forEach((word, index) => {
-      const prevWord = index > 0 ? captionWords[index - 1] : null;
-      const gap = prevWord ? word.start - prevWord.end : 0;
-
-      // Start new block if gap > 1 second or if it's the first word
-      if (!currentBlock || gap > 1) {
-        if (currentBlock) {
-          blocks.push({
-            id: blocks.length,
-            start: currentBlock.start,
-            end: currentBlock.end,
-            text: currentBlock.words.join(' ')
-          });
-        }
-        currentBlock = { start: word.start, end: word.end, words: [word.word] };
-      } else {
-        // TypeScript narrowing: we know currentBlock is not null here
-        const block = currentBlock;
-        block.words.push(word.word);
-        block.end = word.end;
-      }
-    });
-
-    // Add final block
-    if (currentBlock) {
-      const finalBlock: Block = currentBlock;
-      blocks.push({
-        id: blocks.length,
-        start: finalBlock.start,
-        end: finalBlock.end,
-        text: finalBlock.words.join(' ')
-      });
-    }
-
-    return blocks;
-  });
-
-  // Current caption block index based on project time
-  // Note: Caption timestamps are relative to the trimmed audio (start from 0),
-  // so we only need relativeTime = currentTime - enterTime
-  const currentBlockIndex = $derived.by(() => {
-    if (!showCaptions || captionBlocks.length === 0 || !layer) return -1;
-    const enterTime = layer.enterTime ?? 0;
-    const relativeTime = currentTime - enterTime;
-    return captionBlocks.findIndex((c) => relativeTime >= c.start && relativeTime < c.end);
-  });
-
-  // Current words to display (for word-by-word mode)
-  const currentWords = $derived.by(() => {
-    if (!showCaptions || !captionWords || captionWords.length === 0 || !layer) return [];
-    const enterTime = layer.enterTime ?? 0;
-    const relativeTime = currentTime - enterTime;
-
-    // Return all words up to current time
-    return captionWords.filter((w) => w.start <= relativeTime);
-  });
 </script>
 
 {#if src}
@@ -307,64 +186,11 @@
 {/if}
 
 <div
-  class="relative overflow-visible rounded"
+  class="flex items-center justify-center rounded bg-gradient-to-br from-purple-500/20 to-pink-500/20 p-4"
   style:width="{width}px"
   style:min-height="{height}px"
 >
-  {#if showCaptions && captionMode === 'word-by-word' && currentWords.length > 0}
-    <!-- Word-by-word mode: Social media style -->
-    <div
-      class="flex flex-wrap content-start items-center justify-center gap-1 p-4"
-      style:width="{width}px"
-      style:min-height="{height}px"
-    >
-      {#each currentWords as word, i (i)}
-        {@const enterTime = layer.enterTime ?? 0}
-        {@const relativeTime = currentTime - enterTime}
-        {@const isActive = relativeTime >= word.start && relativeTime < word.end}
-        {@const justAppeared = relativeTime - word.start < 0.3}
-        <span
-          class="inline-block transition-all duration-150"
-          style:font-size="{captionFontSize}px"
-          style:color={captionColor}
-          style:background-color={isActive ? captionBgColor : 'transparent'}
-          style:padding={isActive ? '4px 8px' : '2px 4px'}
-          style:border-radius="4px"
-          style:font-weight={isActive ? '700' : '500'}
-          style:transform={justAppeared ? 'scale(1.15)' : 'scale(1)'}
-          style:opacity={isActive ? '1' : '0.85'}
-        >
-          {word.word}
-        </span>
-      {/each}
-    </div>
-  {:else if showCaptions && captionMode === 'block' && captionBlocks.length > 0}
-    <!-- Block mode: Progressive paragraphs (derived from words) -->
-    <div
-      class="flex flex-col gap-3 overflow-y-auto p-4"
-      style:width="{width}px"
-      style:max-height="{height}px"
-    >
-      {#each captionBlocks as block (block.id)}
-        {@const isActive = currentBlockIndex === block.id}
-        {@const isPast = currentBlockIndex > block.id}
-        <p
-          class="leading-relaxed transition-all duration-200"
-          style:font-size="{captionFontSize}px"
-          style:color={isActive
-            ? captionColor
-            : isPast
-              ? 'rgba(255,255,255,0.4)'
-              : 'rgba(255,255,255,0.2)'}
-          style:background-color={isActive ? captionBgColor : 'transparent'}
-          style:padding={isActive ? '8px 12px' : '4px 0'}
-          style:border-radius={isActive ? '4px' : '0'}
-          style:font-weight={isActive ? '600' : '400'}
-          style:transform={isActive ? 'scale(1.02)' : 'scale(1)'}
-        >
-          {block.text}
-        </p>
-      {/each}
-    </div>
-  {/if}
+  <div class="text-center">
+    <div class="text-sm font-medium text-white/80">🎵 Audio Layer</div>
+  </div>
 </div>

@@ -6,6 +6,7 @@
   import { calculateCoverDimensions, ASPECT_RATIOS } from '$lib/utils/media';
   import { sizeMiddleware } from '$lib/schemas/size';
   import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
+  import GenerateCaption from '../properties/GenerateCaption.svelte';
 
   /**
    * Schema for Video Layer custom properties
@@ -110,6 +111,10 @@
       { id: 'size', label: 'Size', widget: AspectRatioToggle },
       { id: 'playback', label: 'Playback' }
     ],
+
+    customPropertyComponents: {
+      generateCaptions: { component: GenerateCaption }
+    },
 
     middleware: sizeMiddleware
   };
