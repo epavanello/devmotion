@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
-  import { Video, Square, Loader2, RotateCw } from '@lucide/svelte';
+  import { Video, Square, Loader2, RotateCw, Monitor, Camera } from '@lucide/svelte';
   import {
     uploadMediaBlob,
     generateTimestampedFileName,
@@ -35,6 +35,7 @@
   let recordingInterval: ReturnType<typeof setInterval> | null = null;
   let videoPreviewEl: HTMLVideoElement | undefined = $state();
   let facingMode = $state<'user' | 'environment'>('user');
+  let recordingMode = $state<'camera' | 'screen'>('camera');
 
   const MAX_DURATION = 300; // 5 minutes in seconds
 
@@ -54,15 +55,27 @@
         return;
       }
 
-      // Request camera and mic access
-      mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode
-        },
-        audio: audioEnabled
-      });
+      // Request camera or screen access based on mode
+      if (recordingMode === 'screen') {
+        // Request screen capture
+        mediaStream = await navigator.mediaDevices.getDisplayMedia({
+          video: {
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
+          audio: audioEnabled
+        });
+      } else {
+        // Request camera and mic access
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode
+          },
+          audio: audioEnabled
+        });
+      }
 
       // Note: srcObject is set in the $effect below after video element is rendered
 
@@ -82,7 +95,7 @@
 
       mediaRecorder = new MediaRecorder(mediaStream, {
         mimeType,
-        videoBitsPerSecond: 2500000 // 2.5 Mbps
+        videoBitsPerSecond: recordingMode === 'screen' ? 5000000 : 2500000 // Higher bitrate for screen
       });
 
       videoChunks = [];
@@ -232,7 +245,7 @@
         <!-- Recording indicator overlay -->
         <div class="absolute top-2 left-2 flex items-center gap-2 rounded bg-black/50 px-2 py-1">
           <div class="h-2 w-2 animate-pulse rounded-full bg-destructive"></div>
-          <span class="text-xs font-medium text-white">Recording</span>
+          <span class="text-xs font-medium text-white">Recording {recordingMode === 'screen' ? 'Screen' : 'Camera'}</span>
         </div>
 
         <!-- Duration overlay -->
@@ -242,15 +255,17 @@
           </span>
         </div>
 
-        <!-- Camera switch button -->
-        <button
-          type="button"
-          class="absolute right-2 bottom-2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
-          onclick={switchCamera}
-          title="Switch camera"
-        >
-          <RotateCw class="size-4" />
-        </button>
+        <!-- Camera switch button (only for camera mode) -->
+        {#if recordingMode === 'camera'}
+          <button
+            type="button"
+            class="absolute right-2 bottom-2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+            onclick={switchCamera}
+            title="Switch camera"
+          >
+            <RotateCw class="size-4" />
+          </button>
+        {/if}
       </div>
 
       <!-- Stop button -->
@@ -272,10 +287,35 @@
       <span class="text-sm">Uploading video...</span>
     </div>
   {:else}
+    <!-- Recording mode toggle -->
+    <div class="flex gap-1 rounded border bg-muted/30 p-1">
+      <button
+        type="button"
+        class="flex flex-1 items-center justify-center gap-1 rounded px-2 py-1.5 text-xs transition-colors {recordingMode === 'camera' ? 'bg-background shadow-sm' : 'hover:bg-background/50'}"
+        onclick={() => recordingMode = 'camera'}
+      >
+        <Camera class="size-3" />
+        Camera
+      </button>
+      <button
+        type="button"
+        class="flex flex-1 items-center justify-center gap-1 rounded px-2 py-1.5 text-xs transition-colors {recordingMode === 'screen' ? 'bg-background shadow-sm' : 'hover:bg-background/50'}"
+        onclick={() => recordingMode = 'screen'}
+      >
+        <Monitor class="size-3" />
+        Screen
+      </button>
+    </div>
+
     <!-- Start recording button -->
     <Button variant="default" size="sm" class="w-full text-xs" onclick={startRecording}>
-      <Video class="mr-1 size-3" />
-      Record Video
+      {#if recordingMode === 'screen'}
+        <Monitor class="mr-1 size-3" />
+        Record Screen
+      {:else}
+        <Video class="mr-1 size-3" />
+        Record Camera
+      {/if}
     </Button>
   {/if}
 
