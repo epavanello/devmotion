@@ -29,7 +29,7 @@
     forkProject,
     getUserProjects
   } from '$lib/functions/projects.remote';
-  import { goto } from '$app/navigation';
+  import { goto, replaceState } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { authClient } from '$lib/auth-client';
   import ProjectSwitcher from './project-switcher.svelte';
@@ -135,7 +135,8 @@
     if (result.success && result.data.id) {
       editorState.markAsSaved();
       if (!projectId) {
-        goto(resolve(`/p/${result.data.id}`));
+        replaceState(resolve(`/p/${result.data.id}`), {});
+        editorState.setDbContext(result.data.id, true, true, false);
       }
     }
   }
