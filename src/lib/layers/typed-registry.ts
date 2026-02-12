@@ -8,6 +8,7 @@ import { meta as browserMeta } from './components/BrowserLayer.svelte';
 import { meta as buttonMeta } from './components/ButtonLayer.svelte';
 import { meta as captionsMeta } from './components/CaptionsLayer.svelte';
 import { meta as codeMeta } from './components/CodeLayer.svelte';
+import { meta as groupMeta } from './components/GroupLayer.svelte';
 import { meta as htmlMeta } from './components/HtmlLayer.svelte';
 import { meta as iconMeta } from './components/IconLayer.svelte';
 import { meta as imageMeta } from './components/ImageLayer.svelte';
@@ -30,6 +31,7 @@ export type LayerPropsMap = {
   button: z.infer<typeof buttonMeta.schema>;
   captions: z.infer<typeof captionsMeta.schema>;
   code: z.infer<typeof codeMeta.schema>;
+  group: z.infer<typeof groupMeta.schema>;
   html: z.infer<typeof htmlMeta.schema>;
   icon: z.infer<typeof iconMeta.schema>;
   image: z.infer<typeof imageMeta.schema>;

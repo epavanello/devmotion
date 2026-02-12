@@ -15,7 +15,11 @@ import type {
   RemoveLayerInput,
   RemoveLayerOutput,
   ConfigureProjectInput,
-  ConfigureProjectOutput
+  ConfigureProjectOutput,
+  GroupLayersInput,
+  GroupLayersOutput,
+  UngroupLayersInput,
+  UngroupLayersOutput
 } from './schemas';
 import { SvelteMap } from 'svelte/reactivity';
 import {
@@ -24,6 +28,8 @@ import {
   mutateEditLayer,
   mutateRemoveLayer,
   mutateConfigureProject,
+  mutateGroupLayers,
+  mutateUngroupLayers,
   type MutationContext
 } from './mutations';
 
@@ -118,4 +124,26 @@ export function executeRemoveLayer(input: RemoveLayerInput): RemoveLayerOutput {
  */
 export function executeConfigureProject(input: ConfigureProjectInput): ConfigureProjectOutput {
   return mutateConfigureProject(getContext(), input);
+}
+
+/**
+ * Execute group_layers tool
+ */
+export function executeGroupLayers(input: GroupLayersInput): GroupLayersOutput {
+  const result = mutateGroupLayers(getContext(), input);
+  if (result.success && result.groupId) {
+    projectStore.selectedLayerId = result.groupId;
+  }
+  return result;
+}
+
+/**
+ * Execute ungroup_layers tool
+ */
+export function executeUngroupLayers(input: UngroupLayersInput): UngroupLayersOutput {
+  const result = mutateUngroupLayers(getContext(), input);
+  if (result.success) {
+    projectStore.selectedLayerId = null;
+  }
+  return result;
 }

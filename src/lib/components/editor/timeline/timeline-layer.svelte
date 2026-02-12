@@ -8,9 +8,10 @@
   interface Props {
     layer: TypedLayer;
     pixelsPerSecond: number;
+    indent?: number;
   }
 
-  let { layer, pixelsPerSecond }: Props = $props();
+  let { layer, pixelsPerSecond, indent = 0 }: Props = $props();
 
   const isSelected = $derived(projectStore.selectedLayerId === layer.id);
 
@@ -138,6 +139,8 @@
     window.removeEventListener('mouseup', handleDragEnd);
   });
 
+  const isGroupLayer = $derived(layer.type === 'group');
+
   // Color for the duration bar based on layer type
   const barColor = $derived.by(() => {
     switch (layer.type) {
@@ -145,6 +148,8 @@
         return 'bg-purple-500/30 border-purple-500/50';
       case 'audio':
         return 'bg-blue-500/30 border-blue-500/50';
+      case 'group':
+        return 'bg-emerald-500/25 border-emerald-500/40';
       default:
         return 'bg-primary/15 border-primary/30';
     }
@@ -153,8 +158,12 @@
   const barLabel = $derived.by(() => {
     if (layer.type === 'video') return 'Video';
     if (layer.type === 'audio') return 'Audio';
+    if (layer.type === 'group') return 'Group';
     return '';
   });
+
+  // Always show the bar for groups so users can drag the group range
+  const showBar = $derived(hasTimeRange || isMediaLayer || isGroupLayer);
 </script>
 
 <div
@@ -166,10 +175,13 @@
   tabindex="0"
 >
   <!-- Layer name -->
-  <div class="w-50 shrink-0 truncate border-r px-3 py-2 text-sm">
+  <div
+    class="w-50 shrink-0 truncate border-r px-3 py-2 text-sm"
+    style:padding-left="{12 + indent * 16}px"
+  >
     <div class="flex flex-col">
       <span class="truncate">{layer.name}</span>
-      {#if hasTimeRange || isMediaLayer}
+      {#if hasTimeRange || isMediaLayer || isGroupLayer}
         <span class="text-[10px] text-muted-foreground">
           {enterTime.toFixed(1)}s – {exitTime.toFixed(1)}s
         </span>
@@ -179,8 +191,8 @@
 
   <!-- Keyframes area -->
   <div class="relative h-12 min-h-12 flex-1">
-    <!-- Duration bar (shown for all layers with enter/exit times) -->
-    {#if hasTimeRange || isMediaLayer}
+    <!-- Duration bar (shown for all layers with enter/exit times, and groups) -->
+    {#if showBar}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="absolute top-1 bottom-1 rounded-sm border {barColor}"

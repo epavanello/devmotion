@@ -24,7 +24,11 @@ import type {
   RemoveLayerInput,
   RemoveLayerOutput,
   ConfigureProjectInput,
-  ConfigureProjectOutput
+  ConfigureProjectOutput,
+  GroupLayersInput,
+  GroupLayersOutput,
+  UngroupLayersInput,
+  UngroupLayersOutput
 } from './schemas';
 import type { ProjectData } from '$lib/schemas/animation';
 
@@ -338,16 +342,182 @@ export function mutateRemoveLayer(
 
   const index = ctx.project.layers.findIndex((l) => l.id === resolvedId);
   if (index === -1) {
-    // Already removed?
     return { success: true, message: 'Layer already removed or not found' };
   }
 
-  const name = ctx.project.layers[index].name;
-  ctx.project.layers.splice(index, 1);
+  const layer = ctx.project.layers[index];
+  const name = layer.name;
+
+  // If removing a group, also remove all children
+  if (layer.type === 'group') {
+    ctx.project.layers = ctx.project.layers.filter(
+      (l) => l.id !== resolvedId && l.parentId !== resolvedId
+    );
+  } else {
+    ctx.project.layers.splice(index, 1);
+  }
 
   return {
     success: true,
     message: `Removed layer "${name}"`
+  };
+}
+
+// ============================================
+// Group Mutations
+// ============================================
+
+export function mutateGroupLayers(
+  ctx: MutationContext,
+  input: GroupLayersInput
+): GroupLayersOutput {
+  try {
+    const resolvedIds: string[] = [];
+    for (const ref of input.layerIds) {
+      const id = resolveLayerId(ctx.project, ref, ctx.layerIdMap);
+      if (!id) {
+        return {
+          success: false,
+          message: layerNotFoundError(ctx.project, ref),
+          error: `Layer "${ref}" not found`
+        };
+      }
+      resolvedIds.push(id);
+    }
+
+    if (resolvedIds.length < 2) {
+      return {
+        success: false,
+        message: 'Need at least 2 layers to create a group',
+        error: 'Insufficient layers'
+      };
+    }
+
+    // Validate none are already in a group or are groups themselves
+    for (const id of resolvedIds) {
+      const layer = ctx.project.layers.find((l) => l.id === id);
+      if (layer?.parentId) {
+        return {
+          success: false,
+          message: `Layer "${layer.name}" is already in a group`,
+          error: 'Layer already grouped'
+        };
+      }
+      if (layer?.type === 'group') {
+        return {
+          success: false,
+          message: `Cannot nest group "${layer.name}" inside another group`,
+          error: 'Cannot nest groups'
+        };
+      }
+    }
+
+    const groupId = nanoid();
+
+    // Create the group layer
+    const groupLayer = {
+      id: groupId,
+      name: input.name ?? 'Group',
+      type: 'group' as const,
+      transform: {
+        x: 0,
+        y: 0,
+        z: 0,
+        rotationX: 0,
+        rotationY: 0,
+        rotationZ: 0,
+        scaleX: 1,
+        scaleY: 1,
+        scaleZ: 1,
+        anchor: 'center' as const
+      },
+      style: { opacity: 1 },
+      visible: true,
+      locked: false,
+      keyframes: [],
+      props: { collapsed: false }
+    };
+
+    // Find insertion point (earliest child position)
+    const childIdSet = new Set(resolvedIds);
+    const indices = ctx.project.layers
+      .map((l, i) => (childIdSet.has(l.id) ? i : -1))
+      .filter((i) => i >= 0)
+      .sort((a, b) => a - b);
+    const insertIndex = indices[0];
+
+    // Set parentId on children
+    for (const layer of ctx.project.layers) {
+      if (childIdSet.has(layer.id)) {
+        layer.parentId = groupId;
+      }
+    }
+
+    // Move children out, insert group + children at the right position
+    const childLayers = ctx.project.layers.filter((l) => childIdSet.has(l.id));
+    const otherLayers = ctx.project.layers.filter((l) => !childIdSet.has(l.id));
+    otherLayers.splice(insertIndex, 0, groupLayer, ...childLayers);
+    ctx.project.layers = otherLayers;
+
+    return {
+      success: true,
+      groupId,
+      message: `Created group "${groupLayer.name}" with ${resolvedIds.length} layers`
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: 'Failed to create group',
+      error: err instanceof Error ? err.message : 'Unknown error'
+    };
+  }
+}
+
+export function mutateUngroupLayers(
+  ctx: MutationContext,
+  input: UngroupLayersInput
+): UngroupLayersOutput {
+  const resolvedId = resolveLayerId(ctx.project, input.groupId, ctx.layerIdMap);
+  if (!resolvedId) {
+    const errMsg = layerNotFoundError(ctx.project, input.groupId);
+    return { success: false, message: errMsg, error: errMsg };
+  }
+
+  const group = ctx.project.layers.find((l) => l.id === resolvedId);
+  if (!group || group.type !== 'group') {
+    return {
+      success: false,
+      message: `Layer "${input.groupId}" is not a group`,
+      error: 'Not a group layer'
+    };
+  }
+
+  const gt = group.transform;
+  const gs = group.style;
+
+  // Bake group transform into children and remove parentId
+  for (const layer of ctx.project.layers) {
+    if (layer.parentId === resolvedId) {
+      layer.parentId = undefined;
+      layer.transform.x += gt.x;
+      layer.transform.y += gt.y;
+      layer.transform.z += gt.z;
+      layer.transform.rotationX += gt.rotationX;
+      layer.transform.rotationY += gt.rotationY;
+      layer.transform.rotationZ += gt.rotationZ;
+      layer.transform.scaleX *= gt.scaleX;
+      layer.transform.scaleY *= gt.scaleY;
+      layer.transform.scaleZ *= gt.scaleZ;
+      layer.style.opacity *= gs.opacity;
+    }
+  }
+
+  // Remove the group layer
+  ctx.project.layers = ctx.project.layers.filter((l) => l.id !== resolvedId);
+
+  return {
+    success: true,
+    message: `Ungrouped "${group.name}"`
   };
 }
 
