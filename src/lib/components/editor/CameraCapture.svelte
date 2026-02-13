@@ -7,7 +7,8 @@
     handleMediaError,
     stopMediaStream
   } from './media-upload-utils';
-  import { getUser } from '$lib/functions/auth.remote';
+  import { uiStore } from '$lib/stores/ui.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
 
   interface Props {
     /** Callback when photo capture is complete and uploaded */
@@ -18,7 +19,7 @@
 
   let { onCaptureComplete, projectId }: Props = $props();
 
-  const user = $derived(await getUser());
+  const editorState = $derived(getEditorState());
 
   type State = 'idle' | 'preview' | 'review' | 'uploading';
   let cameraState = $state<State>('idle');
@@ -32,18 +33,6 @@
   async function startPreview() {
     try {
       captureError = '';
-
-      // Require user login
-      if (!user) {
-        captureError = 'Please login to capture photos';
-        return;
-      }
-
-      // Require projectId - user must save project before capturing
-      if (!projectId || projectId.trim() === '') {
-        captureError = 'Please save your project to the cloud before capturing photos';
-        return;
-      }
 
       // Request camera access
       mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -107,6 +96,12 @@
     }
   }
 
+  async function handleStartPreview() {
+    await uiStore.requireLogin('save your project', () => {
+      uiStore.requireCreateProject(editorState, startPreview);
+    });
+  }
+
   async function usePhoto() {
     if (!canvasEl) return;
 
@@ -114,11 +109,6 @@
     captureError = '';
 
     try {
-      // Double-check projectId exists before upload
-      if (!projectId || projectId.trim() === '') {
-        throw new Error('Please save your project to the cloud before uploading photos');
-      }
-
       // Convert canvas to blob
       const blob = await new Promise<Blob | null>((resolve) => {
         canvasEl!.toBlob((b) => resolve(b), 'image/jpeg', 0.92);
@@ -177,7 +167,7 @@
 <div class="space-y-2">
   {#if cameraState === 'idle'}
     <!-- Take photo button -->
-    <Button variant="default" size="sm" class="w-full text-xs" onclick={startPreview}>
+    <Button variant="default" size="sm" class="w-full text-xs" onclick={handleStartPreview}>
       <Camera class="mr-1 size-3" />
       Take Photo
     </Button>

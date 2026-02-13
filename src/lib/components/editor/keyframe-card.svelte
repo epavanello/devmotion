@@ -1,10 +1,13 @@
 <script lang="ts">
   import type { Keyframe, Interpolation } from '$lib/types/animation';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
   import * as Popover from '$lib/components/ui/popover';
   import { Trash2, Palette, Move, RotateCw, Scale, Eye, Clock } from '@lucide/svelte';
   import ScrubInput from './panels/scrub-input.svelte';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   interface Props {
     keyframe: Keyframe;
@@ -118,7 +121,7 @@
   }
 
   function handleTimeChange(newTime: number) {
-    const clampedTime = Math.max(0, Math.min(newTime, projectStore.project.duration));
+    const clampedTime = Math.max(0, Math.min(newTime, projectStore.state.duration));
     projectStore.updateKeyframe(layerId, keyframe.id, { time: clampedTime });
   }
 
@@ -231,7 +234,7 @@
             value={keyframe.time}
             step={0.01}
             min={0}
-            max={projectStore.project.duration}
+            max={projectStore.state.duration}
             onchange={handleTimeChange}
           />
           <span

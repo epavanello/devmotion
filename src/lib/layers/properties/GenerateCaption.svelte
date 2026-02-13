@@ -1,11 +1,14 @@
 <script lang="ts">
   import Button from '$lib/components/ui/button/button.svelte';
   import Textarea from '$lib/components/ui/textarea/textarea.svelte';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Sparkles } from '@lucide/svelte';
   import { createLayer } from '$lib/engine/layer-factory';
   import { generateCaptions } from '$lib/functions/captions.remote';
   import type { TypedLayer } from '../typed-registry';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   // Caption generation state
   let isGeneratingCaptions = $state(false);
@@ -32,7 +35,7 @@
     try {
       // Calculate timing parameters based on layer properties
       const enterTime = layer.enterTime ?? 0;
-      const exitTime = layer.exitTime ?? projectStore.project.duration;
+      const exitTime = layer.exitTime ?? projectStore.state.duration;
       const contentOffset = layer.contentOffset ?? 0;
       const layerDuration = exitTime - enterTime;
 

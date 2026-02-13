@@ -1,11 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import CanvasControls from './canvas-controls.svelte';
   import PlaybackControls from './playback-controls.svelte';
   import LayersRenderer from './layers-renderer.svelte';
   import Watermark from './watermark.svelte';
   import { getBackgroundColor, getBackgroundImage } from '$lib/schemas/background';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   let canvasContainer: HTMLDivElement | undefined = $state();
 
@@ -64,10 +67,10 @@
 
       const newTime = projectStore.currentTime + deltaTime;
 
-      if (newTime >= projectStore.project.duration) {
+      if (newTime >= projectStore.state.duration) {
         // When recording, stop at the end instead of looping
         if (projectStore.isRecording) {
-          projectStore.setCurrentTime(projectStore.project.duration);
+          projectStore.setCurrentTime(projectStore.state.duration);
           projectStore.pause();
         } else {
           projectStore.setCurrentTime(0);
@@ -137,13 +140,13 @@
   // Calculate scale factor to fit project dimensions in viewport
   // This maintains aspect ratio and leaves some padding
   const VIEWPORT_PADDING = 0.9; // Use 90% of available space for padding
-  const projectAspectRatio = $derived(projectStore.project.width / projectStore.project.height);
+  const projectAspectRatio = $derived(projectStore.state.width / projectStore.state.height);
   const containerAspectRatio = $derived(containerWidth / containerHeight);
 
   const fitScale = $derived(
     containerAspectRatio > projectAspectRatio
-      ? (containerHeight * VIEWPORT_PADDING) / projectStore.project.height
-      : (containerWidth * VIEWPORT_PADDING) / projectStore.project.width
+      ? (containerHeight * VIEWPORT_PADDING) / projectStore.state.height
+      : (containerWidth * VIEWPORT_PADDING) / projectStore.state.width
   );
 
   // Calculate viewport transform for pan, zoom, and fit scale
@@ -154,8 +157,8 @@
   // Calculate scale for recording mode to fit viewport while maintaining aspect ratio
   const recordingScale = $derived.by(() => {
     if (typeof window === 'undefined') return 1;
-    const scaleX = window.innerWidth / projectStore.project.width;
-    const scaleY = window.innerHeight / projectStore.project.height;
+    const scaleX = window.innerWidth / projectStore.state.width;
+    const scaleY = window.innerHeight / projectStore.state.height;
     return Math.min(1, scaleX, scaleY); // Never scale up, only down
   });
 </script>
@@ -187,7 +190,7 @@
           style:left="-10000px"
           style:top="-10000px"
           style:background-color="rgba(127, 127, 127, 0.6)"
-          style:clip-path={`polygon(evenodd, 0 0, 0 20000px, 20000px 20000px, 20000px 0, 0 0, ${10000 - projectStore.project.width / 2}px ${10000 - projectStore.project.height / 2}px, ${10000 - projectStore.project.width / 2}px ${10000 + projectStore.project.height / 2}px, ${10000 + projectStore.project.width / 2}px ${10000 + projectStore.project.height / 2}px, ${10000 + projectStore.project.width / 2}px ${10000 - projectStore.project.height / 2}px, ${10000 - projectStore.project.width / 2}px ${10000 - projectStore.project.height / 2}px)`}
+          style:clip-path={`polygon(evenodd, 0 0, 0 20000px, 20000px 20000px, 20000px 0, 0 0, ${10000 - projectStore.state.width / 2}px ${10000 - projectStore.state.height / 2}px, ${10000 - projectStore.state.width / 2}px ${10000 + projectStore.state.height / 2}px, ${10000 + projectStore.state.width / 2}px ${10000 + projectStore.state.height / 2}px, ${10000 + projectStore.state.width / 2}px ${10000 - projectStore.state.height / 2}px, ${10000 - projectStore.state.width / 2}px ${10000 - projectStore.state.height / 2}px)`}
           style:pointer-events="none"
         ></div>
       {/if}
@@ -197,17 +200,17 @@
         bind:this={projectViewport}
         class="project-viewport"
         class:project-viewport-recording={isRecording}
-        style:width="{projectStore.project.width}px"
-        style:height="{projectStore.project.height}px"
-        style:left={isRecording ? 'auto' : `-${projectStore.project.width / 2}px`}
-        style:top={isRecording ? 'auto' : `-${projectStore.project.height / 2}px`}
+        style:width="{projectStore.state.width}px"
+        style:height="{projectStore.state.height}px"
+        style:left={isRecording ? 'auto' : `-${projectStore.state.width / 2}px`}
+        style:top={isRecording ? 'auto' : `-${projectStore.state.height / 2}px`}
         style:transform={isRecording ? `scale(${recordingScale})` : undefined}
         style:perspective="1000px"
         style:perspective-origin="center center"
         style:transform-style="preserve-3d"
         style:isolation="isolate"
-        style:background-color={getBackgroundColor(projectStore.project.background)}
-        style:background-image={getBackgroundImage(projectStore.project.background)}
+        style:background-color={getBackgroundColor(projectStore.state.background)}
+        style:background-image={getBackgroundImage(projectStore.state.background)}
         style:cursor={projectStore.isRecording ? 'none' : undefined}
       >
         <!-- Layers -->
@@ -217,9 +220,9 @@
           style:pointer-events={projectStore.isRecording ? 'none' : undefined}
         >
           <LayersRenderer
-            layers={projectStore.project.layers}
+            layers={projectStore.state.layers}
             currentTime={projectStore.currentTime}
-            duration={projectStore.project.duration}
+            duration={projectStore.state.duration}
             isPlaying={projectStore.isPlaying}
             selectedLayerId={projectStore.selectedLayerId}
             disableSelection={projectStore.isRecording}

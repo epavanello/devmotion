@@ -3,44 +3,9 @@
   import type { LayerMeta } from '../registry';
   import { Type } from '@lucide/svelte';
   import { fieldRegistry } from '../base';
-
-  /**
-   * Popular Google Fonts enum
-   */
-  const GoogleFonts = {
-    Inter: 'Inter',
-    Roboto: 'Roboto',
-    Poppins: 'Poppins',
-    Manrope: 'Manrope',
-    OpenSans: 'Open Sans',
-    Montserrat: 'Montserrat',
-    Lato: 'Lato',
-    PlayfairDisplay: 'Playfair Display',
-    DMSans: 'DM Sans',
-    Nunito: 'Nunito',
-    Raleway: 'Raleway',
-    Merriweather: 'Merriweather',
-    SourceSans3: 'Source Sans 3',
-    Oswald: 'Oswald',
-    Ubuntu: 'Ubuntu',
-    WorkSans: 'Work Sans',
-    Quicksand: 'Quicksand',
-    Mulish: 'Mulish',
-    Barlow: 'Barlow',
-    Outfit: 'Outfit'
-  } as const;
-
-  export type GoogleFont = (typeof GoogleFonts)[keyof typeof GoogleFonts];
-
-  export const googleFontValues = Object.values(GoogleFonts) as [GoogleFont, ...GoogleFont[]];
-
-  /**
-   * Generate Google Fonts CSS URL for a given font family
-   */
-  export function getGoogleFontUrl(fontFamily: GoogleFont): string {
-    const encodedFamily = fontFamily.replace(/ /g, '+');
-    return `https://fonts.googleapis.com/css2?family=${encodedFamily}:wght@100;200;300;400;500;600;700;800;900&display=swap`;
-  }
+  import { googleFontValues } from '$lib/utils/fonts';
+  import ApplyFont from '$lib/components/font/apply-font.svelte';
+  import FontProperty from '../properties/FontProperty.svelte';
 
   /**
    * Schema for Text Layer custom properties
@@ -60,9 +25,13 @@
       .register(fieldRegistry, { group: 'typography', interpolationFamily: 'continuous' }),
     fontFamily: z
       .enum(googleFontValues)
-      .default('Inter')
+      .optional()
       .describe('Font family')
-      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+      .register(fieldRegistry, {
+        interpolationFamily: 'discrete',
+        widget: 'custom',
+        component: FontProperty
+      }),
     fontWeight: z
       .enum(['normal', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900'])
       .default('normal')
@@ -112,25 +81,18 @@
 <script lang="ts">
   let { content, fontSize, fontFamily, fontWeight, autoWidth, width, textAlign, color }: Props =
     $props();
-
-  const fontUrl = $derived(getGoogleFontUrl(fontFamily as GoogleFont));
 </script>
 
-<svelte:head>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-  <link rel="stylesheet" href={fontUrl} />
-</svelte:head>
-
-<div
-  class="select-none"
-  class:whitespace-nowrap={autoWidth}
-  style:font-size="{fontSize}px"
-  style:font-family="'{fontFamily}', sans-serif"
-  style:font-weight={fontWeight}
-  style:color
-  style:width={autoWidth ? 'auto' : `${width}px`}
-  style:text-align={textAlign}
->
-  {content}
-</div>
+<ApplyFont {fontFamily}>
+  <div
+    class="select-none"
+    class:whitespace-nowrap={autoWidth}
+    style:font-size="{fontSize}px"
+    style:font-weight={fontWeight}
+    style:color
+    style:width={autoWidth ? 'auto' : `${width}px`}
+    style:text-align={textAlign}
+  >
+    {content}
+  </div>
+</ApplyFont>

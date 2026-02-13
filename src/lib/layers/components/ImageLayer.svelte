@@ -2,8 +2,6 @@
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
   import { Image } from '@lucide/svelte';
-  import { calculateCoverDimensions, ASPECT_RATIOS } from '$lib/utils/media';
-  import { projectStore } from '$lib/stores/project.svelte';
   import { fieldRegistry } from '../base';
   import { sizeMiddleware } from '$lib/schemas/size';
   import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
@@ -23,28 +21,14 @@
       .number()
       .min(1)
       .max(5000)
-      .default(
-        () =>
-          calculateCoverDimensions(
-            projectStore.project.width,
-            projectStore.project.height,
-            ASPECT_RATIOS.IMAGE_DEFAULT
-          ).width
-      )
+      .default(720)
       .describe('Width (px)')
       .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
     height: z
       .number()
       .min(1)
       .max(5000)
-      .default(
-        () =>
-          calculateCoverDimensions(
-            projectStore.project.width,
-            projectStore.project.height,
-            ASPECT_RATIOS.IMAGE_DEFAULT
-          ).height
-      )
+      .default(1280)
       .describe('Height (px)')
       .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
     objectFit: z

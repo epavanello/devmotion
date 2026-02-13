@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
   import {
     Eye,
@@ -16,6 +16,9 @@
   import { cn } from '$lib/utils';
   import type { TypedLayer } from '$lib/layers/typed-registry';
   import { SvelteSet } from 'svelte/reactivity';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   let deletePopoverOpenLayerId = $state<string | null>(null);
   const collapsedGroups = new SvelteSet<string>();
@@ -85,7 +88,7 @@
     if (!dragLayerId) return;
 
     // If dropping onto a group, add to that group
-    const targetLayer = projectStore.project.layers.find((l) => l.id === targetLayerId);
+    const targetLayer = projectStore.state.layers.find((l) => l.id === targetLayerId);
     if (targetLayer?.type === 'group' && dragLayerId !== targetLayerId) {
       projectStore.addLayerToGroup(dragLayerId, targetLayerId);
       return;
@@ -107,7 +110,7 @@
   /** Build a structured view: top-level layers with their children */
   const layerTree = $derived.by(() => {
     const topLevel: Array<{ layer: TypedLayer; children: TypedLayer[]; index: number }> = [];
-    const layers = projectStore.project.layers;
+    const layers = projectStore.state.layers;
 
     for (let i = 0; i < layers.length; i++) {
       const layer = layers[i];
@@ -275,24 +278,24 @@
 
     <!-- Group children (indented) -->
     {#if isGroup && !isCollapsed}
-      {#each children as child (child.id)}
-        {@const ChildIcon = getLayerDefinition(child.type).icon}
-        {@const childIndex = projectStore.project.layers.indexOf(child)}
+      {#each children as layerChild (layerChild.id)}
+        {@const ChildIcon = getLayerDefinition(layerChild.type).icon}
+        {@const childIndex = projectStore.state.layers.indexOf(layerChild)}
 
         <div
           class={cn(
             'group ml-6 flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 transition-colors hover:bg-muted/50',
             {
-              'bg-muted': projectStore.selectedLayerId === child.id
+              'bg-muted': projectStore.selectedLayerId === layerChild.id
             }
           )}
-          onclick={() => selectLayer(child.id)}
-          onkeydown={(e) => handleKeyDown(e, child.id)}
+          onclick={() => selectLayer(layerChild.id)}
+          onkeydown={(e) => handleKeyDown(e, layerChild.id)}
           draggable="true"
-          ondragstart={(e) => handleDragStart(e, child.id, childIndex)}
-          ondragover={(e) => handleDragOver(e, child.id)}
+          ondragstart={(e) => handleDragStart(e, layerChild.id, childIndex)}
+          ondragover={(e) => handleDragOver(e, layerChild.id)}
           ondragleave={handleDragLeave}
-          ondrop={(e) => handleDrop(e, childIndex, child.id)}
+          ondrop={(e) => handleDrop(e, childIndex, layerChild.id)}
           role="button"
           tabindex="0"
         >
@@ -300,10 +303,10 @@
 
           <div
             class={cn('flex-1 truncate text-sm', {
-              'opacity-30': !child.visible
+              'opacity-30': !layerChild.visible
             })}
           >
-            {child.name}
+            {layerChild.name}
           </div>
 
           <!-- Child Controls -->
@@ -311,7 +314,7 @@
             class={cn(
               'flex max-w-0 items-center gap-1 overflow-hidden opacity-0 transition-all duration-200 group-hover:max-w-40 group-hover:opacity-100 [@media(hover:none)]:max-w-40 [@media(hover:none)]:opacity-100',
               {
-                'max-w-40! opacity-100!': deletePopoverOpenLayerId === child.id
+                'max-w-40! opacity-100!': deletePopoverOpenLayerId === layerChild.id
               }
             )}
           >
@@ -319,9 +322,9 @@
               variant="ghost"
               size="sm"
               class="h-6 w-6 p-0"
-              onclick={(e) => toggleLayerVisibility(child, e)}
+              onclick={(e) => toggleLayerVisibility(layerChild, e)}
             >
-              {#if child.visible}
+              {#if layerChild.visible}
                 <Eye class="size-3" />
               {:else}
                 <EyeOff class="size-3" />
@@ -332,9 +335,9 @@
               variant="ghost"
               size="sm"
               class="h-6 w-6 p-0"
-              onclick={(e) => toggleLayerLock(child, e)}
+              onclick={(e) => toggleLayerLock(layerChild, e)}
             >
-              {#if child.locked}
+              {#if layerChild.locked}
                 <Lock class="size-3" />
               {:else}
                 <Unlock class="size-3" />
@@ -342,8 +345,8 @@
             </Button>
 
             <Popover.Root
-              open={deletePopoverOpenLayerId === child.id}
-              onOpenChange={(open) => (deletePopoverOpenLayerId = open ? child.id : null)}
+              open={deletePopoverOpenLayerId === layerChild.id}
+              onOpenChange={(open) => (deletePopoverOpenLayerId = open ? layerChild.id : null)}
             >
               <Popover.Trigger>
                 {#snippet child({ props })}
@@ -356,7 +359,7 @@
                 <div class="space-y-2">
                   <h4 class="leading-none font-medium">Remove from Group</h4>
                   <p class="text-sm text-muted-foreground">
-                    Remove "{child.name}" from group, or delete it entirely?
+                    Remove "{layerChild.name}" from group, or delete it entirely?
                   </p>
                   <div class="flex justify-end gap-2 pt-2">
                     <Popover.Close>
@@ -370,7 +373,7 @@
                           variant="secondary"
                           size="sm"
                           {...props}
-                          onclick={() => projectStore.removeLayerFromGroup(child.id)}
+                          onclick={() => projectStore.removeLayerFromGroup(layerChild.id)}
                         >
                           Unparent
                         </Button>
@@ -382,7 +385,7 @@
                           variant="destructive"
                           size="sm"
                           {...props}
-                          onclick={() => deleteLayer(child.id)}
+                          onclick={() => deleteLayer(layerChild.id)}
                         >
                           Delete
                         </Button>
@@ -398,7 +401,7 @@
     {/if}
   {/each}
 
-  {#if projectStore.project.layers.length === 0}
+  {#if projectStore.state.layers.length === 0}
     <div class="py-8 text-center text-sm text-muted-foreground">
       <p>No layers yet</p>
       <p class="mt-1 text-xs">Add layers from the toolbar</p>

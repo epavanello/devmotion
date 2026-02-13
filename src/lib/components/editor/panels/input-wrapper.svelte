@@ -1,9 +1,12 @@
 <script lang="ts">
   import Label from '$lib/components/ui/label/label.svelte';
   import type { AnimatableProperty } from '$lib/schemas/animation';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import type { Snippet } from 'svelte';
   import InputPin from './input-pin.svelte';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   const {
     id,

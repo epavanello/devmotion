@@ -6,6 +6,9 @@
   import { fieldRegistry } from '../base';
   import { sizeMiddleware } from '$lib/schemas/size';
   import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
+  import { googleFontValues } from '$lib/utils/fonts';
+  import ApplyFont from '$lib/components/font/apply-font.svelte';
+  import FontProperty from '../properties/FontProperty.svelte';
 
   /**
    * Schema for Button Layer custom properties
@@ -37,6 +40,16 @@
       .default(16)
       .describe('Font size (px)')
       .register(fieldRegistry, { group: 'typography', interpolationFamily: 'continuous' }),
+    fontFamily: z
+      .enum(googleFontValues)
+      .optional()
+      .describe('Font family')
+      .register(fieldRegistry, {
+        group: 'typography',
+        interpolationFamily: 'discrete',
+        widget: 'custom',
+        component: FontProperty
+      }),
     fontWeight: z
       .enum(['normal', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900'])
       .default('bold')
@@ -124,6 +137,7 @@
     textColor,
     fontSize,
     borderRadius,
+    fontFamily,
     fontWeight,
     style,
     borderColor,
@@ -172,17 +186,19 @@
   });
 </script>
 
-<button
-  class={buttonClasses}
-  style:width="{width}px"
-  style:height="{height}px"
-  style:font-size="{fontSize}px"
-  style:font-weight={fontWeight}
-  style:border-radius="{borderRadius}px"
-  style:background-color={buttonStyle.backgroundColor}
-  style:color={buttonStyle.color}
-  style:border={buttonStyle.border}
-  type="button"
->
-  {text}
-</button>
+<ApplyFont {fontFamily}>
+  <button
+    class={buttonClasses}
+    style:width="{width}px"
+    style:height="{height}px"
+    style:font-size="{fontSize}px"
+    style:font-weight={fontWeight}
+    style:border-radius="{borderRadius}px"
+    style:background-color={buttonStyle.backgroundColor}
+    style:color={buttonStyle.color}
+    style:border={buttonStyle.border}
+    type="button"
+  >
+    {text}
+  </button>
+</ApplyFont>

@@ -22,11 +22,15 @@
   import { Label } from '$lib/components/ui/label';
   import { Input } from '$lib/components/ui/input';
   import { Select } from '$lib/components/ui/select';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { FontSelector } from '$lib/components/font';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Settings } from '@lucide/svelte';
   import BackgroundPicker from './panels/background-picker.svelte';
   import { BRAND_COLORS } from '$lib/constants/branding';
   import type { Project } from '$lib/schemas/animation';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   interface Props {
     open: boolean;
@@ -34,27 +38,23 @@
 
   let { open = $bindable() }: Props = $props();
 
-  let formData: Pick<Project, 'name' | 'width' | 'height' | 'duration' | 'background'> = $derived({
-    name: projectStore.project.name,
-    width: projectStore.project.width,
-    height: projectStore.project.height,
-    duration: projectStore.project.duration,
-    background: projectStore.project.background
-  });
+  let formData: Pick<
+    Project,
+    'name' | 'width' | 'height' | 'duration' | 'background' | 'fontFamily'
+  > = $derived(projectStore.state);
 
   let selectedResolution = $derived.by(() => {
     const res = commonResolutions.find(
-      (r) => r.width === projectStore.project.width && r.height === projectStore.project.height
+      (r) => r.width === projectStore.state.width && r.height === projectStore.state.height
     );
     return res ? `${res.width}x${res.height}` : 'custom';
   });
 
-  function handleResolutionChange(e: Event) {
-    const target = e.target as HTMLSelectElement;
-    selectedResolution = target.value;
+  function handleResolutionChange(value: string) {
+    selectedResolution = value;
 
-    if (target.value !== 'custom') {
-      const res = commonResolutions.find((r) => `${r.width}x${r.height}` === target.value);
+    if (value !== 'custom') {
+      const res = commonResolutions.find((r) => `${r.width}x${r.height}` === value);
       if (res) {
         formData.width = res.width;
         formData.height = res.height;
@@ -63,11 +63,7 @@
   }
 
   function handleSave() {
-    projectStore.project.name = formData.name;
-    projectStore.project.width = formData.width;
-    projectStore.project.height = formData.height;
-    projectStore.project.duration = formData.duration;
-    projectStore.project.background = formData.background;
+    projectStore.updateProject({ ...formData });
 
     open = false;
   }
@@ -75,14 +71,15 @@
   function handleOpenChange(newOpen: boolean) {
     if (newOpen) {
       // Reset form to current project state when opening
-      formData.name = projectStore.project.name;
-      formData.width = projectStore.project.width;
-      formData.height = projectStore.project.height;
-      formData.duration = projectStore.project.duration;
-      formData.background = projectStore.project.background;
+      formData.name = projectStore.state.name;
+      formData.width = projectStore.state.width;
+      formData.height = projectStore.state.height;
+      formData.duration = projectStore.state.duration;
+      formData.background = projectStore.state.background;
+      formData.fontFamily = projectStore.state.fontFamily;
 
       const res = commonResolutions.find(
-        (r) => r.width === projectStore.project.width && r.height === projectStore.project.height
+        (r) => r.width === projectStore.state.width && r.height === projectStore.state.height
       );
       selectedResolution = res ? `${res.width}x${res.height}` : 'custom';
     }
@@ -111,13 +108,19 @@
       <!-- Resolution -->
       <div class="space-y-2">
         <Label for="resolution">Resolution</Label>
-        <Select id="resolution" value={selectedResolution} onchange={handleResolutionChange}>
-          {#each commonResolutions as res (res.label)}
-            <option value={res.label === 'Custom' ? 'custom' : `${res.width}x${res.height}`}>
-              {res.label}
-            </option>
-          {/each}
-        </Select>
+        <Select
+          trigger={{
+            id: 'resolution'
+          }}
+          root={{
+            onValueChange: handleResolutionChange
+          }}
+          value={selectedResolution}
+          options={commonResolutions.map((res) => ({
+            value: res.label === 'Custom' ? 'custom' : `${res.width}x${res.height}`,
+            label: res.label
+          }))}
+        />
       </div>
 
       <!-- Custom Width/Height -->
@@ -157,6 +160,15 @@
             side="right"
           />
         </div>
+      </div>
+
+      <!-- Default Font -->
+      <div class="space-y-2">
+        <Label for="font-family">Default Font</Label>
+        <FontSelector id="font-family" bind:value={formData.fontFamily} />
+        <p class="text-xs text-muted-foreground">
+          Layers can use this font or override individually
+        </p>
       </div>
     </div>
 

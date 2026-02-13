@@ -3,8 +3,6 @@
   import { Button } from '$lib/components/ui/button';
   import GoogleIcon from '$lib/assets/svg/google-icon.svelte';
   import { authClient } from '$lib/auth-client';
-  import { resolve } from '$app/paths';
-  import { goto } from '$app/navigation';
 
   interface Props {
     open: boolean;
@@ -24,15 +22,10 @@
       console.error('Google login failed:', error);
     }
   }
-
-  function handleEmailLogin() {
-    open = false;
-    goto(resolve('/login'));
-  }
 </script>
 
 <Dialog.Root bind:open>
-  <Dialog.Content class="max-w-sm">
+  <Dialog.Content class="w-[24rem]">
     <Dialog.Header>
       <Dialog.Title>Login required</Dialog.Title>
       <Dialog.Description>
@@ -42,11 +35,9 @@
 
     <div class="flex flex-col gap-3 pt-2">
       <Button class="w-full" onclick={handleGoogleLogin} icon={GoogleIcon}>
-        Continue with Google — free AI credits included
+        Continue with Google
       </Button>
-      <Button variant="outline" class="w-full" onclick={handleEmailLogin}>
-        Sign in with email
-      </Button>
+      <div class="text-right text-xs text-muted-foreground">free AI credits included</div>
     </div>
   </Dialog.Content>
 </Dialog.Root>

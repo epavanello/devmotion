@@ -3,7 +3,6 @@
   import type { LayerMeta } from '../registry';
   import { fieldRegistry } from '../base';
   import { Video } from '@lucide/svelte';
-  import { calculateCoverDimensions, ASPECT_RATIOS } from '$lib/utils/media';
   import { sizeMiddleware } from '$lib/schemas/size';
   import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
   import GenerateCaption from '../properties/GenerateCaption.svelte';
@@ -21,28 +20,14 @@
       .number()
       .min(1)
       .max(5000)
-      .default(
-        () =>
-          calculateCoverDimensions(
-            projectStore.project.width,
-            projectStore.project.height,
-            ASPECT_RATIOS.VIDEO_DEFAULT
-          ).width
-      )
+      .default(720)
       .describe('Width (px)')
       .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
     height: z
       .number()
       .min(1)
       .max(5000)
-      .default(
-        () =>
-          calculateCoverDimensions(
-            projectStore.project.width,
-            projectStore.project.height,
-            ASPECT_RATIOS.VIDEO_DEFAULT
-          ).height
-      )
+      .default(1280)
       .describe('Height (px)')
       .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
     borderRadius: z
@@ -125,7 +110,6 @@
 
 <script lang="ts">
   import type { TypedLayer } from '$lib/layers/typed-registry';
-  import { projectStore } from '$lib/stores/project.svelte';
   import { watch } from 'runed';
 
   let {

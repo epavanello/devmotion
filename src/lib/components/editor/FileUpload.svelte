@@ -4,7 +4,8 @@
   import AudioRecorder from './AudioRecorder.svelte';
   import VideoRecorder from './VideoRecorder.svelte';
   import CameraCapture from './CameraCapture.svelte';
-  import { getUser } from '$lib/functions/auth.remote';
+  import { uiStore } from '$lib/stores/ui.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
 
   interface Props {
     /** Current file URL (if already uploaded or set) */
@@ -30,7 +31,7 @@
     projectId
   }: Props = $props();
 
-  const user = $derived(await getUser());
+  const editorState = $derived(getEditorState());
 
   let isUploading = $state(false);
   let uploadError = $state('');
@@ -89,23 +90,15 @@
   }
 
   async function handleFileSelect(e: Event) {
+    await uiStore.requireLogin('save your project', () => {
+      uiStore.requireCreateProject(editorState, () => performFileUpload(e));
+    });
+  }
+
+  async function performFileUpload(e: Event) {
     const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-
-    // Require user login
-    if (!user) {
-      uploadError = 'Please login to upload files';
-      if (input) input.value = '';
-      return;
-    }
-
-    // Require projectId - user must save project before uploading
-    if (!projectId || projectId.trim() === '') {
-      uploadError = 'Please save your project to the cloud before uploading files';
-      if (input) input.value = '';
-      return;
-    }
 
     isUploading = true;
     uploadError = '';

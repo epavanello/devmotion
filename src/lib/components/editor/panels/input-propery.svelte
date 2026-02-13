@@ -4,10 +4,13 @@
   import type { PropertyMetadata } from '$lib/layers/base';
   import type { TypedLayer } from '$lib/layers/typed-registry';
   import type { BackgroundValue } from '$lib/schemas/animation';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import FileUpload from '../FileUpload.svelte';
   import BackgroundPicker from './background-picker.svelte';
   import ScrubInput from './scrub-input.svelte';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   const {
     metadata,
@@ -28,7 +31,7 @@
     value={typeof value === 'string' ? value : ''}
     currentFileName={typeof layer.props.fileName === 'string' ? layer.props.fileName : ''}
     mediaType={metadata.meta.mediaType}
-    projectId={projectStore.dbProjectId ?? undefined}
+    projectId={editorState.dbProjectId ?? undefined}
     onUpload={(result) => {
       onUpdateProp(metadata.name, result.url);
       onUpdateProp('fileKey', result.key);
@@ -54,6 +57,29 @@
       projectStore.setLayerExitTime(layer.id, enterTime);
     }}
   />
+{:else if metadata.meta?.widget === 'textarea'}
+  <Textarea
+    id={metadata.name}
+    value={typeof value === 'string' ? value : ''}
+    oninput={(e) => onUpdateProp(metadata.name, e.currentTarget.value)}
+    spellcheck="false"
+  />
+{:else if metadata.meta?.widget === 'background'}
+  <BackgroundPicker
+    value={value as BackgroundValue}
+    onchange={(newValue) => onUpdateProp(metadata.name, newValue)}
+  />
+{:else if metadata.meta?.widget === 'color'}
+  <Input
+    id={metadata.name}
+    type="color"
+    value={typeof value === 'string' ? value : '#000000'}
+    oninput={(e) => onUpdateProp(metadata.name, e.currentTarget.value)}
+    class="min-w-20 p-1"
+  />
+{:else if metadata.meta?.widget === 'custom'}
+  {@const Component = metadata.meta.component}
+  <Component {value} onChange={(newValue) => onUpdateProp(metadata.name, newValue)} {layer} />
 {:else if metadata.type === 'number'}
   <ScrubInput
     id={metadata.name}
@@ -85,29 +111,6 @@
       <option value={option.value}>{option.label}</option>
     {/each}
   </select>
-{:else if metadata.meta?.widget === 'textarea'}
-  <Textarea
-    id={metadata.name}
-    value={typeof value === 'string' ? value : ''}
-    oninput={(e) => onUpdateProp(metadata.name, e.currentTarget.value)}
-    spellcheck="false"
-  />
-{:else if metadata.meta?.widget === 'background'}
-  <BackgroundPicker
-    value={value as BackgroundValue}
-    onchange={(newValue) => onUpdateProp(metadata.name, newValue)}
-  />
-{:else if metadata.meta?.widget === 'color'}
-  <Input
-    id={metadata.name}
-    type="color"
-    value={typeof value === 'string' ? value : '#000000'}
-    oninput={(e) => onUpdateProp(metadata.name, e.currentTarget.value)}
-    class="min-w-20 p-1"
-  />
-{:else if metadata.meta?.widget === 'custom'}
-  {@const Component = metadata.meta.component}
-  <Component {value} onChange={(newValue) => onUpdateProp(metadata.name, newValue)} {layer} />
 {:else}
   <!-- Default to text input for strings and unknown types -->
   <Input

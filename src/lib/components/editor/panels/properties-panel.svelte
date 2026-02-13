@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Label } from '$lib/components/ui/label';
   import { Input } from '$lib/components/ui/input';
   import { Button } from '$lib/components/ui/button';
@@ -47,6 +47,8 @@
   import LayerKeyframes from './layer-keyframes.svelte';
   import type { TypedLayer } from '$lib/layers/typed-registry';
 
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
   const selectedLayer = $derived(projectStore.selectedLayer);
 
   // Extract property metadata from the layer's Zod schema
@@ -402,11 +404,11 @@
               min={0}
               max={selectedLayer.contentDuration !== undefined
                 ? Math.min(
-                    projectStore.project.duration,
-                    projectStore.project.duration -
+                    projectStore.state.duration,
+                    projectStore.state.duration -
                       (selectedLayer.contentDuration - (selectedLayer.contentOffset ?? 0))
                   )
-                : projectStore.project.duration}
+                : projectStore.state.duration}
               step={0.1}
               onchange={(v) => projectStore.setLayerEnterTime(selectedLayer.id, v)}
             />
@@ -415,9 +417,9 @@
             <Label class="text-xs text-muted-foreground">Exit (s)</Label>
             <ScrubInput
               id="exit-time"
-              value={selectedLayer.exitTime ?? projectStore.project.duration}
+              value={selectedLayer.exitTime ?? projectStore.state.duration}
               min={0}
-              max={projectStore.project.duration}
+              max={projectStore.state.duration}
               step={0.1}
               onchange={(v) => projectStore.setLayerExitTime(selectedLayer.id, v)}
             />

@@ -5,7 +5,7 @@
   import { Music } from '@lucide/svelte';
   import GenerateCaption from '../properties/GenerateCaption.svelte';
   import { sizeMiddleware } from '$lib/schemas/size';
-  import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
+
   import type { Layer } from '$lib/schemas/animation';
 
   /**

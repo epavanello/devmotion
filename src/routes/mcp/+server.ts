@@ -69,6 +69,7 @@ const handler = createMcpHandler(
         // Create anonymous public project (userId is null for MCP-created projects)
         const data: ProjectData = {
           ...DEFAULT_PROJECT,
+          fontFamily: 'Inter',
           name,
           width,
           height
