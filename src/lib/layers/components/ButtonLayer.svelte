@@ -84,12 +84,12 @@
       .max(100)
       .default(8)
       .describe('Border radius (px)')
-      .register(fieldRegistry, { group: 'appearance', interpolationFamily: 'continuous' }),
+      .register(fieldRegistry, { group: 'style', interpolationFamily: 'continuous' }),
     style: z
       .enum(['solid', 'outline', 'ghost'])
       .default('solid')
       .describe('Button style variant')
-      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+      .register(fieldRegistry, { group: 'style', interpolationFamily: 'discrete' }),
     shadow: z
       .boolean()
       .default(true)
@@ -119,7 +119,8 @@
     propertyGroups: [
       { id: 'size', label: 'Size', widget: AspectRatioToggle },
       { id: 'typography', label: 'Typography' },
-      { id: 'appearance', label: 'Appearance' }
+      { id: ' appearance', label: 'Appearance' },
+      { id: 'style', label: 'Style' }
     ],
 
     middleware: sizeMiddleware

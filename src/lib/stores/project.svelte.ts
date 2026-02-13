@@ -391,6 +391,23 @@ export class ProjectStore {
     });
   }
 
+  /**
+   * Remove all keyframes for a specific property on a layer
+   * @param layerId - ID of the layer
+   * @param property - The property name to remove keyframes for
+   */
+  removeKeyframesByProperty(layerId: string, property: string) {
+    this.state.layers = this.state.layers.map((layer) => {
+      if (layer.id === layerId) {
+        return {
+          ...layer,
+          keyframes: layer.keyframes.filter((k) => k.property !== property)
+        };
+      }
+      return layer;
+    });
+  }
+
   updateKeyframe(layerId: string, keyframeId: string, updates: Partial<Keyframe>) {
     this.state.layers = this.state.layers.map((layer) => {
       if (layer.id === layerId) {

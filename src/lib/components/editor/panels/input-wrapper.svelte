@@ -31,12 +31,18 @@
 
   const selectedLayer = $derived(projectStore.selectedLayer);
   const hasKeyframes = $derived(selectedLayer?.keyframes.some((k) => k.property === property));
+
+  function removeKeyframes(property: string) {
+    if (selectedLayer) {
+      projectStore.removeKeyframesByProperty(selectedLayer.id, property);
+    }
+  }
 </script>
 
 <div class="flex flex-col gap-1">
   <div class="flex items-center gap-0.5">
     {#if property}
-      <InputPin {property} active={!!hasKeyframes} {label} {addKeyframe} />
+      <InputPin {property} active={!!hasKeyframes} {label} {addKeyframe} {removeKeyframes} />
     {/if}
     <Label for={id} class="text-[10px] text-muted-foreground">{label}</Label>
   </div>

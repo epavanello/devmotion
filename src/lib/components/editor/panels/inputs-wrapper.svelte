@@ -1,10 +1,14 @@
 <script lang="ts">
   import Label from '$lib/components/ui/label/label.svelte';
   import type { AnimatableProperty } from '$lib/schemas/animation';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
 
   import type { Snippet } from 'svelte';
   import InputPin from './input-pin.svelte';
   import * as ButtonGroup from '$lib/components/ui/button-group';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   const {
     fields,
@@ -29,6 +33,14 @@
     children: Snippet;
     prefix?: Snippet;
   } = $props();
+
+  const selectedLayer = $derived(projectStore.selectedLayer);
+
+  function removeKeyframes(property: string) {
+    if (selectedLayer) {
+      projectStore.removeKeyframesByProperty(selectedLayer.id, property);
+    }
+  }
 </script>
 
 <div class="flex flex-col gap-1">
@@ -47,6 +59,7 @@
             active={field.hasKeyframes}
             label={field.labels}
             addKeyframe={field.addKeyframe}
+            {removeKeyframes}
           />
         {/if}
         <Label for={field.id} class="text-[10px] text-muted-foreground">{field.labels}</Label>
