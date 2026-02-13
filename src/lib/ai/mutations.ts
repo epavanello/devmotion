@@ -114,7 +114,11 @@ export function mutateCreateLayer(
   try {
     const layer = createLayer(input.type, {
       props: input.props,
-      trasform: input.position
+      trasform: input.position,
+      projectDimensions: {
+        width: ctx.project.width,
+        height: ctx.project.height
+      }
     });
 
     if (input.name) {

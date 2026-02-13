@@ -1,6 +1,6 @@
 import { replaceState } from '$app/navigation';
 import { resolve } from '$app/paths';
-import { getEditorState, type EditorContext } from '$lib/contexts/editor.svelte';
+import { type EditorContext } from '$lib/contexts/editor.svelte';
 import { getUser } from '$lib/functions/auth.remote';
 import { getUserProjects, saveProject } from '$lib/functions/projects.remote';
 

@@ -18,21 +18,11 @@
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
 
-  interface Props {
-    projectId?: string | null;
-    isOwner?: boolean;
-    canEdit?: boolean;
-    isPublic?: boolean;
-    isMcp?: boolean;
-  }
-
-  let {
-    projectId = null,
-    isOwner = true,
-    canEdit = true,
-    isPublic = false,
-    isMcp = false
-  }: Props = $props();
+  const projectId = $derived(editorState.dbProjectId);
+  const isOwner = $derived(editorState.isOwner);
+  const canEdit = $derived(editorState.canEdit);
+  const isPublic = $derived(editorState.isPublic);
+  const isMcp = $derived(editorState.isMcp);
 
   let projectViewport: HTMLDivElement | undefined = $state();
   const mediaQuery = new IsMobile();

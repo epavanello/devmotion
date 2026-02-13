@@ -63,12 +63,7 @@
   }
 
   function handleSave() {
-    projectStore.state.name = formData.name;
-    projectStore.state.width = formData.width;
-    projectStore.state.height = formData.height;
-    projectStore.state.duration = formData.duration;
-    projectStore.state.background = formData.background;
-    projectStore.state.fontFamily = formData.fontFamily;
+    projectStore.updateProject({ ...formData });
 
     open = false;
   }

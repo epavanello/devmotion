@@ -29,7 +29,10 @@ export interface FrameCache {
 }
 
 export class ProjectStore {
-  state = $state<Project>(undefined!);
+  #state = $state<Project>(undefined!);
+  get state() {
+    return this.#state;
+  }
 
   selectedLayerId = $state<string | null>(null);
   isLoading = $state(false);
@@ -43,7 +46,7 @@ export class ProjectStore {
   preparingProgress = $state(0);
 
   constructor(initialProject?: Project) {
-    this.state = initialProject ?? {
+    this.#state = initialProject ?? {
       id: nanoid(),
       name: 'Untitled Project',
       width: 720,
@@ -278,9 +281,13 @@ export class ProjectStore {
   }
 
   // Project operations
+  updateProject(updates: Partial<Project>) {
+    this.#state = { ...this.#state, ...updates };
+  }
+
   async loadProject(project: Project) {
     this.isLoading = true;
-    this.state = project;
+    this.#state = project;
     await tick();
     this.selectedLayerId = null;
     this.isPlaying = false;

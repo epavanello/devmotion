@@ -15,7 +15,13 @@
   const projectStore = $derived(editorState.project);
 
   function addLayer(type: LiteralUnion<LayerTypeString, string>) {
-    const layer = createLayer(type, { trasform: { x: 0, y: 0 } });
+    const layer = createLayer(type, {
+      trasform: { x: 0, y: 0 },
+      projectDimensions: {
+        width: projectStore.state.width,
+        height: projectStore.state.height
+      }
+    });
     projectStore.addLayer(layer);
     projectStore.selectedLayerId = layer.id;
   }

@@ -66,12 +66,12 @@
   let showExportDialog = $state(false);
   let showProjectSettings = $state(false);
 
-  const user = $derived(await getUser());
+  const user = getUser();
 
   const WELCOME_TOAST_KEY = 'devmotion_welcome_shown';
 
   onMount(() => {
-    if (!localStorage.getItem(WELCOME_TOAST_KEY) && !user) {
+    if (!localStorage.getItem(WELCOME_TOAST_KEY) && !user.current) {
       localStorage.setItem(WELCOME_TOAST_KEY, '1');
       toast('Welcome to DevMotion', {
         description:
@@ -95,7 +95,7 @@
 
   async function openExportDialog() {
     // Check for unsaved changes
-    if (editorState.hasUnsavedChanges && user) {
+    if (editorState.hasUnsavedChanges && user.current) {
       const shouldSave = confirm(
         'You have unsaved changes. Please save your project before exporting.'
       );
@@ -197,7 +197,7 @@
       variant: 'ghost',
       onclick: handleToggleVisibility,
       disabled: isRecording,
-      visible: !!projectId && !!isOwner && !!user
+      visible: !!projectId && !!isOwner && !!user.current
     },
     {
       id: 'fork',
@@ -313,7 +313,7 @@
         {/if}
 
         <!-- User Menu (Always Visible) -->
-        {#if user}
+        {#if user.current}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
               {#snippet child({ props })}
@@ -323,9 +323,9 @@
             <DropdownMenu.Content align="end">
               <DropdownMenu.Label>
                 <div class="flex flex-col space-y-1">
-                  <p class="text-sm leading-none font-medium">{user.name}</p>
+                  <p class="text-sm leading-none font-medium">{user.current.name}</p>
                   <p class="text-xs leading-none text-muted-foreground">
-                    {user.email}
+                    {user.current.email}
                   </p>
                 </div>
               </DropdownMenu.Label>

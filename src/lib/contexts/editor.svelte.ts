@@ -2,7 +2,7 @@
  * Editor context for managing project state and persistence
  */
 import { ProjectStore } from '$lib/stores/project.svelte';
-import type { Project } from '$lib/types/animation';
+import { ProjectSchema, type Project } from '$lib/types/animation';
 import { createContext } from 'svelte';
 import { watch } from 'runed';
 import { nanoid } from 'nanoid';
@@ -37,7 +37,7 @@ function loadFromLocalStorage(): Project | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      return ProjectSchema.parse(JSON.parse(stored));
     }
   } catch (error) {
     console.error('Failed to load project from localStorage:', error);
@@ -51,7 +51,6 @@ function saveToLocalStorage(project: Project) {
 
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
-    console.log('Project saved to localStorage');
   } catch (error) {
     console.error('Failed to save project to localStorage:', error);
   }

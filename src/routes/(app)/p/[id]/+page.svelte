@@ -117,10 +117,4 @@
 <!-- SEO: H1 for project page (visually hidden but accessible to search engines) -->
 <h1 class="sr-only">{projectName} - Animation by {data.project.user?.name || 'Community'}</h1>
 
-<EditorLayout
-  projectId={data.project.id}
-  isOwner={data.isOwner}
-  canEdit={data.canEdit}
-  isPublic={data.project.isPublic}
-  isMcp={data.project.isMcp}
-/>
+<EditorLayout />
