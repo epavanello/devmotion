@@ -1,16 +1,7 @@
 <script lang="ts">
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
-  import {
-    Eye,
-    EyeOff,
-    Lock,
-    Unlock,
-    Trash2,
-    ChevronRight,
-    ChevronDown,
-    Ungroup
-  } from '@lucide/svelte';
+  import { Eye, EyeOff, Lock, Unlock, Trash2, ChevronRight, ChevronDown } from '@lucide/svelte';
   import * as Popover from '$lib/components/ui/popover';
   import { getLayerDefinition } from '$lib/layers/registry';
   import { cn } from '$lib/utils';
@@ -48,14 +39,6 @@
       collapsedGroups.delete(groupId);
     } else {
       collapsedGroups.add(groupId);
-    }
-  }
-
-  function handleUngroupSelected(e: Event) {
-    e.stopPropagation();
-    const selected = projectStore.selectedLayerId;
-    if (selected && projectStore.isGroupLayer(selected)) {
-      projectStore.ungroupLayers(selected);
     }
   }
 
@@ -122,11 +105,6 @@
     }
     return topLevel;
   });
-
-  /** Check if the selected layer is a group */
-  const selectedIsGroup = $derived(
-    projectStore.selectedLayerId ? projectStore.isGroupLayer(projectStore.selectedLayerId) : false
-  );
 </script>
 
 <div
@@ -134,16 +112,6 @@
   class:pointer-events-none={projectStore.isRecording}
   class:opacity-50={projectStore.isRecording}
 >
-  <!-- Group / Ungroup toolbar -->
-  <div class="mb-2 flex items-center gap-1 border-b pb-2">
-    {#if selectedIsGroup}
-      <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs" onclick={handleUngroupSelected}>
-        <Ungroup class="size-3.5" />
-        Ungroup
-      </Button>
-    {/if}
-  </div>
-
   {#each layerTree as { layer, children, index } (layer.id)}
     {@const Icon = getLayerDefinition(layer.type).icon}
     {@const isGroup = layer.type === 'group'}

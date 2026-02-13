@@ -221,7 +221,9 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
         if (ffmpegCommand) {
           try {
             ffmpegCommand.kill('SIGKILL');
-          } catch {}
+          } catch {
+            // ignore 
+          }
         }
         if (!frameStream.destroyed) frameStream.destroy();
         if (page && !page.isClosed()) await page.close();

@@ -216,7 +216,11 @@
 
 {#if mode === 'word-by-word' && currentWords.length > 0}
   <!-- Word-by-word mode: Social media style -->
-  <div class="flex flex-wrap content-start items-center justify-center gap-1" style:width="{width}px" style:height="{height}px">
+  <div
+    class="flex flex-wrap content-start items-center justify-center gap-1"
+    style:width="{width}px"
+    style:height="{height}px"
+  >
     {#each currentWords as { word, start, end }, i (i)}
       {@const isActive = relativeTime >= start && relativeTime < end}
       {@const justAppeared = relativeTime - start < 0.3}
