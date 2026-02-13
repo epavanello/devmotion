@@ -42,7 +42,14 @@
         });
         // Auto-set exit time based on content duration if layer has no exit time yet
         const enterTime = layer.enterTime ?? 0;
-        projectStore.setLayerExitTime(layer.id, enterTime + result.duration);
+        const newExitTime = enterTime + result.duration;
+        projectStore.setLayerExitTime(layer.id, newExitTime);
+
+        // Extend project duration if content extends beyond it
+        const currentProjectDuration = projectStore.state.duration;
+        if (newExitTime > currentProjectDuration) {
+          projectStore.updateProject({ duration: newExitTime });
+        }
       }
     }}
     onRemove={() => {
