@@ -74,15 +74,25 @@
 
   function onMouseDown(event: MouseEvent) {
     if (locked || event.button !== 0) return;
+    startDrag(event.clientX, event.clientY);
+  }
 
-    event.stopPropagation();
+  function onTouchStart(event: TouchEvent) {
+    if (locked) return;
+    // Only handle single touch
+    if (event.touches.length === 1) {
+      event.preventDefault();
+      startDrag(event.touches[0].clientX, event.touches[0].clientY);
+    }
+  }
 
+  function startDrag(screenX: number, screenY: number) {
     // Select this layer
     projectStore.selectedLayerId = id;
 
     // Start dragging
     isDragging = true;
-    const canvasPos = screenToCanvas(event.clientX, event.clientY);
+    const canvasPos = screenToCanvas(screenX, screenY);
     dragStart = canvasPos;
 
     // Pause playback when starting to drag
@@ -93,12 +103,27 @@
     // Add global listeners
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
+    window.addEventListener('touchcancel', onTouchEnd);
   }
 
   function onMouseMove(event: MouseEvent) {
     if (!isDragging) return;
+    updatePosition(event.clientX, event.clientY);
+  }
 
-    const canvasPos = screenToCanvas(event.clientX, event.clientY);
+  function onTouchMove(event: TouchEvent) {
+    if (!isDragging) return;
+    event.preventDefault();
+    // Only handle single touch
+    if (event.touches.length === 1) {
+      updatePosition(event.touches[0].clientX, event.touches[0].clientY);
+    }
+  }
+
+  function updatePosition(screenX: number, screenY: number) {
+    const canvasPos = screenToCanvas(screenX, screenY);
     const layer = projectStore.state.layers.find((l) => l.id === id);
 
     if (layer) {
@@ -180,9 +205,20 @@
   }
 
   function onMouseUp() {
+    endDrag();
+  }
+
+  function onTouchEnd() {
+    endDrag();
+  }
+
+  function endDrag() {
     isDragging = false;
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', onMouseUp);
+    window.removeEventListener('touchmove', onTouchMove);
+    window.removeEventListener('touchend', onTouchEnd);
+    window.removeEventListener('touchcancel', onTouchEnd);
   }
 </script>
 
@@ -195,6 +231,7 @@
   style:transform-style="preserve-3d"
   style:cursor={locked ? 'not-allowed' : 'move'}
   onmousedown={onMouseDown}
+  ontouchstart={onTouchStart}
   role="button"
   tabindex="0"
   style:--primary-color={BRAND_COLORS.blue}

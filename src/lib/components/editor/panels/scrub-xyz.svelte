@@ -36,16 +36,31 @@
 
   function handleMouseDown(e: MouseEvent) {
     e.preventDefault();
+    startDrag(e.clientX, e.clientY, e.metaKey || e.ctrlKey);
+  }
+
+  function handleTouchStart(e: TouchEvent) {
+    e.preventDefault();
+    // Only handle single touch
+    if (e.touches.length === 1) {
+      startDrag(e.touches[0].clientX, e.touches[0].clientY, false);
+    }
+  }
+
+  function startDrag(clientX: number, clientY: number, forceZMode: boolean) {
     isDragging = true;
-    startX = e.clientX;
-    startY = e.clientY;
+    startX = clientX;
+    startY = clientY;
     startValueX = valueX;
     startValueY = valueY;
     startValueZ = valueZ;
-    isZMode = e.metaKey || e.ctrlKey;
+    isZMode = forceZMode;
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('touchcancel', handleTouchEnd);
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('keyup', handleKeyUp);
     document.body.style.cursor = 'move';
@@ -69,24 +84,42 @@
 
   function handleMouseMove(e: MouseEvent) {
     if (!isDragging) return;
+    updateValue(e.clientX, e.clientY, e.shiftKey, e.altKey, e.metaKey || e.ctrlKey);
+  }
 
-    const deltaX = e.clientX - startX;
-    const deltaY = e.clientY - startY;
+  function handleTouchMove(e: TouchEvent) {
+    if (!isDragging) return;
+    e.preventDefault();
+    // Only handle single touch
+    if (e.touches.length === 1) {
+      updateValue(e.touches[0].clientX, e.touches[0].clientY, e.shiftKey, e.altKey, false);
+    }
+  }
+
+  function updateValue(
+    clientX: number,
+    clientY: number,
+    shiftKey: boolean,
+    altKey: boolean,
+    forceZMode: boolean
+  ) {
+    const deltaX = clientX - startX;
+    const deltaY = clientY - startY;
 
     // Determine multiplier based on modifiers
     let multiplier = 1;
-    if (e.shiftKey) {
+    if (shiftKey) {
       // Fine/precision mode - 0.1x step
       multiplier = 0.1;
-    } else if (e.altKey) {
+    } else if (altKey) {
       // Coarse mode - 10x step
       multiplier = 10;
     }
 
     const sensitivity = 0.5;
 
-    // Check if Z mode (space/cmd/ctrl held)
-    const inZMode = isZMode || e.metaKey || e.ctrlKey;
+    // Check if Z mode (space/cmd/ctrl held, or forceZMode from touch)
+    const inZMode = isZMode || forceZMode;
 
     if (inZMode) {
       // Z mode: vertical movement controls Z
@@ -114,10 +147,21 @@
   }
 
   function handleMouseUp() {
+    endDrag();
+  }
+
+  function handleTouchEnd() {
+    endDrag();
+  }
+
+  function endDrag() {
     isDragging = false;
     isZMode = false;
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
+    document.removeEventListener('touchmove', handleTouchMove);
+    document.removeEventListener('touchend', handleTouchEnd);
+    document.removeEventListener('touchcancel', handleTouchEnd);
     document.removeEventListener('keydown', handleKeyDown);
     document.removeEventListener('keyup', handleKeyUp);
     document.body.style.cursor = '';
@@ -135,6 +179,7 @@
     }
   )}
   onmousedown={handleMouseDown}
+  ontouchstart={handleTouchStart}
   title="Drag: X/Y, Cmd/Ctrl+drag: Z, Shift: fine, Alt: coarse"
 >
   <Move3d

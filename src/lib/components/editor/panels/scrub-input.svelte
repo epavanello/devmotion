@@ -41,25 +41,52 @@
 
   function handleMouseDown(e: MouseEvent) {
     e.preventDefault();
+    startDrag(e.clientX);
+  }
+
+  function handleTouchStart(e: TouchEvent) {
+    e.preventDefault();
+    // Only handle single touch
+    if (e.touches.length === 1) {
+      startDrag(e.touches[0].clientX);
+    }
+  }
+
+  function startDrag(clientX: number) {
     isDragging = true;
-    startX = e.clientX;
+    startX = clientX;
     startValue = value;
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('touchcancel', handleTouchEnd);
     document.body.style.cursor = 'ew-resize';
     document.body.style.userSelect = 'none';
   }
 
   function handleMouseMove(e: MouseEvent) {
     if (!isDragging) return;
+    updateValue(e.clientX, e.shiftKey, e.altKey);
+  }
 
-    const deltaX = e.clientX - startX;
+  function handleTouchMove(e: TouchEvent) {
+    if (!isDragging) return;
+    e.preventDefault();
+    // Only handle single touch
+    if (e.touches.length === 1) {
+      updateValue(e.touches[0].clientX, e.shiftKey, e.altKey);
+    }
+  }
+
+  function updateValue(clientX: number, shiftKey: boolean, altKey: boolean) {
+    const deltaX = clientX - startX;
 
     let multiplier = 1;
-    if (e.shiftKey) {
+    if (shiftKey) {
       multiplier = 0.1;
-    } else if (e.altKey) {
+    } else if (altKey) {
       multiplier = 10;
     }
 
@@ -71,9 +98,20 @@
   }
 
   function handleMouseUp() {
+    endDrag();
+  }
+
+  function handleTouchEnd() {
+    endDrag();
+  }
+
+  function endDrag() {
     isDragging = false;
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
+    document.removeEventListener('touchmove', handleTouchMove);
+    document.removeEventListener('touchend', handleTouchEnd);
+    document.removeEventListener('touchcancel', handleTouchEnd);
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
   }
@@ -99,6 +137,7 @@
         }
       )}
       onmousedown={handleMouseDown}
+      ontouchstart={handleTouchStart}
       title="Drag to adjust. Shift=fine, Alt=coarse"
     >
       <GripVertical class="size-3" />

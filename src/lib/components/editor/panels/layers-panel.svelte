@@ -15,6 +15,14 @@
   const collapsedGroups = new SvelteSet<string>();
   let dropTargetId = $state<string | null>(null);
 
+  // Touch drag state
+  let touchDragging = $state(false);
+  let touchDragLayerId = $state<string | null>(null);
+  let touchDragIndex = $state<number>(-1);
+  let touchStartY = $state(0);
+  let touchStartX = $state(0);
+  let touchDragOverId = $state<string | null>(null);
+
   function selectLayer(layerId: string) {
     projectStore.selectedLayerId = layerId;
   }
@@ -42,7 +50,7 @@
     }
   }
 
-  // Drag & drop
+  // Mouse drag & drop
   function handleDragStart(e: DragEvent, layerId: string, index: number) {
     e.dataTransfer!.effectAllowed = 'move';
     e.dataTransfer!.setData('text/plain', index.toString());
@@ -83,6 +91,80 @@
     }
   }
 
+  // Touch drag handlers
+  function handleTouchStart(e: TouchEvent, layerId: string, index: number) {
+    // Only handle single touch
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+      touchDragLayerId = layerId;
+      touchDragIndex = index;
+    }
+  }
+
+  function handleTouchMove(e: TouchEvent) {
+    if (!touchDragLayerId || e.touches.length !== 1) return;
+
+    const touch = e.touches[0];
+    const deltaX = Math.abs(touch.clientX - touchStartX);
+    const deltaY = Math.abs(touch.clientY - touchStartY);
+
+    // Check if this is a drag gesture (moved more than 10px)
+    if (!touchDragging && (deltaX > 10 || deltaY > 10)) {
+      touchDragging = true;
+    }
+
+    if (touchDragging) {
+      e.preventDefault();
+
+      // Find the element under the touch point
+      const elementUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (elementUnder) {
+        // Find the closest layer row
+        const layerRow = elementUnder.closest('[data-layer-id]') as HTMLElement;
+        if (layerRow) {
+          const targetId = layerRow.dataset.layerId;
+          if (targetId && targetId !== touchDragLayerId) {
+            touchDragOverId = targetId;
+            dropTargetId = targetId;
+          } else {
+            touchDragOverId = null;
+            dropTargetId = null;
+          }
+        } else {
+          touchDragOverId = null;
+          dropTargetId = null;
+        }
+      }
+    }
+  }
+
+  function handleTouchEnd(e: TouchEvent) {
+    if (touchDragging && touchDragOverId && touchDragLayerId) {
+      // Perform the drop
+      const targetLayer = projectStore.state.layers.find((l) => l.id === touchDragOverId);
+      const dragLayer = projectStore.state.layers.find((l) => l.id === touchDragLayerId);
+
+      if (targetLayer && dragLayer) {
+        const dropIndex = projectStore.state.layers.indexOf(targetLayer);
+
+        if (targetLayer.type === 'group' && touchDragLayerId !== touchDragOverId) {
+          projectStore.addLayerToGroup(touchDragLayerId, touchDragOverId);
+        } else if (touchDragIndex !== dropIndex) {
+          projectStore.reorderLayers(touchDragIndex, dropIndex);
+        }
+      }
+    }
+
+    // Reset state
+    touchDragging = false;
+    touchDragLayerId = null;
+    touchDragIndex = -1;
+    touchDragOverId = null;
+    dropTargetId = null;
+  }
+
   function handleKeyDown(e: KeyboardEvent, layerId: string) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -111,6 +193,8 @@
   class="space-y-1 p-2"
   class:pointer-events-none={projectStore.isRecording}
   class:opacity-50={projectStore.isRecording}
+  ontouchmove={handleTouchMove}
+  ontouchend={handleTouchEnd}
 >
   {#each layerTree as { layer, children, index } (layer.id)}
     {@const Icon = getLayerDefinition(layer.type).icon}
@@ -124,7 +208,8 @@
         'group flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 transition-colors hover:bg-muted/50',
         {
           'bg-muted': projectStore.selectedLayerId === layer.id,
-          'ring-2 ring-primary/40': isDropTarget && isGroup
+          'ring-2 ring-primary/40': isDropTarget && isGroup,
+          'opacity-50': touchDragging && touchDragLayerId === layer.id
         }
       )}
       onclick={() => selectLayer(layer.id)}
@@ -134,6 +219,8 @@
       ondragover={(e) => handleDragOver(e, layer.id)}
       ondragleave={handleDragLeave}
       ondrop={(e) => handleDrop(e, index, layer.id)}
+      ontouchstart={(e) => handleTouchStart(e, layer.id, index)}
+      data-layer-id={layer.id}
       role="button"
       tabindex="0"
     >
@@ -254,7 +341,8 @@
           class={cn(
             'group ml-6 flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 transition-colors hover:bg-muted/50',
             {
-              'bg-muted': projectStore.selectedLayerId === layerChild.id
+              'bg-muted': projectStore.selectedLayerId === layerChild.id,
+              'opacity-50': touchDragging && touchDragLayerId === layerChild.id
             }
           )}
           onclick={() => selectLayer(layerChild.id)}
@@ -264,6 +352,8 @@
           ondragover={(e) => handleDragOver(e, layerChild.id)}
           ondragleave={handleDragLeave}
           ondrop={(e) => handleDrop(e, childIndex, layerChild.id)}
+          ontouchstart={(e) => handleTouchStart(e, layerChild.id, childIndex)}
+          data-layer-id={layerChild.id}
           role="button"
           tabindex="0"
         >
