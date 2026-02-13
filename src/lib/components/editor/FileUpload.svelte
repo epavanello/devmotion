@@ -38,11 +38,11 @@
   let fileInputEl: HTMLInputElement | undefined = $state();
   let displayName = $derived(currentFileName || '');
 
-  // Accept patterns for file input
+  // Accept patterns for file input - MP4 only for consistency with FFmpeg
   const acceptPatterns = {
     image: 'image/jpeg,image/png,image/gif,image/webp,image/svg+xml',
-    video: 'video/mp4,video/webm,video/quicktime,video/x-msvideo',
-    audio: 'audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4,audio/aac'
+    video: 'video/mp4',
+    audio: 'audio/mp4'
   };
 
   const maxSizes = {

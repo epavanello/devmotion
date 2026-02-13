@@ -83,13 +83,27 @@
       const layerHeight = 49; // 48px + 1px border
       const activeLayerIds = new SvelteSet<string>();
 
-      projectStore.state.layers.forEach((layer, index) => {
+      // Build visible row order (top-level + children of groups)
+      const visibleRows: string[] = [];
+      for (const layer of projectStore.state.layers) {
+        if (!layer.parentId) {
+          visibleRows.push(layer.id);
+          if (layer.type === 'group') {
+            for (const child of projectStore.state.layers) {
+              if (child.parentId === layer.id) {
+                visibleRows.push(child.id);
+              }
+            }
+          }
+        }
+      }
+
+      visibleRows.forEach((layerId, index) => {
         const layerTop = layerOffset + index * layerHeight;
         const layerBottom = layerTop + layerHeight;
 
-        // Check if layer overlaps with selection box vertically
         if (y < layerBottom && y + height > layerTop) {
-          activeLayerIds.add(layer.id);
+          activeLayerIds.add(layerId);
         }
       });
 
@@ -170,8 +184,15 @@
 
       <!-- Layers -->
       <div class="relative">
-        {#each projectStore.state.layers as layer (layer.id)}
+        {#each projectStore.state.layers.filter((l) => !l.parentId) as layer (layer.id)}
           <TimelineLayer {layer} {pixelsPerSecond} />
+
+          <!-- If this is a group, also render children indented -->
+          {#if layer.type === 'group'}
+            {#each projectStore.state.layers.filter((l) => l.parentId === layer.id) as child (child.id)}
+              <TimelineLayer layer={child} {pixelsPerSecond} indent={1} />
+            {/each}
+          {/if}
         {/each}
 
         {#if projectStore.state.layers.length === 0}

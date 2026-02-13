@@ -91,8 +91,6 @@
       }
     }
   }
-
-  $inspect(projects);
 </script>
 
 <DropdownMenu.Root

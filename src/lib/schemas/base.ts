@@ -76,7 +76,8 @@ export const BaseLayerFieldsSchema = z.object({
   id: z.string().describe('Unique layer identifier'),
   name: z.string().describe('Layer name for identification'),
   visible: z.boolean().describe('Layer visibility state'),
-  locked: z.boolean().describe('Layer locked state (prevents editing)')
+  locked: z.boolean().describe('Layer locked state (prevents editing)'),
+  parentId: z.string().optional().describe('Parent group layer ID')
 });
 
 export type BaseLayerFields = z.infer<typeof BaseLayerFieldsSchema>;

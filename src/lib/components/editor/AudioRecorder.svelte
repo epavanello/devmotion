@@ -6,7 +6,6 @@
     generateTimestampedFileName,
     formatDuration,
     handleMediaError,
-    getSupportedMimeType,
     stopMediaStream
   } from './media-upload-utils';
   import { uiStore } from '$lib/stores/ui.svelte';
@@ -28,35 +27,26 @@
   let mediaRecorder: MediaRecorder | null = $state(null);
   let mediaStream: MediaStream | null = $state(null);
   let audioChunks: Blob[] = $state([]);
-  let recordingDuration = $state(0);
-  let recordingStartTime = $state(0);
+
+  // UI state
+  let displayDuration = $state(0);
   let recordingInterval: ReturnType<typeof setInterval> | null = null;
+  let recordingStartTime = 0;
 
   async function startRecording() {
     try {
       recordingError = '';
-
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Get supported mime type with fallback
-      const mimeTypes = [
-        'audio/webm;codecs=opus',
-        'audio/webm',
-        'audio/mp4',
-        'audio/ogg;codecs=opus'
-      ];
-
-      const mimeType = await getSupportedMimeType(mimeTypes);
-      if (!mimeType) {
-        throw new Error('No supported audio codec found in your browser');
+      // STRICT: Only use M4A (AAC)
+      const mimeType = 'audio/mp4';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        throw new Error('Your browser does not support M4A recording. Please use Safari.');
       }
 
-      mediaRecorder = new MediaRecorder(mediaStream, {
-        mimeType
-      });
-
+      mediaRecorder = new MediaRecorder(mediaStream, { mimeType });
       audioChunks = [];
-      recordingDuration = 0;
+      displayDuration = 0;
       recordingStartTime = Date.now();
 
       mediaRecorder.ondataavailable = (event) => {
@@ -66,34 +56,23 @@
       };
 
       mediaRecorder.onstop = async () => {
-        // Calculate final precise duration (ensure it's never NaN)
-        const elapsed = Date.now() - recordingStartTime;
-        const finalDuration = recordingStartTime > 0 && elapsed > 0 ? elapsed / 1000 : 1;
-
-        // Stop the stream
         stopMediaStream(mediaStream);
         mediaStream = null;
 
-        // Create blob from chunks
         const audioBlob = new Blob(audioChunks, { type: mimeType });
-
-        // Upload the recording with precise duration
-        await uploadRecording(audioBlob, finalDuration);
+        await uploadWithDuration(audioBlob);
       };
 
       mediaRecorder.start();
       isRecording = true;
 
-      // Update duration display (more frequently for smoother UI)
+      // Update display
       recordingInterval = setInterval(() => {
-        recordingDuration = (Date.now() - recordingStartTime) / 1000;
+        displayDuration = (Date.now() - recordingStartTime) / 1000;
       }, 100);
     } catch (err) {
-      const error = handleMediaError(err);
-      recordingError = error.message;
+      recordingError = handleMediaError(err).message;
       console.error('Recording error:', err);
-
-      // Clean up on error
       stopMediaStream(mediaStream);
       mediaStream = null;
     }
@@ -103,12 +82,51 @@
     if (mediaRecorder && isRecording) {
       mediaRecorder.stop();
       isRecording = false;
-
       if (recordingInterval) {
         clearInterval(recordingInterval);
         recordingInterval = null;
       }
     }
+  }
+
+  /**
+   * Extract actual duration from M4A blob and upload
+   */
+  async function uploadWithDuration(blob: Blob) {
+    isUploading = true;
+    recordingError = '';
+
+    try {
+      const duration = await getBlobDuration(blob);
+      const fileName = generateTimestampedFileName('recording', 'm4a');
+      const result = await uploadMediaBlob(blob, fileName, 'audio', projectId, duration);
+      onRecordingComplete(result);
+    } catch (err) {
+      recordingError = err instanceof Error ? err.message : 'Upload failed';
+    } finally {
+      isUploading = false;
+      displayDuration = 0;
+    }
+  }
+
+  /**
+   * Extract duration from audio blob
+   */
+  function getBlobDuration(blob: Blob): Promise<number> {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(blob);
+      const audio = document.createElement('audio');
+      audio.preload = 'metadata';
+      audio.onloadedmetadata = () => {
+        URL.revokeObjectURL(url);
+        resolve(isFinite(audio.duration) && audio.duration > 0 ? audio.duration : 1);
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(1);
+      };
+      audio.src = url;
+    });
   }
 
   async function handleStartRecording() {
@@ -117,28 +135,10 @@
     });
   }
 
-  async function uploadRecording(blob: Blob, duration: number) {
-    isUploading = true;
-    recordingError = '';
-
-    try {
-      const fileName = generateTimestampedFileName('recording', 'webm');
-      const result = await uploadMediaBlob(blob, fileName, 'audio', projectId, duration);
-      onRecordingComplete(result);
-    } catch (err) {
-      recordingError = err instanceof Error ? err.message : 'Upload failed';
-    } finally {
-      isUploading = false;
-      recordingDuration = 0;
-    }
-  }
-
-  // Cleanup on unmount
+  // Cleanup
   $effect(() => {
     return () => {
-      if (recordingInterval) {
-        clearInterval(recordingInterval);
-      }
+      if (recordingInterval) clearInterval(recordingInterval);
       stopMediaStream(mediaStream);
     };
   });
@@ -146,14 +146,13 @@
 
 <div class="space-y-2">
   {#if isRecording}
-    <!-- Recording in progress -->
     <div class="rounded border-2 border-destructive bg-destructive/10 p-3 text-center">
       <div class="mb-2 flex items-center justify-center gap-2">
         <div class="h-2 w-2 animate-pulse rounded-full bg-destructive"></div>
         <span class="text-sm font-medium">Recording...</span>
       </div>
       <div class="mb-2 font-mono text-2xl tabular-nums">
-        {formatDuration(Math.floor(recordingDuration))}
+        {formatDuration(Math.floor(displayDuration))}
       </div>
       <Button variant="destructive" size="sm" onclick={stopRecording}>
         <Square class="mr-1 size-3" />
@@ -161,20 +160,16 @@
       </Button>
     </div>
   {:else if isUploading}
-    <!-- Uploading -->
     <div class="rounded border bg-muted/30 p-3 text-center">
       <Loader2 class="mx-auto mb-2 size-6 animate-spin text-primary" />
       <span class="text-sm">Uploading recording...</span>
     </div>
   {:else}
-    <!-- Start recording button -->
     <Button variant="default" size="sm" class="w-full text-xs" onclick={handleStartRecording}>
       <Mic class="mr-1 size-3" />
       Record Audio
     </Button>
   {/if}
-
-  <!-- Error message -->
   {#if recordingError}
     <p class="text-xs text-destructive">{recordingError}</p>
   {/if}

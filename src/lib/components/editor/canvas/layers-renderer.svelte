@@ -2,6 +2,7 @@
   import LayerWrapper from '$lib/layers/LayerWrapper.svelte';
   import { getLayerComponent } from '$lib/layers/registry';
   import { getLayerTransform, getLayerStyle, getLayerProps } from '$lib/engine/layer-rendering';
+  import { generateTransformCSS } from '$lib/layers/base';
   import type { TypedLayer } from '$lib/layers/typed-registry';
   import type { FrameCache } from '$lib/stores/project.svelte';
 
@@ -44,37 +45,101 @@
       customProps: getLayerProps(layer, currentTime)
     };
   }
+
+  /** Top-level layers only (children are rendered inside their group) */
+  const topLevelLayers = $derived(layers.filter((l) => !l.parentId));
+
+  /** Get child layers for a given group */
+  function getChildLayers(groupId: string): TypedLayer[] {
+    return layers.filter((l) => l.parentId === groupId);
+  }
 </script>
 
-<!-- Layers -->
-{#each layers as layer (layer.id)}
+<!-- Top-level layers and groups -->
+{#each topLevelLayers as layer (layer.id)}
   {@const enterTime = layer.enterTime ?? 0}
   {@const exitTime = layer.exitTime ?? duration}
   {@const isInTimeRange = currentTime >= enterTime && currentTime <= exitTime}
-  <!-- Keep video/image/audio layers rendered even outside time range to ensure media is loaded -->
-  {@const mustKeepWarm = layer.type === 'video' || layer.type === 'image' || layer.type === 'audio'}
-  {#if isInTimeRange || mustKeepWarm}
-    {@const { transform, style, customProps } = getLayerRenderData(layer)}
-    {@const component = getLayerComponent(layer.type)}
-    {@const isSelected = selectedLayerId === layer.id}
-    {@const enhancedProps = {
-      ...customProps,
-      layer,
-      currentTime,
-      isPlaying,
-      isServerSideRendering
-    }}
 
-    <LayerWrapper
-      id={layer.id}
-      name={layer.name}
-      visible={layer.visible && isInTimeRange}
-      locked={layer.locked}
-      selected={isSelected && !disableSelection}
-      {transform}
-      {style}
-      {component}
-      customProps={enhancedProps}
-    />
+  {#if layer.type === 'group'}
+    <!-- Group: apply group transform and render children inside -->
+    {@const { transform: groupTransform, style: groupStyle } = getLayerRenderData(layer)}
+    {@const groupVisible = layer.visible && isInTimeRange}
+    {@const groupTransformCSS = generateTransformCSS(groupTransform)}
+
+    <div
+      class="layer-group absolute top-1/2 left-1/2"
+      data-group-id={layer.id}
+      style:transform={groupTransformCSS}
+      style:transform-style="preserve-3d"
+      style:opacity={groupStyle.opacity}
+      style:visibility={groupVisible ? 'visible' : 'hidden'}
+    >
+      {#each getChildLayers(layer.id) as child (child.id)}
+        {@const childEnter = child.enterTime ?? 0}
+        {@const childExit = child.exitTime ?? duration}
+        {@const childInRange = currentTime >= childEnter && currentTime <= childExit}
+        {@const mustKeepWarm =
+          child.type === 'video' || child.type === 'image' || child.type === 'audio'}
+        {#if childInRange || mustKeepWarm}
+          {@const { transform, style, customProps } = getLayerRenderData(child)}
+          {@const component = getLayerComponent(child.type)}
+          {@const isSelected = selectedLayerId === child.id}
+          {@const enhancedProps = {
+            ...customProps,
+            layer: child,
+            currentTime,
+            isPlaying,
+            isServerSideRendering
+          }}
+
+          <LayerWrapper
+            id={child.id}
+            name={child.name}
+            visible={child.visible && childInRange && groupVisible}
+            locked={child.locked || layer.locked}
+            selected={isSelected && !disableSelection}
+            {transform}
+            {style}
+            {component}
+            customProps={enhancedProps}
+          />
+        {/if}
+      {/each}
+    </div>
+  {:else}
+    <!-- Regular layer -->
+    {@const mustKeepWarm =
+      layer.type === 'video' || layer.type === 'image' || layer.type === 'audio'}
+    {#if isInTimeRange || mustKeepWarm}
+      {@const { transform, style, customProps } = getLayerRenderData(layer)}
+      {@const component = getLayerComponent(layer.type)}
+      {@const isSelected = selectedLayerId === layer.id}
+      {@const enhancedProps = {
+        ...customProps,
+        layer,
+        currentTime,
+        isPlaying,
+        isServerSideRendering
+      }}
+
+      <LayerWrapper
+        id={layer.id}
+        name={layer.name}
+        visible={layer.visible && isInTimeRange}
+        locked={layer.locked}
+        selected={isSelected && !disableSelection}
+        {transform}
+        {style}
+        {component}
+        customProps={enhancedProps}
+      />
+    {/if}
   {/if}
 {/each}
+
+<style>
+  .layer-group {
+    user-select: none;
+  }
+</style>

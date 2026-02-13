@@ -138,6 +138,8 @@ function generateLayerCreationTools(): Record<string, Tool> {
   const tools: Record<string, Tool> = {};
 
   for (const layerType of getAvailableLayerTypes()) {
+    // Skip group type - groups are created via group_layers tool
+    if (layerType === 'group') continue;
     const definition = layerRegistry[layerType];
     if (!definition) continue;
 
@@ -306,6 +308,43 @@ export interface ConfigureProjectOutput {
 }
 
 // ============================================
+// Tool: group_layers
+// ============================================
+
+export const GroupLayersInputSchema = z.object({
+  layerIds: z
+    .array(z.string())
+    .min(2)
+    .describe('Array of layer IDs or references to group together (minimum 2)'),
+  name: z.string().optional().describe('Name for the group (default: "Group")')
+});
+
+export type GroupLayersInput = z.infer<typeof GroupLayersInputSchema>;
+
+export interface GroupLayersOutput {
+  success: boolean;
+  groupId?: string;
+  message: string;
+  error?: string;
+}
+
+// ============================================
+// Tool: ungroup_layers
+// ============================================
+
+export const UngroupLayersInputSchema = z.object({
+  groupId: z.string().describe('Group layer ID or reference to dissolve')
+});
+
+export type UngroupLayersInput = z.infer<typeof UngroupLayersInputSchema>;
+
+export interface UngroupLayersOutput {
+  success: boolean;
+  message: string;
+  error?: string;
+}
+
+// ============================================
 // Tool Definitions for AI SDK
 // ============================================
 
@@ -333,6 +372,21 @@ export const animationTools = {
   remove_layer: tool({
     description: 'Delete a layer from the project.',
     inputSchema: RemoveLayerInputSchema
+  }),
+
+  group_layers: tool({
+    description:
+      'Group multiple layers together so they share a common transform. ' +
+      'Moving/rotating/scaling the group affects all children. ' +
+      'Use layer_N for layers you just created, or actual ID/name for existing layers.',
+    inputSchema: GroupLayersInputSchema
+  }),
+
+  ungroup_layers: tool({
+    description:
+      'Dissolve a group, making its children top-level layers again. ' +
+      'Group transforms are baked into children to preserve their world position.',
+    inputSchema: UngroupLayersInputSchema
   }),
 
   configure_project: tool({

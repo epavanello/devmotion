@@ -13,6 +13,8 @@
     executeEditLayer,
     executeRemoveLayer,
     executeConfigureProject,
+    executeGroupLayers,
+    executeUngroupLayers,
     resetLayerTracking
   } from '$lib/ai/ai-operations.svelte';
   import {
@@ -20,6 +22,8 @@
     type EditLayerInput,
     type RemoveLayerInput,
     type ConfigureProjectInput,
+    type GroupLayersInput,
+    type UngroupLayersInput,
     type AnimationUITools,
     isLayerCreationTool,
     getLayerTypeFromToolName,
@@ -92,6 +96,12 @@
             break;
           case 'remove_layer':
             result = executeRemoveLayer(projectStore, toolCall.input as RemoveLayerInput);
+            break;
+          case 'group_layers':
+            result = executeGroupLayers(projectStore, toolCall.input as GroupLayersInput);
+            break;
+          case 'ungroup_layers':
+            result = executeUngroupLayers(projectStore, toolCall.input as UngroupLayersInput);
             break;
           case 'configure_project':
             result = executeConfigureProject(projectStore, toolCall.input as ConfigureProjectInput);

@@ -66,6 +66,41 @@ export class ProjectStore {
     snapToGrid: false
   });
 
+  // ========================================
+  // Group Helpers
+  // ========================================
+
+  /**
+   * Get child layers of a group (layers whose parentId matches)
+   */
+  getChildLayers(groupId: string): TypedLayer[] {
+    return this.state.layers.filter((l) => l.parentId === groupId);
+  }
+
+  /**
+   * Get top-level layers (layers without a parentId)
+   */
+  getTopLevelLayers(): TypedLayer[] {
+    return this.state.layers.filter((l) => !l.parentId);
+  }
+
+  /**
+   * Get the parent group of a layer, if any
+   */
+  getParentGroup(layerId: string): TypedLayer | null {
+    const layer = this.state.layers.find((l) => l.id === layerId);
+    if (!layer?.parentId) return null;
+    return this.state.layers.find((l) => l.id === layer.parentId) ?? null;
+  }
+
+  /**
+   * Check if a layer is a group
+   */
+  isGroupLayer(layerId: string): boolean {
+    const layer = this.state.layers.find((l) => l.id === layerId);
+    return layer?.type === 'group';
+  }
+
   // Layer operations
   addLayer(layer: TypedLayer) {
     this.state.layers = [...this.state.layers, layer];
@@ -74,6 +109,14 @@ export class ProjectStore {
   async removeLayer(layerId: string) {
     // Find the layer to check if it has uploaded files to clean up
     const layer = this.state.layers.find((l) => l.id === layerId);
+
+    // If removing a group, also remove all children
+    if (layer?.type === 'group') {
+      const childIds = this.getChildLayers(layerId).map((c) => c.id);
+      for (const childId of childIds) {
+        await this.removeLayer(childId);
+      }
+    }
 
     // Clean up uploaded files if the layer has a fileKey
     if (layer && layer.props.fileKey && typeof layer.props.fileKey === 'string') {
@@ -104,6 +147,223 @@ export class ProjectStore {
     const [movedLayer] = layers.splice(fromIndex, 1);
     layers.splice(toIndex, 0, movedLayer);
     this.state.layers = layers;
+  }
+
+  // ========================================
+  // Group Operations
+  // ========================================
+
+  /**
+   * Create a group from the given layer IDs.
+   * The group is inserted at the position of the first selected layer.
+   * Children are re-parented under the group and their order is preserved.
+   */
+  createGroup(childIds: string[]): string | null {
+    if (childIds.length < 2) return null;
+
+    // Validate all layers exist and are not already in a group
+    const children = childIds
+      .map((id) => this.state.layers.find((l) => l.id === id))
+      .filter((l): l is TypedLayer => !!l && !l.parentId && l.type !== 'group');
+    if (children.length < 2) return null;
+
+    const groupId = nanoid();
+
+    // Find earliest position among children for insertion
+    const indices = children.map((c) => this.state.layers.indexOf(c)).sort((a, b) => a - b);
+    const insertIndex = indices[0];
+
+    // Create the group layer
+    const groupLayer: TypedLayer = {
+      id: groupId,
+      name: 'Group',
+      type: 'group',
+      transform: {
+        x: 0,
+        y: 0,
+        z: 0,
+        rotationX: 0,
+        rotationY: 0,
+        rotationZ: 0,
+        scaleX: 1,
+        scaleY: 1,
+        scaleZ: 1,
+        anchor: 'center'
+      },
+      style: { opacity: 1 },
+      visible: true,
+      locked: false,
+      keyframes: [],
+      props: { collapsed: false }
+    };
+
+    // Set parentId on children
+    const childIdSet = new SvelteSet(childIds);
+    let layers = this.state.layers.map((l) =>
+      childIdSet.has(l.id) ? { ...l, parentId: groupId } : l
+    );
+
+    // Remove children from their current positions and collect them
+    const childLayers = layers.filter((l) => childIdSet.has(l.id));
+    layers = layers.filter((l) => !childIdSet.has(l.id));
+
+    // Insert group at the earliest child position, then children right after
+    layers.splice(insertIndex, 0, groupLayer, ...childLayers);
+
+    this.state.layers = layers;
+    this.selectedLayerId = groupId;
+    return groupId;
+  }
+
+  /**
+   * Dissolve a group, keeping children as top-level layers.
+   * Applies group transform offsets to children so they maintain their world position.
+   */
+  ungroupLayers(groupId: string) {
+    const group = this.state.layers.find((l) => l.id === groupId);
+    if (!group || group.type !== 'group') return;
+
+    const gt = group.transform;
+    const gs = group.style;
+
+    // Remove parentId from children and bake group transform into them
+    this.state.layers = this.state.layers
+      .map((layer) => {
+        if (layer.parentId === groupId) {
+          return {
+            ...layer,
+            parentId: undefined,
+            transform: {
+              ...layer.transform,
+              x: layer.transform.x + gt.x,
+              y: layer.transform.y + gt.y,
+              z: layer.transform.z + gt.z,
+              rotationX: layer.transform.rotationX + gt.rotationX,
+              rotationY: layer.transform.rotationY + gt.rotationY,
+              rotationZ: layer.transform.rotationZ + gt.rotationZ,
+              scaleX: layer.transform.scaleX * gt.scaleX,
+              scaleY: layer.transform.scaleY * gt.scaleY,
+              scaleZ: layer.transform.scaleZ * gt.scaleZ
+            },
+            style: {
+              ...layer.style,
+              opacity: layer.style.opacity * gs.opacity
+            }
+          };
+        }
+        return layer;
+      })
+      .filter((l) => l.id !== groupId);
+
+    if (this.selectedLayerId === groupId) {
+      this.selectedLayerId = null;
+    }
+  }
+
+  /**
+   * Add an existing layer to a group
+   */
+  addLayerToGroup(layerId: string, groupId: string) {
+    const layer = this.state.layers.find((l) => l.id === layerId);
+    const group = this.state.layers.find((l) => l.id === groupId);
+    if (!layer || !group || group.type !== 'group') return;
+    if (layer.parentId === groupId) return; // already in this group
+    if (layer.type === 'group') return; // don't nest groups
+
+    // Set parentId and move layer in array to be right after group's children
+    const layers = this.state.layers.map((l) =>
+      l.id === layerId ? { ...l, parentId: groupId } : l
+    );
+
+    const layerIndex = layers.findIndex((l) => l.id === layerId);
+    const movedLayer = layers.splice(layerIndex, 1)[0];
+
+    // Find the last child of the group (or the group itself)
+    const groupIndex = layers.findIndex((l) => l.id === groupId);
+    let insertAfter = groupIndex;
+    for (let i = groupIndex + 1; i < layers.length; i++) {
+      if (layers[i].parentId === groupId) {
+        insertAfter = i;
+      } else {
+        break;
+      }
+    }
+
+    layers.splice(insertAfter + 1, 0, movedLayer);
+    this.state.layers = layers;
+  }
+
+  /**
+   * Remove a layer from its parent group (keeps the layer in the project).
+   * Applies the group transform so the layer maintains its world position.
+   * If the group would have fewer than 2 children, the group is dissolved.
+   */
+  removeLayerFromGroup(layerId: string) {
+    const layer = this.state.layers.find((l) => l.id === layerId);
+    if (!layer?.parentId) return;
+
+    const groupId = layer.parentId;
+    const group = this.state.layers.find((l) => l.id === groupId);
+
+    const gt = group?.transform;
+    const gs = group?.style;
+
+    this.state.layers = this.state.layers.map((l) => {
+      if (l.id === layerId) {
+        const updated: TypedLayer = { ...l, parentId: undefined };
+        if (gt) {
+          updated.transform = {
+            ...l.transform,
+            x: l.transform.x + gt.x,
+            y: l.transform.y + gt.y,
+            z: l.transform.z + gt.z
+          };
+        }
+        if (gs) {
+          updated.style = {
+            ...l.style,
+            opacity: l.style.opacity * gs.opacity
+          };
+        }
+        return updated;
+      }
+      return l;
+    });
+
+    // If group has fewer than 2 children, dissolve it
+    const remaining = this.state.layers.filter((l) => l.parentId === groupId);
+    if (remaining.length < 2 && group) {
+      this.ungroupLayers(groupId);
+    }
+  }
+
+  /**
+   * Shift the time range of all children in a group by a delta.
+   * Used when moving a group bar in the timeline.
+   */
+  shiftGroupChildrenTime(groupId: string, deltaTime: number) {
+    this.state.layers = this.state.layers.map((layer) => {
+      if (layer.parentId !== groupId) return layer;
+
+      const oldEnter = layer.enterTime ?? 0;
+      const oldExit = layer.exitTime ?? this.state.duration;
+      const newEnter = Math.max(0, Math.min(oldEnter + deltaTime, this.state.duration));
+      const newExit = Math.max(newEnter + 0.1, Math.min(oldExit + deltaTime, this.state.duration));
+
+      const shiftedKeyframes = layer.keyframes
+        .map((kf) => ({
+          ...kf,
+          time: Math.max(0, Math.min(this.state.duration, kf.time + deltaTime))
+        }))
+        .sort((a, b) => a.time - b.time);
+
+      return {
+        ...layer,
+        enterTime: newEnter,
+        exitTime: newExit,
+        keyframes: shiftedKeyframes
+      };
+    });
   }
 
   // Keyframe operations
@@ -431,6 +691,17 @@ export class ProjectStore {
    * @param shiftKeyframes If true, shift all keyframes by the time delta (default: false)
    */
   setLayerTimeRange(layerId: string, enterTime: number, exitTime: number, shiftKeyframes = false) {
+    // For group layers, also shift all children by the same time delta
+    const targetLayer = this.state.layers.find((l) => l.id === layerId);
+    if (targetLayer?.type === 'group') {
+      const oldGroupEnter = targetLayer.enterTime ?? 0;
+      const clampedEnter = Math.max(0, Math.min(enterTime, this.state.duration));
+      const delta = clampedEnter - oldGroupEnter;
+      if (delta !== 0) {
+        this.shiftGroupChildrenTime(layerId, delta);
+      }
+    }
+
     this.state.layers = this.state.layers.map((layer) => {
       if (layer.id !== layerId) return layer;
 

@@ -2,7 +2,7 @@
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { Code, Film, LayoutGrid, Plus, Shapes, Type } from '@lucide/svelte';
+  import { Code, Film, Folder, LayoutGrid, Plus, Shapes, Type } from '@lucide/svelte';
   import { layerRegistry, type LayerMeta } from '$lib/layers/registry';
   import { createLayer } from '$lib/engine/layer-factory';
   import type { LayerTypeString } from '$lib/layers/layer-types';
@@ -26,7 +26,7 @@
     projectStore.selectedLayerId = layer.id;
   }
 
-  const hiddenTypes = new Set<LiteralUnion<LayerTypeString, string>>(['captions']);
+  const hiddenTypes = new Set<LiteralUnion<LayerTypeString, string>>(['captions', 'group']);
 
   const categoryOrder: LayerCategory[] = ['media', 'text', 'shape', 'code', 'ui'];
 
@@ -65,10 +65,13 @@
     {/snippet}
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start" class="max-h-80 overflow-y-auto">
+    <!-- Folder/Group option at the top -->
+    <DropdownMenu.Item onclick={() => addLayer('group')}>
+      <Folder class="mr-2 h-4 w-4" />
+      Folder
+    </DropdownMenu.Item>
+    <DropdownMenu.Separator />
     {#each groupedLayers as group, i (group.category)}
-      {#if i > 0}
-        <DropdownMenu.Separator />
-      {/if}
       <DropdownMenu.Group>
         <DropdownMenu.GroupHeading class="flex items-center">
           {@const CatIcon = group.icon}
@@ -85,6 +88,9 @@
           </DropdownMenu.Item>
         {/each}
       </DropdownMenu.Group>
+      {#if i < groupedLayers.length - 1}
+        <DropdownMenu.Separator />
+      {/if}
     {/each}
   </DropdownMenu.Content>
 </DropdownMenu.Root>
