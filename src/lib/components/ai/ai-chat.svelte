@@ -98,10 +98,10 @@
             result = executeRemoveLayer(projectStore, toolCall.input as RemoveLayerInput);
             break;
           case 'group_layers':
-            result = executeGroupLayers(toolCall.input as GroupLayersInput);
+            result = executeGroupLayers(projectStore, toolCall.input as GroupLayersInput);
             break;
           case 'ungroup_layers':
-            result = executeUngroupLayers(toolCall.input as UngroupLayersInput);
+            result = executeUngroupLayers(projectStore, toolCall.input as UngroupLayersInput);
             break;
           case 'configure_project':
             result = executeConfigureProject(projectStore, toolCall.input as ConfigureProjectInput);

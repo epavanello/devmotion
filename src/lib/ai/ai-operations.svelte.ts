@@ -145,8 +145,11 @@ export function executeConfigureProject(
 /**
  * Execute group_layers tool
  */
-export function executeGroupLayers(input: GroupLayersInput): GroupLayersOutput {
-  const result = mutateGroupLayers(getContext(), input);
+export function executeGroupLayers(
+  projectStore: ProjectStore,
+  input: GroupLayersInput
+): GroupLayersOutput {
+  const result = mutateGroupLayers(getContext(projectStore), input);
   if (result.success && result.groupId) {
     projectStore.selectedLayerId = result.groupId;
   }
@@ -156,8 +159,11 @@ export function executeGroupLayers(input: GroupLayersInput): GroupLayersOutput {
 /**
  * Execute ungroup_layers tool
  */
-export function executeUngroupLayers(input: UngroupLayersInput): UngroupLayersOutput {
-  const result = mutateUngroupLayers(getContext(), input);
+export function executeUngroupLayers(
+  projectStore: ProjectStore,
+  input: UngroupLayersInput
+): UngroupLayersOutput {
+  const result = mutateUngroupLayers(getContext(projectStore), input);
   if (result.success) {
     projectStore.selectedLayerId = null;
   }

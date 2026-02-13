@@ -5,6 +5,8 @@
   import { fieldRegistry } from '../base';
   import SourceLayerRef from '../properties/SourceLayerRef.svelte';
   import { googleFontValues, getGoogleFontUrl, type GoogleFont } from '$lib/utils/fonts';
+  import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
+  import { SizeWithAspectRatioSchema, sizeMiddleware } from '$lib/schemas/size';
 
   /**
    * Word-level caption data schema
@@ -18,7 +20,7 @@
   /**
    * Schema for Captions Layer custom properties
    */
-  const schema = z.object({
+  const schema = SizeWithAspectRatioSchema.extend({
     sourceLayerId: z.string().optional().describe('Source').register(fieldRegistry, {
       interpolationFamily: 'discrete',
       widget: 'custom',
@@ -91,9 +93,12 @@
     description: 'Synchronized captions/subtitles with word-by-word or block display modes',
 
     propertyGroups: [
+      { id: 'size', label: 'Size', widget: AspectRatioToggle },
       { id: 'style', label: 'Style' },
       { id: 'font', label: 'Font' }
-    ]
+    ],
+
+    middleware: sizeMiddleware
   } as const satisfies LayerMeta;
 
   type Props = z.infer<typeof schema>;
@@ -107,6 +112,8 @@
   type CaptionWord = z.infer<typeof CaptionWordSchema>;
 
   let {
+    width,
+    height,
     mode,
     words,
     fontSize,
@@ -209,7 +216,7 @@
 
 {#if mode === 'word-by-word' && currentWords.length > 0}
   <!-- Word-by-word mode: Social media style -->
-  <div class="flex flex-wrap content-start items-center justify-center gap-1">
+  <div class="flex flex-wrap content-start items-center justify-center gap-1" style:width="{width}px" style:height="{height}px">
     {#each currentWords as { word, start, end }, i (i)}
       {@const isActive = relativeTime >= start && relativeTime < end}
       {@const justAppeared = relativeTime - start < 0.3}
@@ -230,7 +237,7 @@
   </div>
 {:else if mode === 'block' && captionBlocks.length > 0}
   <!-- Block mode: Progressive paragraphs -->
-  <div class="flex flex-col gap-3">
+  <div class="flex flex-col gap-3" style:width="{width}px" style:height="{height}px">
     {#each captionBlocks as block (block.id)}
       {@const isActive = currentBlockIndex === block.id}
       {@const isPast = currentBlockIndex > block.id}
