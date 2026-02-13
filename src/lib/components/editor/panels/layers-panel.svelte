@@ -140,7 +140,7 @@
     }
   }
 
-  function handleTouchEnd(e: TouchEvent) {
+  function handleTouchEnd(_: TouchEvent) {
     if (touchDragging && touchDragOverId && touchDragLayerId) {
       // Perform the drop
       const targetLayer = projectStore.state.layers.find((l) => l.id === touchDragOverId);

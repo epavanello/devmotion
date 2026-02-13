@@ -12,7 +12,9 @@
     Unlock,
     GitFork,
     Globe,
-    Github
+    Github,
+    Sun,
+    Moon
   } from '@lucide/svelte';
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import ExportDialog from './export-dialog.svelte';
@@ -21,6 +23,7 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import ProjectSettingsDialog from './project-settings-dialog.svelte';
   import { uiStore } from '$lib/stores/ui.svelte';
+  import { themeStore } from '$lib/stores/theme.svelte';
   import { getUser, signOut } from '$lib/functions/auth.remote';
   import { toggleVisibility, forkProject } from '$lib/functions/projects.remote';
   import { goto } from '$app/navigation';
@@ -275,6 +278,16 @@
 
       <div class="flex items-center gap-2">
         {#if !isMobile}
+          <!-- Theme Toggle -->
+          <TooltipButton
+            content={themeStore.resolvedTheme === 'dark'
+              ? 'Switch to Light Mode'
+              : 'Switch to Dark Mode'}
+            variant="ghost"
+            onclick={() => themeStore.toggle()}
+            icon={themeStore.resolvedTheme === 'dark' ? Sun : Moon}
+          />
+
           <!-- Keyboard Shortcuts (Desktop) -->
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>

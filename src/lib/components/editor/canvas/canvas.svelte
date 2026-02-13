@@ -163,7 +163,10 @@
   });
 </script>
 
-<div class="relative h-full w-full overflow-hidden bg-white" class:recording-mode={isRecording}>
+<div
+  class="relative h-full w-full overflow-hidden bg-background"
+  class:recording-mode={isRecording}
+>
   <!-- Canvas viewport -->
   <div
     bind:this={canvasContainer}
@@ -184,12 +187,11 @@
       <!-- Dark overlay with transparent hole around canvas view -->
       {#if !isRecording}
         <div
-          class="canvas-overlay absolute"
+          class="canvas-overlay absolute bg-background/60"
           style:width="20000px"
           style:height="20000px"
           style:left="-10000px"
           style:top="-10000px"
-          style:background-color="rgba(127, 127, 127, 0.6)"
           style:clip-path={`polygon(evenodd, 0 0, 0 20000px, 20000px 20000px, 20000px 0, 0 0, ${10000 - projectStore.state.width / 2}px ${10000 - projectStore.state.height / 2}px, ${10000 - projectStore.state.width / 2}px ${10000 + projectStore.state.height / 2}px, ${10000 + projectStore.state.width / 2}px ${10000 + projectStore.state.height / 2}px, ${10000 + projectStore.state.width / 2}px ${10000 - projectStore.state.height / 2}px, ${10000 - projectStore.state.width / 2}px ${10000 - projectStore.state.height / 2}px)`}
           style:pointer-events="none"
         ></div>

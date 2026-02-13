@@ -4,8 +4,25 @@
   import { Toaster } from 'svelte-sonner';
   import { uiStore } from '$lib/stores/ui.svelte';
   import LoginPromptDialog from '$lib/components/editor/login-prompt-dialog.svelte';
+  import { themeStore } from '$lib/stores/theme.svelte';
+  import { onMount } from 'svelte';
 
   let { children } = $props();
+
+  onMount(() => {
+    // Initialize theme from store (triggers system preference detection)
+    themeStore.applyTheme();
+
+    // Listen for system theme changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      if (themeStore.theme === 'system') {
+        themeStore.applyTheme();
+      }
+    };
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  });
 </script>
 
 <svelte:head>

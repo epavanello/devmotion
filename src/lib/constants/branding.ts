@@ -1,6 +1,6 @@
 export const BRAND_COLORS = {
-  blue: '#3b82f6',
-  purple: '#9333ea',
+  blue: '#0123ae',
+  purple: '#ac62df',
   slate: {
     900: '#0f172a',
     950: '#020617'

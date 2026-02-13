@@ -1,10 +1,12 @@
 <script lang="ts">
   import Logo from '$lib/components/editor/Logo.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { ArrowLeft, Github } from '@lucide/svelte';
+  import { ArrowLeft, Github, Sun, Moon } from '@lucide/svelte';
   import { PUBLIC_BASE_URL } from '$env/static/public';
   import JsonLd from '$lib/components/json-ld.svelte';
   import SeoHead from '$lib/components/seo-head.svelte';
+  import { themeStore } from '$lib/stores/theme.svelte';
+  import TooltipButton from '$lib/components/ui/tooltip/tooltip-button.svelte';
 
   // SEO Configuration for DevMotion
   const baseUrl = PUBLIC_BASE_URL;
@@ -96,6 +98,16 @@
       </div>
 
       <div class="flex items-center gap-2">
+        <!-- Theme Toggle -->
+        <TooltipButton
+          content={themeStore.resolvedTheme === 'dark'
+            ? 'Switch to Light Mode'
+            : 'Switch to Dark Mode'}
+          variant="ghost"
+          onclick={() => themeStore.toggle()}
+          icon={themeStore.resolvedTheme === 'dark' ? Sun : Moon}
+        />
+
         <Button variant="ghost" href="/" class="gap-2">
           <ArrowLeft class="h-4 w-4" />
           Back to Editor

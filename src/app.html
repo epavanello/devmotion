@@ -4,8 +4,23 @@
     <meta charset="utf-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
     />
+    <script>
+      // Prevent flash of wrong theme by applying before page renders
+      // Note: This only handles stored 'light'/'dark' preferences. 'system' preference
+      // is handled by the theme store after hydration (avoids duplicating media query logic)
+      (function () {
+        const STORAGE_KEY = 'devmotion_theme';
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else if (stored === 'light') {
+          document.documentElement.classList.remove('dark');
+        }
+        // If stored is 'system' or null, let the store handle it after hydration
+      })();
+    </script>
     <script
       defer
       data-domain="devmotion.app"
