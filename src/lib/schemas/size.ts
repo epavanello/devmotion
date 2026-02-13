@@ -2,42 +2,56 @@ import { fieldRegistry } from '$lib/layers/base';
 import { z } from 'zod';
 
 /**
- * Basic size schema with width and height
- * Can be extended with aspect ratio locking by using SizeWithAspectRatioSchema
+ * Creates a size schema with custom default dimensions
  */
-export const SizeSchema = z.object({
-  width: z
-    .number()
-    .min(1)
-    .max(2000)
-    .default(200)
-    .describe('Width (px)')
-    .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
-  height: z
-    .number()
-    .min(1)
-    .max(2000)
-    .default(200)
-    .describe('Height (px)')
-    .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' })
-});
+export function createSizeSchema(defaultWidth = 200, defaultHeight = 200) {
+  return z.object({
+    width: z
+      .number()
+      .min(1)
+      .max(2000)
+      .default(defaultWidth)
+      .describe('Width (px)')
+      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+    height: z
+      .number()
+      .min(1)
+      .max(2000)
+      .default(defaultHeight)
+      .describe('Height (px)')
+      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' })
+  });
+}
 
 /**
- * Size schema with aspect ratio locking support
+ * Basic size schema with width and height (default 200x200)
+ * Can be extended with aspect ratio locking by using SizeWithAspectRatioSchema
+ */
+export const SizeSchema = createSizeSchema();
+
+/**
+ * Creates a size schema with aspect ratio locking support and custom default dimensions
+ */
+export function createSizeWithAspectRatioSchema(defaultWidth = 200, defaultHeight = 200) {
+  return createSizeSchema(defaultWidth, defaultHeight).extend({
+    _aspectRatioLocked: z
+      .boolean()
+      .default(false)
+      .describe('Aspect ratio locked')
+      .register(fieldRegistry, { hidden: true }),
+    _aspectRatio: z
+      .number()
+      .default(1)
+      .describe('Aspect ratio value')
+      .register(fieldRegistry, { hidden: true })
+  });
+}
+
+/**
+ * Size schema with aspect ratio locking support (default 200x200)
  * Includes hidden fields for aspect ratio state
  */
-export const SizeWithAspectRatioSchema = SizeSchema.extend({
-  _aspectRatioLocked: z
-    .boolean()
-    .default(false)
-    .describe('Aspect ratio locked')
-    .register(fieldRegistry, { hidden: true }),
-  _aspectRatio: z
-    .number()
-    .default(1)
-    .describe('Aspect ratio value')
-    .register(fieldRegistry, { hidden: true })
-});
+export const SizeWithAspectRatioSchema = createSizeWithAspectRatioSchema();
 
 /**
  * Middleware for handling aspect ratio locked size updates

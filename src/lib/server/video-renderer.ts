@@ -222,7 +222,7 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
           try {
             ffmpegCommand.kill('SIGKILL');
           } catch {
-            // ignore 
+            // ignore
           }
         }
         if (!frameStream.destroyed) frameStream.destroy();

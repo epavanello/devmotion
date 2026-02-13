@@ -6,7 +6,7 @@
   import SourceLayerRef from '../properties/SourceLayerRef.svelte';
   import { googleFontValues, getGoogleFontUrl, type GoogleFont } from '$lib/utils/fonts';
   import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
-  import { SizeWithAspectRatioSchema, sizeMiddleware } from '$lib/schemas/size';
+  import { createSizeWithAspectRatioSchema, sizeMiddleware } from '$lib/schemas/size';
 
   /**
    * Word-level caption data schema
@@ -19,8 +19,9 @@
 
   /**
    * Schema for Captions Layer custom properties
+   * Uses 400x200 as default dimensions for captions
    */
-  const schema = SizeWithAspectRatioSchema.extend({
+  const schema = createSizeWithAspectRatioSchema(400, 200).extend({
     sourceLayerId: z.string().optional().describe('Source').register(fieldRegistry, {
       interpolationFamily: 'discrete',
       widget: 'custom',
