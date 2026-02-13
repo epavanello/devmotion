@@ -9,7 +9,8 @@
     getSupportedMimeType,
     stopMediaStream
   } from './media-upload-utils';
-  import { getUser } from '$lib/functions/auth.remote';
+  import { uiStore } from '$lib/stores/ui.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
 
   interface Props {
     /** Callback when recording is complete and uploaded */
@@ -19,8 +20,7 @@
   }
 
   let { onRecordingComplete, projectId }: Props = $props();
-
-  const user = $derived(await getUser());
+  const editorState = $derived(getEditorState());
 
   let isRecording = $state(false);
   let isUploading = $state(false);
@@ -35,18 +35,6 @@
   async function startRecording() {
     try {
       recordingError = '';
-
-      // Require user login
-      if (!user) {
-        recordingError = 'Please login to record audio';
-        return;
-      }
-
-      // Require projectId - user must save project before recording
-      if (!projectId || projectId.trim() === '') {
-        recordingError = 'Please save your project to the cloud before recording audio';
-        return;
-      }
 
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
@@ -123,16 +111,17 @@
     }
   }
 
+  async function handleStartRecording() {
+    await uiStore.requireLogin('save your project', () => {
+      uiStore.requireCreateProject(editorState, startRecording);
+    });
+  }
+
   async function uploadRecording(blob: Blob, duration: number) {
     isUploading = true;
     recordingError = '';
 
     try {
-      // Double-check projectId exists before upload
-      if (!projectId || projectId.trim() === '') {
-        throw new Error('Please save your project to the cloud before uploading recordings');
-      }
-
       const fileName = generateTimestampedFileName('recording', 'webm');
       const result = await uploadMediaBlob(blob, fileName, 'audio', projectId, duration);
       onRecordingComplete(result);
@@ -179,7 +168,7 @@
     </div>
   {:else}
     <!-- Start recording button -->
-    <Button variant="default" size="sm" class="w-full text-xs" onclick={startRecording}>
+    <Button variant="default" size="sm" class="w-full text-xs" onclick={handleStartRecording}>
       <Mic class="mr-1 size-3" />
       Record Audio
     </Button>

@@ -66,7 +66,8 @@ export function getDefaultProject(): Project {
     duration: 5,
     fps: 30,
     background: '#000000',
-    layers: []
+    layers: [],
+    fontFamily: 'Inter'
   };
 }
 
@@ -134,6 +135,10 @@ export function initializeEditorContext() {
         // Skip saving during initial load
         if (!initialized) {
           initialized = true;
+          return;
+        }
+
+        if (projectStore.isLoading) {
           return;
         }
 

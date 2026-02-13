@@ -32,6 +32,7 @@ export class ProjectStore {
   state = $state<Project>(undefined!);
 
   selectedLayerId = $state<string | null>(null);
+  isLoading = $state(false);
   isPlaying = $state(false);
   isRecording = $state(false);
   currentTime = $state(0);
@@ -50,7 +51,8 @@ export class ProjectStore {
       duration: 5,
       fps: 30,
       background: '#000000',
-      layers: []
+      layers: [],
+      fontFamily: 'Inter'
     };
   }
 
@@ -277,10 +279,12 @@ export class ProjectStore {
 
   // Project operations
   async loadProject(project: Project) {
+    this.isLoading = true;
     this.state = project;
     await tick();
     this.selectedLayerId = null;
     this.isPlaying = false;
+    this.isLoading = false;
   }
 
   exportToJSON(): string {

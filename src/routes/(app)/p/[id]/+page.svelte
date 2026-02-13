@@ -30,7 +30,8 @@
       duration: projectData.duration,
       fps: projectData.fps,
       background: projectData.background,
-      layers: projectData.layers
+      layers: projectData.layers,
+      fontFamily: projectData.fontFamily
     });
 
     editorState.setDbContext(data.project.id, data.isOwner, data.canEdit, data.project.isPublic);

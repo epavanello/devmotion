@@ -6,6 +6,7 @@ import { getAvailableLayerTypes } from '$lib/layers/registry';
 import { z } from 'zod';
 import { BackgroundValueSchema } from './background';
 import { TransformSchema, LayerStyleSchema, BaseLayerFieldsSchema } from './base';
+import { googleFontValues } from '$lib/utils/fonts';
 
 // ============================================
 // Interpolation
@@ -211,6 +212,7 @@ export const ProjectSchema = z.object({
   duration: z.number().positive(),
   fps: z.number().positive(),
   background: BackgroundValueSchema.optional(),
+  fontFamily: z.enum(googleFontValues).optional().default('Inter'),
   layers: z.array(LayerSchema)
 });
 

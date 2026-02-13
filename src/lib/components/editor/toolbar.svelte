@@ -18,18 +18,12 @@
   import ExportDialog from './export-dialog.svelte';
 
   const editorState = $derived(getEditorState());
-  const projectStore = $derived(editorState.project);
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import ProjectSettingsDialog from './project-settings-dialog.svelte';
   import { uiStore } from '$lib/stores/ui.svelte';
   import { getUser, signOut } from '$lib/functions/auth.remote';
-  import {
-    saveProject as saveProjectToDb,
-    toggleVisibility,
-    forkProject,
-    getUserProjects
-  } from '$lib/functions/projects.remote';
-  import { goto, replaceState } from '$app/navigation';
+  import { toggleVisibility, forkProject } from '$lib/functions/projects.remote';
+  import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { authClient } from '$lib/auth-client';
   import ProjectSwitcher from './project-switcher.svelte';
@@ -126,23 +120,8 @@
     });
   }
 
-  async function doSaveToCloud() {
-    const result = await saveProjectToDb({
-      id: projectId || undefined,
-      data: projectStore.state
-    });
-    getUserProjects().refresh();
-    if (result.success && result.data.id) {
-      editorState.markAsSaved();
-      if (!projectId) {
-        replaceState(resolve(`/p/${result.data.id}`), {});
-        editorState.setDbContext(result.data.id, true, true, false);
-      }
-    }
-  }
-
   async function handleSaveToCloud() {
-    await uiStore.requireLogin('save your project', doSaveToCloud);
+    await uiStore.requireLogin('save your project', () => uiStore.doSaveToCloud(editorState));
   }
 
   async function handleToggleVisibility() {

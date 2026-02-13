@@ -57,6 +57,29 @@
       projectStore.setLayerExitTime(layer.id, enterTime);
     }}
   />
+{:else if metadata.meta?.widget === 'textarea'}
+  <Textarea
+    id={metadata.name}
+    value={typeof value === 'string' ? value : ''}
+    oninput={(e) => onUpdateProp(metadata.name, e.currentTarget.value)}
+    spellcheck="false"
+  />
+{:else if metadata.meta?.widget === 'background'}
+  <BackgroundPicker
+    value={value as BackgroundValue}
+    onchange={(newValue) => onUpdateProp(metadata.name, newValue)}
+  />
+{:else if metadata.meta?.widget === 'color'}
+  <Input
+    id={metadata.name}
+    type="color"
+    value={typeof value === 'string' ? value : '#000000'}
+    oninput={(e) => onUpdateProp(metadata.name, e.currentTarget.value)}
+    class="min-w-20 p-1"
+  />
+{:else if metadata.meta?.widget === 'custom'}
+  {@const Component = metadata.meta.component}
+  <Component {value} onChange={(newValue) => onUpdateProp(metadata.name, newValue)} {layer} />
 {:else if metadata.type === 'number'}
   <ScrubInput
     id={metadata.name}
@@ -88,29 +111,6 @@
       <option value={option.value}>{option.label}</option>
     {/each}
   </select>
-{:else if metadata.meta?.widget === 'textarea'}
-  <Textarea
-    id={metadata.name}
-    value={typeof value === 'string' ? value : ''}
-    oninput={(e) => onUpdateProp(metadata.name, e.currentTarget.value)}
-    spellcheck="false"
-  />
-{:else if metadata.meta?.widget === 'background'}
-  <BackgroundPicker
-    value={value as BackgroundValue}
-    onchange={(newValue) => onUpdateProp(metadata.name, newValue)}
-  />
-{:else if metadata.meta?.widget === 'color'}
-  <Input
-    id={metadata.name}
-    type="color"
-    value={typeof value === 'string' ? value : '#000000'}
-    oninput={(e) => onUpdateProp(metadata.name, e.currentTarget.value)}
-    class="min-w-20 p-1"
-  />
-{:else if metadata.meta?.widget === 'custom'}
-  {@const Component = metadata.meta.component}
-  <Component {value} onChange={(newValue) => onUpdateProp(metadata.name, newValue)} {layer} />
 {:else}
   <!-- Default to text input for strings and unknown types -->
   <Input
