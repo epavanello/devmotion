@@ -15,10 +15,12 @@
   } from '@lucide/svelte';
   import { getUserProjects, deleteProject, renameProject } from '$lib/functions/projects.remote';
   import { goto } from '$app/navigation';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { resolve } from '$app/paths';
   import { getUser } from '$lib/functions/auth.remote';
   import Input from '../ui/input/input.svelte';
+
+  const editorState = $derived(getEditorState());
 
   interface Props {
     currentProjectId?: string | null;
@@ -38,11 +40,11 @@
     }
   });
 
-  const projects = $derived(await getUserProjects());
-  const user = $derived(await getUser());
+  const projects = getUserProjects();
+  const user = getUser();
 
   function handleNewProject() {
-    projectStore.resetToNew();
+    editorState.resetToNew();
     goto(resolve('/'));
   }
 
@@ -89,10 +91,18 @@
       }
     }
   }
+
+  $inspect(projects);
 </script>
 
-<DropdownMenu.Root>
-  <DropdownMenu.Trigger disabled={!user}>
+<DropdownMenu.Root
+  onOpenChange={(open) => {
+    if (open) {
+      getUserProjects().refresh();
+    }
+  }}
+>
+  <DropdownMenu.Trigger disabled={!user.current}>
     {#snippet child({ props })}
       <Button variant="outline" size="sm" class="max-w-48" {...props}>
         <FolderOpen />
@@ -108,10 +118,12 @@
       New Project
     </DropdownMenu.Item>
     <DropdownMenu.Separator />
-    {#if projects.length === 0}
+    {#if !projects.current}
+      <div class="px-2 py-4 text-center text-sm text-muted-foreground">Loading projects...</div>
+    {:else if projects.current?.length === 0}
       <div class="px-2 py-4 text-center text-sm text-muted-foreground">No saved projects</div>
     {:else}
-      {#each projects as proj (proj.id)}
+      {#each projects.current as proj (proj.id)}
         <DropdownMenu.Item
           onclick={() => handleOpenProject(proj.id)}
           onpointermove={(e) => {

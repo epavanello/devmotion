@@ -1,8 +1,11 @@
 <script lang="ts">
   import Button from '$lib/components/ui/button/button.svelte';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Link } from '@lucide/svelte';
   import type { CustomPropertyComponentProps } from '../base';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   const { value }: CustomPropertyComponentProps = $props();
 
@@ -10,7 +13,7 @@
 
   const sourceLayer = $derived.by(() => {
     if (!sourceLayerId) return null;
-    return projectStore.project.layers.find((l) => l.id === sourceLayerId);
+    return projectStore.state.layers.find((l) => l.id === sourceLayerId);
   });
 
   function handleActivateSource() {

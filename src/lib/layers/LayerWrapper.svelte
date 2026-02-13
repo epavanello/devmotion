@@ -1,10 +1,13 @@
 <script lang="ts" generics="T extends Record<string, unknown>">
   import { generateTransformCSS, type BaseLayerProps } from './base';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { getAnimatedTransform } from '$lib/engine/interpolation';
   import { nanoid } from 'nanoid';
   import type { Component } from 'svelte';
   import { BRAND_COLORS } from '$lib/constants/branding';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   interface Props extends BaseLayerProps {
     /**
@@ -60,8 +63,8 @@
     const canvasY = relY / viewport.zoom;
 
     // Canvas coordinates with (0,0) at center of canvas
-    const centerOffsetX = projectStore.project.width / 2;
-    const centerOffsetY = projectStore.project.height / 2;
+    const centerOffsetX = projectStore.state.width / 2;
+    const centerOffsetY = projectStore.state.height / 2;
 
     return {
       x: canvasX - centerOffsetX,
@@ -96,7 +99,7 @@
     if (!isDragging) return;
 
     const canvasPos = screenToCanvas(event.clientX, event.clientY);
-    const layer = projectStore.project.layers.find((l) => l.id === id);
+    const layer = projectStore.state.layers.find((l) => l.id === id);
 
     if (layer) {
       const movementX = canvasPos.x - dragStart.x;

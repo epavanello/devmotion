@@ -4,6 +4,7 @@
   import { Captions } from '@lucide/svelte';
   import { fieldRegistry } from '../base';
   import SourceLayerRef from '../properties/SourceLayerRef.svelte';
+  import { googleFontValues, getGoogleFontUrl, type GoogleFont } from '$lib/utils/fonts';
 
   /**
    * Word-level caption data schema
@@ -43,6 +44,16 @@
       .default(24)
       .describe('Size (px)')
       .register(fieldRegistry, { group: 'font', interpolationFamily: 'continuous' }),
+    fontFamily: z
+      .enum(googleFontValues)
+      .optional()
+      .describe('Font family')
+      .register(fieldRegistry, {
+        group: 'font',
+        interpolationFamily: 'discrete',
+        widget: 'custom',
+        component: FontProperty
+      }),
     fontWeight: z
       .enum(['400', '500', '600', '700', '800', '900'])
       .optional()
@@ -91,6 +102,7 @@
 <script lang="ts">
   import type { TypedLayer } from '$lib/layers/typed-registry';
   import CaptionsEditor from '../properties/CaptionsEditor.svelte';
+  import FontProperty from '../properties/FontProperty.svelte';
 
   type CaptionWord = z.infer<typeof CaptionWordSchema>;
 
@@ -98,6 +110,7 @@
     mode,
     words,
     fontSize,
+    fontFamily,
     fontWeight,
     textColor,
     bgColor,
@@ -107,6 +120,8 @@
     layer: TypedLayer;
     currentTime: number;
   } = $props();
+
+  const fontUrl = $derived(fontFamily ? getGoogleFontUrl(fontFamily as GoogleFont) : undefined);
 
   /**
    * Calculate relative time (time within the layer's content)
@@ -184,6 +199,14 @@
   });
 </script>
 
+<svelte:head>
+  {#if fontUrl}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+    <link rel="stylesheet" href={fontUrl} />
+  {/if}
+</svelte:head>
+
 {#if mode === 'word-by-word' && currentWords.length > 0}
   <!-- Word-by-word mode: Social media style -->
   <div class="flex flex-wrap content-start items-center justify-center gap-1">
@@ -192,6 +215,7 @@
       {@const justAppeared = relativeTime - start < 0.3}
       <span
         class="inline-block rounded transition-all duration-150"
+        style:font-family={fontFamily ? `'${fontFamily}', sans-serif` : undefined}
         style:font-size="{fontSize}px"
         style:font-weight={isActive ? '700' : fontWeight}
         style:color={textColor}
@@ -212,6 +236,7 @@
       {@const isPast = currentBlockIndex > block.id}
       <p
         class="rounded leading-relaxed transition-all duration-200"
+        style:font-family={fontFamily ? `'${fontFamily}', sans-serif` : undefined}
         style:font-size="{fontSize}px"
         style:font-weight={isActive ? '600' : fontWeight}
         style:color={isActive

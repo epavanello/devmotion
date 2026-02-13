@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Bot, Loader2, User } from '@lucide/svelte';
   import { AI_MODELS, DEFAULT_MODEL_ID } from '$lib/ai/models';
@@ -32,6 +32,9 @@
   import { PersistedState } from 'runed';
   import ToolPart from './tool-part.svelte';
 
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
+
   interface Props {
     selectedModelId?: string;
   }
@@ -48,7 +51,7 @@
       api: resolve('/(app)/chat'),
       get body() {
         return {
-          project: projectStore.project,
+          project: projectStore.state,
           modelId: selectedModelId
         } satisfies Omit<GenerateRequest, 'messages'>;
       }
@@ -68,7 +71,7 @@
         const layerType = getLayerTypeFromToolName(toolName);
         if (layerType) {
           const input = toolCall.input as CreateLayerInput;
-          result = executeCreateLayer({
+          result = executeCreateLayer(projectStore, {
             type: layerType,
             name: input.name,
             position: input.position,
@@ -82,16 +85,16 @@
         // Handle other tools
         switch (toolName) {
           case 'animate_layer':
-            result = executeAnimateLayer(toolCall.input as AnimateLayerInput);
+            result = executeAnimateLayer(projectStore, toolCall.input as AnimateLayerInput);
             break;
           case 'edit_layer':
-            result = executeEditLayer(toolCall.input as EditLayerInput);
+            result = executeEditLayer(projectStore, toolCall.input as EditLayerInput);
             break;
           case 'remove_layer':
-            result = executeRemoveLayer(toolCall.input as RemoveLayerInput);
+            result = executeRemoveLayer(projectStore, toolCall.input as RemoveLayerInput);
             break;
           case 'configure_project':
-            result = executeConfigureProject(toolCall.input as ConfigureProjectInput);
+            result = executeConfigureProject(projectStore, toolCall.input as ConfigureProjectInput);
             break;
           default:
             result = { success: false, error: `Unknown tool: ${toolName}` };

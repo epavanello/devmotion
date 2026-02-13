@@ -1,6 +1,6 @@
 <script lang="ts">
   import KeyframeCard from '../keyframe-card.svelte';
-  import Select from '$lib/components/ui/select/select.svelte';
+  import { Select } from '$lib/components/ui/select';
   import { SvelteSet } from 'svelte/reactivity';
   import type { TypedLayer } from '$lib/layers/typed-registry';
 
@@ -55,13 +55,16 @@
       <label for="property-filter" class="text-sm font-medium text-muted-foreground">
         Filter:
       </label>
-      <Select id="property-filter" bind:value={selectedProperty} class="flex-1">
-        {#each availableProperties as property (property)}
-          <option value={property}>
-            {formatPropertyLabel(property)}
-          </option>
-        {/each}
-      </Select>
+      <Select
+        trigger={{
+          id: 'property-filter'
+        }}
+        bind:value={selectedProperty}
+        options={availableProperties.map((property) => ({
+          value: property,
+          label: formatPropertyLabel(property)
+        }))}
+      />
     </div>
   {/if}
 

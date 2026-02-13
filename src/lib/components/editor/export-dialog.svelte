@@ -11,9 +11,12 @@
   import { Label } from '$lib/components/ui/label';
   import { Input } from '$lib/components/ui/input';
   import { Progress } from '$lib/components/ui/progress';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { VideoCapture } from '$lib/utils/video-capture';
   import { Loader2, AlertCircle, Monitor, Server } from '@lucide/svelte';
+
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
   interface Props {
     open: boolean;
@@ -43,9 +46,9 @@
 
   let exportSettings = $derived({
     format: 'webm',
-    fps: projectStore.project.fps,
-    width: projectStore.project.width,
-    height: projectStore.project.height
+    fps: projectStore.state.fps,
+    width: projectStore.state.width,
+    height: projectStore.state.height
   });
 
   let exportMode = $derived<ExportMode>(projectId ? 'server' : 'browser');
@@ -123,7 +126,7 @@
 
       // In a streaming response, we have to read it as a blob if we want to trigger a download window
       const blob = await response.blob();
-      const filename = `${projectStore.project.name || 'video'}.mp4`;
+      const filename = `${projectStore.state.name || 'video'}.mp4`;
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -209,7 +212,7 @@
         width: exportSettings.width,
         height: exportSettings.height,
         fps: exportSettings.fps,
-        duration: projectStore.project.duration,
+        duration: projectStore.state.duration,
         onReadyToRecord: () => {
           // Start playback synchronized with recording
           projectStore.play();
@@ -233,7 +236,7 @@
 
           try {
             // Download the video
-            const filename = `${projectStore.project.name || 'video'}.mp4`;
+            const filename = `${projectStore.state.name || 'video'}.mp4`;
             VideoCapture.downloadBlob(blob, filename);
 
             // Close dialog after successful export

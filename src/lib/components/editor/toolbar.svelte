@@ -14,17 +14,15 @@
     Globe,
     Github
   } from '@lucide/svelte';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import ExportDialog from './export-dialog.svelte';
+
+  const editorState = $derived(getEditorState());
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import ProjectSettingsDialog from './project-settings-dialog.svelte';
   import { uiStore } from '$lib/stores/ui.svelte';
   import { getUser, signOut } from '$lib/functions/auth.remote';
-  import {
-    saveProject as saveProjectToDb,
-    toggleVisibility,
-    forkProject
-  } from '$lib/functions/projects.remote';
+  import { toggleVisibility, forkProject } from '$lib/functions/projects.remote';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { authClient } from '$lib/auth-client';
@@ -68,12 +66,12 @@
   let showExportDialog = $state(false);
   let showProjectSettings = $state(false);
 
-  const user = $derived(await getUser());
+  const user = getUser();
 
   const WELCOME_TOAST_KEY = 'devmotion_welcome_shown';
 
   onMount(() => {
-    if (!localStorage.getItem(WELCOME_TOAST_KEY) && !user) {
+    if (!localStorage.getItem(WELCOME_TOAST_KEY) && !user.current) {
       localStorage.setItem(WELCOME_TOAST_KEY, '1');
       toast('Welcome to DevMotion', {
         description:
@@ -97,7 +95,7 @@
 
   async function openExportDialog() {
     // Check for unsaved changes
-    if (projectStore.hasUnsavedChanges && user) {
+    if (editorState.hasUnsavedChanges && user.current) {
       const shouldSave = confirm(
         'You have unsaved changes. Please save your project before exporting.'
       );
@@ -122,22 +120,8 @@
     });
   }
 
-  async function doSaveToCloud() {
-    const result = await saveProjectToDb({
-      id: projectId || undefined,
-      data: projectStore.project
-    });
-
-    if (result.success && result.data.id) {
-      projectStore.markAsSaved();
-      if (!projectId) {
-        goto(resolve(`/p/${result.data.id}`));
-      }
-    }
-  }
-
   async function handleSaveToCloud() {
-    await uiStore.requireLogin('save your project', doSaveToCloud);
+    await uiStore.requireLogin('save your project', () => uiStore.doSaveToCloud(editorState));
   }
 
   async function handleToggleVisibility() {
@@ -203,7 +187,7 @@
       onclick: handleSaveToCloud,
       disabled: isRecording || !canEdit,
       visible: true,
-      showIndicator: projectStore.hasUnsavedChanges
+      showIndicator: editorState.hasUnsavedChanges
     },
     {
       id: 'visibility',
@@ -213,7 +197,7 @@
       variant: 'ghost',
       onclick: handleToggleVisibility,
       disabled: isRecording,
-      visible: !!projectId && !!isOwner && !!user
+      visible: !!projectId && !!isOwner && !!user.current
     },
     {
       id: 'fork',
@@ -329,7 +313,7 @@
         {/if}
 
         <!-- User Menu (Always Visible) -->
-        {#if user}
+        {#if user.current}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
               {#snippet child({ props })}
@@ -339,9 +323,9 @@
             <DropdownMenu.Content align="end">
               <DropdownMenu.Label>
                 <div class="flex flex-col space-y-1">
-                  <p class="text-sm leading-none font-medium">{user.name}</p>
+                  <p class="text-sm leading-none font-medium">{user.current.name}</p>
                   <p class="text-xs leading-none text-muted-foreground">
-                    {user.email}
+                    {user.current.email}
                   </p>
                 </div>
               </DropdownMenu.Label>

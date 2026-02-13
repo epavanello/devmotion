@@ -18,5 +18,6 @@
 </svelte:head>
 
 <Toaster richColors position="top-right" />
-<LoginPromptDialog bind:open={uiStore.showLoginPrompt} action={uiStore.loginPromptAction} />
+<LoginPromptDialog bind:open={uiStore.showLoginPrompt} action={uiStore.promptAction} />
 {@render children?.()}
+promptAction

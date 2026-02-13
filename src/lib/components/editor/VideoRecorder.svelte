@@ -9,7 +9,8 @@
     getSupportedMimeType,
     stopMediaStream
   } from './media-upload-utils';
-  import { getUser } from '$lib/functions/auth.remote';
+  import { uiStore } from '$lib/stores/ui.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
 
   interface Props {
     /** Callback when recording is complete and uploaded */
@@ -22,7 +23,7 @@
 
   let { onRecordingComplete, projectId, audioEnabled = true }: Props = $props();
 
-  const user = $derived(await getUser());
+  const editorState = $derived(getEditorState());
 
   let isRecording = $state(false);
   let isUploading = $state(false);
@@ -39,21 +40,15 @@
 
   const MAX_DURATION = 300; // 5 minutes in seconds
 
+  async function handleStartRecording() {
+    await uiStore.requireLogin('save your project', () => {
+      uiStore.requireCreateProject(editorState, startRecording);
+    });
+  }
+
   async function startRecording() {
     try {
       recordingError = '';
-
-      // Require user login
-      if (!user) {
-        recordingError = 'Please login to record video';
-        return;
-      }
-
-      // Require projectId - user must save project before recording
-      if (!projectId || projectId.trim() === '') {
-        recordingError = 'Please save your project to the cloud before recording video';
-        return;
-      }
 
       // Request camera or screen access based on mode
       if (recordingMode === 'screen') {
@@ -164,11 +159,6 @@
     recordingError = '';
 
     try {
-      // Double-check projectId exists before upload
-      if (!projectId || projectId.trim() === '') {
-        throw new Error('Please save your project to the cloud before uploading recordings');
-      }
-
       const fileName = generateTimestampedFileName('video', 'webm');
       const result = await uploadMediaBlob(blob, fileName, 'video', projectId, duration);
       onRecordingComplete(result);
@@ -245,7 +235,9 @@
         <!-- Recording indicator overlay -->
         <div class="absolute top-2 left-2 flex items-center gap-2 rounded bg-black/50 px-2 py-1">
           <div class="h-2 w-2 animate-pulse rounded-full bg-destructive"></div>
-          <span class="text-xs font-medium text-white">Recording {recordingMode === 'screen' ? 'Screen' : 'Camera'}</span>
+          <span class="text-xs font-medium text-white"
+            >Recording {recordingMode === 'screen' ? 'Screen' : 'Camera'}</span
+          >
         </div>
 
         <!-- Duration overlay -->
@@ -291,16 +283,22 @@
     <div class="flex gap-1 rounded border bg-muted/30 p-1">
       <button
         type="button"
-        class="flex flex-1 items-center justify-center gap-1 rounded px-2 py-1.5 text-xs transition-colors {recordingMode === 'camera' ? 'bg-background shadow-sm' : 'hover:bg-background/50'}"
-        onclick={() => recordingMode = 'camera'}
+        class="flex flex-1 items-center justify-center gap-1 rounded px-2 py-1.5 text-xs transition-colors {recordingMode ===
+        'camera'
+          ? 'bg-background shadow-sm'
+          : 'hover:bg-background/50'}"
+        onclick={() => (recordingMode = 'camera')}
       >
         <Camera class="size-3" />
         Camera
       </button>
       <button
         type="button"
-        class="flex flex-1 items-center justify-center gap-1 rounded px-2 py-1.5 text-xs transition-colors {recordingMode === 'screen' ? 'bg-background shadow-sm' : 'hover:bg-background/50'}"
-        onclick={() => recordingMode = 'screen'}
+        class="flex flex-1 items-center justify-center gap-1 rounded px-2 py-1.5 text-xs transition-colors {recordingMode ===
+        'screen'
+          ? 'bg-background shadow-sm'
+          : 'hover:bg-background/50'}"
+        onclick={() => (recordingMode = 'screen')}
       >
         <Monitor class="size-3" />
         Screen
@@ -308,7 +306,7 @@
     </div>
 
     <!-- Start recording button -->
-    <Button variant="default" size="sm" class="w-full text-xs" onclick={startRecording}>
+    <Button variant="default" size="sm" class="w-full text-xs" onclick={handleStartRecording}>
       {#if recordingMode === 'screen'}
         <Monitor class="mr-1 size-3" />
         Record Screen

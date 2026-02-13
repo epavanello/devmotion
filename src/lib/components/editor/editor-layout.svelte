@@ -7,7 +7,7 @@
   import Panel from './panels/panel.svelte';
   import KeyboardHandler from './keyboard-handler.svelte';
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from '$lib/components/ui/resizable';
-  import { projectStore } from '$lib/stores/project.svelte';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Layers, Settings, Clock, Sparkles } from '@lucide/svelte';
   import AiChat from '$lib/components/ai/ai-chat.svelte';
   import ModelSelector from '$lib/components/ai/model-selector.svelte';
@@ -15,21 +15,14 @@
   import AddLayer from './panels/add-layer.svelte';
   import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 
-  interface Props {
-    projectId?: string | null;
-    isOwner?: boolean;
-    canEdit?: boolean;
-    isPublic?: boolean;
-    isMcp?: boolean;
-  }
+  const editorState = $derived(getEditorState());
+  const projectStore = $derived(editorState.project);
 
-  let {
-    projectId = null,
-    isOwner = true,
-    canEdit = true,
-    isPublic = false,
-    isMcp = false
-  }: Props = $props();
+  const projectId = $derived(editorState.dbProjectId);
+  const isOwner = $derived(editorState.isOwner);
+  const canEdit = $derived(editorState.canEdit);
+  const isPublic = $derived(editorState.isPublic);
+  const isMcp = $derived(editorState.isMcp);
 
   let projectViewport: HTMLDivElement | undefined = $state();
   const mediaQuery = new IsMobile();
@@ -102,7 +95,7 @@
 
         <!-- Layers Panel -->
         <Panel
-          title="Layers ({projectStore.project.layers.length})"
+          title="Layers ({projectStore.state.layers.length})"
           icon={Layers}
           actionsComponent={AddLayer}
           collapsible={true}
@@ -132,7 +125,7 @@
             {/snippet}
             {#snippet actionsSnippet()}
               <span class="text-xs text-muted-foreground">
-                {projectStore.currentTime.toFixed(2)}s / {projectStore.project.duration}s
+                {projectStore.currentTime.toFixed(2)}s / {projectStore.state.duration}s
               </span>
             {/snippet}
           </Panel>
@@ -164,7 +157,7 @@
           <ResizablePaneGroup direction="vertical">
             <ResizablePane defaultSize={60} minSize={30}>
               <Panel
-                title="Layers ({projectStore.project.layers.length})"
+                title="Layers ({projectStore.state.layers.length})"
                 actionsComponent={AddLayer}
               >
                 {#snippet content()}
@@ -208,7 +201,7 @@
                   {/snippet}
                   {#snippet actionsSnippet()}
                     <span class="text-xs text-muted-foreground">
-                      {projectStore.currentTime.toFixed(2)}s / {projectStore.project.duration}s
+                      {projectStore.currentTime.toFixed(2)}s / {projectStore.state.duration}s
                     </span>
                   {/snippet}
                 </Panel>

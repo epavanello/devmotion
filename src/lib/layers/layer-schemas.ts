@@ -2,7 +2,7 @@
  * Layer schemas - separated from components to avoid circular dependencies
  * Import and use these schemas in your layer components
  */
-import { z } from 'zod';
+
 import { fieldRegistry } from './base';
 
 // Re-export so layers can import from here

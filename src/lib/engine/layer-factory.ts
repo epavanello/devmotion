@@ -7,6 +7,7 @@ import { getLayerDefinition } from '$lib/layers/registry';
 import { extractDefaultValues } from '$lib/layers/base';
 import type { LayerProps, LayerTypeString } from '$lib/layers/layer-types';
 import type { TypedLayer } from '$lib/layers/typed-registry';
+import { calculateCoverDimensions, ASPECT_RATIOS } from '$lib/utils/media';
 
 /**
  * Default interpolation for initial keyframes
@@ -25,6 +26,7 @@ export function createLayer<T extends LayerTypeString>(
     props?: Partial<LayerProps<T>>;
     trasform?: Partial<Transform>;
     layer?: Partial<Omit<TypedLayer, 'transform' | 'style' | 'keyframes' | 'props'>>;
+    projectDimensions?: { width: number; height: number };
   }
 ): TypedLayer {
   const { x = 0, y = 0 } = override?.trasform || {};
@@ -32,6 +34,19 @@ export function createLayer<T extends LayerTypeString>(
 
   // Extract default values from the Zod schema
   const defaultProps = extractDefaultValues(definition.schema);
+
+  // Override context-dependent defaults if dimensions provided
+  if (type === 'video' || type === 'image') {
+    if (override?.projectDimensions) {
+      const { width, height } = calculateCoverDimensions(
+        override.projectDimensions.width,
+        override.projectDimensions.height,
+        type === 'video' ? ASPECT_RATIOS.VIDEO_DEFAULT : ASPECT_RATIOS.IMAGE_DEFAULT
+      );
+      defaultProps.width = width;
+      defaultProps.height = height;
+    }
+  }
 
   // Create initial keyframes for position properties
   const initialKeyframes: Keyframe[] = [
