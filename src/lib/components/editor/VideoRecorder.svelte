@@ -6,7 +6,6 @@
     generateTimestampedFileName,
     formatDuration,
     handleMediaError,
-    getSupportedMimeType,
     stopMediaStream
   } from './media-upload-utils';
   import { uiStore } from '$lib/stores/ui.svelte';
@@ -31,14 +30,16 @@
   let mediaRecorder: MediaRecorder | null = $state(null);
   let mediaStream: MediaStream | null = $state(null);
   let videoChunks: Blob[] = $state([]);
-  let recordingDuration = $state(0);
-  let recordingStartTime = $state(0);
-  let recordingInterval: ReturnType<typeof setInterval> | null = null;
   let videoPreviewEl: HTMLVideoElement | undefined = $state();
   let facingMode = $state<'user' | 'environment'>('user');
   let recordingMode = $state<'camera' | 'screen'>('camera');
 
-  const MAX_DURATION = 300; // 5 minutes in seconds
+  const MAX_DURATION = 300; // 5 minutes max
+
+  // Reactive state for UI
+  let displayDuration = $state(0);
+  let recordingInterval: ReturnType<typeof setInterval> | null = null;
+  let recordingStartTime = 0;
 
   async function handleStartRecording() {
     await uiStore.requireLogin('save your project', () => {
@@ -50,51 +51,32 @@
     try {
       recordingError = '';
 
-      // Request camera or screen access based on mode
+      // Request camera or screen access
       if (recordingMode === 'screen') {
-        // Request screen capture
         mediaStream = await navigator.mediaDevices.getDisplayMedia({
-          video: {
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-          },
+          video: { width: { ideal: 1920 }, height: { ideal: 1080 } },
           audio: audioEnabled
         });
       } else {
-        // Request camera and mic access
         mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            facingMode
-          },
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode },
           audio: audioEnabled
         });
       }
 
-      // Note: srcObject is set in the $effect below after video element is rendered
-
-      // Get supported mime type with fallback
-      const mimeTypes = [
-        'video/webm;codecs=vp9,opus',
-        'video/webm;codecs=vp8,opus',
-        'video/webm;codecs=vp9',
-        'video/webm;codecs=vp8',
-        'video/webm'
-      ];
-
-      const mimeType = await getSupportedMimeType(mimeTypes);
-      if (!mimeType) {
-        throw new Error('No supported video codec found in your browser');
+      // STRICT: Only use MP4
+      const mimeType = 'video/mp4';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        throw new Error('Your browser does not support MP4 recording. Please use Safari.');
       }
 
       mediaRecorder = new MediaRecorder(mediaStream, {
         mimeType,
-        videoBitsPerSecond: recordingMode === 'screen' ? 5000000 : 2500000 // Higher bitrate for screen
+        videoBitsPerSecond: recordingMode === 'screen' ? 5000000 : 2500000
       });
 
       videoChunks = [];
-      recordingDuration = 0;
+      displayDuration = 0;
       recordingStartTime = Date.now();
 
       mediaRecorder.ondataavailable = (event) => {
@@ -104,39 +86,27 @@
       };
 
       mediaRecorder.onstop = async () => {
-        // Calculate final precise duration (ensure it's never NaN)
-        const elapsed = Date.now() - recordingStartTime;
-        const finalDuration = recordingStartTime > 0 && elapsed > 0 ? elapsed / 1000 : 1;
-
-        // Stop the stream
         stopMediaStream(mediaStream);
         mediaStream = null;
 
-        // Create blob from chunks
+        // Create blob and extract actual duration from the MP4
         const videoBlob = new Blob(videoChunks, { type: mimeType });
-
-        // Upload the recording with precise duration
-        await uploadRecording(videoBlob, finalDuration);
+        await uploadWithDuration(videoBlob);
       };
 
-      mediaRecorder.start(1000); // Get chunks every second
+      mediaRecorder.start(1000);
       isRecording = true;
 
-      // Update duration display (more frequently for smoother UI) and enforce max duration
+      // Update display duration
       recordingInterval = setInterval(() => {
-        recordingDuration = (Date.now() - recordingStartTime) / 1000;
-
-        // Auto-stop at max duration
-        if (recordingDuration >= MAX_DURATION) {
+        displayDuration = (Date.now() - recordingStartTime) / 1000;
+        if (displayDuration >= MAX_DURATION) {
           stopRecording();
         }
       }, 100);
     } catch (err) {
-      const error = handleMediaError(err);
-      recordingError = error.message;
+      recordingError = handleMediaError(err).message;
       console.error('Recording error:', err);
-
-      // Clean up on error
       stopMediaStream(mediaStream);
       mediaStream = null;
     }
@@ -146,7 +116,6 @@
     if (mediaRecorder && isRecording) {
       mediaRecorder.stop();
       isRecording = false;
-
       if (recordingInterval) {
         clearInterval(recordingInterval);
         recordingInterval = null;
@@ -154,64 +123,70 @@
     }
   }
 
-  async function uploadRecording(blob: Blob, duration: number) {
+  /**
+   * Extract actual duration from MP4 blob and upload
+   */
+  async function uploadWithDuration(blob: Blob) {
     isUploading = true;
     recordingError = '';
 
     try {
-      const fileName = generateTimestampedFileName('video', 'webm');
+      // Get actual duration from the recorded MP4 (it always contains duration metadata)
+      const duration = await getBlobDuration(blob);
+
+      const fileName = generateTimestampedFileName('video', 'mp4');
       const result = await uploadMediaBlob(blob, fileName, 'video', projectId, duration);
       onRecordingComplete(result);
     } catch (err) {
       recordingError = err instanceof Error ? err.message : 'Upload failed';
     } finally {
       isUploading = false;
-      recordingDuration = 0;
+      displayDuration = 0;
     }
+  }
+
+  /**
+   * Extract duration from MP4 blob using video element
+   */
+  function getBlobDuration(blob: Blob): Promise<number> {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(blob);
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        URL.revokeObjectURL(url);
+        // MP4 always has duration, default to 1s if invalid
+        resolve(isFinite(video.duration) && video.duration > 0 ? video.duration : 1);
+      };
+      video.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(1); // Fallback
+      };
+      video.src = url;
+    });
   }
 
   async function switchCamera() {
     if (!isRecording) return;
-
-    // Toggle facing mode
     facingMode = facingMode === 'user' ? 'environment' : 'user';
-
-    // Stop current recording
-    if (mediaRecorder && isRecording) {
-      mediaRecorder.stop();
-      isRecording = false;
-
-      if (recordingInterval) {
-        clearInterval(recordingInterval);
-        recordingInterval = null;
-      }
-    }
-
-    // Clean up current stream
+    stopRecording();
     stopMediaStream(mediaStream);
     mediaStream = null;
-
-    // Restart recording with new camera
     await startRecording();
   }
 
-  // Reactively set srcObject when both video element and stream are ready
+  // Preview
   $effect(() => {
     if (videoPreviewEl && mediaStream && isRecording) {
       videoPreviewEl.srcObject = mediaStream;
-      // Explicitly play to ensure preview shows (autoplay isn't always reliable)
-      videoPreviewEl.play().catch((err) => {
-        console.warn('Preview autoplay failed:', err);
-      });
+      videoPreviewEl.play().catch(() => {});
     }
   });
 
-  // Cleanup on unmount
+  // Cleanup
   $effect(() => {
     return () => {
-      if (recordingInterval) {
-        clearInterval(recordingInterval);
-      }
+      if (recordingInterval) clearInterval(recordingInterval);
       stopMediaStream(mediaStream);
     };
   });
@@ -219,9 +194,7 @@
 
 <div class="space-y-2">
   {#if isRecording}
-    <!-- Recording in progress -->
     <div class="rounded border-2 border-destructive bg-destructive/10 p-3">
-      <!-- Video preview -->
       <div class="relative mb-2 overflow-hidden rounded bg-black">
         <video
           bind:this={videoPreviewEl}
@@ -231,23 +204,17 @@
           class="h-auto w-full"
           style="max-height: 180px; aspect-ratio: 16/9;"
         ></video>
-
-        <!-- Recording indicator overlay -->
         <div class="absolute top-2 left-2 flex items-center gap-2 rounded bg-black/50 px-2 py-1">
           <div class="h-2 w-2 animate-pulse rounded-full bg-destructive"></div>
-          <span class="text-xs font-medium text-white"
-            >Recording {recordingMode === 'screen' ? 'Screen' : 'Camera'}</span
-          >
-        </div>
-
-        <!-- Duration overlay -->
-        <div class="absolute top-2 right-2 rounded bg-black/50 px-2 py-1">
-          <span class="font-mono text-xs text-white tabular-nums">
-            {formatDuration(Math.floor(recordingDuration))}
+          <span class="text-xs font-medium text-white">
+            Recording {recordingMode === 'screen' ? 'Screen' : 'Camera'}
           </span>
         </div>
-
-        <!-- Camera switch button (only for camera mode) -->
+        <div class="absolute top-2 right-2 rounded bg-black/50 px-2 py-1">
+          <span class="font-mono text-xs text-white tabular-nums">
+            {formatDuration(Math.floor(displayDuration))}
+          </span>
+        </div>
         {#if recordingMode === 'camera'}
           <button
             type="button"
@@ -259,27 +226,22 @@
           </button>
         {/if}
       </div>
-
-      <!-- Stop button -->
       <Button variant="destructive" size="sm" class="w-full" onclick={stopRecording}>
         <Square class="mr-1 size-3" />
         Stop Recording
       </Button>
-
-      {#if recordingDuration >= MAX_DURATION - 10}
+      {#if displayDuration >= MAX_DURATION - 10}
         <p class="mt-1 text-center text-xs text-destructive">
-          {MAX_DURATION - recordingDuration}s remaining
+          {MAX_DURATION - displayDuration}s remaining
         </p>
       {/if}
     </div>
   {:else if isUploading}
-    <!-- Uploading -->
     <div class="rounded border bg-muted/30 p-3 text-center">
       <Loader2 class="mx-auto mb-2 size-6 animate-spin text-primary" />
       <span class="text-sm">Uploading video...</span>
     </div>
   {:else}
-    <!-- Recording mode toggle -->
     <div class="flex gap-1 rounded border bg-muted/30 p-1">
       <button
         type="button"
@@ -304,8 +266,6 @@
         Screen
       </button>
     </div>
-
-    <!-- Start recording button -->
     <Button variant="default" size="sm" class="w-full text-xs" onclick={handleStartRecording}>
       {#if recordingMode === 'screen'}
         <Monitor class="mr-1 size-3" />
@@ -316,8 +276,6 @@
       {/if}
     </Button>
   {/if}
-
-  <!-- Error message -->
   {#if recordingError}
     <p class="text-xs text-destructive">{recordingError}</p>
   {/if}

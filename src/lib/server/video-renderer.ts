@@ -9,13 +9,12 @@ import type { ProjectData } from '$lib/schemas/animation';
 
 interface RenderConfig {
   projectId: string;
-  renderId: string; // Unique ID for this specific render session
+  renderId: string;
   width: number;
   height: number;
   fps: number;
   duration: number;
   baseUrl: string;
-  /** Optional project data for extracting audio tracks */
   projectData?: ProjectData;
 }
 
@@ -27,35 +26,24 @@ export interface RenderProgress {
   error?: string;
 }
 
-interface AudioTrackInfo {
-  src: string;
-  enterTime: number;
-  mediaStartTime: number;
-  mediaEndTime: number;
-  volume: number;
-}
+export const renderEmitter = new EventEmitter();
 
 /**
- * Convert a URL to a format that FFmpeg can use.
- * If the URL is a local proxy endpoint (/api/upload/...), convert it to a presigned S3 URL.
+ * Convert local upload URLs to presigned S3 URLs
  */
 async function resolveMediaUrl(url: string): Promise<string> {
-  // If it's a local API proxy URL, extract the key and get a presigned URL
   if (url.startsWith('/api/upload/')) {
-    const encodedKey = url.replace('/api/upload/', '');
-    const key = decodeURIComponent(encodedKey);
-    console.log('Converting proxy URL to presigned URL:', { url, key });
-    return await getSignedFileUrl(key, 7200); // 2 hours expiry for long renders
+    const key = decodeURIComponent(url.replace('/api/upload/', ''));
+    return await getSignedFileUrl(key, 7200);
   }
-  // Otherwise, return the URL as-is (it's already a public URL)
   return url;
 }
 
 /**
- * Extract audio tracks from project data (video and audio layers)
+ * Extract audio tracks from project layers
  */
-function extractAudioTracks(projectData: ProjectData): AudioTrackInfo[] {
-  const tracks: AudioTrackInfo[] = [];
+function getAudioTracks(projectData: ProjectData) {
+  const tracks = [];
 
   for (const layer of projectData.layers) {
     if ((layer.type === 'video' || layer.type === 'audio') && layer.props.src) {
@@ -65,12 +53,18 @@ function extractAudioTracks(projectData: ProjectData): AudioTrackInfo[] {
       const exitTime = layer.exitTime ?? projectData.duration;
       const contentOffset = layer.contentOffset ?? 0;
       const layerDuration = exitTime - enterTime;
+      const contentDuration = layer.contentDuration;
+
+      let mediaDuration = layerDuration;
+      if (contentDuration && contentDuration > 0) {
+        mediaDuration = Math.min(layerDuration, contentDuration - contentOffset);
+      }
 
       tracks.push({
         src: layer.props.src as string,
         enterTime,
         mediaStartTime: contentOffset,
-        mediaEndTime: contentOffset + layerDuration,
+        mediaDuration,
         volume: (layer.props.volume as number) ?? 1
       });
     }
@@ -79,16 +73,6 @@ function extractAudioTracks(projectData: ProjectData): AudioTrackInfo[] {
   return tracks;
 }
 
-// Global emitter for render progress
-export const renderEmitter = new EventEmitter();
-
-/**
- * Render a project to video using Playwright screenshots and FFmpeg.
- * Returns a Readable stream that will yield the MP4 data.
- *
- * When projectData is provided, audio tracks from video and audio layers
- * are extracted and mixed into the final output.
- */
 export async function renderProjectToVideoStream(config: RenderConfig): Promise<Readable> {
   const { projectId, renderId, width, height, fps, duration, baseUrl, projectData } = config;
   const totalFrames = Math.ceil(fps * duration);
@@ -97,52 +81,45 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
   const token = generateRenderToken(projectId);
   const renderUrl = `${baseUrl}/render/${projectId}?token=${token}`;
 
-  // Extract audio tracks if project data is available
-  const audioTracks = projectData ? extractAudioTracks(projectData) : [];
+  const audioTracks = projectData ? getAudioTracks(projectData) : [];
 
-  // Helper to emit progress
   const emitProgress = (progress: RenderProgress) => {
     renderEmitter.emit(`progress:${renderId}`, progress);
   };
 
-  // Run the render process in the background
   (async () => {
     let browser: Browser | null = null;
     let page: Page | null = null;
     let ffmpegCommand: ffmpeg.FfmpegCommand | null = null;
 
-    const MAX_RENDER_DURATION_MS = 10 * 60 * 1000; // 10 minutes max
-    const renderTimeout = setTimeout(() => {
-      console.error('Render timeout exceeded');
-      emitProgress({
-        phase: 'error',
-        currentFrame: 0,
-        totalFrames,
-        percent: 0,
-        error: 'Render timeout exceeded'
-      });
-      videoStream.destroy(new Error('Render timeout'));
-    }, MAX_RENDER_DURATION_MS);
+    const renderTimeout = setTimeout(
+      () => {
+        emitProgress({
+          phase: 'error',
+          currentFrame: 0,
+          totalFrames,
+          percent: 0,
+          error: 'Render timeout exceeded'
+        });
+        videoStream.destroy(new Error('Render timeout'));
+      },
+      10 * 60 * 1000
+    );
 
     try {
       emitProgress({ phase: 'initializing', currentFrame: 0, totalFrames, percent: 0 });
 
-      const launchArgs = ['--disable-gpu', '--disable-dev-shm-usage', '--disable-setuid-sandbox'];
-
+      const args = ['--disable-gpu', '--disable-dev-shm-usage', '--disable-setuid-sandbox'];
       if (process.env.PLAYWRIGHT_ALLOW_INSECURE_FLAGS === 'true') {
-        launchArgs.push('--no-sandbox', '--disable-web-security');
+        args.push('--no-sandbox', '--disable-web-security');
       }
 
       browser = await chromium.launch({
         headless: process.env.NODE_ENV === 'production',
-        args: launchArgs
+        args
       });
 
-      page = await browser.newPage({
-        viewport: { width, height },
-        deviceScaleFactor: 1
-      });
-
+      page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
       await page.goto(renderUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
       await page.waitForFunction(() => window.__DEVMOTION__?.ready, { timeout: 30_000 });
 
@@ -151,30 +128,17 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
       const actualDuration = pageConfig?.duration || duration;
       const actualTotalFrames = Math.ceil(actualFps * actualDuration);
 
-      // Resolve audio track URLs (convert proxy URLs to presigned URLs)
-      // Also sanitize URLs to ensure FFmpeg compatibility (remove emojis, etc.)
-      const resolvedAudioTracks = await Promise.all(
-        audioTracks.map(async (track) => {
-          const resolvedUrl = await resolveMediaUrl(track.src);
-          const sanitizedUrl = sanitizeForFFmpeg(resolvedUrl);
-          return {
-            ...track,
-            src: sanitizedUrl
-          };
-        })
+      // Resolve audio URLs
+      const resolvedTracks = await Promise.all(
+        audioTracks.map(async (track) => ({
+          ...track,
+          src: sanitizeForFFmpeg(await resolveMediaUrl(track.src))
+        }))
       );
 
-      // Initialize FFmpeg
       const frameStream = new PassThrough();
-
       ffmpegCommand = ffmpeg().input(frameStream).inputFormat('image2pipe').inputFPS(actualFps);
 
-      // Add audio tracks as additional inputs (no input-level seeking)
-      for (const track of resolvedAudioTracks) {
-        ffmpegCommand = ffmpegCommand.input(track.src);
-      }
-
-      // Build output options
       const outputOptions = [
         '-c:v libx264',
         '-preset ultrafast',
@@ -184,46 +148,44 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
         '-movflags +faststart+frag_keyframe+empty_moov'
       ];
 
-      // If we have audio tracks, build a complex filter for mixing
-      if (resolvedAudioTracks.length > 0) {
+      // Add audio processing for MP4 files
+      if (resolvedTracks.length > 0) {
+        for (const track of resolvedTracks) {
+          ffmpegCommand = ffmpegCommand.input(track.src);
+        }
+
         const filterParts: string[] = [];
         const audioInputs: string[] = [];
 
-        resolvedAudioTracks.forEach((track, i) => {
-          const inputIndex = i + 1; // 0 is the video frame stream
-          const delay = Math.round(track.enterTime * 1000); // ms
+        resolvedTracks.forEach((track, i) => {
+          const inputIndex = i + 1;
+          const delayMs = Math.round(track.enterTime * 1000);
 
-          // atrim extracts the correct portion, then use asetpts=PTS-STARTPTS to reset timestamps to 0
           let filter = `[${inputIndex}:a]`;
-          filter += `atrim=start=${track.mediaStartTime}:end=${track.mediaEndTime},`;
-          filter += 'asetpts=PTS-STARTPTS,';
 
-          if (delay > 0) {
-            filter += `adelay=${delay}|${delay},`;
+          if (track.mediaDuration) {
+            filter += `atrim=start=${track.mediaStartTime}:duration=${track.mediaDuration},`;
           }
-
+          filter += 'asetpts=PTS-STARTPTS,';
+          if (delayMs > 0) filter += `adelay=${delayMs}|${delayMs},`;
           filter += `volume=${track.volume}[a${i}]`;
 
           filterParts.push(filter);
           audioInputs.push(`[a${i}]`);
         });
 
-        // Mix all audio tracks together and trim to video duration
-        if (audioInputs.length > 0) {
-          filterParts.push(
-            `${audioInputs.join('')}amix=inputs=${audioInputs.length}:duration=longest,atrim=duration=${actualDuration}[aout]`
-          );
-          outputOptions.push('-filter_complex', filterParts.join(';'));
-          outputOptions.push('-map', '0:v', '-map', '[aout]');
-          outputOptions.push('-c:a aac', '-b:a 192k');
-        }
+        const finalFilter = `${audioInputs.join('')}amix=inputs=${audioInputs.length}:duration=longest,atrim=duration=${actualDuration}[aout]`;
+        filterParts.push(finalFilter);
+
+        outputOptions.push('-filter_complex', filterParts.join(';'));
+        outputOptions.push('-map', '0:v', '-map', '[aout]');
+        outputOptions.push('-c:a', 'aac', '-b:a', '192k');
       }
 
       ffmpegCommand = ffmpegCommand
         .outputOptions(outputOptions)
         .format('mp4')
         .on('error', (err) => {
-          console.error('FFmpeg error:', err);
           emitProgress({
             phase: 'error',
             currentFrame: 0,
@@ -243,7 +205,6 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
         });
 
       ffmpegCommand.pipe(videoStream);
-
       emitProgress({
         phase: 'capturing',
         currentFrame: 0,
@@ -251,122 +212,76 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
         percent: 0
       });
 
-      let clientDisconnected = false;
       let isAborting = false;
 
       const cleanup = async () => {
         if (isAborting) return;
         isAborting = true;
 
-        console.log('Cleaning up render resources');
-
-        // Kill FFmpeg first
         if (ffmpegCommand) {
           try {
             ffmpegCommand.kill('SIGKILL');
-          } catch (err) {
-            console.error('Error killing FFmpeg:', err);
-          }
+          } catch {}
         }
-
-        // Close frame stream
-        if (!frameStream.destroyed) {
-          frameStream.destroy();
-        }
-
-        // Close page
-        if (page && !page.isClosed()) {
-          try {
-            await page.close();
-          } catch (err) {
-            console.error('Error closing page:', err);
-          }
-        }
-
-        // Close browser
+        if (!frameStream.destroyed) frameStream.destroy();
+        if (page && !page.isClosed()) await page.close();
         if (browser) {
-          try {
-            await browser.close();
-            browser = null;
-          } catch (err) {
-            console.error('Error closing browser:', err);
-          }
+          await browser.close();
+          browser = null;
         }
       };
 
-      videoStream.on('close', () => {
-        clientDisconnected = true;
-        cleanup();
-      });
-      videoStream.on('error', () => {
-        clientDisconnected = true;
-        cleanup();
-      });
+      videoStream.on('close', cleanup);
+      videoStream.on('error', cleanup);
 
-      // Capture frames and pipe to FFmpeg
+      // Capture frames
       for (let frameIndex = 0; frameIndex < actualTotalFrames; frameIndex++) {
-        if (clientDisconnected || videoStream.destroyed || frameStream.destroyed || isAborting) {
-          console.log('Stopping render: client disconnected or stream destroyed');
+        if (videoStream.destroyed || frameStream.destroyed || isAborting) {
           await cleanup();
           return;
         }
 
         const time = frameIndex / actualFps;
-
-        // Use seekAndWait which waits for videos to be ready before capturing
-        await page.evaluate((t: number) => window.__DEVMOTION__?.seekAndWait?.(t), time);
+        await page.evaluate((t) => window.__DEVMOTION__?.seekAndWait?.(t), time);
 
         const screenshot = await page.screenshot({
           type: 'png',
           clip: { x: 0, y: 0, width, height }
         });
 
-        const canWrite = frameStream.write(screenshot);
-        if (!canWrite) {
-          await new Promise<void>((resolve, reject) => {
-            const onDrain = () => {
-              frameStream.removeListener('error', onError);
-              frameStream.removeListener('close', onClose);
-              resolve();
-            };
-            const onError = (err: Error) => {
-              frameStream.removeListener('drain', onDrain);
-              frameStream.removeListener('close', onClose);
-              reject(err);
-            };
-            const onClose = () => {
-              frameStream.removeListener('drain', onDrain);
-              frameStream.removeListener('error', onError);
-              resolve();
-            };
-            frameStream.once('drain', onDrain);
-            frameStream.once('error', onError);
-            frameStream.once('close', onClose);
+        if (!frameStream.write(screenshot)) {
+          await new Promise<void>((resolve) => {
+            frameStream.once('drain', resolve);
+            frameStream.once('close', resolve);
           });
         }
 
-        const percent = Math.round(((frameIndex + 1) / actualTotalFrames) * 95);
         emitProgress({
           phase: 'capturing',
           currentFrame: frameIndex + 1,
           totalFrames: actualTotalFrames,
-          percent
+          percent: Math.round(((frameIndex + 1) / actualTotalFrames) * 95)
         });
       }
 
       frameStream.end();
-
-      if (page && !page.isClosed()) {
+      if (page) {
         await page.close();
         page = null;
       }
-
-      await browser.close();
-      browser = null;
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      emitProgress({ phase: 'error', currentFrame: 0, totalFrames, percent: 0, error: msg });
-      videoStream.destroy(err as Error);
+      if (browser) {
+        await browser.close();
+        browser = null;
+      }
+    } catch (err) {
+      emitProgress({
+        phase: 'error',
+        currentFrame: 0,
+        totalFrames,
+        percent: 0,
+        error: err instanceof Error ? err.message : String(err)
+      });
+      videoStream.destroy(err instanceof Error ? err : new Error(String(err)));
     } finally {
       clearTimeout(renderTimeout);
       invalidateRenderToken(token);
