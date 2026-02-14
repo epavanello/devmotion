@@ -54,7 +54,7 @@
   const chat = new Chat<UIMessage<never, UIDataTypes, AnimationUITools>>({
     transport: new DefaultChatTransport({
       api: resolve('/(app)/chat'),
-      get body() {
+      body: () => {
         return {
           project: projectStore.state,
           modelId: selectedModelId
