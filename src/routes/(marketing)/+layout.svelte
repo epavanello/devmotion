@@ -4,22 +4,15 @@
   import { ArrowLeft, Github, Sun, Moon } from '@lucide/svelte';
   import { PUBLIC_BASE_URL } from '$env/static/public';
   import JsonLd from '$lib/components/json-ld.svelte';
-  import SeoHead from '$lib/components/seo-head.svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
   import TooltipButton from '$lib/components/ui/tooltip/tooltip-button.svelte';
 
-  // SEO Configuration for DevMotion
   const baseUrl = PUBLIC_BASE_URL;
-  const title = 'DevMotion - Create Amazing Animated Videos Free';
   const description =
     'Create stunning animated videos with DevMotion. Design with manual controls or use AI-powered suggestions. Export your videos for free. Perfect for creators, marketers, and animators.';
-  const keywords =
-    'animation editor, video creator, ai animation, video export, motion graphics, animation software, free video editor, animated video maker';
 
   let { children } = $props();
 </script>
-
-<SeoHead {title} {description} {keywords} />
 
 <!-- Structured Data (JSON-LD) for Marketing Pages -->
 <JsonLd
