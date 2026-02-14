@@ -6,7 +6,7 @@ import { db } from '$lib/server/db';
 import { aiUserUnlock, aiUsageLog } from '$lib/server/db/schema';
 import { eq, and, gte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { AI_MODELS } from '$lib/ai/models';
+import { AI_MODELS, getModel } from '$lib/ai/models';
 
 /**
  * Calculate estimated cost for token usage
@@ -16,7 +16,7 @@ export function calculateCost(
   promptTokens: number,
   completionTokens: number
 ): number {
-  const model = AI_MODELS[modelId];
+  const model = getModel(modelId);
   if (!model) {
     throw new Error(`Unknown model: ${modelId}. Please use a supported model.`);
   }

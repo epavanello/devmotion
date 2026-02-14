@@ -2,7 +2,7 @@
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Bot, Loader2, User } from '@lucide/svelte';
-  import { AI_MODELS, DEFAULT_MODEL_ID } from '$lib/ai/models';
+  import { AI_MODELS, DEFAULT_MODEL_ID, getModel } from '$lib/ai/models';
   import { Chat } from '@ai-sdk/svelte';
   import { DefaultChatTransport, isToolUIPart, type UIMessage, type UIDataTypes } from 'ai';
   import { resolve } from '$app/paths';
@@ -46,7 +46,7 @@
   let { selectedModelId = $bindable(DEFAULT_MODEL_ID) }: Props = $props();
   let prompt = new PersistedState('prompt', '');
 
-  const selectedModel = $derived(AI_MODELS[selectedModelId] || AI_MODELS[DEFAULT_MODEL_ID]);
+  const selectedModel = $derived(getModel(selectedModelId));
 
   let messagesContainer: HTMLDivElement | null = $state(null);
 

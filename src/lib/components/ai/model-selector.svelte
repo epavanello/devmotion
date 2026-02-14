@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ChevronDown } from '@lucide/svelte';
-  import { AI_MODELS } from '$lib/ai/models';
+  import { AI_MODELS, getModel } from '$lib/ai/models';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 
   interface Props {
@@ -11,7 +11,7 @@
   let { selectedModelId, onModelChange }: Props = $props();
 
   const models = Object.values(AI_MODELS);
-  const selectedModel = $derived(AI_MODELS[selectedModelId]);
+  const selectedModel = $derived(getModel(selectedModelId));
 </script>
 
 <DropdownMenu.Root>

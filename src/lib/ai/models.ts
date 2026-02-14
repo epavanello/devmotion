@@ -3,6 +3,8 @@
  * Supports multiple models via OpenRouter for optimal video generation
  */
 
+import type { LiteralUnion } from 'type-fest';
+
 export interface AIModel {
   id: string;
   name: string;
@@ -23,20 +25,32 @@ export interface AIModel {
  * Available AI models for video generation
  * All accessible via OpenRouter
  */
-export const AI_MODELS: Record<string, AIModel> = {
-  // Kimi K2.5 - Excellent for creative tasks, long context
-  'moonshotai/kimi-k2.5': {
-    id: 'moonshotai/kimi-k2.5',
-    name: 'Kimi K2.5',
-    provider: 'Moonshot AI',
+export const AI_MODELS = {
+  'minimax/minimax-m2.5': {
+    id: 'minimax/minimax-m2.5',
+    name: 'Minimax M2.5',
+    provider: 'Minimax',
     description: 'Excellent for creative and complex tasks with 128K context',
     recommended: true,
     costTier: 'low',
     pricing: {
-      input: 0.5,
-      output: 2.8
+      input: 0.3,
+      output: 1.2
     }
   }
+  // // Kimi K2.5 - Excellent for creative tasks, long context
+  // 'moonshotai/kimi-k2.5': {
+  //   id: 'moonshotai/kimi-k2.5',
+  //   name: 'Kimi K2.5',
+  //   provider: 'Moonshot AI',
+  //   description: 'Excellent for creative and complex tasks with 128K context',
+  //   recommended: true,
+  //   costTier: 'low',
+  //   pricing: {
+  //     input: 0.5,
+  //     output: 2.8
+  //   }
+  // }
 
   // // Claude 4.5 Sonnet - Great reasoning and creativity
   // 'anthropic/claude-sonnet-4.5': {
@@ -77,19 +91,21 @@ export const AI_MODELS: Record<string, AIModel> = {
   //     output: 12
   //   }
   // }
-};
+} as const satisfies Record<string, AIModel>;
+
+export type ModelId = keyof typeof AI_MODELS;
 
 /**
  * Default model to use
  */
-export const DEFAULT_MODEL_ID = 'moonshotai/kimi-k2.5';
+export const DEFAULT_MODEL_ID: ModelId = 'minimax/minimax-m2.5';
 
 /**
  * Get model by ID with fallback to default
  */
-export function getModel(modelId?: string): AIModel {
-  if (modelId && AI_MODELS[modelId]) {
-    return AI_MODELS[modelId];
+export function getModel(modelId?: LiteralUnion<ModelId, string>): AIModel {
+  if (modelId && AI_MODELS[modelId as ModelId]) {
+    return AI_MODELS[modelId as ModelId];
   }
   return AI_MODELS[DEFAULT_MODEL_ID];
 }

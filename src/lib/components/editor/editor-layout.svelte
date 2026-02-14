@@ -30,7 +30,7 @@
   const isRecording = $derived(projectStore.isRecording);
 
   // AI Chat model selection
-  let aiChatModelId = $state(DEFAULT_MODEL_ID);
+  let aiChatModelId: string = $state(DEFAULT_MODEL_ID);
 
   // Mobile panel state - start with all closed
   let openPanels = $state({
