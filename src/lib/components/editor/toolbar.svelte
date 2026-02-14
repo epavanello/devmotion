@@ -150,7 +150,7 @@
     label: string;
     tooltip: string;
     icon: Component;
-    variant?: 'ghost' | 'outline';
+    variant?: 'ghost' | 'outline' | 'default';
     onclick?: () => void;
     href?: string;
     target?: string;
@@ -217,7 +217,7 @@
       label: 'Export Video',
       tooltip: 'Export as MP4 or WebM (Ctrl/Cmd + E)',
       icon: Download,
-      variant: 'outline',
+      variant: 'default',
       onclick: openExportDialog,
       disabled: isRecording,
       visible: true
@@ -355,7 +355,7 @@
             </DropdownMenu.Content>
           </DropdownMenu.Root>
         {:else}
-          <Button onclick={handleLogin} icon={GoogleIcon}>Login</Button>
+          <Button onclick={handleLogin} icon={GoogleIcon} variant="outline">Login</Button>
         {/if}
 
         {#if isMobile}
