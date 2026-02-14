@@ -685,7 +685,7 @@
               <InputsWrapper
                 fields={item.fields.map((field) => ({
                   id: `props.${field.name}`,
-                  labels: field.description?.split(' ')[0] || field.name,
+                  labels: field.description || field.name,
                   property: `props.${field.name}` as AnimatableProperty,
                   addKeyframe,
                   hasKeyframes: selectedLayer.keyframes.some(

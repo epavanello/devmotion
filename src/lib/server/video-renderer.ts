@@ -115,7 +115,7 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
       }
 
       browser = await chromium.launch({
-        headless: process.env.NODE_ENV === 'production',
+        headless: true,
         args
       });
 

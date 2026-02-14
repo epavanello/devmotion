@@ -42,7 +42,7 @@
   const acceptPatterns = {
     image: 'image/jpeg,image/png,image/gif,image/webp,image/svg+xml',
     video: 'video/mp4',
-    audio: 'audio/mp4'
+    audio: 'audio/mp3'
   };
 
   const maxSizes = {
