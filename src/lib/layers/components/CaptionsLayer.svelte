@@ -159,27 +159,6 @@
   });
 
   /**
-   * Current words to display (for word-by-word mode)
-   * Only shows words from the current block (not all past words)
-   */
-  const currentWords = $derived.by((): CaptionWord[] => {
-    if (!words || words.length === 0 || captionBlocks.length === 0) {
-      return [];
-    }
-
-    // Find current block
-    const currentBlock = captionBlocks[currentBlockIndex];
-    if (!currentBlock) {
-      return [];
-    }
-
-    // Filter words that belong to current block
-    return words
-      .filter((w) => w.start >= currentBlock.start && w.start < currentBlock.end)
-      .filter((w) => w.start <= relativeTime);
-  });
-
-  /**
    * Derive caption blocks from words (for block mode)
    * Group words into sentences/segments based on timing gaps and max words
    */
@@ -240,6 +219,27 @@
   const currentBlockIndex = $derived.by(() => {
     if (captionBlocks.length === 0) return -1;
     return captionBlocks.findIndex((c) => relativeTime >= c.start && relativeTime < c.end);
+  });
+
+  /**
+   * Current words to display (for word-by-word mode)
+   * Only shows words from the current block (not all past words)
+   */
+  const currentWords = $derived.by((): CaptionWord[] => {
+    if (!words || words.length === 0 || captionBlocks.length === 0) {
+      return [];
+    }
+
+    // Find current block
+    const currentBlock = captionBlocks[currentBlockIndex];
+    if (!currentBlock) {
+      return [];
+    }
+
+    // Filter words that belong to current block
+    return words
+      .filter((w) => w.start >= currentBlock.start && w.start < currentBlock.end)
+      .filter((w) => w.start <= relativeTime);
   });
 
   // Animation constants (hardcoded defaults)

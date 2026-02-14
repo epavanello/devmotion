@@ -62,7 +62,7 @@ export async function generateThumbnail(config: ThumbnailConfig): Promise<string
     });
 
     await page.goto(renderUrl, { waitUntil: 'networkidle' });
-    await page.waitForFunction(() => window.__DEVMOTION__?.ready, { timeout: 30000 });
+    await page.waitForFunction(() => window.__DEVMOTION__?.ready, { timeout: 60_000 });
 
     const frameStream = new PassThrough();
     const gifBuffer = await new Promise<Buffer>((resolve, reject) => {
