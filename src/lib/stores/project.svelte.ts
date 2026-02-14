@@ -187,7 +187,6 @@ export class ProjectStore {
         rotationZ: 0,
         scaleX: 1,
         scaleY: 1,
-        scaleZ: 1,
         anchor: 'center'
       },
       style: { opacity: 1 },
@@ -242,8 +241,7 @@ export class ProjectStore {
               rotationY: layer.transform.rotationY + gt.rotationY,
               rotationZ: layer.transform.rotationZ + gt.rotationZ,
               scaleX: layer.transform.scaleX * gt.scaleX,
-              scaleY: layer.transform.scaleY * gt.scaleY,
-              scaleZ: layer.transform.scaleZ * gt.scaleZ
+              scaleY: layer.transform.scaleY * gt.scaleY
             },
             style: {
               ...layer.style,

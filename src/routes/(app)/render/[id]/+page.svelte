@@ -155,6 +155,7 @@
       duration={project.duration}
       disableSelection={true}
       isServerSideRendering={true}
+      projectFont={project.fontFamily}
     />
   </div>
 

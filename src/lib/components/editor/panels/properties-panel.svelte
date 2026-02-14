@@ -16,7 +16,9 @@
     ArrowDown,
     ArrowDownRight,
     ChevronDown,
-    Sparkles
+    Sparkles,
+    Link,
+    Unlink
   } from '@lucide/svelte';
   import { nanoid } from 'nanoid';
   import type {
@@ -47,6 +49,7 @@
   import LayerKeyframes from './layer-keyframes.svelte';
   import type { TypedLayer } from '$lib/layers/typed-registry';
   import { Select } from '$lib/components/ui/select';
+  import { scaleMiddleware } from '$lib/schemas/size';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -120,8 +123,7 @@
         rotationY: animatedTransform.rotation.y ?? selectedLayer.transform.rotationY,
         rotationZ: animatedTransform.rotation.z ?? selectedLayer.transform.rotationZ,
         scaleX: animatedTransform.scale.x ?? selectedLayer.transform.scaleX,
-        scaleY: animatedTransform.scale.y ?? selectedLayer.transform.scaleY,
-        scaleZ: animatedTransform.scale.z ?? selectedLayer.transform.scaleZ
+        scaleY: animatedTransform.scale.y ?? selectedLayer.transform.scaleY
       },
       style: {
         opacity: animatedStyle.opacity ?? selectedLayer.style.opacity
@@ -176,8 +178,7 @@
     rotationY: 'rotation.y',
     rotationZ: 'rotation.z',
     scaleX: 'scale.x',
-    scaleY: 'scale.y',
-    scaleZ: 'scale.z'
+    scaleY: 'scale.y'
   };
 
   function mapToAnimatable(
@@ -294,14 +295,29 @@
 
     const animatable = mapToAnimatable(target, propertyName);
 
-    if (target === 'transform') {
-      updateAnimatableValue(selectedLayer, animatable, value as number | string | boolean, () => {
-        const newTransform: Transform = {
-          ...selectedLayer.transform,
-          [propertyName]: value
-        };
-        projectStore.updateLayer(selectedLayer.id, { transform: newTransform });
+    if (target === 'transform' && currentValues) {
+      // Run scale middleware for scaleX/scaleY
+      const updates = scaleMiddleware(propertyName, value, {
+        transform: { ...selectedLayer.transform, ...currentValues?.transform },
+        style: { ...selectedLayer.style, ...currentValues.style },
+        props: currentValues.props
       });
+
+      for (const [prop, val] of Object.entries(updates)) {
+        const propAnimatable = mapToAnimatable('transform', prop);
+        updateAnimatableValue(
+          selectedLayer,
+          propAnimatable,
+          val as number | string | boolean,
+          () => {
+            const newTransform: Transform = {
+              ...selectedLayer.transform,
+              [prop]: val
+            };
+            projectStore.updateLayer(selectedLayer.id, { transform: newTransform });
+          }
+        );
+      }
     } else if (target === 'style') {
       updateAnimatableValue(selectedLayer, animatable, value as number | string | boolean, () => {
         const newStyle: LayerStyle = { ...selectedLayer.style, [propertyName]: value };
@@ -328,7 +344,6 @@
       'rotation.z': currentValues.transform.rotationZ,
       'scale.x': currentValues.transform.scaleX,
       'scale.y': currentValues.transform.scaleY,
-      'scale.z': currentValues.transform.scaleZ,
       opacity: currentValues.style.opacity
     };
 
@@ -537,53 +552,6 @@
           />
         </InputsWrapper>
 
-        <!-- Scale -->
-        <InputsWrapper
-          fields={[
-            { prop: 'scale.x' as AnimatableProperty, label: 'X' },
-            { prop: 'scale.y' as AnimatableProperty, label: 'Y' },
-            { prop: 'scale.z' as AnimatableProperty, label: 'Z' }
-          ].map((f) => ({
-            id: f.prop,
-            labels: f.label,
-            property: f.prop,
-            addKeyframe: addKeyframe,
-            hasKeyframes: selectedLayer?.keyframes.some((k) => k.property === f.prop)
-          }))}
-        >
-          {#snippet prefix()}
-            <Label class="text-xs text-muted-foreground">Scale</Label>
-            <ScrubXyz
-              valueX={currentValues?.transform.scaleX ?? 1}
-              valueY={currentValues?.transform.scaleY ?? 1}
-              valueZ={currentValues?.transform.scaleZ ?? 1}
-              stepXY={0.1}
-              stepZ={0.1}
-              onchangeX={(v: number) => updateProperty('scaleX', v || 1, 'transform')}
-              onchangeY={(v: number) => updateProperty('scaleY', v || 1, 'transform')}
-              onchangeZ={(v: number) => updateProperty('scaleZ', v || 1, 'transform')}
-            />
-          {/snippet}
-          <ScrubInput
-            id="scale-x"
-            value={currentValues?.transform.scaleX ?? 1}
-            step={0.1}
-            onchange={(v) => updateProperty('scaleX', v || 1, 'transform')}
-          />
-          <ScrubInput
-            id="scale-y"
-            value={currentValues?.transform.scaleY ?? 1}
-            step={0.1}
-            onchange={(v) => updateProperty('scaleY', v || 1, 'transform')}
-          />
-          <ScrubInput
-            id="scale-z"
-            value={currentValues?.transform.scaleZ ?? 1}
-            step={0.1}
-            onchange={(v) => updateProperty('scaleZ', v || 1, 'transform')}
-          />
-        </InputsWrapper>
-
         <!-- Rotation -->
         <InputsWrapper
           fields={[
@@ -599,7 +567,7 @@
           }))}
         >
           {#snippet prefix()}
-            <Label class="text-xs text-muted-foreground">Rotation (radians)</Label>
+            <Label class="text-xs text-muted-foreground">Rotation</Label>
             <ScrubXyz
               valueX={currentValues?.transform.rotationY ?? 0}
               valueY={currentValues?.transform.rotationX ?? 0}
@@ -629,6 +597,71 @@
             value={currentValues?.transform.rotationZ ?? 0}
             step={0.1}
             onchange={(v) => updateProperty('rotationZ', v, 'transform')}
+          />
+        </InputsWrapper>
+
+        <!-- Scale -->
+        {@const scaleLocked = selectedLayer?.props._scaleLocked ?? false}
+        {@const currentScaleX = currentValues?.transform.scaleX ?? 1}
+        {@const currentScaleY = currentValues?.transform.scaleY ?? 1}
+        <InputsWrapper
+          fields={[
+            { prop: 'scale.x' as AnimatableProperty, label: 'X' },
+            { prop: 'scale.y' as AnimatableProperty, label: 'Y' }
+          ].map((f) => ({
+            id: f.prop,
+            labels: f.label,
+            property: f.prop,
+            addKeyframe: addKeyframe,
+            hasKeyframes: selectedLayer?.keyframes.some((k) => k.property === f.prop)
+          }))}
+        >
+          {#snippet prefix()}
+            <Label class="text-xs text-muted-foreground">Scale</Label>
+            <ScrubXyz
+              valueX={currentScaleX}
+              valueY={currentScaleY}
+              valueZ={0}
+              stepXY={0.1}
+              stepZ={0.1}
+              onchangeX={(v: number) => updateProperty('scaleX', v || 1, 'transform')}
+              onchangeY={(v: number) => updateProperty('scaleY', v || 1, 'transform')}
+              onchangeZ={() => {}}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              class="ml-auto h-6 px-2 text-xs"
+              title={scaleLocked ? 'Unlock proportions' : 'Lock proportions'}
+              onclick={() => {
+                const newLocked = !scaleLocked;
+                const ratio = currentScaleX / currentScaleY;
+                const newProps = {
+                  ...selectedLayer.props,
+                  _scaleLocked: newLocked,
+                  _scaleRatio: ratio
+                };
+                projectStore.updateLayer(selectedLayer.id, { props: newProps });
+              }}
+            >
+              {#if scaleLocked}
+                <Link class="size-3" />
+              {:else}
+                <Unlink class="size-3" />
+              {/if}
+            </Button>
+          {/snippet}
+          <ScrubInput
+            id="scale-x"
+            value={currentScaleX}
+            step={0.1}
+            onchange={(v) => updateProperty('scaleX', v || 1, 'transform')}
+          />
+          <ScrubInput
+            id="scale-y"
+            value={currentScaleY}
+            step={0.1}
+            onchange={(v) => updateProperty('scaleY', v || 1, 'transform')}
           />
         </InputsWrapper>
 

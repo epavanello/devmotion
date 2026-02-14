@@ -68,7 +68,6 @@ export const BuiltInAnimatablePropertySchema = z.enum([
   'position.z',
   'scale.x',
   'scale.y',
-  'scale.z',
   'rotation.x',
   'rotation.y',
   'rotation.z',

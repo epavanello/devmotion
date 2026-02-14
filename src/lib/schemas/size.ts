@@ -1,4 +1,5 @@
 import { fieldRegistry } from '$lib/layers/base';
+import type { PropertyMiddleware } from '$lib/layers/registry';
 import { z } from 'zod';
 
 /**
@@ -57,11 +58,7 @@ export const SizeWithAspectRatioSchema = createSizeWithAspectRatioSchema();
  * Middleware for handling aspect ratio locked size updates
  * Automatically adjusts height when width changes (and vice versa) when aspect ratio is locked
  */
-export function sizeMiddleware(
-  propName: string,
-  value: unknown,
-  currentValues: { props: Record<string, unknown> }
-): Record<string, unknown> {
+export const sizeMiddleware: PropertyMiddleware = (propName, value, currentValues) => {
   const updates: Record<string, unknown> = { [propName]: value };
   const props = currentValues.props;
 
@@ -75,4 +72,24 @@ export function sizeMiddleware(
   }
 
   return updates;
-}
+};
+
+/**
+ * Middleware for handling scale proportion locked updates
+ * Automatically adjusts scaleY when scaleX changes (and vice versa) when proportions are locked
+ */
+export const scaleMiddleware: PropertyMiddleware = (propName, value, currentValues) => {
+  const updates: Record<string, unknown> = { [propName]: value };
+  const props = currentValues.props;
+
+  if (props._scaleLocked && (propName === 'scaleX' || propName === 'scaleY')) {
+    const ratio = (props._scaleRatio as number) || 1;
+    if (propName === 'scaleX') {
+      updates.scaleY = (value as number) / ratio;
+    } else {
+      updates.scaleX = (value as number) * ratio;
+    }
+  }
+
+  return updates;
+};

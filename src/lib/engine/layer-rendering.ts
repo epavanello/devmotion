@@ -23,7 +23,6 @@ export function getLayerTransform(layer: TypedLayer, currentTime: number): Trans
     rotationZ: animatedTransform.rotation?.z ?? layer.transform.rotationZ,
     scaleX: animatedTransform.scale?.x ?? layer.transform.scaleX,
     scaleY: animatedTransform.scale?.y ?? layer.transform.scaleY,
-    scaleZ: animatedTransform.scale?.z ?? layer.transform.scaleZ,
     anchor: layer.transform.anchor ?? 'center'
   };
 }

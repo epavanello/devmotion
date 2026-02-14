@@ -44,7 +44,6 @@ export const TransformSchema = z.object({
   rotationZ: z.number().describe('Rotation Z (radians)'),
   scaleX: z.number().min(0).describe('Scale X'),
   scaleY: z.number().min(0).describe('Scale Y'),
-  scaleZ: z.number().min(0).describe('Scale Z'),
   anchor: AnchorPointSchema.describe('Anchor point')
 });
 

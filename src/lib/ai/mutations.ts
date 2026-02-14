@@ -432,7 +432,6 @@ export function mutateGroupLayers(
         rotationZ: 0,
         scaleX: 1,
         scaleY: 1,
-        scaleZ: 1,
         anchor: 'center' as const
       },
       style: { opacity: 1 },
@@ -511,7 +510,6 @@ export function mutateUngroupLayers(
       layer.transform.rotationZ += gt.rotationZ;
       layer.transform.scaleX *= gt.scaleX;
       layer.transform.scaleY *= gt.scaleY;
-      layer.transform.scaleZ *= gt.scaleZ;
       layer.style.opacity *= gs.opacity;
     }
   }

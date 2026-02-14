@@ -236,7 +236,7 @@
             min={0}
             max={projectStore.state.duration}
             onchange={handleTimeChange}
-            class="max-w-12"
+            class="max-w-12 shrink-0"
           />
           <span
             class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] text-muted-foreground"

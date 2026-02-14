@@ -4,7 +4,7 @@
   import { Captions } from '@lucide/svelte';
   import { fieldRegistry } from '../base';
   import SourceLayerRef from '../properties/SourceLayerRef.svelte';
-  import { googleFontValues, getGoogleFontUrl, type GoogleFont } from '$lib/utils/fonts';
+  import { googleFontValues } from '$lib/utils/fonts';
   import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
   import { createSizeWithAspectRatioSchema, sizeMiddleware } from '$lib/schemas/size';
 

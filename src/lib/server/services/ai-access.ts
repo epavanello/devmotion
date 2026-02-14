@@ -6,7 +6,7 @@ import { db } from '$lib/server/db';
 import { aiUserUnlock, aiUsageLog } from '$lib/server/db/schema';
 import { eq, and, gte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { AI_MODELS, getModel } from '$lib/ai/models';
+import {  getModel } from '$lib/ai/models';
 
 /**
  * Calculate estimated cost for token usage

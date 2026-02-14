@@ -105,6 +105,17 @@ function interpolateQuantized(
 }
 
 /**
+ * Find the common prefix between two strings
+ */
+function getCommonPrefix(str1: string, str2: string): string {
+  let i = 0;
+  while (i < str1.length && i < str2.length && str1[i] === str2[i]) {
+    i++;
+  }
+  return str1.substring(0, i);
+}
+
+/**
  * TEXT interpolation - string transitions
  */
 function interpolateText(
@@ -113,23 +124,49 @@ function interpolateText(
   progress: number,
   interpolation: Extract<Interpolation, { family: 'text' }>
 ): string {
+  const startStr = String(start);
   const endStr = String(end);
+
+  // If start and end are the same, no animation needed
+  if (startStr === endStr) {
+    return endStr;
+  }
 
   switch (interpolation.strategy) {
     case 'char-reveal': {
-      const charsToShow = Math.round(endStr.length * progress);
-      return endStr.substring(0, charsToShow);
+      // Find common prefix to preserve common characters
+      const commonPrefix = getCommonPrefix(startStr, endStr);
+      const suffixToAnimate = endStr.substring(commonPrefix.length);
+
+      const suffixCharsToShow = Math.round(suffixToAnimate.length * progress);
+      return commonPrefix + suffixToAnimate.substring(0, suffixCharsToShow);
     }
 
     case 'word-reveal': {
       const separator = interpolation.separator ?? ' ';
-      const words = endStr.split(separator);
-      const wordsToShow = Math.round(words.length * progress);
-      return words.slice(0, wordsToShow).join(separator);
+      const startWords = startStr.split(separator);
+      const endWords = endStr.split(separator);
+
+      // Find common prefix of words to preserve common words
+      let commonWordCount = 0;
+      while (
+        commonWordCount < startWords.length &&
+        commonWordCount < endWords.length &&
+        startWords[commonWordCount] === endWords[commonWordCount]
+      ) {
+        commonWordCount++;
+      }
+
+      const wordsToAnimate = endWords.slice(commonWordCount);
+      const wordsToShow = Math.round(wordsToAnimate.length * progress);
+
+      return [...endWords.slice(0, commonWordCount), ...wordsToAnimate.slice(0, wordsToShow)].join(
+        separator
+      );
     }
 
     default:
-      return progress >= 1 ? endStr : String(start);
+      return progress >= 1 ? endStr : startStr;
   }
 }
 

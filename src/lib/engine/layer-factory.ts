@@ -79,7 +79,6 @@ export function createLayer<T extends LayerTypeString>(
       rotationZ: 0,
       scaleX: 1,
       scaleY: 1,
-      scaleZ: 1,
       anchor: 'center',
       ...override?.trasform
     },

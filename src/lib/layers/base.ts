@@ -305,7 +305,7 @@ function getAnchorOffset(anchor: AnchorPoint): { x: string; y: string } {
  * so that translate3d(0, 0, 0) places it at the canvas center.
  */
 export function generateTransformCSS(transform: Transform): string {
-  const { x, y, z, rotationX, rotationY, rotationZ, scaleX, scaleY, scaleZ, anchor } = transform;
+  const { x, y, z, rotationX, rotationY, rotationZ, scaleX, scaleY, anchor } = transform;
   const anchorOffset = getAnchorOffset(anchor);
 
   // Apply position offset, then anchor offset, then rotation and scale
@@ -316,7 +316,7 @@ export function generateTransformCSS(transform: Transform): string {
     rotateX(${rotationX}rad)
     rotateY(${rotationY}rad)
     rotateZ(${rotationZ}rad)
-    scale3d(${scaleX}, ${scaleY}, ${scaleZ})
+    scale(${scaleX}, ${scaleY})
   `
     .trim()
     .replace(/\s+/g, ' ');

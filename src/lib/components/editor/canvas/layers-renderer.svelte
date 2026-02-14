@@ -5,6 +5,8 @@
   import { generateTransformCSS } from '$lib/layers/base';
   import type { TypedLayer } from '$lib/layers/typed-registry';
   import type { FrameCache } from '$lib/stores/project.svelte';
+  import type { GoogleFont } from '$lib/utils/fonts';
+  import ApplyFont from '$lib/components/font/apply-font.svelte';
 
   let {
     layers,
@@ -14,7 +16,8 @@
     selectedLayerId = null,
     disableSelection = false,
     getCachedFrame,
-    isServerSideRendering = false
+    isServerSideRendering = false,
+    projectFont
   }: {
     layers: TypedLayer[];
     currentTime: number;
@@ -24,6 +27,7 @@
     disableSelection?: boolean;
     getCachedFrame?: (time: number) => FrameCache | null;
     isServerSideRendering?: boolean;
+    projectFont?: GoogleFont;
   } = $props();
 
   /**
@@ -55,91 +59,93 @@
   }
 </script>
 
-<!-- Top-level layers and groups -->
-{#each topLevelLayers as layer (layer.id)}
-  {@const enterTime = layer.enterTime ?? 0}
-  {@const exitTime = layer.exitTime ?? duration}
-  {@const isInTimeRange = currentTime >= enterTime && currentTime <= exitTime}
+<ApplyFont fontFamily={projectFont}>
+  <!-- Top-level layers and groups -->
+  {#each topLevelLayers as layer (layer.id)}
+    {@const enterTime = layer.enterTime ?? 0}
+    {@const exitTime = layer.exitTime ?? duration}
+    {@const isInTimeRange = currentTime >= enterTime && currentTime <= exitTime}
 
-  {#if layer.type === 'group'}
-    <!-- Group: apply group transform and render children inside -->
-    {@const { transform: groupTransform, style: groupStyle } = getLayerRenderData(layer)}
-    {@const groupVisible = layer.visible && isInTimeRange}
-    {@const groupTransformCSS = generateTransformCSS(groupTransform)}
+    {#if layer.type === 'group'}
+      <!-- Group: apply group transform and render children inside -->
+      {@const { transform: groupTransform, style: groupStyle } = getLayerRenderData(layer)}
+      {@const groupVisible = layer.visible && isInTimeRange}
+      {@const groupTransformCSS = generateTransformCSS(groupTransform)}
 
-    <div
-      class="layer-group absolute top-1/2 left-1/2"
-      data-group-id={layer.id}
-      style:transform={groupTransformCSS}
-      style:transform-style="preserve-3d"
-      style:opacity={groupStyle.opacity}
-      style:visibility={groupVisible ? 'visible' : 'hidden'}
-    >
-      {#each getChildLayers(layer.id) as child (child.id)}
-        {@const childEnter = child.enterTime ?? 0}
-        {@const childExit = child.exitTime ?? duration}
-        {@const childInRange = currentTime >= childEnter && currentTime <= childExit}
-        {@const mustKeepWarm =
-          child.type === 'video' || child.type === 'image' || child.type === 'audio'}
-        {#if childInRange || mustKeepWarm}
-          {@const { transform, style, customProps } = getLayerRenderData(child)}
-          {@const component = getLayerComponent(child.type)}
-          {@const isSelected = selectedLayerId === child.id}
-          {@const enhancedProps = {
-            ...customProps,
-            layer: child,
-            currentTime,
-            isPlaying,
-            isServerSideRendering
-          }}
+      <div
+        class="layer-group absolute top-1/2 left-1/2"
+        data-group-id={layer.id}
+        style:transform={groupTransformCSS}
+        style:transform-style="preserve-3d"
+        style:opacity={groupStyle.opacity}
+        style:visibility={groupVisible ? 'visible' : 'hidden'}
+      >
+        {#each getChildLayers(layer.id) as child (child.id)}
+          {@const childEnter = child.enterTime ?? 0}
+          {@const childExit = child.exitTime ?? duration}
+          {@const childInRange = currentTime >= childEnter && currentTime <= childExit}
+          {@const mustKeepWarm =
+            child.type === 'video' || child.type === 'image' || child.type === 'audio'}
+          {#if childInRange || mustKeepWarm}
+            {@const { transform, style, customProps } = getLayerRenderData(child)}
+            {@const component = getLayerComponent(child.type)}
+            {@const isSelected = selectedLayerId === child.id}
+            {@const enhancedProps = {
+              ...customProps,
+              layer: child,
+              currentTime,
+              isPlaying,
+              isServerSideRendering
+            }}
 
-          <LayerWrapper
-            id={child.id}
-            name={child.name}
-            visible={child.visible && childInRange && groupVisible}
-            locked={child.locked || layer.locked}
-            selected={isSelected && !disableSelection}
-            {transform}
-            {style}
-            {component}
-            customProps={enhancedProps}
-          />
-        {/if}
-      {/each}
-    </div>
-  {:else}
-    <!-- Regular layer -->
-    {@const mustKeepWarm =
-      layer.type === 'video' || layer.type === 'image' || layer.type === 'audio'}
-    {#if isInTimeRange || mustKeepWarm}
-      {@const { transform, style, customProps } = getLayerRenderData(layer)}
-      {@const component = getLayerComponent(layer.type)}
-      {@const isSelected = selectedLayerId === layer.id}
-      {@const enhancedProps = {
-        ...customProps,
-        layer,
-        currentTime,
-        isPlaying,
-        isServerSideRendering
-      }}
+            <LayerWrapper
+              id={child.id}
+              name={child.name}
+              visible={child.visible && childInRange && groupVisible}
+              locked={child.locked || layer.locked}
+              selected={isSelected && !disableSelection}
+              {transform}
+              {style}
+              {component}
+              customProps={enhancedProps}
+            />
+          {/if}
+        {/each}
+      </div>
+    {:else}
+      <!-- Regular layer -->
+      {@const mustKeepWarm =
+        layer.type === 'video' || layer.type === 'image' || layer.type === 'audio'}
+      {#if isInTimeRange || mustKeepWarm}
+        {@const { transform, style, customProps } = getLayerRenderData(layer)}
+        {@const component = getLayerComponent(layer.type)}
+        {@const isSelected = selectedLayerId === layer.id}
+        {@const enhancedProps = {
+          ...customProps,
+          layer,
+          currentTime,
+          isPlaying,
+          isServerSideRendering
+        }}
 
-      <LayerWrapper
-        id={layer.id}
-        name={layer.name}
-        visible={layer.visible && isInTimeRange}
-        locked={layer.locked}
-        selected={isSelected && !disableSelection}
-        {transform}
-        {style}
-        {component}
-        customProps={enhancedProps}
-      />
+        <LayerWrapper
+          id={layer.id}
+          name={layer.name}
+          visible={layer.visible && isInTimeRange}
+          locked={layer.locked}
+          selected={isSelected && !disableSelection}
+          {transform}
+          {style}
+          {component}
+          customProps={enhancedProps}
+        />
+      {/if}
     {/if}
-  {/if}
-{/each}
+  {/each}
 
-<style>
-  .layer-group {
-    user-select: none;
-  }
-</style>
+  <style>
+    .layer-group {
+      user-select: none;
+    }
+  </style>
+</ApplyFont>

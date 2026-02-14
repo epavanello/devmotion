@@ -2,7 +2,7 @@
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Bot, Loader2, User } from '@lucide/svelte';
-  import { AI_MODELS, DEFAULT_MODEL_ID, getModel } from '$lib/ai/models';
+  import { DEFAULT_MODEL_ID, getModel } from '$lib/ai/models';
   import { Chat } from '@ai-sdk/svelte';
   import { DefaultChatTransport, isToolUIPart, type UIMessage, type UIDataTypes } from 'ai';
   import { resolve } from '$app/paths';
@@ -35,6 +35,7 @@
 
   import { PersistedState } from 'runed';
   import ToolPart from './tool-part.svelte';
+  import ReasoningPart from './reasoning-part.svelte';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -183,7 +184,9 @@
 
             <div class="space-y-2 pl-0">
               {#each message.parts as part, partIndex (partIndex)}
-                {#if part.type === 'text' && part.text.trim()}
+                {#if part.type === 'reasoning' && part.text.trim()}
+                  <ReasoningPart reasoning={part.text} />
+                {:else if part.type === 'text' && part.text.trim()}
                   <p class="text-sm whitespace-pre-wrap">{part.text}</p>
                 {:else if isToolUIPart(part)}
                   <ToolPart tool={part} />
@@ -193,7 +196,7 @@
           </div>
         {/each}
 
-        {#if chat.status === 'streaming' || chat.status === 'submitted'}
+        {#if (chat.status === 'streaming' || chat.status === 'submitted') && chat.messages[chat.messages.length - 1].role !== 'assistant'}
           <div class="flex flex-col gap-2">
             <div class="flex items-center gap-2">
               <div class="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted">

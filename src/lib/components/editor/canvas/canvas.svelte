@@ -229,6 +229,7 @@
             selectedLayerId={projectStore.selectedLayerId}
             disableSelection={projectStore.isRecording}
             getCachedFrame={projectStore.isRecording ? projectStore.getCachedFrame : undefined}
+            projectFont={projectStore.state.fontFamily}
           />
         </div>
 
