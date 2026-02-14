@@ -4,7 +4,13 @@
   import { Bot, Loader2, User } from '@lucide/svelte';
   import { DEFAULT_MODEL_ID, getModel } from '$lib/ai/models';
   import { Chat } from '@ai-sdk/svelte';
-  import { DefaultChatTransport, isToolUIPart, type UIMessage, type UIDataTypes } from 'ai';
+  import {
+    DefaultChatTransport,
+    isToolUIPart,
+    lastAssistantMessageIsCompleteWithToolCalls,
+    type UIMessage,
+    type UIDataTypes
+  } from 'ai';
   import { resolve } from '$app/paths';
   import type { GenerateRequest } from '../../../routes/(app)/chat/+server';
   import {
@@ -61,6 +67,7 @@
         } satisfies Omit<GenerateRequest, 'messages'>;
       }
     }),
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     onError(error) {
       toast.error(parseErrorMessage(error));
     },
