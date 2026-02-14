@@ -3,16 +3,17 @@
   import { GripVertical } from '@lucide/svelte';
   import { cn } from '$lib/utils';
 
-  interface Props {
+  type Props = {
     id?: string;
     value: number;
     step?: number;
     min?: number;
     max?: number;
     onchange: (value: number) => void;
-  }
+    class?: string;
+  };
 
-  let { id, value, step = 1, min, max, onchange }: Props = $props();
+  let { id, value, step = 1, min, max, onchange, class: className }: Props = $props();
 
   let isDragging = $state(false);
   let startX = $state(0);
@@ -152,6 +153,6 @@
     oninput={handleInput}
     onfocus={() => (isFocused = true)}
     onblur={() => (isFocused = false)}
-    class="number-input-no-spin pr-0! pl-1!"
+    class={cn('number-input-no-spin pr-0! pl-1!', className)}
   />
 </InputGroup.Root>

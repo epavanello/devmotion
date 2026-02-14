@@ -229,13 +229,14 @@
       {#if readonlyTime}
         <span class="font-mono font-medium">{keyframe.time.toFixed(2)}s</span>
       {:else}
-        <div class="relative flex-1">
+        <div class="relative">
           <ScrubInput
             value={keyframe.time}
             step={0.01}
             min={0}
             max={projectStore.state.duration}
             onchange={handleTimeChange}
+            class="max-w-12"
           />
           <span
             class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] text-muted-foreground"

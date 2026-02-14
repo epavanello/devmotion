@@ -46,6 +46,7 @@
   import InputPropery from './input-propery.svelte';
   import LayerKeyframes from './layer-keyframes.svelte';
   import type { TypedLayer } from '$lib/layers/typed-registry';
+  import { Select } from '$lib/components/ui/select';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -747,19 +748,23 @@
 
       <!-- Animation Presets -->
       <PropertiesGroup label="Animation Presets">
-        <InputWrapper id="animation-presets" label="Animation Presets">
-          <select
+        <InputsWrapper
+          fields={[
+            {
+              id: 'animation-presets',
+              labels: 'Animation'
+            },
+            {
+              id: 'preset-duration',
+              labels: 'Duration (s)'
+            }
+          ]}
+        >
+          <Select
             bind:value={selectedPresetId}
-            class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
-          >
-            <option value="">Select...</option>
-            {#each animationPresets as preset (preset.id)}
-              <option value={preset.id}>{preset.name}</option>
-            {/each}
-          </select>
-        </InputWrapper>
-
-        <InputWrapper id="preset-duration" label="Duration (s)">
+            options={animationPresets.map((preset) => ({ label: preset.name, value: preset.id }))}
+            trigger={{ class: 'w-full' }}
+          />
           <ScrubInput
             id="preset-duration"
             value={presetDuration}
@@ -767,7 +772,7 @@
             step={0.1}
             onchange={(v) => (presetDuration = v)}
           />
-        </InputWrapper>
+        </InputsWrapper>
 
         <Button variant="default" class="w-full" onclick={applyPreset} disabled={!selectedPresetId}>
           <Sparkles class="mr-2 h-4 w-4" />
