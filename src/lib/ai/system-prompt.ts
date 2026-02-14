@@ -68,42 +68,43 @@ function buildCanvasState(project: Project): string {
     return 'Empty canvas — no layers yet.';
   }
 
-  const halfHeight = project.height / 2;
-
-  // Group layers by rough vertical position
-  const topLayers = project.layers.filter((l) => l.transform.y < -halfHeight / 3);
-  const middleLayers = project.layers.filter(
-    (l) => l.transform.y >= -halfHeight / 3 && l.transform.y <= halfHeight / 3
-  );
-  const bottomLayers = project.layers.filter((l) => l.transform.y > halfHeight / 3);
-
-  let spatial = '';
-  if (topLayers.length > 0) {
-    spatial += `TOP:    ${topLayers.map((l) => `[${l.name}]`).join(' ')}\n`;
-  }
-  if (middleLayers.length > 0) {
-    spatial += `CENTER: ${middleLayers.map((l) => `[${l.name}]`).join(' ')}\n`;
-  }
-  if (bottomLayers.length > 0) {
-    spatial += `BOTTOM: ${bottomLayers.map((l) => `[${l.name}]`).join(' ')}\n`;
-  }
-
   const layerList = project.layers
     .map((layer, index) => {
-      const animatedProps = [...new Set(layer.keyframes.map((k) => k.property))];
+      // Show ALL props
       const propsPreview = Object.entries(layer.props)
-        .slice(0, 3)
         .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
         .join(', ');
 
-      return `${index}. "${layer.name}" (id: "${layer.id}", type: ${layer.type})
-   pos: (${layer.transform.x}, ${layer.transform.y}) | opacity: ${layer.style.opacity}
-   props: {${propsPreview}${Object.keys(layer.props).length > 3 ? ', ...' : ''}}
-   animated: [${animatedProps.join(', ') || 'none'}]`;
-    })
-    .join('\n');
+      // Group keyframes by property and show all details
+      const keyframesByProp = new Map<string, typeof layer.keyframes>();
+      for (const kf of layer.keyframes) {
+        if (!keyframesByProp.has(kf.property)) {
+          keyframesByProp.set(kf.property, []);
+        }
+        keyframesByProp.get(kf.property)!.push(kf);
+      }
 
-  return `${spatial}
-${project.layers.length} layer(s):
-${layerList}`;
+      // Build detailed keyframe info
+      let keyframesDetail = '';
+      if (keyframesByProp.size > 0) {
+        keyframesDetail = '\n   keyframes:';
+        for (const [prop, kfs] of keyframesByProp) {
+          const kfList = kfs
+            .sort((a, b) => a.time - b.time)
+            .map(
+              (kf) =>
+                `t=${kf.time}s: ${JSON.stringify(kf.value)}${kf.easing ? ` (${kf.easing})` : ''}`
+            )
+            .join(', ');
+          keyframesDetail += `\n     ${prop}: [${kfList}]`;
+        }
+      }
+
+      return `${index}. "${layer.name}" (id: "${layer.id}", type: ${layer.type})
+   pos: (${layer.transform.x}, ${layer.transform.y}) | scale: (${layer.transform.scaleX}, ${layer.transform.scaleY}) | rotation: ${layer.transform.rotationZ}° | opacity: ${layer.style.opacity}
+   props: {${propsPreview || 'none'}}${keyframesDetail || '\n   keyframes: none'}`;
+    })
+    .join('\n\n');
+
+  return `${project.layers.length} layer(s):\n${layerList}`;
 }
