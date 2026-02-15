@@ -301,7 +301,7 @@ export function mutateEditLayer(ctx: MutationContext, input: EditLayerInput): Ed
     }
 
     if (input.updates.transform) {
-      layer.transform = input.updates.transform;
+      layer.transform = { ...layer.transform, ...input.updates.transform };
     }
 
     // Handle anchor point
