@@ -21,6 +21,8 @@
     executeConfigureProject,
     executeGroupLayers,
     executeUngroupLayers,
+    executeUpdateKeyframe,
+    executeRemoveKeyframe,
     resetLayerTracking
   } from '$lib/ai/ai-operations.svelte';
   import {
@@ -33,7 +35,9 @@
     type AnimationUITools,
     isLayerCreationTool,
     getLayerTypeFromToolName,
-    type CreateLayerInput
+    type CreateLayerInput,
+    type UpdateKeyframeInput,
+    type RemoveKeyframeInput
   } from '$lib/ai/schemas';
   import { toast } from 'svelte-sonner';
   import { parseErrorMessage } from '$lib/utils';
@@ -86,9 +90,15 @@
           result = executeCreateLayer(projectStore, {
             type: layerType,
             name: input.name,
+            visible: input.visible,
+            locked: input.locked,
             position: input.position,
             props: input.props || {},
-            animation: input.animation
+            animation: input.animation,
+            enterTime: input.enterTime,
+            exitTime: input.exitTime,
+            contentDuration: input.contentDuration,
+            contentOffset: input.contentOffset
           });
         } else {
           result = { success: false, error: `Invalid layer creation tool: ${toolName}` };
@@ -101,6 +111,12 @@
             break;
           case 'edit_layer':
             result = executeEditLayer(projectStore, toolCall.input as EditLayerInput);
+            break;
+          case 'update_keyframe':
+            result = executeUpdateKeyframe(projectStore, toolCall.input as UpdateKeyframeInput);
+            break;
+          case 'remove_keyframe':
+            result = executeRemoveKeyframe(projectStore, toolCall.input as RemoveKeyframeInput);
             break;
           case 'remove_layer':
             result = executeRemoveLayer(projectStore, toolCall.input as RemoveLayerInput);

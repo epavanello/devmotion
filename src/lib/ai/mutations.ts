@@ -28,7 +28,11 @@ import type {
   GroupLayersInput,
   GroupLayersOutput,
   UngroupLayersInput,
-  UngroupLayersOutput
+  UngroupLayersOutput,
+  UpdateKeyframeInput,
+  UpdateKeyframeOutput,
+  RemoveKeyframeInput,
+  RemoveKeyframeOutput
 } from './schemas';
 import type { ProjectData } from '$lib/schemas/animation';
 
@@ -127,6 +131,14 @@ export function mutateCreateLayer(
 
     if (input.name) {
       layer.name = input.name;
+    }
+
+    // Set visible and locked if provided
+    if (input.visible !== undefined) {
+      layer.visible = input.visible;
+    }
+    if (input.locked !== undefined) {
+      layer.locked = input.locked;
     }
 
     // Set enter/exit time if provided in input
@@ -285,6 +297,7 @@ export function mutateEditLayer(ctx: MutationContext, input: EditLayerInput): Ed
     if (input.updates.position) {
       layer.transform.x = input.updates.position.x ?? layer.transform.x;
       layer.transform.y = input.updates.position.y ?? layer.transform.y;
+      layer.transform.z = input.updates.position.z ?? layer.transform.z;
     }
 
     if (input.updates.scale) {
@@ -294,6 +307,19 @@ export function mutateEditLayer(ctx: MutationContext, input: EditLayerInput): Ed
 
     if (input.updates.rotation !== undefined) {
       layer.transform.rotationZ = (input.updates.rotation * Math.PI) / 180;
+    }
+
+    // Handle 3D rotation (rotationX and rotationY in degrees)
+    if (input.updates.rotationX !== undefined) {
+      layer.transform.rotationX = (input.updates.rotationX * Math.PI) / 180;
+    }
+    if (input.updates.rotationY !== undefined) {
+      layer.transform.rotationY = (input.updates.rotationY * Math.PI) / 180;
+    }
+
+    // Handle anchor point
+    if (input.updates.anchor !== undefined) {
+      layer.transform.anchor = input.updates.anchor;
     }
 
     if (input.updates.opacity !== undefined) {
@@ -570,6 +596,106 @@ export function mutateConfigureProject(
     return {
       success: false,
       message: 'Failed to configure project',
+      error: err instanceof Error ? err.message : 'Unknown error'
+    };
+  }
+}
+
+// ============================================
+// Keyframe Mutations
+// ============================================
+
+export function mutateUpdateKeyframe(
+  ctx: MutationContext,
+  input: UpdateKeyframeInput
+): UpdateKeyframeOutput {
+  const resolvedId = resolveLayerId(ctx.project, input.layerId, ctx.layerIdMap);
+  if (!resolvedId) {
+    const errMsg = layerNotFoundError(ctx.project, input.layerId);
+    return { success: false, message: errMsg, error: errMsg };
+  }
+
+  const layer = ctx.project.layers.find((l) => l.id === resolvedId);
+  if (!layer) {
+    return { success: false, message: 'Layer not found', error: 'Layer was removed' };
+  }
+
+  const keyframeIndex = layer.keyframes.findIndex((k) => k.id === input.keyframeId);
+  if (keyframeIndex === -1) {
+    return {
+      success: false,
+      message: `Keyframe "${input.keyframeId}" not found`,
+      error: 'Keyframe ID not found in layer'
+    };
+  }
+
+  try {
+    const keyframe = layer.keyframes[keyframeIndex];
+
+    if (input.updates.time !== undefined) {
+      keyframe.time = Math.max(0, Math.min(input.updates.time, ctx.project.duration));
+    }
+    if (input.updates.value !== undefined) {
+      keyframe.value = input.updates.value;
+    }
+    if (input.updates.interpolation !== undefined) {
+      keyframe.interpolation = input.updates.interpolation;
+    }
+
+    // Re-sort keyframes by time
+    layer.keyframes.sort((a, b) => a.time - b.time);
+
+    return {
+      success: true,
+      message: `Updated keyframe on "${layer.name}"`
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: 'Failed to update keyframe',
+      error: err instanceof Error ? err.message : 'Unknown error'
+    };
+  }
+}
+
+export function mutateRemoveKeyframe(
+  ctx: MutationContext,
+  input: RemoveKeyframeInput
+): RemoveKeyframeOutput {
+  const resolvedId = resolveLayerId(ctx.project, input.layerId, ctx.layerIdMap);
+  if (!resolvedId) {
+    const errMsg = layerNotFoundError(ctx.project, input.layerId);
+    return { success: false, message: errMsg, error: errMsg };
+  }
+
+  const layer = ctx.project.layers.find((l) => l.id === resolvedId);
+  if (!layer) {
+    return { success: false, message: 'Layer not found', error: 'Layer was removed' };
+  }
+
+  if (!input.keyframeId) {
+    return { success: false, message: 'keyframeId is required', error: 'Missing keyframeId' };
+  }
+
+  const keyframeIndex = layer.keyframes.findIndex((k) => k.id === input.keyframeId);
+  if (keyframeIndex === -1) {
+    return {
+      success: false,
+      message: `Keyframe "${input.keyframeId}" not found`,
+      error: 'Keyframe ID not found in layer'
+    };
+  }
+
+  try {
+    layer.keyframes.splice(keyframeIndex, 1);
+    return {
+      success: true,
+      message: `Removed keyframe from "${layer.name}"`
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: 'Failed to remove keyframe',
       error: err instanceof Error ? err.message : 'Unknown error'
     };
   }

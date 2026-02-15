@@ -121,6 +121,8 @@ const validateTimingFields = (data: { enterTime?: number; exitTime?: number }) =
 const CreateLayerInputSchema = z
   .object({
     name: z.string().optional().describe('Layer name for identification'),
+    visible: z.boolean().optional().default(true).describe('Layer visibility (default: true)'),
+    locked: z.boolean().optional().default(false).describe('Layer locked state (default: false)'),
     position: PositionSchema,
     animation: AnimationSchema
   })
@@ -242,7 +244,8 @@ export const EditLayerInputSchema = z.object({
       position: z
         .object({
           x: z.number().optional(),
-          y: z.number().optional()
+          y: z.number().optional(),
+          z: z.number().optional().describe('Z position (depth)')
         })
         .optional(),
       scale: z
@@ -251,7 +254,23 @@ export const EditLayerInputSchema = z.object({
           y: z.number().optional()
         })
         .optional(),
-      rotation: z.number().optional().describe('Rotation in degrees'),
+      rotation: z.number().optional().describe('Rotation around Z axis (degrees)'),
+      rotationX: z.number().optional().describe('Rotation around X axis (degrees)'),
+      rotationY: z.number().optional().describe('Rotation around Y axis (degrees)'),
+      anchor: z
+        .enum([
+          'top-left',
+          'top-center',
+          'top-right',
+          'center-left',
+          'center',
+          'center-right',
+          'bottom-left',
+          'bottom-center',
+          'bottom-right'
+        ])
+        .optional()
+        .describe('Anchor point for transformations'),
       opacity: z.number().min(0).max(1).optional(),
       props: z.record(z.string(), z.unknown()).optional()
     })
@@ -345,6 +364,64 @@ export interface UngroupLayersOutput {
 }
 
 // ============================================
+// Tool: update_keyframe
+// ============================================
+
+export const UpdateKeyframeInputSchema = z
+  .object({
+    layerId: z.string().describe('Layer ID or reference'),
+    keyframeId: z.string().describe('Keyframe ID to update'),
+    updates: z.object({
+      time: z.number().min(0).optional().describe('New time in seconds'),
+      value: z.union([z.number(), z.string(), z.boolean()]).optional().describe('New value'),
+      interpolation: InterpolationSchema.optional().describe('New interpolation settings')
+    })
+  })
+  .refine(
+    (data) => {
+      return (
+        data.updates.time !== undefined ||
+        data.updates.value !== undefined ||
+        data.updates.interpolation !== undefined
+      );
+    },
+    {
+      message: 'At least one of time, value, or interpolation must be provided in updates',
+      path: ['updates']
+    }
+  );
+
+export type UpdateKeyframeInput = z.infer<typeof UpdateKeyframeInputSchema>;
+
+export interface UpdateKeyframeOutput {
+  success: boolean;
+  message: string;
+  error?: string;
+}
+
+// ============================================
+// Tool: remove_keyframe
+// ============================================
+
+export const RemoveKeyframeInputSchema = z
+  .object({
+    layerId: z.string().describe('Layer ID or reference'),
+    keyframeId: z.string().optional().describe('Specific keyframe ID to remove')
+  })
+  .refine((data) => data.keyframeId !== undefined, {
+    message: 'Either keyframeId must be provided',
+    path: ['keyframeId']
+  });
+
+export type RemoveKeyframeInput = z.infer<typeof RemoveKeyframeInputSchema>;
+
+export interface RemoveKeyframeOutput {
+  success: boolean;
+  message: string;
+  error?: string;
+}
+
+// ============================================
 // Tool Definitions for AI SDK
 // ============================================
 
@@ -364,9 +441,21 @@ export const animationTools = {
 
   edit_layer: tool({
     description:
-      'Modify an existing layer (position, scale, rotation, opacity, or props). ' +
+      'Modify an existing layer (position, scale, 3D rotation, anchor, opacity, or props). ' +
       'Use layer_N for layers you just created, or actual ID/name for existing layers.',
     inputSchema: EditLayerInputSchema
+  }),
+
+  update_keyframe: tool({
+    description:
+      'Update an existing keyframe (change time, value, or interpolation). ' +
+      'The keyframeId can be found in the PROJECT STATE section of the system prompt.',
+    inputSchema: UpdateKeyframeInputSchema
+  }),
+
+  remove_keyframe: tool({
+    description: 'Remove a specific keyframe from a layer by its ID.',
+    inputSchema: RemoveKeyframeInputSchema
   }),
 
   remove_layer: tool({

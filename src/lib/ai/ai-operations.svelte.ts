@@ -19,7 +19,11 @@ import type {
   GroupLayersInput,
   GroupLayersOutput,
   UngroupLayersInput,
-  UngroupLayersOutput
+  UngroupLayersOutput,
+  UpdateKeyframeInput,
+  UpdateKeyframeOutput,
+  RemoveKeyframeInput,
+  RemoveKeyframeOutput
 } from './schemas';
 import { SvelteMap } from 'svelte/reactivity';
 import {
@@ -30,6 +34,8 @@ import {
   mutateConfigureProject,
   mutateGroupLayers,
   mutateUngroupLayers,
+  mutateUpdateKeyframe,
+  mutateRemoveKeyframe,
   type MutationContext
 } from './mutations';
 
@@ -168,4 +174,24 @@ export function executeUngroupLayers(
     projectStore.selectedLayerId = null;
   }
   return result;
+}
+
+/**
+ * Execute update_keyframe tool
+ */
+export function executeUpdateKeyframe(
+  projectStore: ProjectStore,
+  input: UpdateKeyframeInput
+): UpdateKeyframeOutput {
+  return mutateUpdateKeyframe(getContext(projectStore), input);
+}
+
+/**
+ * Execute remove_keyframe tool
+ */
+export function executeRemoveKeyframe(
+  projectStore: ProjectStore,
+  input: RemoveKeyframeInput
+): RemoveKeyframeOutput {
+  return mutateRemoveKeyframe(getContext(projectStore), input);
 }

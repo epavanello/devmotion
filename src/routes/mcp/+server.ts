@@ -33,6 +33,8 @@ import {
   mutateConfigureProject,
   mutateGroupLayers,
   mutateUngroupLayers,
+  mutateUpdateKeyframe,
+  mutateRemoveKeyframe,
   type MutationContext
 } from '$lib/ai/mutations';
 import { PUBLIC_BASE_URL } from '$env/static/public';
@@ -218,6 +220,12 @@ const handler = createMcpHandler(
                 break;
               case 'edit_layer':
                 result = mutateEditLayer(ctx, toolInput as any);
+                break;
+              case 'update_keyframe':
+                result = mutateUpdateKeyframe(ctx, toolInput as any);
+                break;
+              case 'remove_keyframe':
+                result = mutateRemoveKeyframe(ctx, toolInput as any);
                 break;
               case 'remove_layer':
                 result = mutateRemoveLayer(ctx, toolInput as any);

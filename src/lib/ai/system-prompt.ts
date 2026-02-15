@@ -24,7 +24,30 @@ export function buildSystemPrompt(project: Project): string {
 1. **configure_project** first if the user wants a specific format, background, or duration.
 2. **Create layers** with create_*_layer tools. Each call returns a reference (layer_0, layer_1, ...) you can reuse.
 3. **Animate every layer** — pass an \`animation\` object inline when creating, or call animate_layer after. No layer should be static.
-4. **Refine** with edit_layer or remove_layer as needed.
+4. **Refine** with edit_layer, update_keyframe, remove_keyframe, or remove_layer as needed.
+
+## Transform Capabilities
+
+- **Position**: x, y (horizontal/vertical), z (depth)
+- **Scale**: x, y (independent or use matching values for proportional scaling)
+- **Rotation**: rotation (Z-axis in degrees), rotationX, rotationY (3D rotation in degrees)
+- **Anchor**: Set anchor point (top-left, top-center, top-right, center-left, center, center-right, bottom-left, bottom-center, bottom-right) to control which point of the layer is positioned at the transform coordinates
+
+## Keyframe Management
+
+- **animate_layer**: Add new keyframes (preset or custom)
+- **update_keyframe**: Modify existing keyframe (time, value, or interpolation). You'll need the keyframe ID from the PROJECT STATE.
+- **remove_keyframe**: Delete a specific keyframe by ID
+
+## Interpolation Options
+
+When creating custom keyframes, you can specify interpolation:
+- **continuous**: linear, ease-in, ease-out, ease-in-out (smooth transitions)
+- **discrete**: step-end, step-start, step-mid (instant changes)
+- **quantized**: integer, snap-grid (rounded values)
+- **text**: char-reveal, word-reveal (for text animations)
+
+Default is continuous/ease-in-out if not specified.
 
 ## Canvas
 
@@ -92,8 +115,7 @@ function buildCanvasState(project: Project): string {
           const kfList = kfs
             .sort((a, b) => a.time - b.time)
             .map(
-              (kf) =>
-                `t=${kf.time}s: ${JSON.stringify(kf.value)} (${kf.interpolation.strategy})`
+              (kf) => `t=${kf.time}s: ${JSON.stringify(kf.value)} (${kf.interpolation.strategy})`
             )
             .join(', ');
           keyframesDetail += `\n     ${prop}: [${kfList}]`;
