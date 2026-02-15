@@ -26,7 +26,11 @@
     projectStore.selectedLayerId = layer.id;
   }
 
-  const hiddenTypes = new Set<LiteralUnion<LayerTypeString, string>>(['captions', 'group']);
+  const hiddenTypes = new Set<LiteralUnion<LayerTypeString, string>>([
+    'captions',
+    'group',
+    'project-settings'
+  ]);
 
   const categoryOrder: LayerCategory[] = ['media', 'text', 'shape', 'code', 'ui'];
 

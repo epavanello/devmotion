@@ -50,10 +50,17 @@
   import type { TypedLayer } from '$lib/layers/typed-registry';
   import { Select } from '$lib/components/ui/select';
   import { scaleMiddleware } from '$lib/schemas/size';
+  import {
+    isProjectLayer,
+    mapProjectLayerPropsToProject
+  } from '$lib/layers/project-layer';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
   const selectedLayer = $derived(projectStore.selectedLayer);
+
+  /** Whether the currently selected layer is the virtual project settings layer */
+  const isProjectSettings = $derived(isProjectLayer(projectStore.selectedLayerId));
 
   // Extract property metadata from the layer's Zod schema
   const layerPropertyMetadata = $derived.by(() => {
@@ -107,6 +114,24 @@
   // Unified current values: transform + style + props (animated when keyframes exist)
   const currentValues = $derived.by(() => {
     if (!selectedLayer) return null;
+
+    // For the project settings layer, there are no keyframes, so just use static props
+    if (isProjectSettings) {
+      return {
+        transform: {
+          x: 0,
+          y: 0,
+          z: 0,
+          rotationX: 0,
+          rotationY: 0,
+          rotationZ: 0,
+          scaleX: 1,
+          scaleY: 1
+        },
+        style: { opacity: 1 },
+        props: { ...selectedLayer.props }
+      };
+    }
 
     const animatedTransform = getAnimatedTransform(
       selectedLayer.keyframes,
@@ -166,6 +191,11 @@
     value: TypedLayer[K]
   ) {
     if (!selectedLayer) return;
+    // For the project settings layer, route name change to updateProject
+    if (isProjectSettings) {
+      projectStore.updateProject({ [property]: value });
+      return;
+    }
     projectStore.updateLayer(selectedLayer.id, { [property]: value });
   }
 
@@ -266,7 +296,8 @@
   /**
    * Unified property update function.
    * Handles transform, style, and props targets.
-   * For props: runs middleware if defined (e.g., aspect ratio linking).
+   * For the project settings layer, routes props updates to projectStore.updateProject().
+   * For regular layers, handles keyframe logic and middleware.
    */
   function updateProperty(
     propertyName: string,
@@ -274,6 +305,13 @@
     target: 'transform' | 'props' | 'style'
   ) {
     if (!selectedLayer) return;
+
+    // For the project settings layer, route props directly to updateProject
+    if (isProjectSettings && target === 'props') {
+      const projectUpdates = mapProjectLayerPropsToProject({ [propertyName]: value });
+      projectStore.updateProject(projectUpdates);
+      return;
+    }
 
     if (target === 'props' && layerDefinition?.middleware && currentValues) {
       // Run middleware for props - may return multiple updates
@@ -386,7 +424,7 @@
     <div class="space-y-4 p-4">
       <!-- Layer Name -->
       <div class="space-y-2">
-        <Label for="layer-name">Name</Label>
+        <Label for="layer-name">{isProjectSettings ? 'Project Name' : 'Name'}</Label>
         <Input
           id="layer-name"
           value={selectedLayer.name}
@@ -394,336 +432,344 @@
         />
       </div>
 
-      <Separator />
+      {#if !isProjectSettings}
+        <Separator />
 
-      <!-- Enter/Exit Time -->
-      <PropertiesGroup>
-        {#snippet label()}
-          <div class="flex items-center justify-between">
-            <Label class="font-semibold">Time Range</Label>
-            {#if selectedLayer.contentDuration !== undefined}
-              {@const contentDuration = selectedLayer.contentDuration}
-              {@const contentOffset = selectedLayer.contentOffset ?? 0}
-              {@const availableContent = contentDuration - contentOffset}
-              <span class="text-[10px] text-muted-foreground/60">
-                Max: {availableContent.toFixed(1)}s
-              </span>
-            {/if}
-          </div>
-        {/snippet}
-        <div class="grid grid-cols-2 gap-2">
-          <div class="space-y-1">
-            <Label class="text-xs text-muted-foreground">Enter (s)</Label>
-            <ScrubInput
-              id="enter-time"
-              value={selectedLayer.enterTime ?? 0}
-              min={0}
-              max={selectedLayer.contentDuration !== undefined
-                ? Math.min(
-                    projectStore.state.duration,
-                    projectStore.state.duration -
-                      (selectedLayer.contentDuration - (selectedLayer.contentOffset ?? 0))
-                  )
-                : projectStore.state.duration}
-              step={0.1}
-              onchange={(v) => projectStore.setLayerEnterTime(selectedLayer.id, v)}
-            />
-          </div>
-          <div class="space-y-1">
-            <Label class="text-xs text-muted-foreground">Exit (s)</Label>
-            <ScrubInput
-              id="exit-time"
-              value={selectedLayer.exitTime ?? projectStore.state.duration}
-              min={0}
-              max={projectStore.state.duration}
-              step={0.1}
-              onchange={(v) => projectStore.setLayerExitTime(selectedLayer.id, v)}
-            />
-          </div>
-        </div>
-
-        <!-- Content offset control for time-based layers -->
-        <!-- TODO: manage like audio/video middleware -->
-        {#if selectedLayer.type === 'video' || selectedLayer.type === 'audio'}
-          {@const contentDuration = selectedLayer.contentDuration ?? 0}
-          {@const contentOffset = selectedLayer.contentOffset ?? 0}
-          {@const hasDuration = contentDuration > 0}
-          <div class="space-y-2">
+        <!-- Enter/Exit Time -->
+        <PropertiesGroup>
+          {#snippet label()}
             <div class="flex items-center justify-between">
-              <Label class="text-xs text-muted-foreground">Content Trim</Label>
-              {#if hasDuration}
+              <Label class="font-semibold">Time Range</Label>
+              {#if selectedLayer.contentDuration !== undefined}
+                {@const contentDuration = selectedLayer.contentDuration}
+                {@const contentOffset = selectedLayer.contentOffset ?? 0}
+                {@const availableContent = contentDuration - contentOffset}
                 <span class="text-[10px] text-muted-foreground/60">
-                  Duration: {contentDuration.toFixed(1)}s
+                  Max: {availableContent.toFixed(1)}s
                 </span>
               {/if}
             </div>
+          {/snippet}
+          <div class="grid grid-cols-2 gap-2">
             <div class="space-y-1">
-              <Label class="text-[10px] text-muted-foreground">Start offset (s)</Label>
+              <Label class="text-xs text-muted-foreground">Enter (s)</Label>
               <ScrubInput
-                id="content-offset"
-                value={contentOffset}
+                id="enter-time"
+                value={selectedLayer.enterTime ?? 0}
                 min={0}
-                max={hasDuration ? contentDuration - 0.1 : undefined}
+                max={selectedLayer.contentDuration !== undefined
+                  ? Math.min(
+                      projectStore.state.duration,
+                      projectStore.state.duration -
+                        (selectedLayer.contentDuration - (selectedLayer.contentOffset ?? 0))
+                    )
+                  : projectStore.state.duration}
                 step={0.1}
-                onchange={(v) => {
-                  const clamped = hasDuration ? Math.min(v, contentDuration - 0.1) : Math.max(0, v);
-                  projectStore.updateLayer(selectedLayer.id, { contentOffset: clamped });
-
-                  // Auto-adjust exitTime if it would exceed available content
-                  if (hasDuration && selectedLayer.exitTime !== undefined) {
-                    const enterTime = selectedLayer.enterTime ?? 0;
-                    const maxVisibleDuration = contentDuration - clamped;
-                    const maxExitTime = enterTime + maxVisibleDuration;
-                    if (selectedLayer.exitTime > maxExitTime) {
-                      projectStore.setLayerExitTime(selectedLayer.id, maxExitTime);
-                    }
-                  }
-                }}
+                onchange={(v) => projectStore.setLayerEnterTime(selectedLayer.id, v)}
               />
-              <p class="text-[10px] text-muted-foreground/70">
-                Where to start playing in the source media
-              </p>
             </div>
-            {#if !hasDuration && selectedLayer.props.src}
-              <p class="text-[10px] text-muted-foreground/70">
-                Upload a new file to detect duration
-              </p>
-            {/if}
-            <Button
-              variant="outline"
-              size="sm"
-              class="w-full text-xs"
-              onclick={() => projectStore.splitLayer(selectedLayer.id)}
-            >
-              Split at Playhead
-            </Button>
+            <div class="space-y-1">
+              <Label class="text-xs text-muted-foreground">Exit (s)</Label>
+              <ScrubInput
+                id="exit-time"
+                value={selectedLayer.exitTime ?? projectStore.state.duration}
+                min={0}
+                max={projectStore.state.duration}
+                step={0.1}
+                onchange={(v) => projectStore.setLayerExitTime(selectedLayer.id, v)}
+              />
+            </div>
           </div>
-        {/if}
-      </PropertiesGroup>
 
-      <Separator />
-
-      <!-- Transform -->
-      <PropertiesGroup label="Transform">
-        <!-- Position -->
-        <!-- TODO: manage like groups -->
-        <InputsWrapper
-          fields={[
-            { prop: 'position.x' as AnimatableProperty, label: 'X' },
-            { prop: 'position.y' as AnimatableProperty, label: 'Y' },
-            { prop: 'position.z' as AnimatableProperty, label: 'Z' }
-          ].map((f) => ({
-            id: f.prop,
-            labels: f.label,
-            property: f.prop,
-            addKeyframe: addKeyframe,
-            hasKeyframes: selectedLayer?.keyframes.some((k) => k.property === f.prop)
-          }))}
-        >
-          {#snippet prefix()}
-            <Label class="text-xs text-muted-foreground">Position</Label>
-            <ScrubXyz
-              valueX={currentValues?.transform.x ?? 0}
-              valueY={currentValues?.transform.y ?? 0}
-              valueZ={currentValues?.transform.z ?? 0}
-              stepXY={1}
-              stepZ={1}
-              onchangeX={(v: number) => updateProperty('x', v, 'transform')}
-              onchangeY={(v: number) => updateProperty('y', v, 'transform')}
-              onchangeZ={(v: number) => updateProperty('z', v, 'transform')}
-            />
-          {/snippet}
-
-          <ScrubInput
-            id="pos-x"
-            value={currentValues?.transform.x ?? 0}
-            onchange={(v) => updateProperty('x', v, 'transform')}
-          />
-
-          <ScrubInput
-            id="pos-y"
-            value={currentValues?.transform.y ?? 0}
-            onchange={(v) => updateProperty('y', v, 'transform')}
-          />
-          <ScrubInput
-            id="pos-z"
-            value={currentValues?.transform.z ?? 0}
-            onchange={(v) => updateProperty('z', v, 'transform')}
-          />
-        </InputsWrapper>
-
-        <!-- Rotation -->
-        <InputsWrapper
-          fields={[
-            { prop: 'rotation.x' as AnimatableProperty, label: 'X' },
-            { prop: 'rotation.y' as AnimatableProperty, label: 'Y' },
-            { prop: 'rotation.z' as AnimatableProperty, label: 'Z' }
-          ].map((f) => ({
-            id: f.prop,
-            labels: f.label,
-            property: f.prop,
-            addKeyframe: addKeyframe,
-            hasKeyframes: selectedLayer?.keyframes.some((k) => k.property === f.prop)
-          }))}
-        >
-          {#snippet prefix()}
-            <Label class="text-xs text-muted-foreground">Rotation</Label>
-            <ScrubXyz
-              valueX={currentValues?.transform.rotationY ?? 0}
-              valueY={currentValues?.transform.rotationX ?? 0}
-              valueZ={currentValues?.transform.rotationZ ?? 0}
-              stepXY={0.1}
-              stepZ={0.1}
-              invertY={true}
-              onchangeX={(v: number) => updateProperty('rotationY', v, 'transform')}
-              onchangeY={(v: number) => updateProperty('rotationX', v, 'transform')}
-              onchangeZ={(v: number) => updateProperty('rotationZ', v, 'transform')}
-            />
-          {/snippet}
-          <ScrubInput
-            id="rot-x"
-            value={currentValues?.transform.rotationX ?? 0}
-            step={0.1}
-            onchange={(v) => updateProperty('rotationX', v, 'transform')}
-          />
-          <ScrubInput
-            id="rot-y"
-            value={currentValues?.transform.rotationY ?? 0}
-            step={0.1}
-            onchange={(v) => updateProperty('rotationY', v, 'transform')}
-          />
-          <ScrubInput
-            id="rot-z"
-            value={currentValues?.transform.rotationZ ?? 0}
-            step={0.1}
-            onchange={(v) => updateProperty('rotationZ', v, 'transform')}
-          />
-        </InputsWrapper>
-
-        <!-- Scale -->
-        {@const scaleLocked = selectedLayer?.props._scaleLocked ?? false}
-        {@const currentScaleX = currentValues?.transform.scaleX ?? 1}
-        {@const currentScaleY = currentValues?.transform.scaleY ?? 1}
-        <InputsWrapper
-          fields={[
-            { prop: 'scale.x' as AnimatableProperty, label: 'X' },
-            { prop: 'scale.y' as AnimatableProperty, label: 'Y' }
-          ].map((f) => ({
-            id: f.prop,
-            labels: f.label,
-            property: f.prop,
-            addKeyframe: addKeyframe,
-            hasKeyframes: selectedLayer?.keyframes.some((k) => k.property === f.prop)
-          }))}
-        >
-          {#snippet prefix()}
-            <Label class="text-xs text-muted-foreground">Scale</Label>
-            <ScrubXyz
-              valueX={currentScaleX}
-              valueY={currentScaleY}
-              valueZ={0}
-              stepXY={0.1}
-              stepZ={0.1}
-              onchangeX={(v: number) => updateProperty('scaleX', v || 1, 'transform')}
-              onchangeY={(v: number) => updateProperty('scaleY', v || 1, 'transform')}
-              onchangeZ={() => {}}
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              class="ml-auto h-6 px-2 text-xs"
-              title={scaleLocked ? 'Unlock proportions' : 'Lock proportions'}
-              onclick={() => {
-                const newLocked = !scaleLocked;
-                const ratio = currentScaleX / currentScaleY;
-                const newProps = {
-                  ...selectedLayer.props,
-                  _scaleLocked: newLocked,
-                  _scaleRatio: ratio
-                };
-                projectStore.updateLayer(selectedLayer.id, { props: newProps });
-              }}
-            >
-              {#if scaleLocked}
-                <Link class="size-3" />
-              {:else}
-                <Unlink class="size-3" />
-              {/if}
-            </Button>
-          {/snippet}
-          <ScrubInput
-            id="scale-x"
-            value={currentScaleX}
-            step={0.1}
-            onchange={(v) => updateProperty('scaleX', v || 1, 'transform')}
-          />
-          <ScrubInput
-            id="scale-y"
-            value={currentScaleY}
-            step={0.1}
-            onchange={(v) => updateProperty('scaleY', v || 1, 'transform')}
-          />
-        </InputsWrapper>
-
-        <!-- Anchor Point -->
-        <InputWrapper id="anchor-point" label="Anchor Point">
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger>
-              {#snippet child({ props })}
-                <Button variant="outline" class="w-full justify-between" {...props}>
-                  {currentAnchorLabel}
-                  <ChevronDown class="ml-2 h-4 w-4 opacity-50" />
-                </Button>
-              {/snippet}
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content class="w-56" align="end">
-              <div class="grid grid-cols-3 gap-0">
-                {#each anchorOptions as option (option.value)}
-                  {@const isSelected = selectedLayer?.transform.anchor === option.value}
-                  {@const Icon = option.icon}
-                  <DropdownMenu.Item onclick={() => updateAnchor(option.value)}>
-                    {#snippet child({ props })}
-                      <Button variant={isSelected ? 'outline' : 'ghost'} icon={Icon} {...props} />
-                    {/snippet}
-                  </DropdownMenu.Item>
-                {/each}
+          <!-- Content offset control for time-based layers -->
+          <!-- TODO: manage like audio/video middleware -->
+          {#if selectedLayer.type === 'video' || selectedLayer.type === 'audio'}
+            {@const contentDuration = selectedLayer.contentDuration ?? 0}
+            {@const contentOffset = selectedLayer.contentOffset ?? 0}
+            {@const hasDuration = contentDuration > 0}
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <Label class="text-xs text-muted-foreground">Content Trim</Label>
+                {#if hasDuration}
+                  <span class="text-[10px] text-muted-foreground/60">
+                    Duration: {contentDuration.toFixed(1)}s
+                  </span>
+                {/if}
               </div>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
-        </InputWrapper>
-      </PropertiesGroup>
+              <div class="space-y-1">
+                <Label class="text-[10px] text-muted-foreground">Start offset (s)</Label>
+                <ScrubInput
+                  id="content-offset"
+                  value={contentOffset}
+                  min={0}
+                  max={hasDuration ? contentDuration - 0.1 : undefined}
+                  step={0.1}
+                  onchange={(v) => {
+                    const clamped = hasDuration
+                      ? Math.min(v, contentDuration - 0.1)
+                      : Math.max(0, v);
+                    projectStore.updateLayer(selectedLayer.id, { contentOffset: clamped });
 
-      <Separator />
+                    // Auto-adjust exitTime if it would exceed available content
+                    if (hasDuration && selectedLayer.exitTime !== undefined) {
+                      const enterTime = selectedLayer.enterTime ?? 0;
+                      const maxVisibleDuration = contentDuration - clamped;
+                      const maxExitTime = enterTime + maxVisibleDuration;
+                      if (selectedLayer.exitTime > maxExitTime) {
+                        projectStore.setLayerExitTime(selectedLayer.id, maxExitTime);
+                      }
+                    }
+                  }}
+                />
+                <p class="text-[10px] text-muted-foreground/70">
+                  Where to start playing in the source media
+                </p>
+              </div>
+              {#if !hasDuration && selectedLayer.props.src}
+                <p class="text-[10px] text-muted-foreground/70">
+                  Upload a new file to detect duration
+                </p>
+              {/if}
+              <Button
+                variant="outline"
+                size="sm"
+                class="w-full text-xs"
+                onclick={() => projectStore.splitLayer(selectedLayer.id)}
+              >
+                Split at Playhead
+              </Button>
+            </div>
+          {/if}
+        </PropertiesGroup>
 
-      <!-- Style -->
-      <PropertiesGroup label="Style">
-        <InputWrapper id="opacity" label="Opacity" property="opacity" {addKeyframe}>
-          <ScrubInput
-            id="opacity"
-            value={currentValues?.style.opacity ?? 1}
-            step={0.1}
-            min={0}
-            max={1}
-            onchange={(v) => updateProperty('opacity', v || 0, 'style')}
-          />
-        </InputWrapper>
-      </PropertiesGroup>
+        <Separator />
+
+        <!-- Transform -->
+        <PropertiesGroup label="Transform">
+          <!-- Position -->
+          <!-- TODO: manage like groups -->
+          <InputsWrapper
+            fields={[
+              { prop: 'position.x' as AnimatableProperty, label: 'X' },
+              { prop: 'position.y' as AnimatableProperty, label: 'Y' },
+              { prop: 'position.z' as AnimatableProperty, label: 'Z' }
+            ].map((f) => ({
+              id: f.prop,
+              labels: f.label,
+              property: f.prop,
+              addKeyframe: addKeyframe,
+              hasKeyframes: selectedLayer?.keyframes.some((k) => k.property === f.prop)
+            }))}
+          >
+            {#snippet prefix()}
+              <Label class="text-xs text-muted-foreground">Position</Label>
+              <ScrubXyz
+                valueX={currentValues?.transform.x ?? 0}
+                valueY={currentValues?.transform.y ?? 0}
+                valueZ={currentValues?.transform.z ?? 0}
+                stepXY={1}
+                stepZ={1}
+                onchangeX={(v: number) => updateProperty('x', v, 'transform')}
+                onchangeY={(v: number) => updateProperty('y', v, 'transform')}
+                onchangeZ={(v: number) => updateProperty('z', v, 'transform')}
+              />
+            {/snippet}
+
+            <ScrubInput
+              id="pos-x"
+              value={currentValues?.transform.x ?? 0}
+              onchange={(v) => updateProperty('x', v, 'transform')}
+            />
+
+            <ScrubInput
+              id="pos-y"
+              value={currentValues?.transform.y ?? 0}
+              onchange={(v) => updateProperty('y', v, 'transform')}
+            />
+            <ScrubInput
+              id="pos-z"
+              value={currentValues?.transform.z ?? 0}
+              onchange={(v) => updateProperty('z', v, 'transform')}
+            />
+          </InputsWrapper>
+
+          <!-- Rotation -->
+          <InputsWrapper
+            fields={[
+              { prop: 'rotation.x' as AnimatableProperty, label: 'X' },
+              { prop: 'rotation.y' as AnimatableProperty, label: 'Y' },
+              { prop: 'rotation.z' as AnimatableProperty, label: 'Z' }
+            ].map((f) => ({
+              id: f.prop,
+              labels: f.label,
+              property: f.prop,
+              addKeyframe: addKeyframe,
+              hasKeyframes: selectedLayer?.keyframes.some((k) => k.property === f.prop)
+            }))}
+          >
+            {#snippet prefix()}
+              <Label class="text-xs text-muted-foreground">Rotation</Label>
+              <ScrubXyz
+                valueX={currentValues?.transform.rotationY ?? 0}
+                valueY={currentValues?.transform.rotationX ?? 0}
+                valueZ={currentValues?.transform.rotationZ ?? 0}
+                stepXY={0.1}
+                stepZ={0.1}
+                invertY={true}
+                onchangeX={(v: number) => updateProperty('rotationY', v, 'transform')}
+                onchangeY={(v: number) => updateProperty('rotationX', v, 'transform')}
+                onchangeZ={(v: number) => updateProperty('rotationZ', v, 'transform')}
+              />
+            {/snippet}
+            <ScrubInput
+              id="rot-x"
+              value={currentValues?.transform.rotationX ?? 0}
+              step={0.1}
+              onchange={(v) => updateProperty('rotationX', v, 'transform')}
+            />
+            <ScrubInput
+              id="rot-y"
+              value={currentValues?.transform.rotationY ?? 0}
+              step={0.1}
+              onchange={(v) => updateProperty('rotationY', v, 'transform')}
+            />
+            <ScrubInput
+              id="rot-z"
+              value={currentValues?.transform.rotationZ ?? 0}
+              step={0.1}
+              onchange={(v) => updateProperty('rotationZ', v, 'transform')}
+            />
+          </InputsWrapper>
+
+          <!-- Scale -->
+          {@const scaleLocked = selectedLayer?.props._scaleLocked ?? false}
+          {@const currentScaleX = currentValues?.transform.scaleX ?? 1}
+          {@const currentScaleY = currentValues?.transform.scaleY ?? 1}
+          <InputsWrapper
+            fields={[
+              { prop: 'scale.x' as AnimatableProperty, label: 'X' },
+              { prop: 'scale.y' as AnimatableProperty, label: 'Y' }
+            ].map((f) => ({
+              id: f.prop,
+              labels: f.label,
+              property: f.prop,
+              addKeyframe: addKeyframe,
+              hasKeyframes: selectedLayer?.keyframes.some((k) => k.property === f.prop)
+            }))}
+          >
+            {#snippet prefix()}
+              <Label class="text-xs text-muted-foreground">Scale</Label>
+              <ScrubXyz
+                valueX={currentScaleX}
+                valueY={currentScaleY}
+                valueZ={0}
+                stepXY={0.1}
+                stepZ={0.1}
+                onchangeX={(v: number) => updateProperty('scaleX', v || 1, 'transform')}
+                onchangeY={(v: number) => updateProperty('scaleY', v || 1, 'transform')}
+                onchangeZ={() => {}}
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                class="ml-auto h-6 px-2 text-xs"
+                title={scaleLocked ? 'Unlock proportions' : 'Lock proportions'}
+                onclick={() => {
+                  const newLocked = !scaleLocked;
+                  const ratio = currentScaleX / currentScaleY;
+                  const newProps = {
+                    ...selectedLayer.props,
+                    _scaleLocked: newLocked,
+                    _scaleRatio: ratio
+                  };
+                  projectStore.updateLayer(selectedLayer.id, { props: newProps });
+                }}
+              >
+                {#if scaleLocked}
+                  <Link class="size-3" />
+                {:else}
+                  <Unlink class="size-3" />
+                {/if}
+              </Button>
+            {/snippet}
+            <ScrubInput
+              id="scale-x"
+              value={currentScaleX}
+              step={0.1}
+              onchange={(v) => updateProperty('scaleX', v || 1, 'transform')}
+            />
+            <ScrubInput
+              id="scale-y"
+              value={currentScaleY}
+              step={0.1}
+              onchange={(v) => updateProperty('scaleY', v || 1, 'transform')}
+            />
+          </InputsWrapper>
+
+          <!-- Anchor Point -->
+          <InputWrapper id="anchor-point" label="Anchor Point">
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger>
+                {#snippet child({ props })}
+                  <Button variant="outline" class="w-full justify-between" {...props}>
+                    {currentAnchorLabel}
+                    <ChevronDown class="ml-2 h-4 w-4 opacity-50" />
+                  </Button>
+                {/snippet}
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content class="w-56" align="end">
+                <div class="grid grid-cols-3 gap-0">
+                  {#each anchorOptions as option (option.value)}
+                    {@const isSelected = selectedLayer?.transform.anchor === option.value}
+                    {@const Icon = option.icon}
+                    <DropdownMenu.Item onclick={() => updateAnchor(option.value)}>
+                      {#snippet child({ props })}
+                        <Button variant={isSelected ? 'outline' : 'ghost'} icon={Icon} {...props} />
+                      {/snippet}
+                    </DropdownMenu.Item>
+                  {/each}
+                </div>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          </InputWrapper>
+        </PropertiesGroup>
+
+        <Separator />
+
+        <!-- Style -->
+        <PropertiesGroup label="Style">
+          <InputWrapper id="opacity" label="Opacity" property="opacity" {addKeyframe}>
+            <ScrubInput
+              id="opacity"
+              value={currentValues?.style.opacity ?? 1}
+              step={0.1}
+              min={0}
+              max={1}
+              onchange={(v) => updateProperty('opacity', v || 0, 'style')}
+            />
+          </InputWrapper>
+        </PropertiesGroup>
+      {/if}
 
       <!-- Layer-specific properties (dynamic based on schema) -->
       {#if propertyLayout.items.length > 0}
         <Separator />
-        <PropertiesGroup label="Layer Properties">
+        <PropertiesGroup label={isProjectSettings ? 'Project Properties' : 'Layer Properties'}>
           {#each propertyLayout.items as item (item.kind === 'group' ? `group:${item.group.id}` : `field:${item.field.name}`)}
             {#if item.kind === 'group'}
               <InputsWrapper
                 fields={item.fields.map((field) => ({
                   id: `props.${field.name}`,
                   labels: field.description || field.name,
-                  property: `props.${field.name}` as AnimatableProperty,
-                  addKeyframe,
-                  hasKeyframes: selectedLayer.keyframes.some(
-                    (k) => k.property === `props.${field.name}`
-                  )
+                  property: isProjectSettings
+                    ? undefined
+                    : (`props.${field.name}` as AnimatableProperty),
+                  addKeyframe: isProjectSettings ? undefined : addKeyframe,
+                  hasKeyframes: isProjectSettings
+                    ? false
+                    : selectedLayer.keyframes.some(
+                        (k) => k.property === `props.${field.name}`
+                      )
                 }))}
               >
                 {#snippet prefix()}
@@ -755,8 +801,8 @@
               <InputWrapper
                 id={item.field.name}
                 label={item.field.description || item.field.name}
-                property={`props.${item.field.name}`}
-                {addKeyframe}
+                property={isProjectSettings ? undefined : `props.${item.field.name}`}
+                addKeyframe={isProjectSettings ? undefined : addKeyframe}
               >
                 <InputPropery
                   metadata={item.field}
@@ -777,48 +823,55 @@
         </PropertiesGroup>
       {/if}
 
-      <Separator />
+      {#if !isProjectSettings}
+        <Separator />
 
-      <!-- Animation Presets -->
-      <PropertiesGroup label="Animation Presets">
-        <InputsWrapper
-          fields={[
-            {
-              id: 'animation-presets',
-              labels: 'Animation'
-            },
-            {
-              id: 'preset-duration',
-              labels: 'Duration (s)'
-            }
-          ]}
-        >
-          <Select
-            bind:value={selectedPresetId}
-            options={animationPresets.map((preset) => ({ label: preset.name, value: preset.id }))}
-            trigger={{ class: 'w-full' }}
-          />
-          <ScrubInput
-            id="preset-duration"
-            value={presetDuration}
-            min={0.1}
-            step={0.1}
-            onchange={(v) => (presetDuration = v)}
-          />
-        </InputsWrapper>
+        <!-- Animation Presets -->
+        <PropertiesGroup label="Animation Presets">
+          <InputsWrapper
+            fields={[
+              {
+                id: 'animation-presets',
+                labels: 'Animation'
+              },
+              {
+                id: 'preset-duration',
+                labels: 'Duration (s)'
+              }
+            ]}
+          >
+            <Select
+              bind:value={selectedPresetId}
+              options={animationPresets.map((preset) => ({ label: preset.name, value: preset.id }))}
+              trigger={{ class: 'w-full' }}
+            />
+            <ScrubInput
+              id="preset-duration"
+              value={presetDuration}
+              min={0.1}
+              step={0.1}
+              onchange={(v) => (presetDuration = v)}
+            />
+          </InputsWrapper>
 
-        <Button variant="default" class="w-full" onclick={applyPreset} disabled={!selectedPresetId}>
-          <Sparkles class="mr-2 h-4 w-4" />
-          Apply Preset
-        </Button>
-      </PropertiesGroup>
+          <Button
+            variant="default"
+            class="w-full"
+            onclick={applyPreset}
+            disabled={!selectedPresetId}
+          >
+            <Sparkles class="mr-2 h-4 w-4" />
+            Apply Preset
+          </Button>
+        </PropertiesGroup>
 
-      <Separator />
+        <Separator />
 
-      <!-- Keyframes -->
-      <PropertiesGroup label={`Keyframes (${selectedLayer.keyframes.length})`}>
-        <LayerKeyframes layer={selectedLayer} />
-      </PropertiesGroup>
+        <!-- Keyframes -->
+        <PropertiesGroup label={`Keyframes (${selectedLayer.keyframes.length})`}>
+          <LayerKeyframes layer={selectedLayer} />
+        </PropertiesGroup>
+      {/if}
     </div>
   {:else}
     <div class="flex items-center justify-center p-8">

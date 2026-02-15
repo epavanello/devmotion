@@ -9,6 +9,11 @@ import { SvelteSet } from 'svelte/reactivity';
 import { getLayerTransform, getLayerStyle, getLayerProps } from '$lib/engine/layer-rendering';
 import { tick } from 'svelte';
 import type { TypedLayer } from '$lib/layers/typed-registry';
+import {
+  PROJECT_LAYER_ID,
+  isProjectLayer,
+  createVirtualProjectLayer
+} from '$lib/layers/project-layer';
 
 /**
  * Cached layer data for a single frame
@@ -57,6 +62,8 @@ export class ProjectStore {
       layers: [],
       fontFamily: 'Inter'
     };
+    // Auto-select the project settings layer on creation
+    this.selectedLayerId = PROJECT_LAYER_ID;
   }
 
   viewport = $state<ViewportSettings>({
@@ -107,6 +114,9 @@ export class ProjectStore {
   }
 
   async removeLayer(layerId: string) {
+    // Never allow removing the virtual project settings layer
+    if (isProjectLayer(layerId)) return;
+
     // Find the layer to check if it has uploaded files to clean up
     const layer = this.state.layers.find((l) => l.id === layerId);
 
@@ -564,7 +574,7 @@ export class ProjectStore {
     this.isLoading = true;
     this.#state = project;
     await tick();
-    this.selectedLayerId = null;
+    this.selectedLayerId = PROJECT_LAYER_ID;
     this.isPlaying = false;
     this.isLoading = false;
   }
@@ -584,6 +594,9 @@ export class ProjectStore {
 
   get selectedLayer(): TypedLayer | null {
     if (!this.selectedLayerId) return null;
+    if (isProjectLayer(this.selectedLayerId)) {
+      return createVirtualProjectLayer(this.state);
+    }
     return this.state.layers.find((l) => l.id === this.selectedLayerId) || null;
   }
 

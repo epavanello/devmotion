@@ -7,6 +7,11 @@
   import { cn } from '$lib/utils';
   import type { TypedLayer } from '$lib/layers/typed-registry';
   import { SvelteSet } from 'svelte/reactivity';
+  import {
+    PROJECT_LAYER_ID,
+    PROJECT_LAYER_TYPE,
+    isProjectLayer
+  } from '$lib/layers/project-layer';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -196,6 +201,26 @@
   ontouchmove={handleTouchMove}
   ontouchend={handleTouchEnd}
 >
+  <!-- Project Settings Layer (always fixed at top, non-draggable, non-deletable) -->
+  {@const ProjectIcon = getLayerDefinition(PROJECT_LAYER_TYPE).icon}
+  <div
+    class={cn(
+      'flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 transition-colors hover:bg-muted/50',
+      {
+        'bg-muted': isProjectLayer(projectStore.selectedLayerId)
+      }
+    )}
+    onclick={() => selectLayer(PROJECT_LAYER_ID)}
+    onkeydown={(e) => handleKeyDown(e, PROJECT_LAYER_ID)}
+    role="button"
+    tabindex="0"
+  >
+    <ProjectIcon class="size-4 shrink-0" />
+    <div class="flex-1 truncate text-sm font-medium">
+      {projectStore.state.name}
+    </div>
+  </div>
+
   {#each layerTree as { layer, children, index } (layer.id)}
     {@const Icon = getLayerDefinition(layer.type).icon}
     {@const isGroup = layer.type === 'group'}

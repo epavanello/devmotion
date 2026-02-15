@@ -4,7 +4,6 @@
   import {
     Download,
     Save,
-    Settings,
     User,
     LogOut,
     Keyboard,
@@ -21,7 +20,6 @@
 
   const editorState = $derived(getEditorState());
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-  import ProjectSettingsDialog from './project-settings-dialog.svelte';
   import { uiStore } from '$lib/stores/ui.svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
   import { getUser, signOut } from '$lib/functions/auth.remote';
@@ -67,7 +65,6 @@
   let headerOpen = $state(false);
 
   let showExportDialog = $state(false);
-  let showProjectSettings = $state(false);
 
   const user = getUser();
 
@@ -110,10 +107,6 @@
     }
 
     showExportDialog = true;
-  }
-
-  function openProjectSettings() {
-    showProjectSettings = true;
   }
 
   async function handleLogin() {
@@ -169,16 +162,6 @@
       href: '/gallery',
       target: '_blank',
       disabled: isRecording,
-      visible: true
-    },
-    {
-      id: 'settings',
-      label: 'Settings',
-      tooltip: 'Project Settings (Dimensions, Duration, etc.)',
-      icon: Settings,
-      variant: 'ghost',
-      onclick: openProjectSettings,
-      disabled: isRecording || !canEdit,
       visible: true
     },
     {
@@ -422,5 +405,3 @@
   bind:isRecording
   {projectId}
 />
-
-<ProjectSettingsDialog bind:open={showProjectSettings} />
