@@ -3,9 +3,16 @@
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
   import * as Popover from '$lib/components/ui/popover';
-  import { Trash2, Palette, Move, RotateCw, Scale, Eye, Clock } from '@lucide/svelte';
+  import { Trash2, Palette, Move, RotateCw, Scale, Eye, Clock, ScanSearch } from '@lucide/svelte';
   import ScrubInput from './panels/scrub-input.svelte';
-
+  import {
+    getPropertyCategory,
+    getTransformInputId,
+    getStyleInputId,
+    isTransformProperty,
+    isStyleProperty,
+    type AnimatableProperty
+  } from '$lib/utils/property-names';
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
 
@@ -13,9 +20,10 @@
     keyframe: Keyframe;
     layerId: string;
     readonlyTime?: boolean;
+    onGoToPropertyClick?: () => void;
   }
 
-  let { keyframe, layerId, readonlyTime = false }: Props = $props();
+  let { keyframe, layerId, readonlyTime = false, onGoToPropertyClick }: Props = $props();
 
   // Type-safe strategy labels - ensures all strategies have corresponding labels
   type ContinuousStrategy = Extract<Interpolation, { family: 'continuous' }>['strategy'];
@@ -79,7 +87,6 @@
       'rotation.z': 'Rotation Z',
       'scale.x': 'Scale X',
       'scale.y': 'Scale Y',
-      'scale.z': 'Scale Z',
       opacity: 'Opacity',
       color: 'Color'
     };
@@ -93,11 +100,11 @@
     return property;
   }
 
-  function getPropertyIcon(property: string) {
-    if (property.startsWith('position.')) return Move;
+  function getPropertyIcon(property: AnimatableProperty) {
+    if (isTransformProperty(property)) return Move;
     if (property.startsWith('rotation.')) return RotateCw;
     if (property.startsWith('scale.')) return Scale;
-    if (property === 'opacity') return Eye;
+    if (isStyleProperty(property)) return Eye;
     if (property === 'color') return Palette;
     return Move;
   }
@@ -170,6 +177,48 @@
   }
 
   const Icon = $derived(getPropertyIcon(keyframe.property));
+
+  /**
+   * Maps keyframe property to the input ID in properties panel
+   * Uses unified naming convention from property-names utility
+   */
+  function getInputIdFromProperty(property: AnimatableProperty): string {
+    const category = getPropertyCategory(property);
+
+    if (category === 'transform') {
+      return getTransformInputId(property);
+    }
+    if (category === 'style') {
+      return getStyleInputId(property);
+    }
+    // For props.* properties, use the property name directly
+    if (property.startsWith('props.')) {
+      return property;
+    }
+
+    // Fallback: use the property name as-is
+    return property;
+  }
+
+  /**
+   * Scroll to and focus the corresponding input in the properties panel
+   * Uses ID attribute to find the input
+   */
+  function handleGoToProperty() {
+    onGoToPropertyClick?.();
+    const property = keyframe.property;
+    const inputId = getInputIdFromProperty(property);
+
+    // Find input by ID
+    const input = document.getElementById(inputId) as HTMLElement | null;
+    if (input) {
+      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => {
+        (input as HTMLInputElement)?.focus?.();
+        (input as HTMLInputElement)?.select?.();
+      }, 500);
+    }
+  }
 </script>
 
 <div class="group rounded-lg border bg-muted/20 p-3 transition-colors hover:bg-muted/40">
@@ -183,17 +232,26 @@
       <span class="text-sm font-semibold">{getPropertyLabel(keyframe.property)}</span>
     </button>
 
+    <!-- Jump to property button -->
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      class="opacity-0 transition-opacity group-hover:opacity-100"
+      onclick={handleGoToProperty}
+      title="Jump to property"
+      icon={ScanSearch}
+    />
+
     <Popover.Root>
       <Popover.Trigger>
         {#snippet child({ props })}
           <Button
             variant="ghost"
-            size="icon"
-            class="h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
+            size="icon-sm"
+            class="opacity-0 transition-opacity group-hover:opacity-100"
+            icon={Trash2}
             {...props}
-          >
-            <Trash2 class="h-3.5 w-3.5" />
-          </Button>
+          />
         {/snippet}
       </Popover.Trigger>
       <Popover.Content class="w-64" align="end" side="left">

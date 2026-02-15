@@ -77,9 +77,11 @@
       projectStore.removeKeyframe(layerId, keyframe.id);
     }
   }
+
+  let popoverOpen = $state(false);
 </script>
 
-<Popover.Root>
+<Popover.Root bind:open={popoverOpen}>
   <Popover.Trigger>
     {#snippet child({ props })}
       <div
@@ -118,7 +120,12 @@
       <!-- Keyframe Cards -->
       <div class="space-y-2">
         {#each keyframes as keyframe (keyframe.id)}
-          <KeyframeCard {keyframe} {layerId} readonlyTime />
+          <KeyframeCard
+            {keyframe}
+            {layerId}
+            readonlyTime
+            onGoToPropertyClick={() => (popoverOpen = false)}
+          />
         {/each}
       </div>
 

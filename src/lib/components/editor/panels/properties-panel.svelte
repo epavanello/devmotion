@@ -34,6 +34,7 @@
     getAnimatedStyle,
     getAnimatedProps
   } from '$lib/engine/interpolation';
+  import { ANIMATABLE_PROPERTIES } from '$lib/utils/property-names';
   import { getLayerDefinition, getLayerSchema } from '$lib/layers/registry';
   import { extractPropertyMetadata } from '$lib/layers/base';
   import { animationPresets } from '$lib/engine/presets';
@@ -169,23 +170,12 @@
     projectStore.updateLayer(selectedLayer.id, { [property]: value });
   }
 
-  // Map property names to AnimatableProperty format
-  const transformPropertyMap: Record<string, AnimatableProperty> = {
-    x: 'position.x',
-    y: 'position.y',
-    z: 'position.z',
-    rotationX: 'rotation.x',
-    rotationY: 'rotation.y',
-    rotationZ: 'rotation.z',
-    scaleX: 'scale.x',
-    scaleY: 'scale.y'
-  };
-
   function mapToAnimatable(
     target: 'transform' | 'props' | 'style',
     propertyName: string
   ): AnimatableProperty {
-    if (target === 'transform') return transformPropertyMap[propertyName];
+    if (target === 'transform')
+      return ANIMATABLE_PROPERTIES[propertyName as keyof typeof ANIMATABLE_PROPERTIES];
     if (target === 'props') return `props.${propertyName}` as AnimatableProperty;
     return propertyName as AnimatableProperty; // style: 'opacity'
   }
@@ -381,6 +371,7 @@
 <div
   class:pointer-events-none={projectStore.isRecording}
   class:opacity-50={projectStore.isRecording}
+  data-panel="properties"
 >
   {#if selectedLayer}
     <div class="space-y-4 p-4">
@@ -509,11 +500,11 @@
         <!-- TODO: manage like groups -->
         <InputsWrapper
           fields={[
-            { prop: 'position.x' as AnimatableProperty, label: 'X' },
-            { prop: 'position.y' as AnimatableProperty, label: 'Y' },
-            { prop: 'position.z' as AnimatableProperty, label: 'Z' }
+            { prop: 'position.x' as AnimatableProperty, label: 'X', id: 'transform.position.x' },
+            { prop: 'position.y' as AnimatableProperty, label: 'Y', id: 'transform.position.y' },
+            { prop: 'position.z' as AnimatableProperty, label: 'Z', id: 'transform.position.z' }
           ].map((f) => ({
-            id: f.prop,
+            for: f.id,
             labels: f.label,
             property: f.prop,
             addKeyframe: addKeyframe,
@@ -535,18 +526,18 @@
           {/snippet}
 
           <ScrubInput
-            id="pos-x"
+            id="transform.position.x"
             value={currentValues?.transform.x ?? 0}
             onchange={(v) => updateProperty('x', v, 'transform')}
           />
 
           <ScrubInput
-            id="pos-y"
+            id="transform.position.y"
             value={currentValues?.transform.y ?? 0}
             onchange={(v) => updateProperty('y', v, 'transform')}
           />
           <ScrubInput
-            id="pos-z"
+            id="transform.position.z"
             value={currentValues?.transform.z ?? 0}
             onchange={(v) => updateProperty('z', v, 'transform')}
           />
@@ -555,11 +546,11 @@
         <!-- Rotation -->
         <InputsWrapper
           fields={[
-            { prop: 'rotation.x' as AnimatableProperty, label: 'X' },
-            { prop: 'rotation.y' as AnimatableProperty, label: 'Y' },
-            { prop: 'rotation.z' as AnimatableProperty, label: 'Z' }
+            { prop: 'rotation.x' as AnimatableProperty, label: 'X', id: 'transform.rotation.x' },
+            { prop: 'rotation.y' as AnimatableProperty, label: 'Y', id: 'transform.rotation.y' },
+            { prop: 'rotation.z' as AnimatableProperty, label: 'Z', id: 'transform.rotation.z' }
           ].map((f) => ({
-            id: f.prop,
+            for: f.id,
             labels: f.label,
             property: f.prop,
             addKeyframe: addKeyframe,
@@ -581,19 +572,19 @@
             />
           {/snippet}
           <ScrubInput
-            id="rot-x"
+            id="transform.rotation.x"
             value={currentValues?.transform.rotationX ?? 0}
             step={0.1}
             onchange={(v) => updateProperty('rotationX', v, 'transform')}
           />
           <ScrubInput
-            id="rot-y"
+            id="transform.rotation.y"
             value={currentValues?.transform.rotationY ?? 0}
             step={0.1}
             onchange={(v) => updateProperty('rotationY', v, 'transform')}
           />
           <ScrubInput
-            id="rot-z"
+            id="transform.rotation.z"
             value={currentValues?.transform.rotationZ ?? 0}
             step={0.1}
             onchange={(v) => updateProperty('rotationZ', v, 'transform')}
@@ -606,10 +597,10 @@
         {@const currentScaleY = currentValues?.transform.scaleY ?? 1}
         <InputsWrapper
           fields={[
-            { prop: 'scale.x' as AnimatableProperty, label: 'X' },
-            { prop: 'scale.y' as AnimatableProperty, label: 'Y' }
+            { prop: 'scale.x' as AnimatableProperty, label: 'X', id: 'transform.scale.x' },
+            { prop: 'scale.y' as AnimatableProperty, label: 'Y', id: 'transform.scale.y' }
           ].map((f) => ({
-            id: f.prop,
+            for: f.id,
             labels: f.label,
             property: f.prop,
             addKeyframe: addKeyframe,
@@ -652,13 +643,13 @@
             </Button>
           {/snippet}
           <ScrubInput
-            id="scale-x"
+            id="transform.scale.x"
             value={currentScaleX}
             step={0.1}
             onchange={(v) => updateProperty('scaleX', v || 1, 'transform')}
           />
           <ScrubInput
-            id="scale-y"
+            id="transform.scale.y"
             value={currentScaleY}
             step={0.1}
             onchange={(v) => updateProperty('scaleY', v || 1, 'transform')}
@@ -666,7 +657,7 @@
         </InputsWrapper>
 
         <!-- Anchor Point -->
-        <InputWrapper id="anchor-point" label="Anchor Point">
+        <InputWrapper for="anchor-point" label="Anchor Point">
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
               {#snippet child({ props })}
@@ -697,9 +688,9 @@
 
       <!-- Style -->
       <PropertiesGroup label="Style">
-        <InputWrapper id="opacity" label="Opacity" property="opacity" {addKeyframe}>
+        <InputWrapper for="style.opacity" label="Opacity" property="opacity" {addKeyframe}>
           <ScrubInput
-            id="opacity"
+            id="style.opacity"
             value={currentValues?.style.opacity ?? 1}
             step={0.1}
             min={0}
@@ -717,7 +708,7 @@
             {#if item.kind === 'group'}
               <InputsWrapper
                 fields={item.fields.map((field) => ({
-                  id: `props.${field.name}`,
+                  for: `props.${field.name}`,
                   labels: field.description || field.name,
                   property: `props.${field.name}` as AnimatableProperty,
                   addKeyframe,
@@ -753,7 +744,7 @@
               </InputsWrapper>
             {:else}
               <InputWrapper
-                id={item.field.name}
+                for={`props.${item.field.name}`}
                 label={item.field.description || item.field.name}
                 property={`props.${item.field.name}`}
                 {addKeyframe}
@@ -784,11 +775,11 @@
         <InputsWrapper
           fields={[
             {
-              id: 'animation-presets',
+              for: 'animation-presets',
               labels: 'Animation'
             },
             {
-              id: 'preset-duration',
+              for: 'preset-duration',
               labels: 'Duration (s)'
             }
           ]}

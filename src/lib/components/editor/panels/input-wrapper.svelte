@@ -9,13 +9,13 @@
   const projectStore = $derived(editorState.project);
 
   const {
-    id,
+    for: htmlFor,
     label,
     children,
     property,
     addKeyframe
   }: {
-    id: string;
+    for: string;
     label: string;
     children: Snippet;
   } & (
@@ -44,7 +44,7 @@
     {#if property}
       <InputPin {property} active={!!hasKeyframes} {label} {addKeyframe} {removeKeyframes} />
     {/if}
-    <Label for={id} class="text-[10px] text-muted-foreground">{label}</Label>
+    <Label for={htmlFor} class="text-[10px] text-muted-foreground">{label}</Label>
   </div>
 
   {@render children()}
