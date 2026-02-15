@@ -15,14 +15,20 @@ export function getLayerTransform(layer: TypedLayer, currentTime: number): Trans
   const animatedTransform = getAnimatedTransform(layer.keyframes, currentTime);
 
   return {
-    x: animatedTransform.position?.x ?? layer.transform.x,
-    y: animatedTransform.position?.y ?? layer.transform.y,
-    z: animatedTransform.position?.z ?? layer.transform.z,
-    rotationX: animatedTransform.rotation?.x ?? layer.transform.rotationX,
-    rotationY: animatedTransform.rotation?.y ?? layer.transform.rotationY,
-    rotationZ: animatedTransform.rotation?.z ?? layer.transform.rotationZ,
-    scaleX: animatedTransform.scale?.x ?? layer.transform.scaleX,
-    scaleY: animatedTransform.scale?.y ?? layer.transform.scaleY,
+    position: {
+      x: animatedTransform.position?.x ?? layer.transform.position.x,
+      y: animatedTransform.position?.y ?? layer.transform.position.y,
+      z: animatedTransform.position?.z ?? layer.transform.position.z
+    },
+    rotation: {
+      x: animatedTransform.rotation?.x ?? layer.transform.rotation.x,
+      y: animatedTransform.rotation?.y ?? layer.transform.rotation.y,
+      z: animatedTransform.rotation?.z ?? layer.transform.rotation.z
+    },
+    scale: {
+      x: animatedTransform.scale?.x ?? layer.transform.scale.x,
+      y: animatedTransform.scale?.y ?? layer.transform.scale.y
+    },
     anchor: layer.transform.anchor ?? 'center'
   };
 }

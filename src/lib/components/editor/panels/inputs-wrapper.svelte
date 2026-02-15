@@ -16,7 +16,7 @@
     prefix
   }: {
     fields: ({
-      id: string;
+      for: string;
       labels: string;
     } & (
       | {
@@ -51,7 +51,7 @@
   {/if}
 
   <div class="flex gap-1">
-    {#each fields as field (field.id)}
+    {#each fields as field (field.for)}
       <div class="flex flex-1 items-center gap-0.5">
         {#if field.property}
           <InputPin
@@ -62,7 +62,7 @@
             {removeKeyframes}
           />
         {/if}
-        <Label for={field.id} class="text-[10px] text-muted-foreground">{field.labels}</Label>
+        <Label for={field.for} class="text-[10px] text-muted-foreground">{field.labels}</Label>
       </div>
     {/each}
   </div>

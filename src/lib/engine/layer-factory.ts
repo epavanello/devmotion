@@ -24,12 +24,12 @@ export function createLayer<T extends LayerTypeString>(
   type: T | string,
   override?: {
     props?: Partial<LayerProps<T>>;
-    trasform?: Partial<Transform>;
+    transform?: Partial<Transform>;
     layer?: Partial<Omit<TypedLayer, 'transform' | 'style' | 'keyframes' | 'props'>>;
     projectDimensions?: { width: number; height: number };
   }
 ): TypedLayer {
-  const { x = 0, y = 0 } = override?.trasform || {};
+  const { x = 0, y = 0 } = override?.transform?.position || {};
   const definition = getLayerDefinition(type);
 
   // Extract default values from the Zod schema
@@ -71,16 +71,11 @@ export function createLayer<T extends LayerTypeString>(
     name: definition.label,
     type,
     transform: {
-      x,
-      y,
-      z: 0,
-      rotationX: 0,
-      rotationY: 0,
-      rotationZ: 0,
-      scaleX: 1,
-      scaleY: 1,
+      position: { x, y, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 1, y: 1 },
       anchor: 'center',
-      ...override?.trasform
+      ...override?.transform
     },
     style: {
       opacity: 1

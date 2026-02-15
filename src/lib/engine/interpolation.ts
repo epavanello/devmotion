@@ -4,6 +4,7 @@
 import BezierEasing from 'bezier-easing';
 import type { Interpolation, Keyframe, AnimatableProperty } from '$lib/types/animation';
 import type { PropertyMetadata } from '$lib/layers/base';
+import type { ContinuousInterpolationStrategy } from '$lib/schemas/animation';
 
 /**
  * Main interpolation function - dispatches to family-specific interpolators
@@ -12,23 +13,21 @@ export function interpolateValue(
   startValue: unknown,
   endValue: unknown,
   progress: number,
-  interpolation: Interpolation = { family: 'continuous', strategy: 'linear' }
+  interpolation?: Interpolation
 ): unknown {
+  if (!interpolation) {
+    return endValue;
+  }
   switch (interpolation.family) {
     case 'continuous':
       return interpolateContinuous(startValue, endValue, progress, interpolation.strategy);
-
     case 'discrete':
       return interpolateDiscrete(startValue, endValue, progress, interpolation.strategy);
-
     case 'quantized':
       return interpolateQuantized(startValue, endValue, progress, interpolation);
-
     case 'text':
       return interpolateText(startValue, endValue, progress, interpolation);
-
     default:
-      console.warn('Unknown interpolation family:', interpolation);
       return progress >= 1 ? endValue : startValue;
   }
 }
@@ -40,7 +39,7 @@ function interpolateContinuous(
   start: unknown,
   end: unknown,
   progress: number,
-  strategy: string
+  strategy: ContinuousInterpolationStrategy
 ): number {
   if (typeof start !== 'number' || typeof end !== 'number') {
     throw new Error('continuous interpolation requires numeric values');
@@ -173,7 +172,7 @@ function interpolateText(
 /**
  * Get easing function for continuous interpolation strategies
  */
-function getEasingFunction(strategy: string): (t: number) => number {
+function getEasingFunction(strategy: ContinuousInterpolationStrategy): (t: number) => number {
   switch (strategy) {
     case 'linear':
       return (t) => t;

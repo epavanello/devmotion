@@ -16,7 +16,12 @@
 
   function addLayer(type: LiteralUnion<LayerTypeString, string>) {
     const layer = createLayer(type, {
-      trasform: { x: 0, y: 0 },
+      transform: {
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1 },
+        anchor: 'center'
+      },
       projectDimensions: {
         width: projectStore.state.width,
         height: projectStore.state.height

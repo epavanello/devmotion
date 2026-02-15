@@ -8,6 +8,7 @@
 
   let {
     value = $bindable(),
+    placeholder,
     options,
     root,
     trigger,
@@ -15,7 +16,8 @@
     group,
     item
   }: {
-    value: string;
+    value?: string;
+    placeholder?: string;
     options: {
       value: string;
       label: string;
@@ -34,7 +36,7 @@
 
 <Select.Root {...root} bind:value type="single">
   <Select.Trigger {...trigger}>
-    {value}
+    {value || placeholder}
   </Select.Trigger>
 
   <Select.Content {...content}>

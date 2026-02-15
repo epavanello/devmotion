@@ -73,7 +73,7 @@
       <p class="py-4 text-center text-sm text-muted-foreground">No keyframes found</p>
     {:else}
       {#each filteredKeyframes as keyframe (keyframe.id)}
-        <KeyframeCard {keyframe} layerId={layer.id} />
+        <KeyframeCard {keyframe} layerId={layer.id} layerType={layer.type} />
       {/each}
     {/if}
   </div>
