@@ -324,8 +324,8 @@ export class ProjectStore {
               z: l.transform.rotation.z + gt.rotation.z
             },
             scale: {
-              x: l.transform.scale.x + gt.scale.x,
-              y: l.transform.scale.y + gt.scale.y
+              x: l.transform.scale.x * gt.scale.x,
+              y: l.transform.scale.y * gt.scale.y
             }
           };
         }

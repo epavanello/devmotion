@@ -45,7 +45,7 @@
   import { SvelteSet } from 'svelte/reactivity';
   import PropertiesGroup from './properties-group.svelte';
   import InputsWrapper from './inputs-wrapper.svelte';
-  import InputPropery from './input-propery.svelte';
+  import InputProperty from './input-property.svelte';
   import LayerKeyframes from './layer-keyframes.svelte';
   import type { TypedLayer } from '$lib/layers/typed-registry';
   import { Select } from '$lib/components/ui/select';
@@ -116,9 +116,11 @@
 
     return {
       transform: {
-        x: animatedTransform.position.x ?? selectedLayer.transform.position.x,
-        y: animatedTransform.position.y ?? selectedLayer.transform.position.y,
-        z: animatedTransform.position.z ?? selectedLayer.transform.position.z,
+        position: {
+          x: animatedTransform.position.x ?? selectedLayer.transform.position.x,
+          y: animatedTransform.position.y ?? selectedLayer.transform.position.y,
+          z: animatedTransform.position.z ?? selectedLayer.transform.position.z
+        },
         rotation: {
           x: animatedTransform.rotation.x ?? selectedLayer.transform.rotation.x,
           y: animatedTransform.rotation.y ?? selectedLayer.transform.rotation.y,
@@ -185,7 +187,6 @@
     }
     return propertyName as AnimatableProperty; // style: 'opacity'
   }
-
 
   /**
    * Helper to update an animatable property - handles keyframe logic.
@@ -254,7 +255,6 @@
     value: unknown,
     target: 'transform' | 'props' | 'style'
   ) {
-    console.log('updateProperty', propertyName, value, target);
     if (!selectedLayer) return;
 
     if (target === 'props' && layerDefinition?.middleware && currentValues) {
@@ -316,9 +316,9 @@
     if (!selectedLayer || !currentValues) return;
 
     const propertyValueMap: Record<string, number> = {
-      'position.x': currentValues.transform.x,
-      'position.y': currentValues.transform.y,
-      'position.z': currentValues.transform.z,
+      'position.x': currentValues.transform.position.x,
+      'position.y': currentValues.transform.position.y,
+      'position.z': currentValues.transform.position.z,
       'rotation.x': currentValues.transform.rotation.x,
       'rotation.y': currentValues.transform.rotation.y,
       'rotation.z': currentValues.transform.rotation.z,
@@ -504,9 +504,9 @@
           {#snippet prefix()}
             <Label class="text-xs text-muted-foreground">Position</Label>
             <ScrubXyz
-              valueX={currentValues?.transform.x ?? 0}
-              valueY={currentValues?.transform.y ?? 0}
-              valueZ={currentValues?.transform.z ?? 0}
+              valueX={currentValues?.transform.position.x ?? 0}
+              valueY={currentValues?.transform.position.y ?? 0}
+              valueZ={currentValues?.transform.position.z ?? 0}
               stepXY={1}
               stepZ={1}
               onchangeX={(v: number) => updateProperty('position.x', v, 'transform')}
@@ -517,18 +517,18 @@
 
           <ScrubInput
             id="transform.position.x"
-            value={currentValues?.transform.x ?? 0}
+            value={currentValues?.transform.position.x ?? 0}
             onchange={(v) => updateProperty('position.x', v, 'transform')}
           />
 
           <ScrubInput
             id="transform.position.y"
-            value={currentValues?.transform.y ?? 0}
+            value={currentValues?.transform.position.y ?? 0}
             onchange={(v) => updateProperty('position.y', v, 'transform')}
           />
           <ScrubInput
             id="transform.position.z"
-            value={currentValues?.transform.z ?? 0}
+            value={currentValues?.transform.position.z ?? 0}
             onchange={(v) => updateProperty('position.z', v, 'transform')}
           />
         </InputsWrapper>
@@ -724,7 +724,7 @@
                 {/snippet}
 
                 {#each item.fields as field (field.name)}
-                  <InputPropery
+                  <InputProperty
                     metadata={field}
                     value={currentValues?.props[field.name]}
                     onUpdateProp={(name, v) => updateProperty(name, v, 'props')}
@@ -739,7 +739,7 @@
                 property={`props.${item.field.name}`}
                 {addKeyframe}
               >
-                <InputPropery
+                <InputProperty
                   metadata={item.field}
                   value={currentValues?.props[item.field.name]}
                   onUpdateProp={(name, v) => updateProperty(name, v, 'props')}

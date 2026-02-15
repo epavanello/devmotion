@@ -19,8 +19,7 @@
   } from '$lib/utils/property-names';
   import {
     getStrategyOptionsForFamilies,
-    getSupportedInterpolationFamilies,
-    getDefaultInterpolationForProperty
+    getSupportedInterpolationFamilies
   } from '$lib/utils/interpolation-utils';
   import Select from '../ui/select/select.svelte';
   const editorState = $derived(getEditorState());
@@ -88,9 +87,9 @@
   }
 
   function getPropertyIcon(property: AnimatableProperty) {
-    if (isTransformProperty(property)) return Move;
     if (property.startsWith('rotation.')) return RotateCw;
     if (property.startsWith('scale.')) return Scale;
+    if (isTransformProperty(property)) return Move;
     if (isStyleProperty(property)) return Eye;
     if (property === 'color') return Palette;
     return Move;

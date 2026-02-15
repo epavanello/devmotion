@@ -30,7 +30,7 @@ export function buildSystemPrompt(project: Project): string {
 
 - **Position**: x, y (horizontal/vertical), z (depth)
 - **Scale**: x, y (independent or use matching values for proportional scaling)
-- **Rotation**: rotation (Z-axis in degrees), rotationX, rotationY (3D rotation in degrees)
+- **Rotation**: rotation (Z-axis in radians), rotationX, rotationY (3D rotation in radians)
 - **Anchor**: Set anchor point (top-left, top-center, top-right, center-left, center, center-right, bottom-left, bottom-center, bottom-right) to control which point of the layer is positioned at the transform coordinates
 
 ## Keyframe Management

@@ -5,6 +5,7 @@
   import { nanoid } from 'nanoid';
   import type { Component } from 'svelte';
   import { BRAND_COLORS } from '$lib/constants/branding';
+  import type { Transform } from '$lib/schemas/base';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -191,10 +192,13 @@
 
       // Update base transform if either property is not animated
       if (!hasXKeyframes || !hasYKeyframes) {
-        const newTransform = {
+        const newTransform: Transform = {
           ...layer.transform,
-          x: hasXKeyframes ? layer.transform.position.x : layer.transform.position.x + movementX,
-          y: hasYKeyframes ? layer.transform.position.y : layer.transform.position.y + movementY
+          position: {
+            ...layer.transform.position,
+            x: hasXKeyframes ? layer.transform.position.x : layer.transform.position.x + movementX,
+            y: hasYKeyframes ? layer.transform.position.y : layer.transform.position.y + movementY
+          }
         };
         projectStore.updateLayer(id, { transform: newTransform });
       }
