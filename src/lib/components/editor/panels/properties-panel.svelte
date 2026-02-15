@@ -50,10 +50,7 @@
   import type { TypedLayer } from '$lib/layers/typed-registry';
   import { Select } from '$lib/components/ui/select';
   import { scaleMiddleware } from '$lib/schemas/size';
-  import {
-    isProjectLayer,
-    mapProjectLayerPropsToProject
-  } from '$lib/layers/project-layer';
+  import { isProjectLayer, mapProjectLayerPropsToProject } from '$lib/layers/project-layer';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -767,9 +764,7 @@
                   addKeyframe: isProjectSettings ? undefined : addKeyframe,
                   hasKeyframes: isProjectSettings
                     ? false
-                    : selectedLayer.keyframes.some(
-                        (k) => k.property === `props.${field.name}`
-                      )
+                    : selectedLayer.keyframes.some((k) => k.property === `props.${field.name}`)
                 }))}
               >
                 {#snippet prefix()}

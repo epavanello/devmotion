@@ -7,11 +7,7 @@
   import { cn } from '$lib/utils';
   import type { TypedLayer } from '$lib/layers/typed-registry';
   import { SvelteSet } from 'svelte/reactivity';
-  import {
-    PROJECT_LAYER_ID,
-    PROJECT_LAYER_TYPE,
-    isProjectLayer
-  } from '$lib/layers/project-layer';
+  import { PROJECT_LAYER_ID, PROJECT_LAYER_TYPE, isProjectLayer } from '$lib/layers/project-layer';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -192,6 +188,8 @@
     }
     return topLevel;
   });
+
+  const ProjectIcon = $derived(getLayerDefinition(PROJECT_LAYER_TYPE).icon);
 </script>
 
 <div
@@ -202,7 +200,6 @@
   ontouchend={handleTouchEnd}
 >
   <!-- Project Settings Layer (always fixed at top, non-draggable, non-deletable) -->
-  {@const ProjectIcon = getLayerDefinition(PROJECT_LAYER_TYPE).icon}
   <div
     class={cn(
       'flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 transition-colors hover:bg-muted/50',
@@ -220,6 +217,8 @@
       {projectStore.state.name}
     </div>
   </div>
+
+  <div class="my-2 border-t"></div>
 
   {#each layerTree as { layer, children, index } (layer.id)}
     {@const Icon = getLayerDefinition(layer.type).icon}
@@ -485,11 +484,9 @@
   {/each}
 
   {#if projectStore.state.layers.length === 0}
-    <div class="mt-2 border-t pt-4">
-      <div class="py-4 text-center text-sm text-muted-foreground">
-        <p>No animation layers yet</p>
-        <p class="mt-1 text-xs">Click the + button above to add your first layer</p>
-      </div>
+    <div class="py-4 text-center text-sm text-muted-foreground">
+      <p>No animation layers yet</p>
+      <p class="mt-1 text-xs">Click the + button above to add your first layer</p>
     </div>
   {/if}
 </div>
