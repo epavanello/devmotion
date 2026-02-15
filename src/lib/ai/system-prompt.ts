@@ -28,9 +28,9 @@ export function buildSystemPrompt(project: Project): string {
 
 ## Transform Capabilities
 
-- **Position**: x, y (horizontal/vertical), z (depth)
-- **Scale**: x, y (independent or use matching values for proportional scaling)
-- **Rotation**: rotation (Z-axis in radians), rotationX, rotationY (3D rotation in radians)
+- **Position**: position.x, position.y (horizontal/vertical), position.z (depth)
+- **Scale**: scale.x, scale.y (independent or use matching values for proportional scaling)
+- **Rotation**: rotation.z (Z-axis in radians), rotation.x, rotation.y (3D rotation in radians)
 - **Anchor**: Set anchor point (top-left, top-center, top-right, center-left, center, center-right, bottom-left, bottom-center, bottom-right) to control which point of the layer is positioned at the transform coordinates
 
 ## Keyframe Management
