@@ -28,9 +28,9 @@ export function buildSystemPrompt(project: Project): string {
 
 ## Transform Capabilities
 
-- **Position**: x, y (horizontal/vertical), z (depth)
-- **Scale**: x, y (independent or use matching values for proportional scaling)
-- **Rotation**: rotation (Z-axis in degrees), rotationX, rotationY (3D rotation in degrees)
+- **Position**: position.x, position.y (horizontal/vertical), position.z (depth)
+- **Scale**: scale.x, scale.y (independent or use matching values for proportional scaling)
+- **Rotation**: rotation.z (Z-axis in radians), rotation.x, rotation.y (3D rotation in radians)
 - **Anchor**: Set anchor point (top-left, top-center, top-right, center-left, center, center-right, bottom-left, bottom-center, bottom-right) to control which point of the layer is positioned at the transform coordinates
 
 ## Keyframe Management
@@ -115,7 +115,7 @@ function buildCanvasState(project: Project): string {
           const kfList = kfs
             .sort((a, b) => a.time - b.time)
             .map(
-              (kf) => `t=${kf.time}s: ${JSON.stringify(kf.value)} (${kf.interpolation.strategy})`
+              (kf) => `t=${kf.time}s: ${JSON.stringify(kf.value)} (${kf.interpolation?.strategy})`
             )
             .join(', ');
           keyframesDetail += `\n     ${prop}: [${kfList}]`;
@@ -123,7 +123,7 @@ function buildCanvasState(project: Project): string {
       }
 
       return `${index}. "${layer.name}" (id: "${layer.id}", type: ${layer.type})
-   pos: (${layer.transform.x}, ${layer.transform.y}) | scale: (${layer.transform.scaleX}, ${layer.transform.scaleY}) | rotation: ${layer.transform.rotationZ} rad | opacity: ${layer.style.opacity}
+   pos: (${layer.transform.position.x}, ${layer.transform.position.y}) | scale: (${layer.transform.scale.x}, ${layer.transform.scale.y}) | rotation: ${layer.transform.rotation.z} rad | opacity: ${layer.style.opacity}
    props: {${propsPreview || 'none'}}${keyframesDetail || '\n   keyframes: none'}`;
     })
     .join('\n\n');

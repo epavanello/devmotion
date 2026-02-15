@@ -17,6 +17,8 @@
 
   let { keyframes, pixelsPerSecond, layerId }: Props = $props();
 
+  const layer = $derived(projectStore.state.layers.find((l) => l.id === layerId));
+  const layerType = $derived(layer?.type ?? 'rectangle');
   const firstKeyframe = $derived(keyframes[0]);
   const position = $derived(firstKeyframe.time * pixelsPerSecond);
   const isSelected = $derived(keyframes.some((kf) => projectStore.selectedKeyframeIds.has(kf.id)));
@@ -77,9 +79,11 @@
       projectStore.removeKeyframe(layerId, keyframe.id);
     }
   }
+
+  let popoverOpen = $state(false);
 </script>
 
-<Popover.Root>
+<Popover.Root bind:open={popoverOpen}>
   <Popover.Trigger>
     {#snippet child({ props })}
       <div
@@ -118,7 +122,13 @@
       <!-- Keyframe Cards -->
       <div class="space-y-2">
         {#each keyframes as keyframe (keyframe.id)}
-          <KeyframeCard {keyframe} {layerId} readonlyTime />
+          <KeyframeCard
+            {keyframe}
+            {layerId}
+            {layerType}
+            readonlyTime
+            onGoToPropertyClick={() => (popoverOpen = false)}
+          />
         {/each}
       </div>
 

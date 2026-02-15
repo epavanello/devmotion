@@ -5,6 +5,8 @@
   import { PUBLIC_BASE_URL } from '$env/static/public';
   import type { PageData } from './$types';
   import { getEditorState } from '$lib/contexts/editor.svelte';
+  import { ProjectSchema } from '$lib/types/animation';
+  import { toast } from 'svelte-sonner';
 
   let { data }: { data: PageData } = $props();
 
@@ -20,23 +22,28 @@
 
   // Load project data when route changes
   $effect(() => {
-    const projectData = data.project.data;
+    try {
+      const projectData = ProjectSchema.omit({ id: true }).parse(data.project.data);
 
-    editorState.project.loadProject({
-      id: data.project.id,
-      name: projectData.name,
-      width: projectData.width,
-      height: projectData.height,
-      duration: projectData.duration,
-      fps: projectData.fps,
-      background: projectData.background,
-      layers: projectData.layers,
-      fontFamily: projectData.fontFamily
-    });
+      editorState.project.loadProject({
+        id: data.project.id,
+        name: projectData.name,
+        width: projectData.width,
+        height: projectData.height,
+        duration: projectData.duration,
+        fps: projectData.fps,
+        background: projectData.background,
+        layers: projectData.layers,
+        fontFamily: projectData.fontFamily
+      });
 
-    editorState.setDbContext(data.project.id, data.isOwner, data.canEdit, data.project.isPublic);
+      editorState.setDbContext(data.project.id, data.isOwner, data.canEdit, data.project.isPublic);
 
-    editorState.isMcp = data.project.isMcp;
+      editorState.isMcp = data.project.isMcp;
+    } catch (error) {
+      console.error('Failed to load project data:', error);
+      toast.error('Failed to load project data');
+    }
   });
 </script>
 

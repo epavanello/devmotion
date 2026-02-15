@@ -34,7 +34,7 @@ import type {
   RemoveKeyframeInput,
   RemoveKeyframeOutput
 } from './schemas';
-import type { ProjectData } from '$lib/schemas/animation';
+import type { Layer, ProjectData } from '$lib/schemas/animation';
 
 /**
  * Context for resolving layer IDs (e.g. "layer_0" -> "actual-uuid")
@@ -122,7 +122,7 @@ export function mutateCreateLayer(
   try {
     const layer = createLayer(input.type, {
       props: input.props,
-      trasform: input.position,
+      transform: input.transform,
       projectDimensions: {
         width: ctx.project.width,
         height: ctx.project.height
@@ -290,31 +290,18 @@ export function mutateEditLayer(ctx: MutationContext, input: EditLayerInput): Ed
   const layer = ctx.project.layers[layerIndex];
 
   try {
-    if (input.updates.name !== undefined) layer.name = input.updates.name;
-    if (input.updates.visible !== undefined) layer.visible = input.updates.visible;
-    if (input.updates.locked !== undefined) layer.locked = input.updates.locked;
-
-    if (input.updates.position) {
-      layer.transform.x = input.updates.position.x ?? layer.transform.x;
-      layer.transform.y = input.updates.position.y ?? layer.transform.y;
-      layer.transform.z = input.updates.position.z ?? layer.transform.z;
+    if (input.updates.name !== undefined) {
+      layer.name = input.updates.name;
+    }
+    if (input.updates.visible !== undefined) {
+      layer.visible = input.updates.visible;
+    }
+    if (input.updates.locked !== undefined) {
+      layer.locked = input.updates.locked;
     }
 
-    if (input.updates.scale) {
-      layer.transform.scaleX = input.updates.scale.x ?? layer.transform.scaleX;
-      layer.transform.scaleY = input.updates.scale.y ?? layer.transform.scaleY;
-    }
-
-    if (input.updates.rotation !== undefined) {
-      layer.transform.rotationZ = (input.updates.rotation * Math.PI) / 180;
-    }
-
-    // Handle 3D rotation (rotationX and rotationY in degrees)
-    if (input.updates.rotationX !== undefined) {
-      layer.transform.rotationX = (input.updates.rotationX * Math.PI) / 180;
-    }
-    if (input.updates.rotationY !== undefined) {
-      layer.transform.rotationY = (input.updates.rotationY * Math.PI) / 180;
+    if (input.updates.transform) {
+      layer.transform = { ...layer.transform, ...input.updates.transform };
     }
 
     // Handle anchor point
@@ -445,19 +432,14 @@ export function mutateGroupLayers(
     const groupId = nanoid();
 
     // Create the group layer
-    const groupLayer = {
+    const groupLayer: Layer = {
       id: groupId,
       name: input.name ?? 'Group',
       type: 'group' as const,
       transform: {
-        x: 0,
-        y: 0,
-        z: 0,
-        rotationX: 0,
-        rotationY: 0,
-        rotationZ: 0,
-        scaleX: 1,
-        scaleY: 1,
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1 },
         anchor: 'center' as const
       },
       style: { opacity: 1 },
@@ -528,14 +510,14 @@ export function mutateUngroupLayers(
   for (const layer of ctx.project.layers) {
     if (layer.parentId === resolvedId) {
       layer.parentId = undefined;
-      layer.transform.x += gt.x;
-      layer.transform.y += gt.y;
-      layer.transform.z += gt.z;
-      layer.transform.rotationX += gt.rotationX;
-      layer.transform.rotationY += gt.rotationY;
-      layer.transform.rotationZ += gt.rotationZ;
-      layer.transform.scaleX *= gt.scaleX;
-      layer.transform.scaleY *= gt.scaleY;
+      layer.transform.position.x += gt.position.x;
+      layer.transform.position.y += gt.position.y;
+      layer.transform.position.z += gt.position.z;
+      layer.transform.rotation.x += gt.rotation.x;
+      layer.transform.rotation.y += gt.rotation.y;
+      layer.transform.rotation.z += gt.rotation.z;
+      layer.transform.scale.x *= gt.scale.x;
+      layer.transform.scale.y *= gt.scale.y;
       layer.style.opacity *= gs.opacity;
     }
   }
@@ -732,9 +714,9 @@ function applyPresetToProject(
 
     let value = kf.value;
     if (kf.property === 'position.x' && typeof kf.value === 'number') {
-      value = layer.transform.x + kf.value;
+      value = layer.transform.position.x + kf.value;
     } else if (kf.property === 'position.y' && typeof kf.value === 'number') {
-      value = layer.transform.y + kf.value;
+      value = layer.transform.position.y + kf.value;
     }
 
     addKeyframeToProject(project, layerId, {

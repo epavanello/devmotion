@@ -305,18 +305,18 @@ function getAnchorOffset(anchor: AnchorPoint): { x: string; y: string } {
  * so that translate3d(0, 0, 0) places it at the canvas center.
  */
 export function generateTransformCSS(transform: Transform): string {
-  const { x, y, z, rotationX, rotationY, rotationZ, scaleX, scaleY, anchor } = transform;
+  const { position, rotation, scale, anchor } = transform;
   const anchorOffset = getAnchorOffset(anchor);
 
   // Apply position offset, then anchor offset, then rotation and scale
   // The layer is already positioned at canvas center via CSS (top-1/2 left-1/2)
   return `
-    translate3d(${x}px, ${y}px, ${z}px)
+    translate3d(${position.x}px, ${position.y}px, ${position.z}px)
     translate(${anchorOffset.x}, ${anchorOffset.y})
-    rotateX(${rotationX}rad)
-    rotateY(${rotationY}rad)
-    rotateZ(${rotationZ}rad)
-    scale(${scaleX}, ${scaleY})
+    rotateX(${rotation.x}rad)
+    rotateY(${rotation.y}rad)
+    rotateZ(${rotation.z}rad)
+    scale(${scale.x}, ${scale.y})
   `
     .trim()
     .replace(/\s+/g, ' ');

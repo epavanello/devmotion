@@ -174,19 +174,14 @@ export class ProjectStore {
     const insertIndex = indices[0];
 
     // Create the group layer
-    const groupLayer: TypedLayer = {
+    const groupLayer: TypedLayer<'group'> = {
       id: groupId,
       name: 'Group',
       type: 'group',
       transform: {
-        x: 0,
-        y: 0,
-        z: 0,
-        rotationX: 0,
-        rotationY: 0,
-        rotationZ: 0,
-        scaleX: 1,
-        scaleY: 1,
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1 },
         anchor: 'center'
       },
       style: { opacity: 1 },
@@ -234,14 +229,20 @@ export class ProjectStore {
             parentId: undefined,
             transform: {
               ...layer.transform,
-              x: layer.transform.x + gt.x,
-              y: layer.transform.y + gt.y,
-              z: layer.transform.z + gt.z,
-              rotationX: layer.transform.rotationX + gt.rotationX,
-              rotationY: layer.transform.rotationY + gt.rotationY,
-              rotationZ: layer.transform.rotationZ + gt.rotationZ,
-              scaleX: layer.transform.scaleX * gt.scaleX,
-              scaleY: layer.transform.scaleY * gt.scaleY
+              position: {
+                x: layer.transform.position.x + gt.position.x,
+                y: layer.transform.position.y + gt.position.y,
+                z: layer.transform.position.z + gt.position.z
+              },
+              rotation: {
+                x: layer.transform.rotation.x + gt.rotation.x,
+                y: layer.transform.rotation.y + gt.rotation.y,
+                z: layer.transform.rotation.z + gt.rotation.z
+              },
+              scale: {
+                x: layer.transform.scale.x * gt.scale.x,
+                y: layer.transform.scale.y * gt.scale.y
+              }
             },
             style: {
               ...layer.style,
@@ -312,9 +313,20 @@ export class ProjectStore {
         if (gt) {
           updated.transform = {
             ...l.transform,
-            x: l.transform.x + gt.x,
-            y: l.transform.y + gt.y,
-            z: l.transform.z + gt.z
+            position: {
+              x: l.transform.position.x + gt.position.x,
+              y: l.transform.position.y + gt.position.y,
+              z: l.transform.position.z + gt.position.z
+            },
+            rotation: {
+              x: l.transform.rotation.x + gt.rotation.x,
+              y: l.transform.rotation.y + gt.rotation.y,
+              z: l.transform.rotation.z + gt.rotation.z
+            },
+            scale: {
+              x: l.transform.scale.x * gt.scale.x,
+              y: l.transform.scale.y * gt.scale.y
+            }
           };
         }
         if (gs) {
@@ -510,9 +522,9 @@ export class ProjectStore {
       // Get the base position from the layer's transform if it's a position property
       let value = kf.value;
       if (kf.property === 'position.x' && typeof kf.value === 'number') {
-        value = layer.transform.x + kf.value;
+        value = layer.transform.position.x + kf.value;
       } else if (kf.property === 'position.y' && typeof kf.value === 'number') {
-        value = layer.transform.y + kf.value;
+        value = layer.transform.position.y + kf.value;
       }
 
       this.addKeyframe(layerId, {

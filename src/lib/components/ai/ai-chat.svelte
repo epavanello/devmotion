@@ -92,7 +92,7 @@
             name: input.name,
             visible: input.visible,
             locked: input.locked,
-            position: input.position,
+            transform: input.transform,
             props: input.props || {},
             animation: input.animation,
             enterTime: input.enterTime,
