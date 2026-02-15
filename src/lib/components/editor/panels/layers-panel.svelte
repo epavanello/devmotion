@@ -485,9 +485,11 @@
   {/each}
 
   {#if projectStore.state.layers.length === 0}
-    <div class="py-8 text-center text-sm text-muted-foreground">
-      <p>No layers yet</p>
-      <p class="mt-1 text-xs">Add layers from the toolbar</p>
+    <div class="mt-2 border-t pt-4">
+      <div class="py-4 text-center text-sm text-muted-foreground">
+        <p>No animation layers yet</p>
+        <p class="mt-1 text-xs">Click the + button above to add your first layer</p>
+      </div>
     </div>
   {/if}
 </div>
