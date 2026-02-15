@@ -17,6 +17,8 @@
 
   let { keyframes, pixelsPerSecond, layerId }: Props = $props();
 
+  const layer = $derived(projectStore.state.layers.find((l) => l.id === layerId));
+  const layerType = $derived(layer?.type ?? 'rectangle');
   const firstKeyframe = $derived(keyframes[0]);
   const position = $derived(firstKeyframe.time * pixelsPerSecond);
   const isSelected = $derived(keyframes.some((kf) => projectStore.selectedKeyframeIds.has(kf.id)));
@@ -123,6 +125,7 @@
           <KeyframeCard
             {keyframe}
             {layerId}
+            {layerType}
             readonlyTime
             onGoToPropertyClick={() => (popoverOpen = false)}
           />

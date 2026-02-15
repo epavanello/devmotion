@@ -115,7 +115,7 @@ function buildCanvasState(project: Project): string {
           const kfList = kfs
             .sort((a, b) => a.time - b.time)
             .map(
-              (kf) => `t=${kf.time}s: ${JSON.stringify(kf.value)} (${kf.interpolation.strategy})`
+              (kf) => `t=${kf.time}s: ${JSON.stringify(kf.value)} (${kf.interpolation?.strategy})`
             )
             .join(', ');
           keyframesDetail += `\n     ${prop}: [${kfList}]`;
@@ -123,7 +123,7 @@ function buildCanvasState(project: Project): string {
       }
 
       return `${index}. "${layer.name}" (id: "${layer.id}", type: ${layer.type})
-   pos: (${layer.transform.x}, ${layer.transform.y}) | scale: (${layer.transform.scaleX}, ${layer.transform.scaleY}) | rotation: ${layer.transform.rotationZ} rad | opacity: ${layer.style.opacity}
+   pos: (${layer.transform.position.x}, ${layer.transform.position.y}) | scale: (${layer.transform.scale.x}, ${layer.transform.scale.y}) | rotation: ${layer.transform.rotation.z} rad | opacity: ${layer.style.opacity}
    props: {${propsPreview || 'none'}}${keyframesDetail || '\n   keyframes: none'}`;
     })
     .join('\n\n');

@@ -1,5 +1,10 @@
 <script lang="ts">
-  import type { Keyframe, Interpolation } from '$lib/types/animation';
+  import type {
+    Keyframe,
+    Interpolation,
+    InterpolationFamily,
+    AnimatableProperty
+  } from '$lib/types/animation';
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
   import * as Popover from '$lib/components/ui/popover';
@@ -10,72 +15,54 @@
     getTransformInputId,
     getStyleInputId,
     isTransformProperty,
-    isStyleProperty,
-    type AnimatableProperty
+    isStyleProperty
   } from '$lib/utils/property-names';
+  import {
+    getStrategyOptionsForFamilies,
+    getSupportedInterpolationFamilies,
+    getDefaultInterpolationForProperty
+  } from '$lib/utils/interpolation-utils';
+  import Select from '../ui/select/select.svelte';
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
 
   interface Props {
     keyframe: Keyframe;
     layerId: string;
+    layerType: string;
     readonlyTime?: boolean;
     onGoToPropertyClick?: () => void;
   }
 
-  let { keyframe, layerId, readonlyTime = false, onGoToPropertyClick }: Props = $props();
+  let { keyframe, layerId, layerType, readonlyTime = false, onGoToPropertyClick }: Props = $props();
 
-  // Type-safe strategy labels - ensures all strategies have corresponding labels
-  type ContinuousStrategy = Extract<Interpolation, { family: 'continuous' }>['strategy'];
-  type DiscreteStrategy = Extract<Interpolation, { family: 'discrete' }>['strategy'];
-  type QuantizedStrategy = Extract<Interpolation, { family: 'quantized' }>['strategy'];
-  type TextStrategy = Extract<Interpolation, { family: 'text' }>['strategy'];
+  // Get supported interpolation families from layer schema
+  const supportedFamilies = $derived(
+    getSupportedInterpolationFamilies(layerType, keyframe.property)
+  );
 
-  const continuousStrategyLabels: Record<ContinuousStrategy, string> = {
-    linear: 'Linear',
-    'ease-in': 'Ease In',
-    'ease-out': 'Ease Out',
-    'ease-in-out': 'Ease In-Out'
-  };
+  const interpolation: Interpolation | undefined = $derived(keyframe.interpolation);
 
-  const discreteStrategyLabels: Record<DiscreteStrategy, string> = {
-    'step-end': 'Step End',
-    'step-start': 'Step Start',
-    'step-mid': 'Step Mid'
-  };
-
-  const quantizedStrategyLabels: Record<QuantizedStrategy, string> = {
-    integer: 'Integer',
-    'snap-grid': 'Snap Grid'
-  };
-
-  const textStrategyLabels: Record<TextStrategy, string> = {
-    'char-reveal': 'Char Reveal',
-    'word-reveal': 'Word Reveal'
-  };
-
-  const interpolation: Interpolation = $derived.by(() => {
-    if (!keyframe.interpolation) {
-      return { family: 'continuous', strategy: 'linear' };
+  const activeFamily = $derived.by(() => {
+    if (!interpolation) {
+      return supportedFamilies[0];
     }
-    return keyframe.interpolation;
+    return interpolation.family;
   });
 
-  // Get strategy options based on interpolation family - convert Record to array format
-  const strategyOptions = $derived.by(() => {
-    const labels =
-      interpolation.family === 'continuous'
-        ? continuousStrategyLabels
-        : interpolation.family === 'discrete'
-          ? discreteStrategyLabels
-          : interpolation.family === 'quantized'
-            ? quantizedStrategyLabels
-            : interpolation.family === 'text'
-              ? textStrategyLabels
-              : continuousStrategyLabels;
+  // Check if multiple families are supported
+  const hasMultipleFamilies = $derived(supportedFamilies.length > 1);
 
-    return Object.entries(labels).map(([value, label]) => ({ value, label }));
-  });
+  // Get strategy options for the current family
+  const currentFamilyOptions = $derived(getStrategyOptionsForFamilies([activeFamily]));
+
+  // Family labels for display
+  const familyLabels: Record<InterpolationFamily, string> = {
+    continuous: 'Continuous',
+    discrete: 'Discrete',
+    quantized: 'Quantized',
+    text: 'Text'
+  };
 
   function getPropertyLabel(property: string): string {
     const labels: Record<string, string> = {
@@ -132,9 +119,30 @@
     projectStore.updateKeyframe(layerId, keyframe.id, { time: clampedTime });
   }
 
+  function handleFamilyChange(family: InterpolationFamily) {
+    // When changing family, use the first strategy available for that family
+    let newInterpolation: Interpolation;
+
+    switch (family) {
+      case 'continuous':
+        newInterpolation = { family: 'continuous', strategy: 'ease-in-out' };
+        break;
+      case 'discrete':
+        newInterpolation = { family: 'discrete', strategy: 'step-end' };
+        break;
+      case 'quantized':
+        newInterpolation = { family: 'quantized', strategy: 'integer' };
+        break;
+      case 'text':
+        newInterpolation = { family: 'text', strategy: 'char-reveal' };
+        break;
+    }
+
+    projectStore.updateKeyframe(layerId, keyframe.id, { interpolation: newInterpolation });
+  }
+
   function handleStrategyChange(strategy: string) {
-    // Reconstruct interpolation with proper types based on family
-    const family = interpolation.family;
+    const family = activeFamily;
     let newInterpolation: Interpolation;
 
     switch (family) {
@@ -157,7 +165,8 @@
           newInterpolation = { family: 'quantized', strategy: 'integer' };
         } else {
           // For snap-grid, preserve increment if exists, otherwise use default
-          const increment = 'increment' in interpolation ? interpolation.increment : 10;
+          const increment =
+            interpolation && 'increment' in interpolation ? interpolation.increment : 10;
           newInterpolation = { family: 'quantized', strategy: 'snap-grid', increment };
         }
         break;
@@ -167,7 +176,8 @@
           newInterpolation = { family: 'text', strategy: 'char-reveal' };
         } else {
           // For word-reveal, preserve separator if exists, otherwise use default
-          const separator = 'separator' in interpolation ? interpolation.separator : ' ';
+          const separator =
+            interpolation && 'separator' in interpolation ? interpolation.separator : ' ';
           newInterpolation = { family: 'text', strategy: 'word-reveal', separator };
         }
         break;
@@ -222,7 +232,7 @@
 </script>
 
 <div class="group rounded-lg border bg-muted/20 p-3 transition-colors hover:bg-muted/40">
-  <div class="flex items-start justify-between gap-2">
+  <div class="flex items-center justify-between gap-2">
     <button
       type="button"
       onclick={handleGoToTime}
@@ -294,7 +304,7 @@
             min={0}
             max={projectStore.state.duration}
             onchange={handleTimeChange}
-            class="max-w-12 shrink-0"
+            class="w-12 shrink-0"
           />
           <span
             class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] text-muted-foreground"
@@ -304,24 +314,58 @@
         </div>
       {/if}
       <span class="text-muted-foreground">=</span>
-      <span class="min-w-[60px] font-mono font-medium tabular-nums">
+      <span
+        class="min-w-[60px] overflow-hidden font-mono font-medium text-ellipsis tabular-nums"
+        title={formatValue(keyframe.value)}
+      >
         {formatValue(keyframe.value)}
       </span>
     </div>
 
+    <!-- Family selector (only shown if multiple families are supported) -->
+    {#if hasMultipleFamilies}
+      <div class="flex items-center gap-2 text-xs">
+        <span class="text-muted-foreground">Family:</span>
+        <Select
+          value={activeFamily}
+          placeholder="Select Family"
+          root={{
+            onValueChange: (value) => handleFamilyChange(value as InterpolationFamily)
+          }}
+          trigger={{
+            class:
+              'h-7 flex-1 rounded-md border border-input bg-background px-2 text-xs focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none'
+          }}
+          options={supportedFamilies.map((family) => ({
+            value: family,
+            label: familyLabels[family]
+          }))}
+        />
+      </div>
+    {/if}
+
+    <!-- Strategy selector -->
     <div class="flex items-center gap-2 text-xs">
       <span class="text-muted-foreground">
-        {interpolation.family === 'continuous' ? 'Easing:' : 'Strategy:'}
+        {activeFamily === 'continuous' ? 'Easing:' : 'Strategy:'}
       </span>
-      <select
-        value={interpolation.strategy}
-        onchange={(e) => handleStrategyChange(e.currentTarget.value)}
-        class="h-7 flex-1 rounded-md border border-input bg-background px-2 text-xs focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
-      >
-        {#each strategyOptions as option (option.value)}
-          <option value={option.value}>{option.label}</option>
-        {/each}
-      </select>
+      {#if currentFamilyOptions.length > 0}
+        <Select
+          value={interpolation?.strategy}
+          placeholder="Select Strategy"
+          root={{
+            onValueChange: (value) => handleStrategyChange(value)
+          }}
+          trigger={{
+            class:
+              'h-7 flex-1 rounded-md border border-input bg-background px-2 text-xs focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none'
+          }}
+          options={currentFamilyOptions.map((option) => ({
+            value: option.strategy,
+            label: option.label
+          }))}
+        />
+      {/if}
     </div>
   </div>
 </div>

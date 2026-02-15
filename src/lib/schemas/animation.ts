@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { BackgroundValueSchema } from './background';
 import { TransformSchema, LayerStyleSchema, BaseLayerFieldsSchema } from './base';
 import { googleFontValues } from '$lib/utils/fonts';
+import type { LiteralUnion } from 'type-fest';
 
 // ============================================
 // Interpolation
@@ -17,6 +18,9 @@ const ContinuousInterpolationSchema = z.object({
   family: z.literal('continuous'),
   strategy: z.enum(['linear', 'ease-in', 'ease-out', 'ease-in-out'])
 });
+
+export type ContinuousInterpolation = z.infer<typeof ContinuousInterpolationSchema>;
+export type ContinuousInterpolationStrategy = ContinuousInterpolation['strategy'];
 
 // Discrete interpolation (instant value changes)
 const DiscreteInterpolationSchema = z.object({
@@ -121,7 +125,7 @@ export const KeyframeSchema = z.object({
   time: z.number().min(0),
   property: AnimatablePropertySchema,
   value: z.union([z.number(), z.string(), z.boolean()]),
-  interpolation: InterpolationSchema
+  interpolation: InterpolationSchema.optional()
 });
 
 // ============================================
@@ -251,8 +255,12 @@ export type Interpolation = z.infer<typeof InterpolationSchema>;
 export type InterpolationFamily = Interpolation['family'];
 
 export type BuiltInAnimatableProperty = z.infer<typeof BuiltInAnimatablePropertySchema>;
-export type PropsAnimatableProperty = z.infer<typeof PropsAnimatablePropertySchema>;
-export type AnimatableProperty = z.infer<typeof AnimatablePropertySchema>;
+// TypeScript type with template literal (can't be inferred from Zod regex)
+export type PropsAnimatableProperty = `props.${string}`;
+export type AnimatableProperty = LiteralUnion<
+  BuiltInAnimatableProperty | PropsAnimatableProperty,
+  string
+>;
 
 // Re-export base types for backward compatibility
 export type { AnchorPoint, Transform, LayerStyle } from './base';

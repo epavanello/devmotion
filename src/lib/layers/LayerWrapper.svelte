@@ -138,8 +138,8 @@
 
       // Get current animated values using the interpolation engine
       const animatedTransform = getAnimatedTransform(layer.keyframes, currentTime);
-      const currentX = animatedTransform.position.x ?? layer.transform.x;
-      const currentY = animatedTransform.position.y ?? layer.transform.y;
+      const currentX = animatedTransform.position.x ?? layer.transform.position.x;
+      const currentY = animatedTransform.position.y ?? layer.transform.position.y;
 
       // Find keyframes at exact current time
       const xKeyframeAtTime = layer.keyframes.find(
@@ -193,8 +193,8 @@
       if (!hasXKeyframes || !hasYKeyframes) {
         const newTransform = {
           ...layer.transform,
-          x: hasXKeyframes ? layer.transform.x : layer.transform.x + movementX,
-          y: hasYKeyframes ? layer.transform.y : layer.transform.y + movementY
+          x: hasXKeyframes ? layer.transform.position.x : layer.transform.position.x + movementX,
+          y: hasYKeyframes ? layer.transform.position.y : layer.transform.position.y + movementY
         };
         projectStore.updateLayer(id, { transform: newTransform });
       }
