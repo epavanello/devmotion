@@ -65,10 +65,21 @@ export function createVirtualProjectLayer(project: Project): TypedLayer {
  */
 export function mapProjectLayerPropsToProject(props: Record<string, unknown>): Partial<Project> {
   const updates: Partial<Project> = {};
-  if ('width' in props) updates.width = props.width as number;
-  if ('height' in props) updates.height = props.height as number;
-  if ('duration' in props) updates.duration = props.duration as number;
-  if ('background' in props) updates.background = props.background as Project['background'];
-  if ('fontFamily' in props) updates.fontFamily = props.fontFamily as Project['fontFamily'];
+  if ('width' in props) {
+    updates.width = props.width as number;
+  }
+  if ('height' in props) {
+    updates.height = props.height as number;
+  }
+  if ('duration' in props) {
+    updates.duration = props.duration as number;
+  }
+  if ('background' in props) {
+    updates.background = props.background as Project['background'];
+  }
+  if ('fontFamily' in props) {
+    updates.fontFamily = props.fontFamily as Project['fontFamily'];
+  }
+
   return updates;
 }

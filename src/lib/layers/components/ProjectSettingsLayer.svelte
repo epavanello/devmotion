@@ -6,26 +6,13 @@
   import { BackgroundValueSchema } from '$lib/schemas/background';
   import { googleFontValues } from '$lib/utils/fonts';
   import FontProperty from '../properties/FontProperty.svelte';
+  import { createSizeWithAspectRatioSchema } from '$lib/schemas/size';
 
   /**
    * Schema for Project Settings layer custom properties.
    * These map directly to project-level fields (width, height, duration, background, fontFamily).
    */
-  const schema = z.object({
-    width: z
-      .number()
-      .min(100)
-      .max(8192)
-      .default(720)
-      .describe('Width (px)')
-      .register(fieldRegistry, { group: 'resolution', interpolationFamily: 'continuous' }),
-    height: z
-      .number()
-      .min(100)
-      .max(8192)
-      .default(1280)
-      .describe('Height (px)')
-      .register(fieldRegistry, { group: 'resolution', interpolationFamily: 'continuous' }),
+  const schema = createSizeWithAspectRatioSchema(720, 1280).extend({
     duration: z
       .number()
       .min(1)
@@ -55,7 +42,7 @@
     label: 'Project',
     icon: Settings,
     description: 'Project-level settings: resolution, duration, background, and default font',
-    propertyGroups: [{ id: 'resolution', label: 'Resolution' }]
+    propertyGroups: [{ id: 'size', label: 'Size' }]
   } as const satisfies LayerMeta;
 </script>
 

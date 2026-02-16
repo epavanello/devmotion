@@ -50,18 +50,6 @@ function extractKeyProps(schema: z.ZodObject<z.ZodRawShape>): string[] {
   return Object.keys(schema.shape).slice(0, MAX_KEY_PROPS);
 }
 
-// ============================================
-// Shared Schemas for Layer Creation
-// ============================================
-
-const PositionSchema = z
-  .object({
-    x: z.number().default(0).describe('X position (0 = center)'),
-    y: z.number().default(0).describe('Y position (0 = center)')
-  })
-  .optional()
-  .describe('Position on canvas. IMPORTANT: always specify to avoid stacking at center');
-
 const AnimationSchema = z
   .object({
     preset: z.string().describe('Animation preset: ' + getPresetIds().join(', ')),
