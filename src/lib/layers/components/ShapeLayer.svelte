@@ -72,7 +72,7 @@
     label: 'Shape',
     icon: Square,
     description:
-      'Geometric shapes (rectangle, circle, triangle, polygon) with background and stroke',
+      'Geometric shapes (rectangle, ellipse, circle, triangle, polygon) with background and stroke',
 
     propertyGroups: [
       { id: 'size', label: 'Size', widget: AspectRatioToggle },

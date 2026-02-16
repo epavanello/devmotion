@@ -37,20 +37,32 @@ export const AI_MODELS = {
       input: 0.3,
       output: 1.2
     }
-  }
+  },
   // // Kimi K2.5 - Excellent for creative tasks, long context
-  // 'moonshotai/kimi-k2.5': {
-  //   id: 'moonshotai/kimi-k2.5',
-  //   name: 'Kimi K2.5',
-  //   provider: 'Moonshot AI',
-  //   description: 'Excellent for creative and complex tasks with 128K context',
-  //   recommended: true,
-  //   costTier: 'low',
-  //   pricing: {
-  //     input: 0.5,
-  //     output: 2.8
-  //   }
-  // }
+  'moonshotai/kimi-k2.5': {
+    id: 'moonshotai/kimi-k2.5',
+    name: 'Kimi K2.5',
+    provider: 'Moonshot AI',
+    description: 'Excellent for creative and complex tasks with 128K context',
+    recommended: true,
+    costTier: 'low',
+    pricing: {
+      input: 0.5,
+      output: 2.8
+    }
+  },
+  'x-ai/grok-4.1-fast': {
+    id: 'x-ai/grok-4.1-fast',
+    name: 'Grok 4.1 Fast',
+    provider: 'X AI',
+    description: 'Excellent for creative and complex tasks with 128K context',
+    recommended: true,
+    costTier: 'low',
+    pricing: {
+      input: 0.2,
+      output: 0.5
+    }
+  }
 
   // // Claude 4.5 Sonnet - Great reasoning and creativity
   // 'anthropic/claude-sonnet-4.5': {
@@ -98,7 +110,7 @@ export type ModelId = keyof typeof AI_MODELS;
 /**
  * Default model to use
  */
-export const DEFAULT_MODEL_ID: ModelId = 'minimax/minimax-m2.5';
+export const DEFAULT_MODEL_ID: ModelId = 'x-ai/grok-4.1-fast';
 
 /**
  * Get model by ID with fallback to default

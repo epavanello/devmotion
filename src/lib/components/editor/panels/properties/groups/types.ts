@@ -14,11 +14,3 @@ export type PropertyGroupProps = {
   ) => void;
   addKeyframe: (property: AnimatableProperty) => void;
 };
-
-/**
- * Props for layer property update callback
- */
-export type UpdateLayerProperty = <K extends keyof Pick<TypedLayer, 'name'>>(
-  property: K,
-  value: TypedLayer[K]
-) => void;

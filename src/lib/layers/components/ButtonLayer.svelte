@@ -119,7 +119,7 @@
     propertyGroups: [
       { id: 'size', label: 'Size', widget: AspectRatioToggle },
       { id: 'typography', label: 'Typography' },
-      { id: ' appearance', label: 'Appearance' },
+      { id: 'appearance', label: 'Appearance' },
       { id: 'style', label: 'Style' }
     ],
 
