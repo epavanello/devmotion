@@ -40,7 +40,15 @@ export function getLayerStyle(layer: TypedLayer, currentTime: number) {
   const animatedStyle = getAnimatedStyle(layer.keyframes, currentTime);
 
   return {
-    opacity: animatedStyle.opacity ?? layer.style.opacity
+    opacity: animatedStyle.opacity ?? layer.style.opacity,
+    blur: animatedStyle.blur ?? layer.style.blur ?? 0,
+    brightness: animatedStyle.brightness ?? layer.style.brightness ?? 1,
+    contrast: animatedStyle.contrast ?? layer.style.contrast ?? 1,
+    saturate: animatedStyle.saturate ?? layer.style.saturate ?? 1,
+    dropShadowX: animatedStyle.dropShadowX ?? layer.style.dropShadowX ?? 0,
+    dropShadowY: animatedStyle.dropShadowY ?? layer.style.dropShadowY ?? 0,
+    dropShadowBlur: animatedStyle.dropShadowBlur ?? layer.style.dropShadowBlur ?? 0,
+    dropShadowColor: animatedStyle.dropShadowColor ?? layer.style.dropShadowColor ?? 'transparent'
   };
 }
 

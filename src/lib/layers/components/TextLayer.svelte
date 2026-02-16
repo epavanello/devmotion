@@ -2,7 +2,7 @@
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
   import { Type } from '@lucide/svelte';
-  import { fieldRegistry } from '../base';
+  import { fieldRegistry } from '$lib/layers/properties/field-registry';
   import { googleFontValues } from '$lib/utils/fonts';
   import ApplyFont from '$lib/components/font/apply-font.svelte';
   import FontProperty from '../properties/FontProperty.svelte';
@@ -42,6 +42,20 @@
       interpolationFamily: 'continuous',
       widget: 'color'
     }),
+    letterSpacing: z
+      .number()
+      .min(-10)
+      .max(100)
+      .default(0)
+      .describe('Letter spacing (px)')
+      .register(fieldRegistry, { group: 'spacing', interpolationFamily: 'continuous' }),
+    lineHeight: z
+      .number()
+      .min(0.5)
+      .max(5)
+      .default(1.4)
+      .describe('Line height')
+      .register(fieldRegistry, { group: 'spacing', interpolationFamily: 'continuous' }),
     autoWidth: z
       .boolean()
       .default(true)
@@ -71,6 +85,7 @@
 
     propertyGroups: [
       { id: 'typography', label: 'Typography' },
+      { id: 'spacing', label: 'Spacing' },
       { id: 'layout', label: 'Layout' }
     ]
   } as const satisfies LayerMeta;
@@ -79,8 +94,18 @@
 </script>
 
 <script lang="ts">
-  let { content, fontSize, fontFamily, fontWeight, autoWidth, width, textAlign, color }: Props =
-    $props();
+  let {
+    content,
+    fontSize,
+    fontFamily,
+    fontWeight,
+    color,
+    letterSpacing,
+    lineHeight,
+    autoWidth,
+    width,
+    textAlign
+  }: Props = $props();
 </script>
 
 <ApplyFont {fontFamily}>
@@ -90,6 +115,8 @@
     style:font-size="{fontSize}px"
     style:font-weight={fontWeight}
     style:color
+    style:letter-spacing="{letterSpacing}px"
+    style:line-height={lineHeight}
     style:width={autoWidth ? 'auto' : `${width}px`}
     style:text-align={textAlign}
   >

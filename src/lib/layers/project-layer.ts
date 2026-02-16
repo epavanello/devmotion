@@ -8,6 +8,7 @@
  */
 import type { TypedLayer } from './typed-registry';
 import type { Project } from '$lib/schemas/animation';
+import { defaultLayerStyle, defaultTransform } from '$lib/schemas/base';
 
 /** Well-known layer ID for the project settings layer */
 export const PROJECT_LAYER_ID = '__project__';
@@ -29,24 +30,8 @@ export function createVirtualProjectLayer(project: Project): TypedLayer {
     id: PROJECT_LAYER_ID,
     name: project.name,
     type: PROJECT_LAYER_TYPE,
-    transform: {
-      position: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      scale: {
-        x: 1,
-        y: 1
-      },
-      anchor: 'center'
-    },
-    style: { opacity: 1 },
+    transform: defaultTransform(),
+    style: defaultLayerStyle(),
     visible: true,
     locked: false,
     keyframes: [],

@@ -3,6 +3,8 @@
  * These are the foundation schemas used by both layer components and animation data.
  * Extracted here to avoid circular dependencies and reduce duplication.
  */
+import { fieldRegistry } from '$lib/layers/properties/field-registry';
+import type { PropertyGroup } from '$lib/layers/registry';
 import { z } from 'zod';
 
 // ============================================
@@ -131,19 +133,124 @@ export const TransformSchema = z
 
 export type Transform = z.infer<typeof TransformSchema>;
 
+export function defaultTransform(): Transform {
+  return {
+    position: { x: 0, y: 0, z: 0 },
+    rotation: { x: 0, y: 0, z: 0 },
+    scale: { x: 1, y: 1 },
+    anchor: 'center'
+  };
+}
+
 // ============================================
 // Style
 // ============================================
 
 /**
  * Base style properties shared by all layers.
- * Currently contains opacity, but may expand to include other visual properties.
+ * Contains opacity and CSS filter properties (blur, brightness, contrast, etc.)
  */
 export const LayerStyleSchema = z.object({
-  opacity: z.number().min(0).max(1).describe('Opacity (0-1)')
+  opacity: z
+    .number()
+    .min(0)
+    .max(1)
+    .multipleOf(0.01)
+    .default(1)
+    .describe('Opacity (0-1)')
+    .register(fieldRegistry, { interpolationFamily: 'continuous' }),
+  // CSS filter properties
+  blur: z
+    .number()
+    .min(0)
+    .default(0)
+    .describe('Blur (px)')
+    .register(fieldRegistry, { group: 'filters-1', interpolationFamily: 'continuous' }),
+  brightness: z
+    .number()
+    .min(0)
+    .max(10)
+    .default(1)
+    .describe('Brightness')
+    .register(fieldRegistry, { group: 'filters-1', interpolationFamily: 'continuous' }),
+  contrast: z
+    .number()
+    .min(0)
+    .max(10)
+    .multipleOf(0.1)
+    .default(1)
+    .describe('Contrast')
+    .register(fieldRegistry, { group: 'filters-2', interpolationFamily: 'continuous' }),
+  saturate: z
+    .number()
+    .min(0)
+    .max(10)
+    .multipleOf(0.1)
+    .default(1)
+    .describe('Saturate')
+    .register(fieldRegistry, { group: 'filters-2', interpolationFamily: 'continuous' }),
+  // CSS drop-shadow filter
+  dropShadowX: z
+    .number()
+    .default(0)
+    .describe('Shadow offset X (px)')
+    .register(fieldRegistry, { group: 'shadow-offset', interpolationFamily: 'continuous' }),
+  dropShadowY: z
+    .number()
+    .default(0)
+    .describe('Shadow offset Y (px)')
+    .register(fieldRegistry, { group: 'shadow-offset', interpolationFamily: 'continuous' }),
+  dropShadowBlur: z
+    .number()
+    .min(0)
+    .default(0)
+    .describe('Shadow blur (px)')
+    .register(fieldRegistry, { group: 'shadow-style', interpolationFamily: 'continuous' }),
+  dropShadowColor: z
+    .string()
+    .default('transparent')
+    .describe('Shadow color')
+    .register(fieldRegistry, {
+      group: 'shadow-style',
+      interpolationFamily: 'discrete',
+      widget: 'color'
+    })
 });
 
+export const stylePropertyGroups: PropertyGroup[] = [
+  {
+    id: 'filters-1',
+    label: 'Filters'
+  },
+  {
+    id: 'filters-2',
+    label: 'Filters'
+  },
+  {
+    id: 'shadow-offset',
+    label: 'Shadow Offset'
+  },
+  {
+    id: 'shadow-style',
+    label: 'Shadow Style'
+  }
+];
+
 export type LayerStyle = z.infer<typeof LayerStyleSchema>;
+
+export function defaultLayerStyle(): LayerStyle {
+  return {
+    opacity: 1,
+    blur: 0,
+    brightness: 1,
+    contrast: 1,
+    saturate: 1,
+    dropShadowX: 0,
+    dropShadowY: 0,
+    dropShadowBlur: 0,
+    dropShadowColor: 'transparent'
+  };
+}
 
 // ============================================
 // Base Layer Fields

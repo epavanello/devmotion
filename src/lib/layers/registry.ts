@@ -32,6 +32,14 @@ export type PropertyMiddleware = (
   }
 ) => Record<string, unknown>;
 
+export type CustomPropertyComponent = Component<{
+  layer: Layer;
+  onUpdateProp: (name: string, value: unknown) => void;
+  addKeyframe: (property: AnimatableProperty) => void;
+}>;
+
+export type CustomPropertyComponents = Record<string, { component: CustomPropertyComponent }>;
+
 export type LayerMeta = {
   category: LayerCategory;
   schema: z.ZodObject<z.ZodRawShape>;
@@ -43,16 +51,7 @@ export type LayerMeta = {
   propertyGroups?: PropertyGroup[];
   /** Middleware for linked property updates (e.g., aspect ratio) */
   middleware?: PropertyMiddleware;
-  customPropertyComponents?: Record<
-    string,
-    {
-      component: Component<{
-        layer: Layer;
-        onUpdateProp: (name: string, value: unknown) => void;
-        addKeyframe: (property: AnimatableProperty) => void;
-      }>;
-    }
-  >;
+  customPropertyComponents?: CustomPropertyComponents;
 };
 
 type LayerModule = {

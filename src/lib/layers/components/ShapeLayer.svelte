@@ -3,7 +3,7 @@
   import type { LayerMeta } from '../registry';
   import { Square } from '@lucide/svelte';
   import { BackgroundValueSchema, getStyleProperties } from '$lib/schemas/background';
-  import { fieldRegistry } from '../base';
+  import { fieldRegistry } from '$lib/layers/properties/field-registry';
   import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
   import { SizeWithAspectRatioSchema, sizeMiddleware } from '$lib/schemas/size';
 
@@ -18,7 +18,7 @@
    */
   const schema = SizeWithAspectRatioSchema.extend({
     shapeType: z
-      .enum(['rectangle', 'circle', 'triangle', 'polygon'])
+      .enum(['rectangle', 'ellipse', 'circle', 'triangle', 'polygon'])
       .default('rectangle')
       .describe('Shape type')
       .register(fieldRegistry, { interpolationFamily: 'discrete' }),
@@ -39,6 +39,14 @@
       .default(2)
       .describe('Stroke width (px)')
       .register(fieldRegistry, { group: 'stroke', interpolationFamily: 'continuous' }),
+    borderRadius: z
+      .number()
+      .min(0)
+      .max(500)
+      .default(0)
+      .optional()
+      .describe('Corner radius (px)')
+      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
     radius: z
       .number()
       .min(0)
@@ -64,7 +72,7 @@
     label: 'Shape',
     icon: Square,
     description:
-      'Geometric shapes (rectangle, circle, triangle, polygon) with background and stroke',
+      'Geometric shapes (rectangle, ellipse, circle, triangle, polygon) with background and stroke',
 
     propertyGroups: [
       { id: 'size', label: 'Size', widget: AspectRatioToggle },
@@ -85,6 +93,7 @@
     background,
     stroke,
     strokeWidth,
+    borderRadius = 0,
     radius = 100,
     sides = 6
   }: Props = $props();
@@ -124,7 +133,16 @@
         return {
           ...base,
           width: `${width}px`,
-          height: `${height}px`
+          height: `${height}px`,
+          borderRadius: borderRadius > 0 ? `${borderRadius}px` : undefined
+        };
+
+      case 'ellipse':
+        return {
+          ...base,
+          width: `${width}px`,
+          height: `${height}px`,
+          borderRadius: '50%'
         };
 
       case 'circle':

@@ -2,7 +2,7 @@
   /* eslint-disable svelte/no-at-html-tags */
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
-  import { fieldRegistry } from '../base';
+  import { fieldRegistry } from '$lib/layers/properties/field-registry';
   import { Code2 } from '@lucide/svelte';
   import { sizeMiddleware } from '$lib/schemas/size';
   import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';

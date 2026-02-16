@@ -2,7 +2,7 @@
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
   import { MousePointer } from '@lucide/svelte';
-  import { fieldRegistry } from '../base';
+  import { fieldRegistry } from '$lib/layers/properties/field-registry';
 
   /**
    * Schema for Mouse Layer custom properties

@@ -28,3 +28,4 @@ src/lib/paraglide
 # AI Debug Logs
 logs/
 .vscode/chrome/
+demo.json

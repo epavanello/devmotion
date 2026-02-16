@@ -2,7 +2,7 @@
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
   import { Settings } from '@lucide/svelte';
-  import { fieldRegistry } from '../base';
+  import { fieldRegistry } from '$lib/layers/properties/field-registry';
   import { BackgroundValueSchema } from '$lib/schemas/background';
   import { googleFontValues } from '$lib/utils/fonts';
   import FontProperty from '../properties/FontProperty.svelte';

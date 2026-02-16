@@ -40,6 +40,20 @@
 
   const transformCSS = $derived(generateTransformCSS(transform));
 
+  const filterCSS = $derived.by(() => {
+    const parts: string[] = [];
+    if (style.blur > 0) parts.push(`blur(${style.blur}px)`);
+    if (style.brightness !== 1) parts.push(`brightness(${style.brightness})`);
+    if (style.contrast !== 1) parts.push(`contrast(${style.contrast})`);
+    if (style.saturate !== 1) parts.push(`saturate(${style.saturate})`);
+    if (style.dropShadowBlur > 0 || style.dropShadowX !== 0 || style.dropShadowY !== 0) {
+      parts.push(
+        `drop-shadow(${style.dropShadowX}px ${style.dropShadowY}px ${style.dropShadowBlur}px ${style.dropShadowColor})`
+      );
+    }
+    return parts.length > 0 ? parts.join(' ') : undefined;
+  });
+
   // Drag state
   let isDragging = $state(false);
   let dragStart = $state({ x: 0, y: 0 });
@@ -241,7 +255,7 @@
   style:--primary-color={BRAND_COLORS.blue}
   style:visibility={visible ? 'visible' : 'hidden'}
 >
-  <div class="layer-content" style:opacity={style.opacity}>
+  <div class="layer-content" style:opacity={style.opacity} style:filter={filterCSS}>
     <C {...customProps} />
   </div>
 </div>

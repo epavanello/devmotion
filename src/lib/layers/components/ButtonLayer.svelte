@@ -3,7 +3,7 @@
   import type { LayerMeta } from '../registry';
   import { Zap } from '@lucide/svelte';
   import { BRAND_COLORS } from '$lib/constants/branding';
-  import { fieldRegistry } from '../base';
+  import { fieldRegistry } from '$lib/layers/properties/field-registry';
   import { sizeMiddleware } from '$lib/schemas/size';
   import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
   import { googleFontValues } from '$lib/utils/fonts';
@@ -119,7 +119,7 @@
     propertyGroups: [
       { id: 'size', label: 'Size', widget: AspectRatioToggle },
       { id: 'typography', label: 'Typography' },
-      { id: ' appearance', label: 'Appearance' },
+      { id: 'appearance', label: 'Appearance' },
       { id: 'style', label: 'Style' }
     ],
 

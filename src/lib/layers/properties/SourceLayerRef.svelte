@@ -2,7 +2,7 @@
   import Button from '$lib/components/ui/button/button.svelte';
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Link } from '@lucide/svelte';
-  import type { CustomPropertyComponentProps } from '../base';
+  import type { CustomPropertyComponentProps } from './field-registry';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);

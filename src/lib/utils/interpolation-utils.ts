@@ -16,7 +16,47 @@ export const interpolationLabels = {
     linear: 'Linear',
     'ease-in': 'Ease In',
     'ease-out': 'Ease Out',
-    'ease-in-out': 'Ease In-Out'
+    'ease-in-out': 'Ease In-Out',
+    // Quad
+    'ease-in-quad': 'Ease In (Quad)',
+    'ease-out-quad': 'Ease Out (Quad)',
+    'ease-in-out-quad': 'Ease In-Out (Quad)',
+    // Cubic
+    'ease-in-cubic': 'Ease In (Cubic)',
+    'ease-out-cubic': 'Ease Out (Cubic)',
+    'ease-in-out-cubic': 'Ease In-Out (Cubic)',
+    // Quart
+    'ease-in-quart': 'Ease In (Quart)',
+    'ease-out-quart': 'Ease Out (Quart)',
+    'ease-in-out-quart': 'Ease In-Out (Quart)',
+    // Quint
+    'ease-in-quint': 'Ease In (Quint)',
+    'ease-out-quint': 'Ease Out (Quint)',
+    'ease-in-out-quint': 'Ease In-Out (Quint)',
+    // Sine
+    'ease-in-sine': 'Ease In (Sine)',
+    'ease-out-sine': 'Ease Out (Sine)',
+    'ease-in-out-sine': 'Ease In-Out (Sine)',
+    // Expo
+    'ease-in-expo': 'Ease In (Expo)',
+    'ease-out-expo': 'Ease Out (Expo)',
+    'ease-in-out-expo': 'Ease In-Out (Expo)',
+    // Circ
+    'ease-in-circ': 'Ease In (Circ)',
+    'ease-out-circ': 'Ease Out (Circ)',
+    'ease-in-out-circ': 'Ease In-Out (Circ)',
+    // Back
+    'ease-in-back': 'Ease In (Back)',
+    'ease-out-back': 'Ease Out (Back)',
+    'ease-in-out-back': 'Ease In-Out (Back)',
+    // Bounce
+    'ease-in-bounce': 'Ease In (Bounce)',
+    'ease-out-bounce': 'Ease Out (Bounce)',
+    'ease-in-out-bounce': 'Ease In-Out (Bounce)',
+    // Elastic
+    'ease-in-elastic': 'Ease In (Elastic)',
+    'ease-out-elastic': 'Ease Out (Elastic)',
+    'ease-in-out-elastic': 'Ease In-Out (Elastic)'
   },
   discrete: {
     'step-end': 'Step End',

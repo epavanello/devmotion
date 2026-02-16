@@ -35,6 +35,7 @@ import type {
   RemoveKeyframeOutput
 } from './schemas';
 import type { Layer, ProjectData } from '$lib/schemas/animation';
+import { defaultLayerStyle, defaultTransform } from '$lib/schemas/base';
 
 /**
  * Context for resolving layer IDs (e.g. "layer_0" -> "actual-uuid")
@@ -436,13 +437,8 @@ export function mutateGroupLayers(
       id: groupId,
       name: input.name ?? 'Group',
       type: 'group' as const,
-      transform: {
-        position: { x: 0, y: 0, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 1, y: 1 },
-        anchor: 'center' as const
-      },
-      style: { opacity: 1 },
+      transform: defaultTransform(),
+      style: defaultLayerStyle(),
       visible: true,
       locked: false,
       keyframes: [],

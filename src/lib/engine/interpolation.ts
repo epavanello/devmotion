@@ -2,7 +2,7 @@
  * Animation interpolation and easing functions
  */
 import BezierEasing from 'bezier-easing';
-import type { Interpolation, Keyframe, AnimatableProperty } from '$lib/types/animation';
+import type { Interpolation, Keyframe, AnimatableProperty, LayerStyle } from '$lib/types/animation';
 import type { PropertyMetadata } from '$lib/layers/base';
 import type { ContinuousInterpolationStrategy } from '$lib/schemas/animation';
 
@@ -170,21 +170,124 @@ function interpolateText(
 }
 
 /**
+ * Bounce easing helper (easeOutBounce is the base, others derive from it)
+ */
+function easeOutBounce(t: number): number {
+  const n1 = 7.5625;
+  const d1 = 2.75;
+  if (t < 1 / d1) return n1 * t * t;
+  if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75;
+  if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375;
+  return n1 * (t -= 2.625 / d1) * t + 0.984375;
+}
+
+/**
  * Get easing function for continuous interpolation strategies
  */
 function getEasingFunction(strategy: ContinuousInterpolationStrategy): (t: number) => number {
   switch (strategy) {
+    // CSS standard
     case 'linear':
       return (t) => t;
-
     case 'ease-in':
       return BezierEasing(0.42, 0, 1.0, 1.0);
-
     case 'ease-out':
       return BezierEasing(0, 0, 0.58, 1.0);
-
     case 'ease-in-out':
       return BezierEasing(0.42, 0, 0.58, 1.0);
+
+    // Quad (power of 2)
+    case 'ease-in-quad':
+      return BezierEasing(0.55, 0.085, 0.68, 0.53);
+    case 'ease-out-quad':
+      return BezierEasing(0.25, 0.46, 0.45, 0.94);
+    case 'ease-in-out-quad':
+      return BezierEasing(0.455, 0.03, 0.515, 0.955);
+
+    // Cubic (power of 3)
+    case 'ease-in-cubic':
+      return BezierEasing(0.55, 0.055, 0.675, 0.19);
+    case 'ease-out-cubic':
+      return BezierEasing(0.215, 0.61, 0.355, 1);
+    case 'ease-in-out-cubic':
+      return BezierEasing(0.645, 0.045, 0.355, 1);
+
+    // Quart (power of 4)
+    case 'ease-in-quart':
+      return BezierEasing(0.895, 0.03, 0.685, 0.22);
+    case 'ease-out-quart':
+      return BezierEasing(0.165, 0.84, 0.44, 1);
+    case 'ease-in-out-quart':
+      return BezierEasing(0.77, 0, 0.175, 1);
+
+    // Quint (power of 5)
+    case 'ease-in-quint':
+      return BezierEasing(0.755, 0.05, 0.855, 0.06);
+    case 'ease-out-quint':
+      return BezierEasing(0.23, 1, 0.32, 1);
+    case 'ease-in-out-quint':
+      return BezierEasing(0.86, 0, 0.07, 1);
+
+    // Sine
+    case 'ease-in-sine':
+      return BezierEasing(0.47, 0, 0.745, 0.715);
+    case 'ease-out-sine':
+      return BezierEasing(0.39, 0.575, 0.565, 1);
+    case 'ease-in-out-sine':
+      return BezierEasing(0.445, 0.05, 0.55, 0.95);
+
+    // Expo
+    case 'ease-in-expo':
+      return BezierEasing(0.95, 0.05, 0.795, 0.035);
+    case 'ease-out-expo':
+      return BezierEasing(0.19, 1, 0.22, 1);
+    case 'ease-in-out-expo':
+      return BezierEasing(1, 0, 0, 1);
+
+    // Circ
+    case 'ease-in-circ':
+      return BezierEasing(0.6, 0.04, 0.98, 0.335);
+    case 'ease-out-circ':
+      return BezierEasing(0.075, 0.82, 0.165, 1);
+    case 'ease-in-out-circ':
+      return BezierEasing(0.785, 0.135, 0.15, 0.86);
+
+    // Back (overshoots)
+    case 'ease-in-back':
+      return BezierEasing(0.6, -0.28, 0.735, 0.045);
+    case 'ease-out-back':
+      return BezierEasing(0.175, 0.885, 0.32, 1.275);
+    case 'ease-in-out-back':
+      return BezierEasing(0.68, -0.55, 0.265, 1.55);
+
+    // Bounce (custom math — cannot be represented as cubic bezier)
+    case 'ease-out-bounce':
+      return easeOutBounce;
+    case 'ease-in-bounce':
+      return (t) => 1 - easeOutBounce(1 - t);
+    case 'ease-in-out-bounce':
+      return (t) =>
+        t < 0.5 ? (1 - easeOutBounce(1 - 2 * t)) / 2 : (1 + easeOutBounce(2 * t - 1)) / 2;
+
+    // Elastic (custom math — cannot be represented as cubic bezier)
+    case 'ease-in-elastic':
+      return (t) => {
+        if (t === 0 || t === 1) return t;
+        return -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * ((2 * Math.PI) / 3));
+      };
+    case 'ease-out-elastic':
+      return (t) => {
+        if (t === 0 || t === 1) return t;
+        return Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * ((2 * Math.PI) / 3)) + 1;
+      };
+    case 'ease-in-out-elastic':
+      return (t) => {
+        if (t === 0 || t === 1) return t;
+        const c5 = (2 * Math.PI) / 4.5;
+        return t < 0.5
+          ? -(Math.pow(2, 20 * t - 10) * Math.sin((20 * t - 11.125) * c5)) / 2
+          : (Math.pow(2, -20 * t + 10) * Math.sin((20 * t - 11.125) * c5)) / 2 + 1;
+      };
 
     default:
       return (t) => t;
@@ -259,18 +362,60 @@ export function getAnimatedStyle(
   currentTime: number
 ): {
   opacity?: number;
-  color?: string;
+  blur?: number;
+  brightness?: number;
+  contrast?: number;
+  saturate?: number;
+  dropShadowX?: number;
+  dropShadowY?: number;
+  dropShadowBlur?: number;
+  dropShadowColor?: string;
 } {
-  const style: { opacity?: number; color?: string } = {};
+  const style: Partial<LayerStyle> = {};
 
   const opacity = getPropertyValue(keyframes, 'opacity', currentTime);
   if (opacity !== null) {
     style.opacity = opacity as number;
   }
 
-  const color = getPropertyValue(keyframes, 'color', currentTime);
-  if (color !== null) {
-    style.color = color as string;
+  // CSS filter properties
+  const blur = getPropertyValue(keyframes, 'blur', currentTime);
+  if (blur !== null) {
+    style.blur = blur as number;
+  }
+
+  const brightness = getPropertyValue(keyframes, 'brightness', currentTime);
+  if (brightness !== null) {
+    style.brightness = brightness as number;
+  }
+  const contrast = getPropertyValue(keyframes, 'contrast', currentTime);
+  if (contrast !== null) {
+    style.contrast = contrast as number;
+  }
+
+  const saturate = getPropertyValue(keyframes, 'saturate', currentTime);
+  if (saturate !== null) {
+    style.saturate = saturate as number;
+  }
+
+  const dropShadowX = getPropertyValue(keyframes, 'dropShadowX', currentTime);
+  if (dropShadowX !== null) {
+    style.dropShadowX = dropShadowX as number;
+  }
+
+  const dropShadowY = getPropertyValue(keyframes, 'dropShadowY', currentTime);
+  if (dropShadowY !== null) {
+    style.dropShadowY = dropShadowY as number;
+  }
+
+  const dropShadowBlur = getPropertyValue(keyframes, 'dropShadowBlur', currentTime);
+  if (dropShadowBlur !== null) {
+    style.dropShadowBlur = dropShadowBlur as number;
+  }
+
+  const dropShadowColor = getPropertyValue(keyframes, 'dropShadowColor', currentTime);
+  if (dropShadowColor !== null) {
+    style.dropShadowColor = dropShadowColor as string;
   }
 
   return style;

@@ -3,7 +3,13 @@
  * Manages project state and operations without persistence logic
  */
 import { getPresetById } from '$lib/engine/presets';
-import type { Project, Keyframe, ViewportSettings, Transform } from '$lib/types/animation';
+import {
+  type Project,
+  type Keyframe,
+  type ViewportSettings,
+  type Transform,
+  type LayerStyle
+} from '$lib/types/animation';
 import { nanoid } from 'nanoid';
 import { SvelteSet } from 'svelte/reactivity';
 import { getLayerTransform, getLayerStyle, getLayerProps } from '$lib/engine/layer-rendering';
@@ -14,15 +20,14 @@ import {
   isProjectLayer,
   createVirtualProjectLayer
 } from '$lib/layers/project-layer';
+import { defaultLayerStyle, defaultTransform } from '$lib/schemas/base';
 
 /**
  * Cached layer data for a single frame
  */
 interface LayerFrameCache {
   transform: Transform;
-  style: {
-    opacity: number;
-  };
+  style: LayerStyle;
   customProps: Record<string, unknown>;
 }
 
@@ -188,13 +193,8 @@ export class ProjectStore {
       id: groupId,
       name: 'Group',
       type: 'group',
-      transform: {
-        position: { x: 0, y: 0, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 1, y: 1 },
-        anchor: 'center'
-      },
-      style: { opacity: 1 },
+      transform: defaultTransform(),
+      style: defaultLayerStyle(),
       visible: true,
       locked: false,
       keyframes: [],

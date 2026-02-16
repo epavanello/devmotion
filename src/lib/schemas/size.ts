@@ -1,4 +1,4 @@
-import { fieldRegistry } from '$lib/layers/base';
+import { fieldRegistry } from '$lib/layers/properties/field-registry';
 import type { PropertyMiddleware } from '$lib/layers/registry';
 import { z } from 'zod';
 
