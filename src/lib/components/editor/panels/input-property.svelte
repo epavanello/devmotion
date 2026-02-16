@@ -16,12 +16,15 @@
     metadata,
     value,
     layer,
-    onUpdateProp
+    onUpdateProp,
+    targetPath = 'props'
   }: {
     metadata: PropertyMetadata;
     value: unknown;
     layer: TypedLayer;
     onUpdateProp: (prop: string, value: unknown) => void;
+    /** The path prefix for the property (e.g., 'props' or 'style') */
+    targetPath?: 'transform' | 'props' | 'style';
   } = $props();
 </script>
 
@@ -66,7 +69,7 @@
   />
 {:else if metadata.meta?.widget === 'textarea'}
   <Textarea
-    id={`props.${metadata.name}`}
+    id={`${targetPath}.${metadata.name}`}
     value={typeof value === 'string' ? value : ''}
     oninput={(e) => onUpdateProp(metadata.name, e.currentTarget.value)}
     spellcheck="false"
@@ -78,7 +81,7 @@
   />
 {:else if metadata.meta?.widget === 'color'}
   <Input
-    id={`props.${metadata.name}`}
+    id={`${targetPath}.${metadata.name}`}
     type="color"
     value={typeof value === 'string' ? value : '#000000'}
     oninput={(e) => onUpdateProp(metadata.name, e.currentTarget.value)}
@@ -89,7 +92,7 @@
   <Component {value} onChange={(newValue) => onUpdateProp(metadata.name, newValue)} {layer} />
 {:else if metadata.type === 'number'}
   <ScrubInput
-    id={`props.${metadata.name}`}
+    id={`${targetPath}.${metadata.name}`}
     value={typeof value === 'number' ? value : 0}
     min={metadata.min}
     max={metadata.max}
@@ -99,7 +102,7 @@
 {:else if metadata.type === 'boolean'}
   <label class="flex items-center gap-2">
     <input
-      id={`props.${metadata.name}`}
+      id={`${targetPath}.${metadata.name}`}
       type="checkbox"
       checked={typeof value === 'boolean' ? value : false}
       onchange={(e) => onUpdateProp(metadata.name, e.currentTarget.checked)}
@@ -109,7 +112,7 @@
   </label>
 {:else if metadata.type === 'select' && metadata.options}
   <select
-    id={`props.${metadata.name}`}
+    id={`${targetPath}.${metadata.name}`}
     value={typeof value === 'string' || typeof value === 'number' ? value : ''}
     onchange={(e) => onUpdateProp(metadata.name, e.currentTarget.value)}
     class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
@@ -121,7 +124,7 @@
 {:else}
   <!-- Default to text input for strings and unknown types -->
   <Input
-    id={`props.${metadata.name}`}
+    id={`${targetPath}.${metadata.name}`}
     type="text"
     value={typeof value === 'string' ? value : ''}
     oninput={(e) => onUpdateProp(metadata.name, e.currentTarget.value)}

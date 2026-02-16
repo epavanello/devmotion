@@ -2,7 +2,7 @@
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
   import { Captions } from '@lucide/svelte';
-  import { fieldRegistry } from '../base';
+  import { fieldRegistry } from '$lib/layers/properties/field-registry';
   import SourceLayerRef from '../properties/SourceLayerRef.svelte';
   import { googleFontValues } from '$lib/utils/fonts';
   import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';

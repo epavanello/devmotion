@@ -1,10 +1,11 @@
 <script module lang="ts">
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
-  import { fieldRegistry } from '../base';
+
   import { Music } from '@lucide/svelte';
   import GenerateCaption from '../properties/GenerateCaption.svelte';
   import { sizeMiddleware } from '$lib/schemas/size';
+  import { fieldRegistry } from '$lib/layers/properties/field-registry';
 
   import type { Layer } from '$lib/schemas/animation';
 

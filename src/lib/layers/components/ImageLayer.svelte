@@ -2,7 +2,7 @@
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
   import { Image } from '@lucide/svelte';
-  import { fieldRegistry } from '../base';
+  import { fieldRegistry } from '$lib/layers/properties/field-registry';
   import { sizeMiddleware } from '$lib/schemas/size';
   import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
 

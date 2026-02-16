@@ -3,7 +3,7 @@
   import type { LayerMeta } from '../registry';
   import { Square } from '@lucide/svelte';
   import { BackgroundValueSchema, getStyleProperties } from '$lib/schemas/background';
-  import { fieldRegistry } from '../base';
+  import { fieldRegistry } from '$lib/layers/properties/field-registry';
   import AspectRatioToggle from '../properties/AspectRatioToggle.svelte';
   import { SizeWithAspectRatioSchema, sizeMiddleware } from '$lib/schemas/size';
 
