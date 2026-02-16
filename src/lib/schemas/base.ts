@@ -131,19 +131,52 @@ export const TransformSchema = z
 
 export type Transform = z.infer<typeof TransformSchema>;
 
+export function defaultTransform(): Transform {
+  return {
+    position: { x: 0, y: 0, z: 0 },
+    rotation: { x: 0, y: 0, z: 0 },
+    scale: { x: 1, y: 1 },
+    anchor: 'center'
+  };
+}
+
 // ============================================
 // Style
 // ============================================
 
 /**
  * Base style properties shared by all layers.
- * Currently contains opacity, but may expand to include other visual properties.
+ * Contains opacity and CSS filter properties (blur, brightness, contrast, etc.)
  */
 export const LayerStyleSchema = z.object({
-  opacity: z.number().min(0).max(1).describe('Opacity (0-1)')
+  opacity: z.number().min(0).max(1).default(1).describe('Opacity (0-1)'),
+  // CSS filter properties
+  blur: z.number().min(0).default(0).describe('Blur (px)'),
+  brightness: z.number().min(0).max(10).default(1).describe('Brightness'),
+  contrast: z.number().min(0).max(10).default(1).describe('Contrast'),
+  saturate: z.number().min(0).max(10).default(1).describe('Saturate'),
+  // CSS drop-shadow filter
+  dropShadowX: z.number().default(0).describe('Shadow offset X (px)'),
+  dropShadowY: z.number().default(0).describe('Shadow offset Y (px)'),
+  dropShadowBlur: z.number().min(0).default(0).describe('Shadow blur (px)'),
+  dropShadowColor: z.string().default('transparent').describe('Shadow color')
 });
 
 export type LayerStyle = z.infer<typeof LayerStyleSchema>;
+
+export function defaultLayerStyle(): LayerStyle {
+  return {
+    opacity: 1,
+    blur: 0,
+    brightness: 1,
+    contrast: 1,
+    saturate: 1,
+    dropShadowX: 0,
+    dropShadowY: 0,
+    dropShadowBlur: 0,
+    dropShadowColor: 'transparent'
+  };
+}
 
 // ============================================
 // Base Layer Fields

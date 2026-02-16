@@ -10,18 +10,14 @@
   import type { LayerCategory } from '$lib/layers/base';
   import { SvelteMap } from 'svelte/reactivity';
   import type { Component } from 'svelte';
+  import { defaultTransform } from '$lib/schemas/base';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
 
   function addLayer(type: LiteralUnion<LayerTypeString, string>) {
     const layer = createLayer(type, {
-      transform: {
-        position: { x: 0, y: 0, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 1, y: 1 },
-        anchor: 'center'
-      },
+      transform: defaultTransform(),
       projectDimensions: {
         width: projectStore.state.width,
         height: projectStore.state.height

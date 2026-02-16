@@ -51,6 +51,7 @@
   import { isProjectLayer, mapProjectLayerPropsToProject } from '$lib/layers/project-layer';
   import type { Layer } from '$lib/schemas/animation';
   import { getDefaultInterpolationForProperty } from '$lib/utils/interpolation-utils';
+  import { defaultLayerStyle, defaultTransform } from '$lib/schemas/base';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -115,24 +116,8 @@
     // For the project settings layer, there are no keyframes, so just use static props
     if (isProjectSettings) {
       return {
-        transform: {
-          position: {
-            x: 0,
-            y: 0,
-            z: 0
-          },
-          rotation: {
-            x: 0,
-            y: 0,
-            z: 0
-          },
-          scale: {
-            x: 1,
-            y: 1
-          },
-          anchor: 'center'
-        },
-        style: { opacity: 1 },
+        transform: defaultTransform(),
+        style: defaultLayerStyle(),
         props: { ...selectedLayer.props }
       };
     }
@@ -162,7 +147,16 @@
         }
       },
       style: {
-        opacity: animatedStyle.opacity ?? selectedLayer.style.opacity
+        opacity: animatedStyle.opacity ?? selectedLayer.style.opacity,
+        blur: animatedStyle.blur ?? selectedLayer.style.blur ?? 0,
+        brightness: animatedStyle.brightness ?? selectedLayer.style.brightness ?? 1,
+        contrast: animatedStyle.contrast ?? selectedLayer.style.contrast ?? 1,
+        saturate: animatedStyle.saturate ?? selectedLayer.style.saturate ?? 1,
+        dropShadowX: animatedStyle.dropShadowX ?? selectedLayer.style.dropShadowX ?? 0,
+        dropShadowY: animatedStyle.dropShadowY ?? selectedLayer.style.dropShadowY ?? 0,
+        dropShadowBlur: animatedStyle.dropShadowBlur ?? selectedLayer.style.dropShadowBlur ?? 0,
+        dropShadowColor:
+          animatedStyle.dropShadowColor ?? selectedLayer.style.dropShadowColor ?? 'transparent'
       },
       props: getAnimatedProps(
         selectedLayer.keyframes,
@@ -357,7 +351,7 @@
   function addKeyframe(property: AnimatableProperty) {
     if (!selectedLayer || !currentValues) return;
 
-    const propertyValueMap: Record<string, number> = {
+    const propertyValueMap: Record<string, number | string> = {
       'position.x': currentValues.transform.position.x,
       'position.y': currentValues.transform.position.y,
       'position.z': currentValues.transform.position.z,
@@ -366,7 +360,15 @@
       'rotation.z': currentValues.transform.rotation.z,
       'scale.x': currentValues.transform.scale.x,
       'scale.y': currentValues.transform.scale.y,
-      opacity: currentValues.style.opacity
+      opacity: currentValues.style.opacity,
+      blur: currentValues.style.blur,
+      brightness: currentValues.style.brightness,
+      contrast: currentValues.style.contrast,
+      saturate: currentValues.style.saturate,
+      dropShadowX: currentValues.style.dropShadowX,
+      dropShadowY: currentValues.style.dropShadowY,
+      dropShadowBlur: currentValues.style.dropShadowBlur,
+      dropShadowColor: currentValues.style.dropShadowColor
     };
 
     let currentValue: number | string | boolean;
@@ -731,6 +733,123 @@
               min={0}
               max={1}
               onchange={(v) => updateProperty('opacity', v || 0, 'style')}
+            />
+          </InputWrapper>
+        </PropertiesGroup>
+
+        <!-- Filters -->
+        <PropertiesGroup label="Filters">
+          <InputWrapper for="style.blur" label="Blur" property="blur" {addKeyframe}>
+            <ScrubInput
+              id="style.blur"
+              value={currentValues?.style.blur ?? 0}
+              step={1}
+              min={0}
+              max={100}
+              onchange={(v) => updateProperty('blur', v ?? 0, 'style')}
+            />
+          </InputWrapper>
+          <InputWrapper
+            for="style.brightness"
+            label="Brightness"
+            property="brightness"
+            {addKeyframe}
+          >
+            <ScrubInput
+              id="style.brightness"
+              value={currentValues?.style.brightness ?? 1}
+              step={0.1}
+              min={0}
+              max={10}
+              onchange={(v) => updateProperty('brightness', v ?? 1, 'style')}
+            />
+          </InputWrapper>
+          <InputWrapper for="style.contrast" label="Contrast" property="contrast" {addKeyframe}>
+            <ScrubInput
+              id="style.contrast"
+              value={currentValues?.style.contrast ?? 1}
+              step={0.1}
+              min={0}
+              max={10}
+              onchange={(v) => updateProperty('contrast', v ?? 1, 'style')}
+            />
+          </InputWrapper>
+          <InputWrapper for="style.saturate" label="Saturate" property="saturate" {addKeyframe}>
+            <ScrubInput
+              id="style.saturate"
+              value={currentValues?.style.saturate ?? 1}
+              step={0.1}
+              min={0}
+              max={10}
+              onchange={(v) => updateProperty('saturate', v ?? 1, 'style')}
+            />
+          </InputWrapper>
+        </PropertiesGroup>
+
+        <!-- Drop Shadow -->
+        <PropertiesGroup label="Drop Shadow">
+          <InputsWrapper
+            fields={[
+              {
+                for: 'style.dropShadowX',
+                labels: 'X',
+                property: 'dropShadowX',
+                addKeyframe,
+                hasKeyframes: selectedLayer.keyframes.some((k) => k.property === 'dropShadowX')
+              },
+              {
+                for: 'style.dropShadowY',
+                labels: 'Y',
+                property: 'dropShadowY',
+                addKeyframe,
+                hasKeyframes: selectedLayer.keyframes.some((k) => k.property === 'dropShadowY')
+              }
+            ]}
+          >
+            <ScrubInput
+              id="style.dropShadowX"
+              value={currentValues?.style.dropShadowX ?? 0}
+              step={1}
+              min={-100}
+              max={100}
+              onchange={(v) => updateProperty('dropShadowX', v ?? 0, 'style')}
+            />
+            <ScrubInput
+              id="style.dropShadowY"
+              value={currentValues?.style.dropShadowY ?? 0}
+              step={1}
+              min={-100}
+              max={100}
+              onchange={(v) => updateProperty('dropShadowY', v ?? 0, 'style')}
+            />
+          </InputsWrapper>
+          <InputWrapper
+            for="style.dropShadowBlur"
+            label="Blur"
+            property="dropShadowBlur"
+            {addKeyframe}
+          >
+            <ScrubInput
+              id="style.dropShadowBlur"
+              value={currentValues?.style.dropShadowBlur ?? 0}
+              step={1}
+              min={0}
+              max={100}
+              onchange={(v) => updateProperty('dropShadowBlur', v ?? 0, 'style')}
+            />
+          </InputWrapper>
+          <InputWrapper
+            for="style.dropShadowColor"
+            label="Color"
+            property="dropShadowColor"
+            {addKeyframe}
+          >
+            <input
+              id="style.dropShadowColor"
+              type="color"
+              value={currentValues?.style.dropShadowColor ?? '#000000'}
+              onchange={(e) => updateProperty('dropShadowColor', e.currentTarget.value, 'style')}
+              class="h-8 w-full cursor-pointer rounded border"
             />
           </InputWrapper>
         </PropertiesGroup>

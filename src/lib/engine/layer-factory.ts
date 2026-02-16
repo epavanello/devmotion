@@ -8,6 +8,7 @@ import { extractDefaultValues } from '$lib/layers/base';
 import type { LayerProps, LayerTypeString } from '$lib/layers/layer-types';
 import type { TypedLayer } from '$lib/layers/typed-registry';
 import { calculateCoverDimensions, ASPECT_RATIOS } from '$lib/utils/media';
+import { defaultLayerStyle, defaultTransform } from '$lib/schemas/base';
 
 /**
  * Default interpolation for initial keyframes
@@ -71,15 +72,10 @@ export function createLayer<T extends LayerTypeString>(
     name: definition.label,
     type,
     transform: {
-      position: { x, y, z: 0 },
-      rotation: { x: 0, y: 0, z: 0 },
-      scale: { x: 1, y: 1 },
-      anchor: 'center',
+      ...defaultTransform(),
       ...override?.transform
     },
-    style: {
-      opacity: 1
-    },
+    style: defaultLayerStyle(),
     visible: true,
     locked: false,
     keyframes: initialKeyframes,
