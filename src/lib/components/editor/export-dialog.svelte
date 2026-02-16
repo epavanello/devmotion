@@ -420,6 +420,7 @@
             type="number"
             value={exportSettings.height}
             class="col-span-3"
+            readonly
           />
         </div>
 
