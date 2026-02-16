@@ -10,6 +10,7 @@ import { getPresetIds } from '$lib/engine/presets';
 import { tool, type InferUITools, type Tool } from 'ai';
 import { layerRegistry, getAvailableLayerTypes } from '$lib/layers/registry';
 import { AnchorPointSchema, extractDefaultValues } from '$lib/layers/base';
+import type { LayerTypeString } from '$lib/layers/layer-types';
 
 // ============================================
 // Helper Functions
@@ -127,9 +128,8 @@ const CreateLayerInputSchema = z
 function generateLayerCreationTools(): Record<string, Tool> {
   const tools: Record<string, Tool> = {};
 
-  for (const layerType of getAvailableLayerTypes()) {
-    // Skip group type - groups are created via group_layers tool
-    if (layerType === 'group') continue;
+  for (const layerType of getAvailableLayerTypes() as LayerTypeString[]) {
+    if (layerType === 'project-settings') continue;
     const definition = layerRegistry[layerType];
     if (!definition) continue;
 
