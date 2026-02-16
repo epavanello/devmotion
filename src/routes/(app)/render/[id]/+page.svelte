@@ -3,14 +3,14 @@
   import { browser } from '$app/environment';
   import LayersRenderer from '$lib/components/editor/canvas/layers-renderer.svelte';
   import Watermark from '$lib/components/editor/canvas/watermark.svelte';
-  import type { Project } from '$lib/types/animation';
+  import { ProjectSchema, type Project } from '$lib/types/animation';
   import { getBackgroundColor, getBackgroundImage } from '$lib/schemas/background';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();
 
   // Project data from server
-  const project: Project = $derived(data.project as Project);
+  const project = $derived(ProjectSchema.omit({ id: true }).parse(data.project) as Project);
 
   // Current time controlled externally via window.__DEVMOTION__
   let currentTime = $state(0);

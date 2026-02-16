@@ -45,11 +45,18 @@
     audio: 'audio/mp3'
   };
 
-  const maxSizes = {
-    image: '10MB',
-    video: '10MB',
-    audio: '10MB'
-  };
+  const maxSizes =
+    process.env.NODE_ENV === 'development'
+      ? {
+          image: '100MB',
+          video: '100MB',
+          audio: '100MB'
+        }
+      : {
+          image: '1MB',
+          video: '1MB',
+          audio: '1MB'
+        };
 
   /**
    * Extract duration from video or audio file
