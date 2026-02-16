@@ -18,6 +18,7 @@ import { meta as shapeMeta } from './components/ShapeLayer.svelte';
 import { meta as terminalMeta } from './components/TerminalLayer.svelte';
 import { meta as textMeta } from './components/TextLayer.svelte';
 import { meta as videoMeta } from './components/VideoLayer.svelte';
+import { meta as projectSettingsMeta } from './components/ProjectSettingsLayer.svelte';
 
 import type { z } from 'zod';
 
@@ -37,6 +38,7 @@ export type LayerPropsMap = {
   image: z.infer<typeof imageMeta.schema>;
   mouse: z.infer<typeof mouseMeta.schema>;
   phone: z.infer<typeof phoneMeta.schema>;
+  'project-settings': z.infer<typeof projectSettingsMeta.schema>;
   shape: z.infer<typeof shapeMeta.schema>;
   terminal: z.infer<typeof terminalMeta.schema>;
   text: z.infer<typeof textMeta.schema>;

@@ -10,6 +10,7 @@ import { getPresetIds } from '$lib/engine/presets';
 import { tool, type InferUITools, type Tool } from 'ai';
 import { layerRegistry, getAvailableLayerTypes } from '$lib/layers/registry';
 import { AnchorPointSchema, extractDefaultValues } from '$lib/layers/base';
+import type { LayerTypeString } from '$lib/layers/layer-types';
 
 // ============================================
 // Helper Functions
@@ -49,18 +50,6 @@ const MAX_KEY_PROPS = 4;
 function extractKeyProps(schema: z.ZodObject<z.ZodRawShape>): string[] {
   return Object.keys(schema.shape).slice(0, MAX_KEY_PROPS);
 }
-
-// ============================================
-// Shared Schemas for Layer Creation
-// ============================================
-
-const PositionSchema = z
-  .object({
-    x: z.number().default(0).describe('X position (0 = center)'),
-    y: z.number().default(0).describe('Y position (0 = center)')
-  })
-  .optional()
-  .describe('Position on canvas. IMPORTANT: always specify to avoid stacking at center');
 
 const AnimationSchema = z
   .object({
@@ -139,9 +128,8 @@ const CreateLayerInputSchema = z
 function generateLayerCreationTools(): Record<string, Tool> {
   const tools: Record<string, Tool> = {};
 
-  for (const layerType of getAvailableLayerTypes()) {
-    // Skip group type - groups are created via group_layers tool
-    if (layerType === 'group') continue;
+  for (const layerType of getAvailableLayerTypes() as LayerTypeString[]) {
+    if (layerType === 'project-settings') continue;
     const definition = layerRegistry[layerType];
     if (!definition) continue;
 

@@ -45,7 +45,6 @@
   let serverExportAbortController = $state<AbortController | null>(null);
 
   let exportSettings = $derived({
-    format: 'webm',
     fps: projectStore.state.fps,
     width: projectStore.state.width,
     height: projectStore.state.height
@@ -419,8 +418,9 @@
           <Input
             id="export-height"
             type="number"
-            bind:value={exportSettings.height}
+            value={exportSettings.height}
             class="col-span-3"
+            readonly
           />
         </div>
 
