@@ -134,7 +134,7 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
 
       log('Launching browser...');
       browser = await chromium.launch({
-        headless: process.env.NODE_ENV === 'production',
+        headless: true,
         args
       });
       log('Browser launched');
@@ -217,7 +217,9 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
       log('Configuring ffmpeg, audio tracks:', resolvedTracks.length);
       if (resolvedTracks.length > 0) {
         for (const [i, t] of resolvedTracks.entries()) {
-          log(`  Track ${i}: enterTime=${t.enterTime} offset=${t.mediaStartTime} dur=${t.mediaDuration} vol=${t.volume} src=${t.src.slice(0, 100)}`);
+          log(
+            `  Track ${i}: enterTime=${t.enterTime} offset=${t.mediaStartTime} dur=${t.mediaDuration} vol=${t.volume} src=${t.src.slice(0, 100)}`
+          );
         }
         const fcIdx = outputOptions.indexOf('-filter_complex');
         if (fcIdx >= 0) log('Filter complex:', outputOptions[fcIdx + 1]);
