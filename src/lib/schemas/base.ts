@@ -34,18 +34,100 @@ export type AnchorPoint = z.infer<typeof AnchorPointSchema>;
 /**
  * Transform properties for positioning, rotating, and scaling layers in 3D space.
  * These properties can be animated via keyframes.
+ *
+ * Uses nested structure to match AnimatableProperty convention:
+ * - position.x, position.y, position.z
+ * - rotation.x, rotation.y, rotation.z
+ * - scale.x, scale.y
+ *
+ * Supports both old flat format (x, y, z, rotationX, rotationY, rotationZ, scaleX, scaleY, anchor)
+ * and new nested format (position, rotation, scale, anchor).
+ * Old format is automatically converted to new format on parse.
  */
-export const TransformSchema = z.object({
-  x: z.number().describe('Position X'),
-  y: z.number().describe('Position Y'),
-  z: z.number().describe('Position Z (depth)'),
-  rotationX: z.number().describe('Rotation X (radians)'),
-  rotationY: z.number().describe('Rotation Y (radians)'),
-  rotationZ: z.number().describe('Rotation Z (radians)'),
-  scaleX: z.number().min(0).describe('Scale X'),
-  scaleY: z.number().min(0).describe('Scale Y'),
-  anchor: AnchorPointSchema.describe('Anchor point')
-});
+export const TransformSchema = z
+  .object({
+    // New nested format
+    position: z
+      .object({
+        x: z.number().describe('Position X'),
+        y: z.number().describe('Position Y'),
+        z: z.number().describe('Position Z (depth)')
+      })
+      .optional(),
+    rotation: z
+      .object({
+        x: z.number().describe('Rotation X (radians)'),
+        y: z.number().describe('Rotation Y (radians)'),
+        z: z.number().describe('Rotation Z (radians)')
+      })
+      .optional(),
+    scale: z
+      .object({
+        x: z.number().min(0).describe('Scale X'),
+        y: z.number().min(0).describe('Scale Y')
+      })
+      .optional(),
+    anchor: AnchorPointSchema.describe('Anchor point').optional(),
+    // Old flat format (legacy support)
+    x: z.number().describe('Position X').optional(),
+    y: z.number().describe('Position Y').optional(),
+    z: z.number().describe('Position Z (depth)').optional(),
+    rotationX: z.number().describe('Rotation X (radians)').optional(),
+    rotationY: z.number().describe('Rotation Y (radians)').optional(),
+    rotationZ: z.number().describe('Rotation Z (radians)').optional(),
+    scaleX: z.number().min(0).describe('Scale X').optional(),
+    scaleY: z.number().min(0).describe('Scale Y').optional()
+  })
+  .superRefine((data, ctx) => {
+    const hasNewFormat = data.position || data.rotation || data.scale;
+    const hasOldFormat =
+      data.x !== undefined ||
+      data.y !== undefined ||
+      data.z !== undefined ||
+      data.rotationX !== undefined ||
+      data.rotationY !== undefined ||
+      data.rotationZ !== undefined ||
+      data.scaleX !== undefined ||
+      data.scaleY !== undefined;
+
+    // If neither format is provided, error
+    if (!hasNewFormat && !hasOldFormat) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'Transform must have either new format (position/rotation/scale) or old flat format'
+      });
+      return;
+    }
+
+    // If both formats are provided, prefer new format but warn
+    if (hasNewFormat && hasOldFormat) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Both old and new format detected, using new format'
+      });
+    }
+  })
+  .transform((data) => {
+    // Convert old flat format to new nested format
+    return {
+      position: data.position ?? {
+        x: data.x ?? 0,
+        y: data.y ?? 0,
+        z: data.z ?? 0
+      },
+      rotation: data.rotation ?? {
+        x: data.rotationX ?? 0,
+        y: data.rotationY ?? 0,
+        z: data.rotationZ ?? 0
+      },
+      scale: data.scale ?? {
+        x: data.scaleX ?? 1,
+        y: data.scaleY ?? 1
+      },
+      anchor: data.anchor ?? 'center'
+    };
+  });
 
 export type Transform = z.infer<typeof TransformSchema>;
 

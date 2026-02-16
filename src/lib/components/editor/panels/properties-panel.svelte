@@ -25,9 +25,7 @@
     AnimatableProperty,
     Transform,
     LayerStyle,
-    AnchorPoint,
-    Interpolation,
-    InterpolationFamily
+    AnchorPoint
   } from '$lib/types/animation';
   import {
     getAnimatedTransform,
@@ -45,12 +43,14 @@
   import { SvelteSet } from 'svelte/reactivity';
   import PropertiesGroup from './properties-group.svelte';
   import InputsWrapper from './inputs-wrapper.svelte';
-  import InputPropery from './input-propery.svelte';
+  import InputProperty from './input-property.svelte';
   import LayerKeyframes from './layer-keyframes.svelte';
   import type { TypedLayer } from '$lib/layers/typed-registry';
   import { Select } from '$lib/components/ui/select';
   import { scaleMiddleware } from '$lib/schemas/size';
   import { isProjectLayer, mapProjectLayerPropsToProject } from '$lib/layers/project-layer';
+  import type { Layer } from '$lib/schemas/animation';
+  import { getDefaultInterpolationForProperty } from '$lib/utils/interpolation-utils';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -109,21 +109,28 @@
   });
 
   // Unified current values: transform + style + props (animated when keyframes exist)
-  const currentValues = $derived.by(() => {
+  const currentValues = $derived.by((): Pick<Layer, 'transform' | 'style' | 'props'> | null => {
     if (!selectedLayer) return null;
 
     // For the project settings layer, there are no keyframes, so just use static props
     if (isProjectSettings) {
       return {
         transform: {
-          x: 0,
-          y: 0,
-          z: 0,
-          rotationX: 0,
-          rotationY: 0,
-          rotationZ: 0,
-          scaleX: 1,
-          scaleY: 1
+          position: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          scale: {
+            x: 1,
+            y: 1
+          },
+          anchor: 'center'
         },
         style: { opacity: 1 },
         props: { ...selectedLayer.props }
@@ -138,14 +145,21 @@
 
     return {
       transform: {
-        x: animatedTransform.position.x ?? selectedLayer.transform.x,
-        y: animatedTransform.position.y ?? selectedLayer.transform.y,
-        z: animatedTransform.position.z ?? selectedLayer.transform.z,
-        rotationX: animatedTransform.rotation.x ?? selectedLayer.transform.rotationX,
-        rotationY: animatedTransform.rotation.y ?? selectedLayer.transform.rotationY,
-        rotationZ: animatedTransform.rotation.z ?? selectedLayer.transform.rotationZ,
-        scaleX: animatedTransform.scale.x ?? selectedLayer.transform.scaleX,
-        scaleY: animatedTransform.scale.y ?? selectedLayer.transform.scaleY
+        ...selectedLayer.transform,
+        position: {
+          x: animatedTransform.position.x ?? selectedLayer.transform.position.x,
+          y: animatedTransform.position.y ?? selectedLayer.transform.position.y,
+          z: animatedTransform.position.z ?? selectedLayer.transform.position.z
+        },
+        rotation: {
+          x: animatedTransform.rotation.x ?? selectedLayer.transform.rotation.x,
+          y: animatedTransform.rotation.y ?? selectedLayer.transform.rotation.y,
+          z: animatedTransform.rotation.z ?? selectedLayer.transform.rotation.z
+        },
+        scale: {
+          x: animatedTransform.scale.x ?? selectedLayer.transform.scale.x,
+          y: animatedTransform.scale.y ?? selectedLayer.transform.scale.y
+        }
       },
       style: {
         opacity: animatedStyle.opacity ?? selectedLayer.style.opacity
@@ -196,60 +210,17 @@
     projectStore.updateLayer(selectedLayer.id, { [property]: value });
   }
 
-  // Map property names to AnimatableProperty format
-  const transformPropertyMap: Record<string, AnimatableProperty> = {
-    x: 'position.x',
-    y: 'position.y',
-    z: 'position.z',
-    rotationX: 'rotation.x',
-    rotationY: 'rotation.y',
-    rotationZ: 'rotation.z',
-    scaleX: 'scale.x',
-    scaleY: 'scale.y'
-  };
-
   function mapToAnimatable(
     target: 'transform' | 'props' | 'style',
     propertyName: string
   ): AnimatableProperty {
-    if (target === 'transform') return transformPropertyMap[propertyName];
-    if (target === 'props') return `props.${propertyName}` as AnimatableProperty;
+    if (target === 'transform') {
+      return propertyName;
+    }
+    if (target === 'props') {
+      return `props.${propertyName}` as AnimatableProperty;
+    }
     return propertyName as AnimatableProperty; // style: 'opacity'
-  }
-
-  /**
-   * Get default interpolation for a property based on its metadata
-   */
-  function getDefaultInterpolationForProperty(property: AnimatableProperty): Interpolation {
-    // Extract property name from animatable property (e.g., "props.fontSize" -> "fontSize")
-    const propertyName = property.includes('.') ? property.split('.').pop()! : property;
-
-    // Find metadata for this property
-    const metadata = layerPropertyMetadata.find((m) => m.name === propertyName);
-
-    if (!metadata) {
-      // Default for built-in properties (position, scale, rotation, opacity)
-      return { family: 'continuous', strategy: 'ease-in-out' };
-    }
-
-    // Get first family if array, otherwise use the family
-    const family: InterpolationFamily = Array.isArray(metadata.interpolationFamily)
-      ? metadata.interpolationFamily[0]
-      : metadata.interpolationFamily;
-
-    // Return appropriate default based on family
-    switch (family) {
-      case 'continuous':
-        return { family: 'continuous', strategy: 'linear' };
-      case 'discrete':
-        return { family: 'discrete', strategy: 'step-end' };
-      case 'quantized':
-        return { family: 'quantized', strategy: 'integer' };
-      case 'text':
-        return { family: 'text', strategy: 'char-reveal' };
-      default:
-        return { family: 'continuous', strategy: 'linear' };
-    }
   }
 
   /**
@@ -276,7 +247,7 @@
         projectStore.updateKeyframe(layer.id, keyframeAtTime.id, { value });
       } else {
         // Get default interpolation based on property metadata
-        const interpolation = getDefaultInterpolationForProperty(animatableProperty);
+        const interpolation = getDefaultInterpolationForProperty(layer.type, animatableProperty);
         projectStore.addKeyframe(layer.id, {
           id: nanoid(),
           time: currentTime,
@@ -291,10 +262,28 @@
   }
 
   /**
+   * Deep set a property on an object using dot notation.
+   * E.g., setDeep(obj, 'position.x', 10) sets obj.position.x = 10
+   */
+  function setDeep<T extends Record<string, unknown>>(obj: T, path: string, value: unknown): T {
+    const keys = path.split('.');
+    const result = { ...obj };
+    let current: Record<string, unknown> = result;
+
+    for (let i = 0; i < keys.length - 1; i++) {
+      const key = keys[i];
+      current[key] = { ...(current[key] as Record<string, unknown>) };
+      current = current[key] as Record<string, unknown>;
+    }
+
+    current[keys[keys.length - 1]] = value;
+    return result;
+  }
+
+  /**
    * Unified property update function.
    * Handles transform, style, and props targets.
-   * For the project settings layer, routes props updates to projectStore.updateProject().
-   * For regular layers, handles keyframe logic and middleware.
+   * For props: runs middleware if defined (e.g., aspect ratio linking).
    */
   function updateProperty(
     propertyName: string,
@@ -345,10 +334,8 @@
           propAnimatable,
           val as number | string | boolean,
           () => {
-            const newTransform: Transform = {
-              ...selectedLayer.transform,
-              [prop]: val
-            };
+            // Handle deep property access for transform (e.g., 'position.x', 'scale.y')
+            const newTransform = setDeep(selectedLayer.transform, prop, val);
             projectStore.updateLayer(selectedLayer.id, { transform: newTransform });
           }
         );
@@ -371,14 +358,14 @@
     if (!selectedLayer || !currentValues) return;
 
     const propertyValueMap: Record<string, number> = {
-      'position.x': currentValues.transform.x,
-      'position.y': currentValues.transform.y,
-      'position.z': currentValues.transform.z,
-      'rotation.x': currentValues.transform.rotationX,
-      'rotation.y': currentValues.transform.rotationY,
-      'rotation.z': currentValues.transform.rotationZ,
-      'scale.x': currentValues.transform.scaleX,
-      'scale.y': currentValues.transform.scaleY,
+      'position.x': currentValues.transform.position.x,
+      'position.y': currentValues.transform.position.y,
+      'position.z': currentValues.transform.position.z,
+      'rotation.x': currentValues.transform.rotation.x,
+      'rotation.y': currentValues.transform.rotation.y,
+      'rotation.z': currentValues.transform.rotation.z,
+      'scale.x': currentValues.transform.scale.x,
+      'scale.y': currentValues.transform.scale.y,
       opacity: currentValues.style.opacity
     };
 
@@ -416,6 +403,7 @@
 <div
   class:pointer-events-none={projectStore.isRecording}
   class:opacity-50={projectStore.isRecording}
+  data-panel="properties"
 >
   {#if selectedLayer}
     <div class="space-y-4 p-4">
@@ -547,11 +535,11 @@
           <!-- TODO: manage like groups -->
           <InputsWrapper
             fields={[
-              { prop: 'position.x' as AnimatableProperty, label: 'X' },
-              { prop: 'position.y' as AnimatableProperty, label: 'Y' },
-              { prop: 'position.z' as AnimatableProperty, label: 'Z' }
+              { prop: 'position.x' as AnimatableProperty, label: 'X', id: 'transform.position.x' },
+              { prop: 'position.y' as AnimatableProperty, label: 'Y', id: 'transform.position.y' },
+              { prop: 'position.z' as AnimatableProperty, label: 'Z', id: 'transform.position.z' }
             ].map((f) => ({
-              id: f.prop,
+              for: f.id,
               labels: f.label,
               property: f.prop,
               addKeyframe: addKeyframe,
@@ -561,43 +549,43 @@
             {#snippet prefix()}
               <Label class="text-xs text-muted-foreground">Position</Label>
               <ScrubXyz
-                valueX={currentValues?.transform.x ?? 0}
-                valueY={currentValues?.transform.y ?? 0}
-                valueZ={currentValues?.transform.z ?? 0}
+                valueX={currentValues?.transform.position.x ?? 0}
+                valueY={currentValues?.transform.position.y ?? 0}
+                valueZ={currentValues?.transform.position.z ?? 0}
                 stepXY={1}
                 stepZ={1}
-                onchangeX={(v: number) => updateProperty('x', v, 'transform')}
-                onchangeY={(v: number) => updateProperty('y', v, 'transform')}
-                onchangeZ={(v: number) => updateProperty('z', v, 'transform')}
+                onchangeX={(v: number) => updateProperty('position.x', v, 'transform')}
+                onchangeY={(v: number) => updateProperty('position.y', v, 'transform')}
+                onchangeZ={(v: number) => updateProperty('position.z', v, 'transform')}
               />
             {/snippet}
 
             <ScrubInput
-              id="pos-x"
-              value={currentValues?.transform.x ?? 0}
-              onchange={(v) => updateProperty('x', v, 'transform')}
+              id="transform.position.x"
+              value={currentValues?.transform.position.x ?? 0}
+              onchange={(v) => updateProperty('position.x', v, 'transform')}
             />
 
             <ScrubInput
-              id="pos-y"
-              value={currentValues?.transform.y ?? 0}
-              onchange={(v) => updateProperty('y', v, 'transform')}
+              id="transform.position.y"
+              value={currentValues?.transform.position.y ?? 0}
+              onchange={(v) => updateProperty('position.y', v, 'transform')}
             />
             <ScrubInput
-              id="pos-z"
-              value={currentValues?.transform.z ?? 0}
-              onchange={(v) => updateProperty('z', v, 'transform')}
+              id="transform.position.z"
+              value={currentValues?.transform.position.z ?? 0}
+              onchange={(v) => updateProperty('position.z', v, 'transform')}
             />
           </InputsWrapper>
 
           <!-- Rotation -->
           <InputsWrapper
             fields={[
-              { prop: 'rotation.x' as AnimatableProperty, label: 'X' },
-              { prop: 'rotation.y' as AnimatableProperty, label: 'Y' },
-              { prop: 'rotation.z' as AnimatableProperty, label: 'Z' }
+              { prop: 'rotation.x' as AnimatableProperty, label: 'X', id: 'transform.rotation.x' },
+              { prop: 'rotation.y' as AnimatableProperty, label: 'Y', id: 'transform.rotation.y' },
+              { prop: 'rotation.z' as AnimatableProperty, label: 'Z', id: 'transform.rotation.z' }
             ].map((f) => ({
-              id: f.prop,
+              for: f.id,
               labels: f.label,
               property: f.prop,
               addKeyframe: addKeyframe,
@@ -607,47 +595,47 @@
             {#snippet prefix()}
               <Label class="text-xs text-muted-foreground">Rotation</Label>
               <ScrubXyz
-                valueX={currentValues?.transform.rotationY ?? 0}
-                valueY={currentValues?.transform.rotationX ?? 0}
-                valueZ={currentValues?.transform.rotationZ ?? 0}
+                valueX={currentValues?.transform.rotation.y ?? 0}
+                valueY={currentValues?.transform.rotation.x ?? 0}
+                valueZ={currentValues?.transform.rotation.z ?? 0}
                 stepXY={0.1}
                 stepZ={0.1}
                 invertY={true}
-                onchangeX={(v: number) => updateProperty('rotationY', v, 'transform')}
-                onchangeY={(v: number) => updateProperty('rotationX', v, 'transform')}
-                onchangeZ={(v: number) => updateProperty('rotationZ', v, 'transform')}
+                onchangeX={(v: number) => updateProperty('rotation.y', v, 'transform')}
+                onchangeY={(v: number) => updateProperty('rotation.x', v, 'transform')}
+                onchangeZ={(v: number) => updateProperty('rotation.z', v, 'transform')}
               />
             {/snippet}
             <ScrubInput
-              id="rot-x"
-              value={currentValues?.transform.rotationX ?? 0}
+              id="transform.rotation.x"
+              value={currentValues?.transform.rotation.x ?? 0}
               step={0.1}
-              onchange={(v) => updateProperty('rotationX', v, 'transform')}
+              onchange={(v) => updateProperty('rotation.x', v, 'transform')}
             />
             <ScrubInput
-              id="rot-y"
-              value={currentValues?.transform.rotationY ?? 0}
+              id="transform.rotation.y"
+              value={currentValues?.transform.rotation.y ?? 0}
               step={0.1}
-              onchange={(v) => updateProperty('rotationY', v, 'transform')}
+              onchange={(v) => updateProperty('rotation.y', v, 'transform')}
             />
             <ScrubInput
-              id="rot-z"
-              value={currentValues?.transform.rotationZ ?? 0}
+              id="transform.rotation.z"
+              value={currentValues?.transform.rotation.z ?? 0}
               step={0.1}
-              onchange={(v) => updateProperty('rotationZ', v, 'transform')}
+              onchange={(v) => updateProperty('rotation.z', v, 'transform')}
             />
           </InputsWrapper>
 
           <!-- Scale -->
           {@const scaleLocked = selectedLayer?.props._scaleLocked ?? false}
-          {@const currentScaleX = currentValues?.transform.scaleX ?? 1}
-          {@const currentScaleY = currentValues?.transform.scaleY ?? 1}
+          {@const currentScaleX = currentValues?.transform.scale.x ?? 1}
+          {@const currentScaleY = currentValues?.transform.scale.y ?? 1}
           <InputsWrapper
             fields={[
-              { prop: 'scale.x' as AnimatableProperty, label: 'X' },
-              { prop: 'scale.y' as AnimatableProperty, label: 'Y' }
+              { prop: 'scale.x' as AnimatableProperty, label: 'X', id: 'transform.scale.x' },
+              { prop: 'scale.y' as AnimatableProperty, label: 'Y', id: 'transform.scale.y' }
             ].map((f) => ({
-              id: f.prop,
+              for: f.id,
               labels: f.label,
               property: f.prop,
               addKeyframe: addKeyframe,
@@ -662,8 +650,8 @@
                 valueZ={0}
                 stepXY={0.1}
                 stepZ={0.1}
-                onchangeX={(v: number) => updateProperty('scaleX', v || 1, 'transform')}
-                onchangeY={(v: number) => updateProperty('scaleY', v || 1, 'transform')}
+                onchangeX={(v: number) => updateProperty('scale.x', v || 1, 'transform')}
+                onchangeY={(v: number) => updateProperty('scale.y', v || 1, 'transform')}
                 onchangeZ={() => {}}
               />
               <Button
@@ -690,21 +678,21 @@
               </Button>
             {/snippet}
             <ScrubInput
-              id="scale-x"
+              id="transform.scale.x"
               value={currentScaleX}
               step={0.1}
-              onchange={(v) => updateProperty('scaleX', v || 1, 'transform')}
+              onchange={(v) => updateProperty('scale.x', v || 1, 'transform')}
             />
             <ScrubInput
-              id="scale-y"
+              id="transform.scale.y"
               value={currentScaleY}
               step={0.1}
-              onchange={(v) => updateProperty('scaleY', v || 1, 'transform')}
+              onchange={(v) => updateProperty('scale.y', v || 1, 'transform')}
             />
           </InputsWrapper>
 
           <!-- Anchor Point -->
-          <InputWrapper id="anchor-point" label="Anchor Point">
+          <InputWrapper for="anchor-point" label="Anchor Point">
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
                 {#snippet child({ props })}
@@ -735,9 +723,9 @@
 
         <!-- Style -->
         <PropertiesGroup label="Style">
-          <InputWrapper id="opacity" label="Opacity" property="opacity" {addKeyframe}>
+          <InputWrapper for="style.opacity" label="Opacity" property="opacity" {addKeyframe}>
             <ScrubInput
-              id="opacity"
+              id="style.opacity"
               value={currentValues?.style.opacity ?? 1}
               step={0.1}
               min={0}
@@ -756,15 +744,22 @@
             {#if item.kind === 'group'}
               <InputsWrapper
                 fields={item.fields.map((field) => ({
-                  id: `props.${field.name}`,
+                  for: `props.${field.name}`,
                   labels: field.description || field.name,
-                  property: isProjectSettings
-                    ? undefined
-                    : (`props.${field.name}` as AnimatableProperty),
-                  addKeyframe: isProjectSettings ? undefined : addKeyframe,
-                  hasKeyframes: isProjectSettings
-                    ? false
-                    : selectedLayer.keyframes.some((k) => k.property === `props.${field.name}`)
+
+                  ...(isProjectSettings
+                    ? {
+                        property: undefined,
+                        addKeyframe: undefined,
+                        hasKeyframes: false
+                      }
+                    : {
+                        property: `props.${field.name}` as AnimatableProperty,
+                        addKeyframe,
+                        hasKeyframes: selectedLayer.keyframes.some(
+                          (k) => k.property === `props.${field.name}`
+                        )
+                      })
                 }))}
               >
                 {#snippet prefix()}
@@ -784,7 +779,7 @@
                 {/snippet}
 
                 {#each item.fields as field (field.name)}
-                  <InputPropery
+                  <InputProperty
                     metadata={field}
                     value={currentValues?.props[field.name]}
                     onUpdateProp={(name, v) => updateProperty(name, v, 'props')}
@@ -794,12 +789,13 @@
               </InputsWrapper>
             {:else}
               <InputWrapper
-                id={item.field.name}
+                for={`props.${item.field.name}`}
                 label={item.field.description || item.field.name}
-                property={isProjectSettings ? undefined : `props.${item.field.name}`}
-                addKeyframe={isProjectSettings ? undefined : addKeyframe}
+                {...isProjectSettings
+                  ? { property: undefined, addKeyframe: undefined }
+                  : { property: `props.${item.field.name}`, addKeyframe }}
               >
-                <InputPropery
+                <InputProperty
                   metadata={item.field}
                   value={currentValues?.props[item.field.name]}
                   onUpdateProp={(name, v) => updateProperty(name, v, 'props')}
@@ -826,11 +822,11 @@
           <InputsWrapper
             fields={[
               {
-                id: 'animation-presets',
+                for: 'animation-presets',
                 labels: 'Animation'
               },
               {
-                id: 'preset-duration',
+                for: 'preset-duration',
                 labels: 'Duration (s)'
               }
             ]}

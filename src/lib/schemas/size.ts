@@ -79,16 +79,21 @@ export const sizeMiddleware: PropertyMiddleware = (propName, value, currentValue
  * Automatically adjusts scaleY when scaleX changes (and vice versa) when proportions are locked
  */
 export const scaleMiddleware: PropertyMiddleware = (propName, value, currentValues) => {
-  const updates: Record<string, unknown> = { [propName]: value };
+  const updates: Record<string, unknown> = {};
   const props = currentValues.props;
 
-  if (props._scaleLocked && (propName === 'scaleX' || propName === 'scaleY')) {
+  // Handle nested property names (scale.x, scale.y)
+  if (props._scaleLocked && (propName === 'scale.x' || propName === 'scale.y')) {
     const ratio = (props._scaleRatio as number) || 1;
-    if (propName === 'scaleX') {
-      updates.scaleY = (value as number) / ratio;
+    if (propName === 'scale.x') {
+      updates['scale.x'] = value;
+      updates['scale.y'] = parseFloat(((value as number) / ratio).toFixed(2));
     } else {
-      updates.scaleX = (value as number) * ratio;
+      updates['scale.x'] = parseFloat(((value as number) * ratio).toFixed(2));
+      updates['scale.y'] = value;
     }
+  } else {
+    updates[propName] = value;
   }
 
   return updates;

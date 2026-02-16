@@ -5,11 +5,11 @@
  * Each layer type has its own creation tool (create_text_layer, create_icon_layer, etc.)
  */
 import { z } from 'zod';
-import { InterpolationSchema } from '$lib/schemas/animation';
+import { InterpolationSchema, TransformSchema } from '$lib/schemas/animation';
 import { getPresetIds } from '$lib/engine/presets';
 import { tool, type InferUITools, type Tool } from 'ai';
 import { layerRegistry, getAvailableLayerTypes } from '$lib/layers/registry';
-import { extractDefaultValues } from '$lib/layers/base';
+import { AnchorPointSchema, extractDefaultValues } from '$lib/layers/base';
 
 // ============================================
 // Helper Functions
@@ -123,7 +123,7 @@ const CreateLayerInputSchema = z
     name: z.string().optional().describe('Layer name for identification'),
     visible: z.boolean().optional().default(true).describe('Layer visibility (default: true)'),
     locked: z.boolean().optional().default(false).describe('Layer locked state (default: false)'),
-    position: PositionSchema,
+    transform: TransformSchema,
     animation: AnimationSchema
   })
   .extend(TimingFieldsSchema.shape)
@@ -241,36 +241,8 @@ export const EditLayerInputSchema = z.object({
       name: z.string().optional(),
       visible: z.boolean().optional(),
       locked: z.boolean().optional(),
-      position: z
-        .object({
-          x: z.number().optional(),
-          y: z.number().optional(),
-          z: z.number().optional().describe('Z position (depth)')
-        })
-        .optional(),
-      scale: z
-        .object({
-          x: z.number().optional(),
-          y: z.number().optional()
-        })
-        .optional(),
-      rotation: z.number().optional().describe('Rotation around Z axis (degrees)'),
-      rotationX: z.number().optional().describe('Rotation around X axis (degrees)'),
-      rotationY: z.number().optional().describe('Rotation around Y axis (degrees)'),
-      anchor: z
-        .enum([
-          'top-left',
-          'top-center',
-          'top-right',
-          'center-left',
-          'center',
-          'center-right',
-          'bottom-left',
-          'bottom-center',
-          'bottom-right'
-        ])
-        .optional()
-        .describe('Anchor point for transformations'),
+      transform: TransformSchema.optional(),
+      anchor: AnchorPointSchema.optional().describe('Anchor point for transformations'),
       opacity: z.number().min(0).max(1).optional(),
       props: z.record(z.string(), z.unknown()).optional()
     })

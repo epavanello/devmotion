@@ -5,6 +5,7 @@
   import { nanoid } from 'nanoid';
   import type { Component } from 'svelte';
   import { BRAND_COLORS } from '$lib/constants/branding';
+  import type { Transform } from '$lib/schemas/base';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -138,8 +139,8 @@
 
       // Get current animated values using the interpolation engine
       const animatedTransform = getAnimatedTransform(layer.keyframes, currentTime);
-      const currentX = animatedTransform.position.x ?? layer.transform.x;
-      const currentY = animatedTransform.position.y ?? layer.transform.y;
+      const currentX = animatedTransform.position.x ?? layer.transform.position.x;
+      const currentY = animatedTransform.position.y ?? layer.transform.position.y;
 
       // Find keyframes at exact current time
       const xKeyframeAtTime = layer.keyframes.find(
@@ -191,10 +192,13 @@
 
       // Update base transform if either property is not animated
       if (!hasXKeyframes || !hasYKeyframes) {
-        const newTransform = {
+        const newTransform: Transform = {
           ...layer.transform,
-          x: hasXKeyframes ? layer.transform.x : layer.transform.x + movementX,
-          y: hasYKeyframes ? layer.transform.y : layer.transform.y + movementY
+          position: {
+            ...layer.transform.position,
+            x: hasXKeyframes ? layer.transform.position.x : layer.transform.position.x + movementX,
+            y: hasYKeyframes ? layer.transform.position.y : layer.transform.position.y + movementY
+          }
         };
         projectStore.updateLayer(id, { transform: newTransform });
       }

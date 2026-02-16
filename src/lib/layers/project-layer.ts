@@ -30,14 +30,20 @@ export function createVirtualProjectLayer(project: Project): TypedLayer {
     name: project.name,
     type: PROJECT_LAYER_TYPE,
     transform: {
-      x: 0,
-      y: 0,
-      z: 0,
-      rotationX: 0,
-      rotationY: 0,
-      rotationZ: 0,
-      scaleX: 1,
-      scaleY: 1,
+      position: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      scale: {
+        x: 1,
+        y: 1
+      },
       anchor: 'center'
     },
     style: { opacity: 1 },
@@ -57,9 +63,7 @@ export function createVirtualProjectLayer(project: Project): TypedLayer {
 /**
  * Map props from the virtual project layer back to Project-level fields.
  */
-export function mapProjectLayerPropsToProject(
-  props: Record<string, unknown>
-): Partial<Project> {
+export function mapProjectLayerPropsToProject(props: Record<string, unknown>): Partial<Project> {
   const updates: Partial<Project> = {};
   if ('width' in props) updates.width = props.width as number;
   if ('height' in props) updates.height = props.height as number;
