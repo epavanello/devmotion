@@ -40,6 +40,21 @@ async function resolveMediaUrl(url: string): Promise<string> {
 }
 
 /**
+ * Check if a media file has an audio stream
+ */
+function hasAudioStream(src: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    ffmpeg.ffprobe(src, (err, data) => {
+      if (err) {
+        resolve(false);
+        return;
+      }
+      resolve(data.streams.some((s) => s.codec_type === 'audio'));
+    });
+  });
+}
+
+/**
  * Extract audio tracks from project layers
  */
 function getAudioTracks(projectData: ProjectData) {
@@ -76,10 +91,13 @@ function getAudioTracks(projectData: ProjectData) {
 export async function renderProjectToVideoStream(config: RenderConfig): Promise<Readable> {
   const { projectId, renderId, width, height, fps, duration, baseUrl, projectData } = config;
   const totalFrames = Math.ceil(fps * duration);
+  const tag = `[render:${renderId.slice(0, 8)}]`;
+  const log = (...args: unknown[]) => console.log(tag, ...args);
 
   const videoStream = new PassThrough();
   const token = generateRenderToken(projectId);
   const renderUrl = `${baseUrl}/render/${projectId}?token=${token}`;
+  log('Starting render', { projectId, width, height, fps, duration, totalFrames });
 
   const audioTracks = projectData ? getAudioTracks(projectData) : [];
 
@@ -114,27 +132,41 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
         args.push('--no-sandbox', '--disable-web-security');
       }
 
+      log('Launching browser...');
       browser = await chromium.launch({
-        headless: true,
+        headless: process.env.NODE_ENV === 'production',
         args
       });
+      log('Browser launched');
 
       page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
+      log('Page created, navigating to', renderUrl);
       await page.goto(renderUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+      log('Page loaded, waiting for __DEVMOTION__.ready...');
       await page.waitForFunction(() => window.__DEVMOTION__?.ready, { timeout: 30_000 });
+      log('Page ready');
 
       const pageConfig = await page.evaluate(() => window.__DEVMOTION__?.getConfig());
       const actualFps = pageConfig?.fps || fps;
       const actualDuration = pageConfig?.duration || duration;
       const actualTotalFrames = Math.ceil(actualFps * actualDuration);
 
-      // Resolve audio URLs
-      const resolvedTracks = await Promise.all(
+      // Resolve audio URLs and filter out tracks without audio streams
+      const resolvedTracksAll = await Promise.all(
         audioTracks.map(async (track) => ({
           ...track,
           src: sanitizeForFFmpeg(await resolveMediaUrl(track.src))
         }))
       );
+      const probeResults = await Promise.all(
+        resolvedTracksAll.map((track) => hasAudioStream(track.src))
+      );
+      const resolvedTracks = resolvedTracksAll.filter((_, i) => {
+        if (!probeResults[i]) {
+          log(`Skipping track ${i} (no audio stream): ${resolvedTracksAll[i].src.slice(0, 100)}`);
+        }
+        return probeResults[i];
+      });
 
       const frameStream = new PassThrough();
       ffmpegCommand = ffmpeg().input(frameStream).inputFormat('image2pipe').inputFPS(actualFps);
@@ -182,10 +214,25 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
         outputOptions.push('-c:a', 'aac', '-b:a', '192k');
       }
 
+      log('Configuring ffmpeg, audio tracks:', resolvedTracks.length);
+      if (resolvedTracks.length > 0) {
+        for (const [i, t] of resolvedTracks.entries()) {
+          log(`  Track ${i}: enterTime=${t.enterTime} offset=${t.mediaStartTime} dur=${t.mediaDuration} vol=${t.volume} src=${t.src.slice(0, 100)}`);
+        }
+        const fcIdx = outputOptions.indexOf('-filter_complex');
+        if (fcIdx >= 0) log('Filter complex:', outputOptions[fcIdx + 1]);
+      }
       ffmpegCommand = ffmpegCommand
         .outputOptions(outputOptions)
         .format('mp4')
+        .on('start', (cmd) => {
+          log('FFmpeg spawned:', cmd);
+        })
+        .on('stderr', (line) => {
+          log('FFmpeg stderr:', line);
+        })
         .on('error', (err) => {
+          log('FFmpeg error:', err.message);
           emitProgress({
             phase: 'error',
             currentFrame: 0,
@@ -196,6 +243,7 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
           videoStream.destroy(err);
         })
         .on('end', () => {
+          log('FFmpeg finished encoding');
           emitProgress({
             phase: 'done',
             currentFrame: actualTotalFrames,
@@ -205,6 +253,7 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
         });
 
       ffmpegCommand.pipe(videoStream);
+      log('FFmpeg pipeline started');
       emitProgress({
         phase: 'capturing',
         currentFrame: 0,
@@ -214,32 +263,68 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
 
       let isAborting = false;
 
-      const cleanup = async () => {
-        if (isAborting) return;
+      const cleanup = async (reason: string) => {
+        log(`cleanup() called, reason: ${reason}, isAborting: ${isAborting}`);
+        if (isAborting) {
+          log('cleanup() skipped - already aborting');
+          return;
+        }
         isAborting = true;
 
         if (ffmpegCommand) {
           try {
+            log('Killing ffmpeg...');
             ffmpegCommand.kill('SIGKILL');
           } catch {
             // ignore
           }
         }
-        if (!frameStream.destroyed) frameStream.destroy();
-        if (page && !page.isClosed()) await page.close();
-        if (browser) {
-          await browser.close();
-          browser = null;
+        if (!frameStream.destroyed) {
+          log('Destroying frameStream');
+          frameStream.destroy();
+        }
+
+        // Close page first, then browser - avoid protocol errors
+        try {
+          if (page && !page.isClosed()) {
+            log('Closing page...');
+            await page.close();
+            page = null;
+            log('Page closed');
+          } else {
+            log('Page already closed or null');
+          }
+        } catch (err) {
+          log('Error closing page:', err);
+        }
+
+        try {
+          if (browser) {
+            log('Closing browser...');
+            await browser.close();
+            browser = null;
+            log('Browser closed');
+          } else {
+            log('Browser already null');
+          }
+        } catch (err) {
+          log('Error closing browser:', err);
         }
       };
 
-      videoStream.on('close', cleanup);
-      videoStream.on('error', cleanup);
+      const onStreamClose = () => cleanup('videoStream:close');
+      const onStreamError = (err: Error) => {
+        log('videoStream error event:', err);
+        cleanup('videoStream:error');
+      };
+      videoStream.once('close', onStreamClose);
+      videoStream.once('error', onStreamError);
 
       // Capture frames
+      log(`Starting frame capture: ${actualTotalFrames} frames at ${actualFps}fps`);
       for (let frameIndex = 0; frameIndex < actualTotalFrames; frameIndex++) {
         if (videoStream.destroyed || frameStream.destroyed || isAborting) {
-          await cleanup();
+          await cleanup('frame-loop:abort-check');
           return;
         }
 
@@ -266,16 +351,46 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
         });
       }
 
+      log('All frames captured, ending frameStream');
       frameStream.end();
-      if (page) {
-        await page.close();
-        page = null;
-      }
-      if (browser) {
-        await browser.close();
-        browser = null;
-      }
+
+      // Remove cleanup listeners to prevent double cleanup from videoStream events
+      log('Removing videoStream cleanup listeners');
+      videoStream.off('close', onStreamClose);
+      videoStream.off('error', onStreamError);
+
+      // Wait for ffmpeg to finish writing before closing browser resources.
+      // Without this, the videoStream 'close' event can race with the code below,
+      // causing both cleanup() and this block to close the browser simultaneously.
+      log('Waiting for ffmpeg/videoStream to finish...', {
+        destroyed: videoStream.destroyed,
+        writableFinished: videoStream.writableFinished
+      });
+      await new Promise<void>((resolve) => {
+        if (videoStream.destroyed || videoStream.writableFinished) {
+          log('videoStream already done, resolving immediately');
+          resolve();
+        } else {
+          videoStream.once('finish', () => {
+            log('videoStream finish event');
+            resolve();
+          });
+          videoStream.once('close', () => {
+            log('videoStream close event (during wait)');
+            resolve();
+          });
+          videoStream.once('error', (err) => {
+            log('videoStream error event (during wait):', err);
+            resolve();
+          });
+        }
+      });
+
+      // Now safe to close browser resources - ffmpeg is done
+      log('FFmpeg done, proceeding to cleanup');
+      await cleanup('render-complete');
     } catch (err) {
+      log('Caught error in render:', err);
       emitProgress({
         phase: 'error',
         currentFrame: 0,
@@ -287,7 +402,18 @@ export async function renderProjectToVideoStream(config: RenderConfig): Promise<
     } finally {
       clearTimeout(renderTimeout);
       invalidateRenderToken(token);
-      if (browser) await browser.close();
+      log('Finally block, browser still open:', !!browser);
+
+      // Final cleanup - only close if not already closed
+      try {
+        if (browser) {
+          log('Finally: closing browser');
+          await browser.close();
+        }
+      } catch {
+        // Already closed or disposed
+      }
+      log('Render fully done');
     }
   })();
 
