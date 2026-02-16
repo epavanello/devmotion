@@ -37,6 +37,13 @@
       .default(40)
       .describe('Border radius (px)')
       .register(fieldRegistry, { interpolationFamily: 'continuous' }),
+    crop: z
+      .number()
+      .min(0)
+      .max(500)
+      .default(0)
+      .describe('Crop inset (px)')
+      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
     objectFit: z
       .enum(['contain', 'cover', 'none'])
       .default('cover')
@@ -117,6 +124,7 @@
     width,
     height,
     borderRadius,
+    crop,
     objectFit,
     volume,
     muted,
@@ -190,12 +198,7 @@
   });
 </script>
 
-<div
-  class="overflow-hidden shadow-lg"
-  style:width="{width}px"
-  style:height="{height}px"
-  style:border-radius="{borderRadius}px"
->
+<div style:width="{width}px" style:height="{height}px">
   {#if src}
     <!-- svelte-ignore a11y_media_has_caption -->
     <video
@@ -203,11 +206,19 @@
       {src}
       class="h-full w-full"
       style:object-fit={objectFit}
+      style:clip-path={crop > 0
+        ? `inset(${crop}px round ${borderRadius}px)`
+        : borderRadius > 0
+          ? `inset(0px round ${borderRadius}px)`
+          : undefined}
       preload="auto"
       playsinline
     ></video>
   {:else}
-    <div class="flex h-full w-full items-center justify-center bg-gray-800 text-sm text-gray-400">
+    <div
+      class="flex h-full w-full items-center justify-center bg-gray-800 text-sm text-gray-400"
+      style:border-radius="{borderRadius}px"
+    >
       No video source
     </div>
   {/if}

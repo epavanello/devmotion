@@ -3,7 +3,8 @@ import { db } from '$lib/server/db';
 import { asset } from '$lib/server/db/schema';
 import { eq, sql } from 'drizzle-orm';
 
-const MAX_USER_STORAGE = 40 * 1024 * 1024; // 40MB per user
+const MAX_USER_STORAGE =
+  process.env.NODE_ENV === 'development' ? 100 * 1024 * 1024 : 40 * 1024 * 1024; // 40MB per user
 
 /**
  * Check if user has enough storage quota for a file of the given size
