@@ -121,6 +121,7 @@ export function initializeEditorContext() {
       editorContext.isMcp = false;
       editorContext.hasUnsavedChanges = false;
       projectStore.loadProject(getDefaultProject());
+      localStorage.removeItem(STORAGE_KEY);
     }
   });
 

@@ -178,13 +178,24 @@
     toast.success('Chat history cleared');
   }
 
-  watch(
+  watch.pre(
     () => $state.snapshot(chat.messages),
     () => {
-      scrollRef?.scrollTo({
-        top: scrollRef.scrollHeight,
-        behavior: 'instant'
-      });
+      let isAtBottom = false;
+      if (scrollRef) {
+        const top = scrollRef.scrollTop;
+        const scrollHeight = scrollRef.scrollHeight;
+        const clientHeight = scrollRef.clientHeight;
+        const diff = scrollHeight - clientHeight;
+        isAtBottom = top >= diff - 100;
+      }
+      // allow the user to scroll up to read previous messages
+      if (isAtBottom) {
+        scrollRef?.scrollTo({
+          top: scrollRef.scrollHeight,
+          behavior: 'instant'
+        });
+      }
     }
   );
 </script>
@@ -270,7 +281,7 @@
         disabled={!prompt.current.trim() || chat.status === 'streaming' || projectStore.isRecording}
         loading={chat.status === 'streaming' || chat.status === 'submitted'}
       >
-        {#if chat.status === 'streaming'}
+        {#if chat.status !== 'ready'}
           Generating...
         {:else}
           Send

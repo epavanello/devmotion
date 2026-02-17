@@ -36,7 +36,15 @@ function getOpenRouterClient() {
     throw new Error('OPENROUTER_API_KEY is not configured');
   }
   return createOpenRouter({
-    apiKey
+    apiKey,
+    ...(env.HELINE_AUTH
+      ? {
+          baseURL: 'https://openrouter.helicone.ai/api/v1',
+          headers: {
+            'Helicone-Auth': `Bearer ${env.HELINE_AUTH}`
+          }
+        }
+      : {})
   });
 }
 

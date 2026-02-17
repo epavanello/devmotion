@@ -46,40 +46,42 @@ export type AnchorPoint = z.infer<typeof AnchorPointSchema>;
  * and new nested format (position, rotation, scale, anchor).
  * Old format is automatically converted to new format on parse.
  */
-export const TransformSchema = z
-  .object({
-    // New nested format
-    position: z
-      .object({
-        x: z.number().describe('Position X'),
-        y: z.number().describe('Position Y'),
-        z: z.number().describe('Position Z (depth)')
-      })
-      .optional(),
-    rotation: z
-      .object({
-        x: z.number().describe('Rotation X (radians)'),
-        y: z.number().describe('Rotation Y (radians)'),
-        z: z.number().describe('Rotation Z (radians)')
-      })
-      .optional(),
-    scale: z
-      .object({
-        x: z.number().min(0).describe('Scale X'),
-        y: z.number().min(0).describe('Scale Y')
-      })
-      .optional(),
-    anchor: AnchorPointSchema.describe('Anchor point').optional(),
-    // Old flat format (legacy support)
-    x: z.number().describe('Position X').optional(),
-    y: z.number().describe('Position Y').optional(),
-    z: z.number().describe('Position Z (depth)').optional(),
-    rotationX: z.number().describe('Rotation X (radians)').optional(),
-    rotationY: z.number().describe('Rotation Y (radians)').optional(),
-    rotationZ: z.number().describe('Rotation Z (radians)').optional(),
-    scaleX: z.number().min(0).describe('Scale X').optional(),
-    scaleY: z.number().min(0).describe('Scale Y').optional()
-  })
+export const CleanTransformSchema = z.object({
+  // New nested format
+  position: z
+    .object({
+      x: z.number().describe('Position X'),
+      y: z.number().describe('Position Y'),
+      z: z.number().describe('Position Z (depth)')
+    })
+    .optional(),
+  rotation: z
+    .object({
+      x: z.number().describe('Rotation X (radians)'),
+      y: z.number().describe('Rotation Y (radians)'),
+      z: z.number().describe('Rotation Z (radians)')
+    })
+    .optional(),
+  scale: z
+    .object({
+      x: z.number().min(0).describe('Scale X'),
+      y: z.number().min(0).describe('Scale Y')
+    })
+    .optional(),
+  anchor: AnchorPointSchema.describe('Anchor point').optional().default('center')
+});
+
+export const TransformSchema = CleanTransformSchema.extend({
+  // Old flat format (legacy support)
+  x: z.number().describe('Position X').optional(),
+  y: z.number().describe('Position Y').optional(),
+  z: z.number().describe('Position Z (depth)').optional(),
+  rotationX: z.number().describe('Rotation X (radians)').optional(),
+  rotationY: z.number().describe('Rotation Y (radians)').optional(),
+  rotationZ: z.number().describe('Rotation Z (radians)').optional(),
+  scaleX: z.number().min(0).describe('Scale X').optional(),
+  scaleY: z.number().min(0).describe('Scale Y').optional()
+})
   .superRefine((data, ctx) => {
     const hasNewFormat = data.position || data.rotation || data.scale;
     const hasOldFormat =

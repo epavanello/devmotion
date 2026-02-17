@@ -62,6 +62,30 @@ export const AI_MODELS = {
       input: 0.2,
       output: 0.5
     }
+  },
+  'x-ai/grok-4': {
+    id: 'x-ai/grok-4',
+    name: 'Grok 4',
+    provider: 'X AI',
+    description: 'Excellent for creative and complex tasks with 256K context',
+    recommended: true,
+    costTier: 'medium',
+    pricing: {
+      input: 3,
+      output: 15
+    }
+  },
+  'google/gemini-3-pro-preview': {
+    id: 'google/gemini-3-pro-preview',
+    name: 'Gemini 3 Pro',
+    provider: 'Google',
+    description: 'Excellent for creative and complex tasks with 128K context',
+    recommended: true,
+    costTier: 'high',
+    pricing: {
+      input: 2,
+      output: 12
+    }
   }
 
   // // Claude 4.5 Sonnet - Great reasoning and creativity
