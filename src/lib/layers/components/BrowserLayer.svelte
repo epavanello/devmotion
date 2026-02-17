@@ -10,62 +10,90 @@
    * Schema for Browser Layer custom properties
    */
   const schema = z.object({
-    url: z.string().default('https://example.com').describe('URL to display in iframe'),
+    url: z
+      .string()
+      .default('https://example.com')
+      .describe(
+        'The URL to display inside the browser iframe content area. The page is loaded in a sandboxed iframe. Note: some sites block embedding via X-Frame-Options.'
+      ),
     width: z
       .number()
       .min(300)
       .max(2000)
       .default(1024)
-      .describe('Browser width (px)')
-      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+      .describe(
+        'The total width of the browser window mockup in pixels, including chrome. Smoothly animatable.'
+      )
+      .register(fieldRegistry, {
+        group: 'size',
+        interpolationFamily: 'continuous',
+        label: 'Width'
+      }),
     height: z
       .number()
       .min(300)
       .max(1200)
       .default(600)
-      .describe('Browser height (px)')
-      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+      .describe(
+        'The total height of the browser window mockup in pixels, including chrome. Smoothly animatable.'
+      )
+      .register(fieldRegistry, {
+        group: 'size',
+        interpolationFamily: 'continuous',
+        label: 'Height'
+      }),
     browserColor: z
       .string()
       .default('#f3f4f6')
-      .describe('Browser chrome color')
+      .describe(
+        'The color of the browser chrome (toolbar area and window frame) in hexadecimal. Use light grays for Chrome-style, dark colors for dark mode. Smoothly animatable.'
+      )
       .register(fieldRegistry, {
         group: 'chrome',
         interpolationFamily: 'continuous',
-        widget: 'color'
+        widget: 'color',
+        label: 'Chrome Color'
       }),
     barBackgroundColor: z
       .string()
       .default('#ffffff')
-      .describe('Address bar background')
+      .describe(
+        'The background color of the address bar and tab bar in hexadecimal. Usually white or slightly off-white. Smoothly animatable.'
+      )
       .register(fieldRegistry, {
         group: 'chrome',
         interpolationFamily: 'continuous',
-        widget: 'color'
+        widget: 'color',
+        label: 'Bar Color'
       }),
     textColor: z
       .string()
       .default('#1f2937')
-      .describe('Text color in chrome')
+      .describe(
+        'The color of text, icons, and UI elements within the browser chrome in hexadecimal. Should contrast with the chrome color. Smoothly animatable.'
+      )
       .register(fieldRegistry, {
         group: 'chrome',
         interpolationFamily: 'continuous',
-        widget: 'color'
+        widget: 'color',
+        label: 'Text Color'
       }),
     showTabs: z
       .boolean()
       .default(true)
-      .describe('Show tab bar')
-      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+      .describe(
+        'Whether to display the tab bar above the address bar. When true, shows a tab strip with a "New Tab" tab. Changes discretely (on/off).'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'discrete', label: 'Show Tabs' }),
     _aspectRatioLocked: z
       .boolean()
       .default(false)
-      .describe('Aspect ratio locked')
+      .describe('Internal property: whether aspect ratio is locked during resize')
       .register(fieldRegistry, { hidden: true }),
     _aspectRatio: z
       .number()
       .default(1)
-      .describe('Aspect ratio value')
+      .describe('Internal property: stored aspect ratio value when locked')
       .register(fieldRegistry, { hidden: true })
   });
 

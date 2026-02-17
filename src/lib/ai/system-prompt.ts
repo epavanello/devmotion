@@ -64,10 +64,21 @@ IMPORTANT: All messages must be in PLAIN TEXT without markdown formatting.
 ## Interpolation Options
 
 When creating custom keyframes, you can specify interpolation:
-- **continuous**: linear, ease-in, ease-out, ease-in-out (smooth transitions)
-- **discrete**: step-end, step-start, step-mid (instant changes)
-- **quantized**: integer, snap-grid (rounded values)
-- **text**: char-reveal, word-reveal (for text animations)
+- **continuous**: For numbers (position, scale, opacity) AND colors (fill, stroke, dropShadowColor)
+  - Colors: use hex values (#ff0000 → #0000ff), interpolates smoothly in RGB space
+  - Easing: ease-out for entrances (fast→slow), ease-in for exits (slow→fast)
+  - More dramatic: ease-*-back (overshoot), bounce, elastic
+  - Examples:
+    - Fade in text: {property:"opacity", value:0→1, interpolation:{family:"continuous", strategy:"ease-out"}}
+    - Color shift: {property:"props.fill", value:"#ff0000"→"#00ff00", interpolation:{family:"continuous", strategy:"ease-in-out"}}
+- **discrete**: step-end, step-start, step-mid (instant jumps, no smooth transition)
+- **quantized**: integer, snap-grid (animates smoothly but snaps to whole numbers)
+- **text**: char-reveal, word-reveal (ONLY for props.content on text layers)
+  - IMPORTANT: To create typewriter effects, add keyframes for props.content:
+    - Start keyframe: time=0, value="", interpolation={family:"text", strategy:"char-reveal"}
+    - End keyframe: time=2, value="Full text here"
+  - char-reveal: types character by character
+  - word-reveal: reveals word by word
 
 Default is continuous/ease-in-out if not specified.
 
@@ -93,6 +104,15 @@ Distribute layers across the canvas — never stack everything at (0,0).
 - Stagger start times by 0.1–0.3 s between layers for a professional sequence.
 - Entrances: 0.3–0.6 s with ease-out. Exits: 0.2–0.4 s with ease-in.
 - Animate hero elements first, then supporting ones.
+- **Text typewriter effects**: Always animate props.content with text interpolation:
+  \`\`\`json
+  {
+    "keyframes": [
+      { "time": 0, "property": "props.content", "value": "", "interpolation": { "family": "text", "strategy": "char-reveal" } },
+      { "time": 2, "property": "props.content", "value": "Your full text here" }
+    ]
+  }
+  \`\`\`
 
 ## Good example (reference)
 

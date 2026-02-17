@@ -2,6 +2,7 @@
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
   import { Star } from '@lucide/svelte';
+  import { fieldRegistry } from '$lib/layers/properties/field-registry';
 
   /**
    * Common Lucide icon names for motion graphics
@@ -115,14 +116,88 @@
    * Schema for Icon Layer custom properties
    */
   const schema = z.object({
-    icon: z.enum(commonIconValues).default('star').describe('Icon name (Lucide icon)'),
-    size: z.number().min(16).max(512).default(64).describe('Icon size (px)'),
-    color: z.string().default('#ffffff').describe('Icon color'),
-    strokeWidth: z.number().min(0.5).max(4).default(2).describe('Stroke width'),
-    fill: z.string().default('none').describe('Fill color (none for outline)'),
-    backgroundColor: z.string().default('transparent').describe('Background color'),
-    backgroundRadius: z.number().min(0).max(256).default(0).describe('Background border radius'),
-    backgroundPadding: z.number().min(0).max(64).default(0).describe('Background padding')
+    icon: z
+      .enum(commonIconValues)
+      .default('star')
+      .describe(
+        'The icon name from Lucide icon library. Choose from common icons like arrows, actions, objects, shapes, and social media symbols. Changes discretely (no smooth animation between different icons).'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'discrete', label: 'Icon' }),
+    size: z
+      .number()
+      .min(16)
+      .max(512)
+      .default(64)
+      .describe(
+        'The icon size in pixels. Determines both width and height of the icon. Smoothly animatable for scaling effects.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'continuous', label: 'Size' }),
+    color: z
+      .string()
+      .default('#ffffff')
+      .describe(
+        'The stroke/outline color of the icon in hexadecimal format. Defines the line color for the icon paths. Smoothly animatable for color transitions.'
+      )
+      .register(fieldRegistry, {
+        interpolationFamily: 'continuous',
+        widget: 'color',
+        label: 'Stroke'
+      }),
+    strokeWidth: z
+      .number()
+      .min(0.5)
+      .max(4)
+      .default(2)
+      .describe(
+        'The thickness of the icon stroke/outline in pixels. Lower values create thinner lines, higher values create bolder icons. Smoothly animatable.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'continuous', label: 'Stroke Width' }),
+    fill: z
+      .string()
+      .default('none')
+      .describe(
+        'The fill color inside the icon shapes in hexadecimal format. Use "none" for outline-only icons, or a color hex (e.g., #ff0000) to fill the icon interior. Smoothly animatable between colors.'
+      )
+      .register(fieldRegistry, {
+        interpolationFamily: 'continuous',
+        widget: 'color',
+        label: 'Fill'
+      }),
+    backgroundColor: z
+      .string()
+      .default('transparent')
+      .describe(
+        'The background color behind the icon in hexadecimal format. Use "transparent" for no background, or a color (e.g., #000000) to add a background shape. Smoothly animatable.'
+      )
+      .register(fieldRegistry, {
+        interpolationFamily: 'continuous',
+        widget: 'color',
+        label: 'Background'
+      }),
+    backgroundRadius: z
+      .number()
+      .min(0)
+      .max(256)
+      .default(0)
+      .describe(
+        'The border radius of the background shape in pixels. 0 = square background, higher values = more rounded. Use size/2 for circular backgrounds. Smoothly animatable.'
+      )
+      .register(fieldRegistry, {
+        interpolationFamily: 'continuous',
+        label: 'Background Radius'
+      }),
+    backgroundPadding: z
+      .number()
+      .min(0)
+      .max(64)
+      .default(0)
+      .describe(
+        'The padding/spacing between the icon and its background edge in pixels. Increases the background size without affecting icon size. Smoothly animatable.'
+      )
+      .register(fieldRegistry, {
+        interpolationFamily: 'continuous',
+        label: 'Background Padding'
+      })
   });
 
   export const meta = {

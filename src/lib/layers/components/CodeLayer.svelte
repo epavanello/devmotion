@@ -8,28 +8,132 @@
    * Perfect for showing code snippets in tech videos
    */
   const schema = z.object({
-    code: z.string().default('const hello = "world";').describe('Code content'),
+    code: z
+      .string()
+      .default('const hello = "world";')
+      .describe(
+        'The source code content to display with syntax highlighting. Write multi-line code using newlines. Supports all languages defined by the language property.'
+      ),
     language: z
       .enum(['javascript', 'typescript', 'python', 'html', 'css', 'json', 'bash', 'text'])
       .default('javascript')
-      .describe('Programming language'),
-    fontSize: z.number().min(10).max(36).default(16).describe('Font size (px)'),
-    lineHeight: z.number().min(1).max(3).default(1.5).describe('Line height'),
-    width: z.number().min(100).max(1200).default(500).describe('Container width (px)'),
-    maxHeight: z.number().min(50).max(800).default(400).describe('Max height (px)'),
-    backgroundColor: z.string().default('#1e1e1e').describe('Background color'),
-    textColor: z.string().default('#d4d4d4').describe('Text color'),
-    keywordColor: z.string().default('#569cd6').describe('Keyword color'),
-    stringColor: z.string().default('#ce9178').describe('String color'),
-    commentColor: z.string().default('#6a9955').describe('Comment color'),
-    numberColor: z.string().default('#b5cea8').describe('Number color'),
-    showLineNumbers: z.boolean().default(true).describe('Show line numbers'),
-    lineNumberColor: z.string().default('#858585').describe('Line number color'),
-    padding: z.number().min(8).max(40).default(20).describe('Padding (px)'),
-    borderRadius: z.number().min(0).max(24).default(8).describe('Border radius (px)'),
-    showHeader: z.boolean().default(true).describe('Show file header'),
-    fileName: z.string().default('index.js').describe('File name in header'),
-    headerColor: z.string().default('#2d2d2d').describe('Header background color')
+      .describe(
+        'The programming language for syntax highlighting. Determines which keywords, strings, and comments are colored. Use "text" for plain text with no highlighting.'
+      ),
+    fontSize: z
+      .number()
+      .min(10)
+      .max(36)
+      .default(16)
+      .describe(
+        'The font size of the code text in pixels. Larger values improve readability for presentations. Uses a monospace font.'
+      ),
+    lineHeight: z
+      .number()
+      .min(1)
+      .max(3)
+      .default(1.5)
+      .describe(
+        'The vertical spacing between code lines as a multiplier. 1.0 = compact, 1.5 = comfortable, 2.0 = spacious. Affects readability.'
+      ),
+    width: z
+      .number()
+      .min(100)
+      .max(1200)
+      .default(500)
+      .describe(
+        'The total width of the code editor window in pixels. Should be wide enough to fit the longest line without horizontal scrolling.'
+      ),
+    maxHeight: z
+      .number()
+      .min(50)
+      .max(800)
+      .default(400)
+      .describe(
+        'The maximum height of the code content area in pixels. Content beyond this height is scrollable but not visible in the static render.'
+      ),
+    backgroundColor: z
+      .string()
+      .default('#1e1e1e')
+      .describe(
+        'The background color of the code editor body in hexadecimal. Default is VS Code dark theme (#1e1e1e). Use lighter colors for light themes.'
+      ),
+    textColor: z
+      .string()
+      .default('#d4d4d4')
+      .describe(
+        'The default text color for code that does not match any syntax rule in hexadecimal. Should contrast with the background color.'
+      ),
+    keywordColor: z
+      .string()
+      .default('#569cd6')
+      .describe(
+        'The color for language keywords (const, let, function, if, class, etc.) in hexadecimal. Default is VS Code blue (#569cd6).'
+      ),
+    stringColor: z
+      .string()
+      .default('#ce9178')
+      .describe(
+        'The color for string literals (quoted text) in hexadecimal. Default is VS Code orange-brown (#ce9178).'
+      ),
+    commentColor: z
+      .string()
+      .default('#6a9955')
+      .describe(
+        'The color for code comments (// line comments, /* block comments */, # python comments) in hexadecimal. Default is VS Code green (#6a9955).'
+      ),
+    numberColor: z
+      .string()
+      .default('#b5cea8')
+      .describe(
+        'The color for numeric literals (integers, floats) in hexadecimal. Default is VS Code light green (#b5cea8).'
+      ),
+    showLineNumbers: z
+      .boolean()
+      .default(true)
+      .describe(
+        'Whether to display line numbers in a gutter on the left side of the code. Useful for referencing specific lines in presentations.'
+      ),
+    lineNumberColor: z
+      .string()
+      .default('#858585')
+      .describe(
+        'The color of the line number text in the gutter in hexadecimal. Should be subtle/dimmed relative to code content.'
+      ),
+    padding: z
+      .number()
+      .min(8)
+      .max(40)
+      .default(20)
+      .describe(
+        'The inner padding around the code content in pixels. More padding = more breathing room around the code.'
+      ),
+    borderRadius: z
+      .number()
+      .min(0)
+      .max(24)
+      .default(8)
+      .describe(
+        'The corner radius of the code editor window in pixels. 0 = sharp corners, higher = more rounded. Matches typical code editor window styles.'
+      ),
+    showHeader: z
+      .boolean()
+      .default(true)
+      .describe(
+        'Whether to show the editor window header bar with traffic light buttons and file name. Mimics a real code editor window chrome.'
+      ),
+    fileName: z
+      .string()
+      .default('index.js')
+      .describe(
+        'The file name displayed in the header bar of the code editor window. Should match the language (e.g., "script.py" for python, "styles.css" for css).'
+      ),
+    headerColor: z
+      .string()
+      .default('#2d2d2d')
+      .describe(
+        'The background color of the header/title bar of the code editor window in hexadecimal. Should be slightly different from the body background.'
+      )
   });
 
   export const meta = {

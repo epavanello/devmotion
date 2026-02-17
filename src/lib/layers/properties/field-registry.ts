@@ -20,6 +20,8 @@ export type FieldMeta = {
   group?: string;
   /** Supported interpolation families for this field (e.g., ['continuous', 'quantized']) */
   interpolationFamily?: InterpolationFamily | InterpolationFamily[];
+
+  label?: string;
 } & (
   | {
       /** Override the default input widget rendered for this field */

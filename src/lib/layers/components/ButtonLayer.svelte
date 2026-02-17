@@ -17,93 +17,145 @@
     text: z
       .string()
       .default('Click me')
-      .describe('Button text')
-      .register(fieldRegistry, { interpolationFamily: 'text' }),
+      .describe(
+        'The text label displayed inside the button. Supports text interpolation for typewriter effects. Use this to show button labels like "Submit", "Learn More", etc.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'text', label: 'Text' }),
     width: z
       .number()
       .min(50)
       .max(500)
       .default(120)
-      .describe('Width (px)')
-      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+      .describe(
+        'The button width in pixels. Defines the horizontal size of the clickable button area. Smoothly animatable for size transitions.'
+      )
+      .register(fieldRegistry, {
+        group: 'size',
+        interpolationFamily: 'continuous',
+        label: 'Width'
+      }),
     height: z
       .number()
       .min(30)
       .max(150)
       .default(48)
-      .describe('Height (px)')
-      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+      .describe(
+        'The button height in pixels. Defines the vertical size of the clickable button area. Smoothly animatable for size transitions.'
+      )
+      .register(fieldRegistry, {
+        group: 'size',
+        interpolationFamily: 'continuous',
+        label: 'Height'
+      }),
     fontSize: z
       .number()
       .min(10)
       .max(32)
       .default(16)
-      .describe('Font size (px)')
-      .register(fieldRegistry, { group: 'typography', interpolationFamily: 'continuous' }),
+      .describe(
+        'The font size of the button text in pixels. Controls text legibility and visual hierarchy. Smoothly animatable.'
+      )
+      .register(fieldRegistry, {
+        group: 'typography',
+        interpolationFamily: 'continuous',
+        label: 'Font Size'
+      }),
     fontFamily: z
       .enum(googleFontValues)
       .optional()
-      .describe('Font family')
+      .describe(
+        'The font family from Google Fonts for the button text. Determines the typeface style. Changes discretely (no smooth transitions between fonts).'
+      )
       .register(fieldRegistry, {
         group: 'typography',
         interpolationFamily: 'discrete',
         widget: 'custom',
-        component: FontProperty
+        component: FontProperty,
+        label: 'Font'
       }),
     fontWeight: z
       .enum(['normal', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900'])
       .default('bold')
-      .describe('Font weight')
-      .register(fieldRegistry, { group: 'typography', interpolationFamily: 'discrete' }),
+      .describe(
+        'The font weight/thickness of the button text. Ranges from 100 (thin) to 900 (black). Buttons typically use bold for emphasis. Changes discretely.'
+      )
+      .register(fieldRegistry, {
+        group: 'typography',
+        interpolationFamily: 'discrete',
+        label: 'Weight'
+      }),
     backgroundColor: z
       .string()
       .default(BRAND_COLORS.blue)
-      .describe('Background color')
+      .describe(
+        'The background fill color in hexadecimal format (e.g., #4a90e2). Used for solid buttons. Smoothly animatable for color transitions and hover effects.'
+      )
       .register(fieldRegistry, {
         group: 'appearance',
         interpolationFamily: 'continuous',
-        widget: 'color'
+        widget: 'color',
+        label: 'Background'
       }),
-    textColor: z.string().default('#ffffff').describe('Text color').register(fieldRegistry, {
-      group: 'appearance',
-      interpolationFamily: 'continuous',
-      widget: 'color'
-    }),
+    textColor: z
+      .string()
+      .default('#ffffff')
+      .describe(
+        'The color of the button text in hexadecimal format. Should contrast well with the background for readability. Smoothly animatable.'
+      )
+      .register(fieldRegistry, {
+        group: 'appearance',
+        interpolationFamily: 'continuous',
+        widget: 'color',
+        label: 'Text Color'
+      }),
     borderColor: z
       .string()
       .default(BRAND_COLORS.blue)
-      .describe('Border color (for outline/ghost)')
+      .describe(
+        'The border/outline color in hexadecimal format. Visible in outline and ghost button styles. Smoothly animatable for interactive effects.'
+      )
       .register(fieldRegistry, {
         group: 'appearance',
         interpolationFamily: 'continuous',
-        widget: 'color'
+        widget: 'color',
+        label: 'Border'
       }),
     borderRadius: z
       .number()
       .min(0)
       .max(100)
       .default(8)
-      .describe('Border radius (px)')
-      .register(fieldRegistry, { group: 'style', interpolationFamily: 'continuous' }),
+      .describe(
+        'The roundness of button corners in pixels. 0 = sharp corners, higher values = more rounded. Use 999 for pill-shaped buttons. Smoothly animatable.'
+      )
+      .register(fieldRegistry, {
+        group: 'style',
+        interpolationFamily: 'continuous',
+        label: 'Radius'
+      }),
     style: z
       .enum(['solid', 'outline', 'ghost'])
       .default('solid')
-      .describe('Button style variant')
-      .register(fieldRegistry, { group: 'style', interpolationFamily: 'discrete' }),
+      .describe(
+        'The visual style variant. Solid = filled background, Outline = transparent with border, Ghost = transparent with no border. Changes discretely.'
+      )
+      .register(fieldRegistry, { group: 'style', interpolationFamily: 'discrete', label: 'Style' }),
     shadow: z
       .boolean()
       .default(true)
-      .describe('Show shadow')
-      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+      .describe(
+        'Whether to display a drop shadow beneath the button for depth. Adds elevation and visual prominence. Changes discretely (on/off).'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'discrete', label: 'Shadow' }),
     _aspectRatioLocked: z
       .boolean()
       .default(false)
-      .describe('Aspect ratio locked')
+      .describe('Internal property: whether aspect ratio is locked during resize')
       .register(fieldRegistry, { hidden: true }),
     _aspectRatio: z
       .number()
       .default(1)
-      .describe('Aspect ratio value')
+      .describe('Internal property: stored aspect ratio value when locked')
       .register(fieldRegistry, { hidden: true })
   });
 

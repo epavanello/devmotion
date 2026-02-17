@@ -20,49 +20,79 @@
     shapeType: z
       .enum(['rectangle', 'ellipse', 'circle', 'triangle', 'polygon'])
       .default('rectangle')
-      .describe('Shape type')
-      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+      .describe(
+        'The geometric shape type to render. Rectangle = four-sided, Ellipse = oval using width/height, Circle = perfect circle using radius, Triangle = three-pointed, Polygon = multi-sided using sides count. Changes discretely.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'discrete', label: 'Shape' }),
 
     background: BackgroundValueSchema.optional()
       .default('#4a90e2')
-      .describe('Fill background (solid color or gradient)')
-      .register(fieldRegistry, { widget: 'background', interpolationFamily: 'discrete' }),
-    stroke: z.string().default('#000000').describe('Stroke color').register(fieldRegistry, {
-      group: 'stroke',
-      interpolationFamily: 'continuous',
-      widget: 'color'
-    }),
+      .describe(
+        'The fill background of the shape. Supports solid colors (e.g., #4a90e2) or complex gradients (linear, radial, conic with multiple color stops). Changes discretely between different gradient configurations.'
+      )
+      .register(fieldRegistry, {
+        widget: 'background',
+        interpolationFamily: 'discrete',
+        label: 'Fill'
+      }),
+    stroke: z
+      .string()
+      .default('#000000')
+      .describe(
+        'The outline/border color in hexadecimal format. Draws a line around the shape perimeter. Smoothly animatable for color transitions.'
+      )
+      .register(fieldRegistry, {
+        group: 'stroke',
+        interpolationFamily: 'continuous',
+        widget: 'color',
+        label: 'Stroke'
+      }),
     strokeWidth: z
       .number()
       .min(0)
       .max(50)
       .default(2)
-      .describe('Stroke width (px)')
-      .register(fieldRegistry, { group: 'stroke', interpolationFamily: 'continuous' }),
+      .describe(
+        'The thickness of the stroke/outline in pixels. 0 = no stroke, higher values = thicker border. Smoothly animatable.'
+      )
+      .register(fieldRegistry, {
+        group: 'stroke',
+        interpolationFamily: 'continuous',
+        label: 'Width'
+      }),
     borderRadius: z
       .number()
       .min(0)
       .max(500)
       .default(0)
       .optional()
-      .describe('Corner radius (px)')
-      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
+      .describe(
+        'The corner radius for rectangles in pixels. 0 = sharp corners, higher values = more rounded. Only applies to rectangle shapes. Smoothly animatable.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'continuous', label: 'Corner Radius' }),
     radius: z
       .number()
       .min(0)
       .max(1000)
       .default(100)
       .optional()
-      .describe('Radius for circle/polygon (px)')
-      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
+      .describe(
+        'The radius for circle and polygon shapes in pixels. Determines the size from center to edge. Smoothly animatable for scaling effects.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'continuous', label: 'Radius' }),
     sides: z
       .number()
       .min(3)
       .max(12)
       .default(6)
       .optional()
-      .describe('Number of sides for polygon')
-      .register(fieldRegistry, { interpolationFamily: ['quantized', 'continuous'] })
+      .describe(
+        'The number of sides for polygon shapes. 3 = triangle, 4 = diamond, 6 = hexagon, etc. Can use quantized interpolation (snaps to integers) or continuous (morphs smoothly).'
+      )
+      .register(fieldRegistry, {
+        interpolationFamily: ['quantized', 'continuous'],
+        label: 'Sides'
+      })
   });
 
   export const meta = {

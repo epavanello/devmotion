@@ -31,7 +31,7 @@ export const AI_MODELS = {
     name: 'Minimax M2.5',
     provider: 'Minimax',
     description: 'Excellent for creative and complex tasks with 128K context',
-    recommended: true,
+    recommended: false,
     costTier: 'low',
     pricing: {
       input: 0.3,
@@ -56,37 +56,49 @@ export const AI_MODELS = {
     name: 'Grok 4.1 Fast',
     provider: 'X AI',
     description: 'Excellent for creative and complex tasks with 128K context',
-    recommended: true,
+    recommended: false,
     costTier: 'low',
     pricing: {
       input: 0.2,
       output: 0.5
     }
-  },
-  'x-ai/grok-4': {
-    id: 'x-ai/grok-4',
-    name: 'Grok 4',
-    provider: 'X AI',
-    description: 'Excellent for creative and complex tasks with 256K context',
-    recommended: true,
-    costTier: 'medium',
-    pricing: {
-      input: 3,
-      output: 15
-    }
-  },
-  'google/gemini-3-pro-preview': {
-    id: 'google/gemini-3-pro-preview',
-    name: 'Gemini 3 Pro',
-    provider: 'Google',
-    description: 'Excellent for creative and complex tasks with 128K context',
-    recommended: true,
-    costTier: 'high',
-    pricing: {
-      input: 2,
-      output: 12
-    }
   }
+  // 'x-ai/grok-4': {
+  //   id: 'x-ai/grok-4',
+  //   name: 'Grok 4',
+  //   provider: 'X AI',
+  //   description: 'Excellent for creative and complex tasks with 256K context',
+  //   recommended: false,
+  //   costTier: 'medium',
+  //   pricing: {
+  //     input: 3,
+  //     output: 15
+  //   }
+  // },
+  // 'google/gemini-3-pro-preview': {
+  //   id: 'google/gemini-3-pro-preview',
+  //   name: 'Gemini 3 Pro',
+  //   provider: 'Google',
+  //   description: 'Excellent for creative and complex tasks with 128K context',
+  //   recommended: false,
+  //   costTier: 'high',
+  //   pricing: {
+  //     input: 2,
+  //     output: 12
+  //   }
+  // },
+  // 'anthropic/claude-sonnet-4.6': {
+  //   id: 'anthropic/claude-sonnet-4.6',
+  //   name: 'Claude Sonnet 4.6',
+  //   provider: 'Anthropic',
+  //   description: 'Excellent for creative and complex tasks with 1M context',
+  //   recommended: false,
+  //   costTier: 'high',
+  //   pricing: {
+  //     input: 3,
+  //     output: 15
+  //   }
+  // }
 
   // // Claude 4.5 Sonnet - Great reasoning and creativity
   // 'anthropic/claude-sonnet-4.5': {
@@ -132,11 +144,6 @@ export const AI_MODELS = {
 export type ModelId = keyof typeof AI_MODELS;
 
 /**
- * Default model to use
- */
-export const DEFAULT_MODEL_ID: ModelId = 'x-ai/grok-4.1-fast';
-
-/**
  * Get model by ID with fallback to default
  */
 export function getModel(modelId?: LiteralUnion<ModelId, string>): AIModel {
@@ -159,6 +166,12 @@ export function getAvailableModels(): AIModel[] {
     return costOrder[a.costTier] - costOrder[b.costTier];
   });
 }
+
+/**
+ * Default model to use
+ */
+export const DEFAULT_MODEL_ID: ModelId =
+  (getRecommendedModels().find((m) => m.recommended)?.id as ModelId) || 'x-ai/grok-4.1-fast';
 
 /**
  * Get recommended models

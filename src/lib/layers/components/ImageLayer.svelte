@@ -15,48 +15,62 @@
     src: z
       .string()
       .default('')
-      .describe('Image source URL or uploaded file URL')
-      .register(fieldRegistry, { widget: 'upload', mediaType: 'image' }),
+      .describe(
+        'The image source URL or uploaded file URL. Can be an external URL (e.g., https://...) or a storage URL from an uploaded file. Leave empty to show placeholder.'
+      )
+      .register(fieldRegistry, { widget: 'upload', mediaType: 'image', label: 'Image' }),
     width: z
       .number()
       .min(1)
       .max(5000)
       .default(720)
-      .describe('Width (px)')
-      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+      .describe(
+        'The display width of the image container in pixels. Does not affect the source image resolution. Smoothly animatable.'
+      )
+      .register(fieldRegistry, {
+        group: 'size',
+        interpolationFamily: 'continuous',
+        label: 'Width'
+      }),
     height: z
       .number()
       .min(1)
       .max(5000)
       .default(1280)
-      .describe('Height (px)')
-      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+      .describe(
+        'The display height of the image container in pixels. Does not affect the source image resolution. Smoothly animatable.'
+      )
+      .register(fieldRegistry, {
+        group: 'size',
+        interpolationFamily: 'continuous',
+        label: 'Height'
+      }),
     objectFit: z
       .enum(['contain', 'cover', 'fill', 'none', 'scale-down'])
       .default('cover')
-      .describe('Object fit mode')
-      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+      .describe(
+        'How the image fills its container. Cover = crop to fill (no whitespace), Contain = fit inside (may have letterbox), Fill = stretch to fill, None = use original size, Scale-down = smallest of none/contain. Changes discretely.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'discrete', label: 'Fit' }),
     _aspectRatioLocked: z
       .boolean()
       .default(false)
-      .describe('Aspect ratio locked')
+      .describe('Internal property: whether aspect ratio is locked during resize')
       .register(fieldRegistry, { hidden: true }),
     _aspectRatio: z
       .number()
       .default(1)
-      .describe('Aspect ratio value')
+      .describe('Internal property: stored aspect ratio value when locked')
       .register(fieldRegistry, { hidden: true }),
-    /** The storage key if file was uploaded (used for cleanup) */
     fileKey: z
       .string()
       .default('')
-      .describe('Storage key (for uploaded files)')
+      .describe('Internal property: S3 storage key for uploaded files, used for cleanup on delete')
       .register(fieldRegistry, { hidden: true }),
-    /** Original filename if uploaded */
     fileName: z
       .string()
       .default('')
-      .describe('Original filename')
+      .describe('Internal property: original filename of the uploaded image, used for alt text')
       .register(fieldRegistry, { hidden: true })
   });
 
