@@ -153,8 +153,9 @@
   }
 
   const shapeStyles = $derived.by(() => {
+    const isRound = shapeType === 'circle' || shapeType === 'ellipse';
     const base = {
-      ...getStyleProperties(background),
+      ...getStyleProperties(background, isRound ? { radialSize: 'closest-side' } : undefined),
       border: `${strokeWidth}px solid ${stroke}`
     };
 
