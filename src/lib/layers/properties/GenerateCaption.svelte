@@ -1,6 +1,8 @@
 <script lang="ts">
   import Button from '$lib/components/ui/button/button.svelte';
   import Textarea from '$lib/components/ui/textarea/textarea.svelte';
+  import { Select } from '$lib/components/ui/select';
+  import InputWrapper from '$lib/components/editor/panels/input-wrapper.svelte';
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Sparkles } from '@lucide/svelte';
   import { createLayer } from '$lib/engine/layer-factory';
@@ -14,6 +16,27 @@
   let isGeneratingCaptions = $state(false);
   let captionError = $state('');
   let prompt = $state('');
+  let selectedLanguage = $state('auto');
+
+  // Common languages supported by Whisper
+  const languages = [
+    { value: 'auto', label: 'Auto-detect' },
+    { value: 'en', label: 'English' },
+    { value: 'es', label: 'Spanish' },
+    { value: 'fr', label: 'French' },
+    { value: 'de', label: 'German' },
+    { value: 'it', label: 'Italian' },
+    { value: 'pt', label: 'Portuguese' },
+    { value: 'ru', label: 'Russian' },
+    { value: 'ja', label: 'Japanese' },
+    { value: 'ko', label: 'Korean' },
+    { value: 'zh', label: 'Chinese' },
+    { value: 'ar', label: 'Arabic' },
+    { value: 'hi', label: 'Hindi' },
+    { value: 'nl', label: 'Dutch' },
+    { value: 'pl', label: 'Polish' },
+    { value: 'tr', label: 'Turkish' }
+  ];
 
   const {
     layer
@@ -47,7 +70,8 @@
         fileKey,
         mediaStartTime,
         mediaEndTime,
-        prompt: prompt.trim() || undefined
+        prompt: prompt.trim() || undefined,
+        language: selectedLanguage === 'auto' ? undefined : selectedLanguage
       });
 
       if (!result.success) {
@@ -82,12 +106,24 @@
 </script>
 
 <div class="flex flex-col gap-2">
-  <Textarea
-    bind:value={prompt}
-    placeholder="Optional: Paste lyrics or context to guide transcription..."
-    class="min-h-[80px] text-xs"
-    disabled={isGeneratingCaptions}
-  />
+  <InputWrapper for="language" label="Language">
+    <Select
+      trigger={{ id: 'language', disabled: isGeneratingCaptions }}
+      bind:value={selectedLanguage}
+      options={languages}
+    />
+  </InputWrapper>
+
+  <InputWrapper for="prompt" label="Context (Optional)">
+    <Textarea
+      id="prompt"
+      bind:value={prompt}
+      placeholder="Paste lyrics or context to guide transcription..."
+      class="min-h-[80px] text-xs"
+      disabled={isGeneratingCaptions}
+    />
+  </InputWrapper>
+
   <Button
     variant="default"
     size="sm"

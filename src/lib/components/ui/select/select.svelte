@@ -32,11 +32,13 @@
     group?: SelectPrimitive.GroupProps;
     item?: SelectPrimitive.ItemProps;
   } = $props();
+
+  const label = $derived(options.find((option) => option.value === value)?.label || placeholder);
 </script>
 
 <Select.Root {...root} bind:value type="single">
   <Select.Trigger {...trigger}>
-    {value || placeholder}
+    {label}
   </Select.Trigger>
 
   <Select.Content {...content}>
