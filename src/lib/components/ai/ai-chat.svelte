@@ -1,8 +1,8 @@
 <script lang="ts">
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Bot, Loader2, User } from '@lucide/svelte';
-  import { DEFAULT_MODEL_ID, getModel } from '$lib/ai/models';
+  import { Bot, Loader2, User, Trash2, Send } from '@lucide/svelte';
+  import { DEFAULT_MODEL_ID } from '$lib/ai/models';
   import { Chat } from '@ai-sdk/svelte';
   import {
     DefaultChatTransport,
@@ -43,7 +43,7 @@
   import { parseErrorMessage } from '$lib/utils';
   import { uiStore } from '$lib/stores/ui.svelte';
 
-  import { PersistedState } from 'runed';
+  import { PersistedState, watch } from 'runed';
   import ToolPart from './tool-part.svelte';
   import ReasoningPart from './reasoning-part.svelte';
 
@@ -52,14 +52,17 @@
 
   interface Props {
     selectedModelId?: string;
+    scrollRef?: HTMLElement | null;
   }
 
-  let { selectedModelId = $bindable(DEFAULT_MODEL_ID) }: Props = $props();
+  let { selectedModelId = $bindable(DEFAULT_MODEL_ID), scrollRef }: Props = $props();
   let prompt = new PersistedState('prompt', '');
 
-  const selectedModel = $derived(getModel(selectedModelId));
-
-  let messagesContainer: HTMLDivElement | null = $state(null);
+  // svelte-ignore state_referenced_locally
+  const persistedMessages = new PersistedState<UIMessage<never, UIDataTypes, AnimationUITools>[]>(
+    `ai-chat-messages-${projectStore.state.id}`,
+    []
+  );
 
   const chat = new Chat<UIMessage<never, UIDataTypes, AnimationUITools>>({
     transport: new DefaultChatTransport({
@@ -71,6 +74,7 @@
         } satisfies Omit<GenerateRequest, 'messages'>;
       }
     }),
+    messages: persistedMessages.current,
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     onError(error) {
       toast.error(parseErrorMessage(error));
@@ -140,6 +144,9 @@
         toolCallId: toolCall.toolCallId,
         output: result
       });
+    },
+    onFinish() {
+      persistedMessages.current = chat.messages;
     }
   });
 
@@ -165,17 +172,26 @@
     }
   }
 
-  // Auto-scroll to bottom when messages change
-  $effect(() => {
-    if (messagesContainer && chat.messages.length > 0) {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  function resetMessages() {
+    chat.messages = [];
+    persistedMessages.current = [];
+    toast.success('Chat history cleared');
+  }
+
+  watch(
+    () => $state.snapshot(chat.messages),
+    () => {
+      scrollRef?.scrollTo({
+        top: scrollRef.scrollHeight,
+        behavior: 'instant'
+      });
     }
-  });
+  );
 </script>
 
 <div class="flex h-full flex-col">
   <!-- Messages -->
-  <div bind:this={messagesContainer} class="flex-1 overflow-y-auto p-4">
+  <div class="flex-1 p-4">
     {#if chat.messages.length === 0}
       <div class="flex h-full flex-col items-center justify-center text-center">
         <Bot class="mb-4 size-12 text-muted-foreground" />
@@ -238,7 +254,7 @@
   </div>
 
   <!-- Input -->
-  <form onsubmit={onSubmit} class="border-t p-4">
+  <form onsubmit={onSubmit} class="sticky bottom-0 border-t bg-background p-4">
     <textarea
       bind:value={prompt.current}
       onkeydown={handleKeyDown}
@@ -247,16 +263,33 @@
       class="mb-3 flex min-h-20 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
     ></textarea>
 
-    <Button
-      class="w-full"
-      type="submit"
-      disabled={!prompt.current.trim() || chat.status === 'streaming' || projectStore.isRecording}
-    >
-      {#if chat.status === 'streaming'}
-        Generating...
-      {:else}
-        Generate with {selectedModel.name}
+    <div class="flex gap-2">
+      <Button
+        class="flex-1"
+        type="submit"
+        disabled={!prompt.current.trim() || chat.status === 'streaming' || projectStore.isRecording}
+        loading={chat.status === 'streaming' || chat.status === 'submitted'}
+      >
+        {#if chat.status === 'streaming'}
+          Generating...
+        {:else}
+          Send
+          <Send class="size-4" />
+        {/if}
+      </Button>
+
+      {#if chat.messages.length > 0}
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onclick={resetMessages}
+          disabled={chat.status === 'streaming'}
+          title="Clear chat history"
+        >
+          <Trash2 class="size-4" />
+        </Button>
       {/if}
-    </Button>
+    </div>
   </form>
 </div>

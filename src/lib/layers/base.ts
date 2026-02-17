@@ -59,6 +59,7 @@ export type PropertyMetadata = {
   name: string;
   type: 'string' | 'number' | 'boolean' | 'select';
   description?: string;
+  optional?: boolean;
   min?: number;
   max?: number;
   step?: number;
@@ -73,15 +74,20 @@ export type PropertyMetadata = {
 
 /**
  * Unwrap ZodDefault and ZodOptional to get the inner type
+ * Returns both the unwrapped type and whether it was optional
  */
-function unwrapZodType(zodType: z.ZodType): z.ZodType {
+function unwrapZodType(zodType: z.ZodType): { unwrapped: z.ZodType; isOptional: boolean } {
   let current = zodType;
+  let isOptional = false;
 
   // Unwrap ZodDefault and ZodOptional to get to the base type
   while (current instanceof z.ZodDefault || current instanceof z.ZodOptional) {
+    if (current instanceof z.ZodOptional) {
+      isOptional = true;
+    }
     current = current.unwrap() as z.ZodType;
   }
-  return current;
+  return { unwrapped: current, isOptional };
 }
 
 /**
@@ -91,7 +97,7 @@ function inferInterpolationFamily(
   fieldSchema: z.ZodType,
   fieldName: string
 ): InterpolationFamily | InterpolationFamily[] {
-  const unwrapped = unwrapZodType(fieldSchema);
+  const { unwrapped } = unwrapZodType(fieldSchema);
 
   // Number (float) → continuous
   if (unwrapped instanceof z.ZodNumber) {
@@ -163,7 +169,7 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
 
     for (const [key, value] of Object.entries(shape)) {
       const zodType = value;
-      const unwrapped = unwrapZodType(zodType);
+      const { unwrapped, isOptional } = unwrapZodType(zodType);
       const fieldMeta = fieldRegistry.get(zodType);
 
       // Get interpolation family from field meta or infer it
@@ -174,7 +180,8 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
         name: key,
         type: 'string',
         interpolationFamily,
-        description: zodType.meta()?.description
+        description: zodType.meta()?.description,
+        optional: isOptional
       };
 
       // Determine type and deprecated interpolation type

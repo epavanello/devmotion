@@ -8,6 +8,10 @@
  * - Derive everything possible from the registry/schemas at runtime.
  */
 import type { Project } from '$lib/types/animation';
+import { projectDataSchema } from '$lib/schemas/animation';
+import goodExampleRaw from '$lib/good-example.json';
+
+const exampleProject = projectDataSchema.parse(goodExampleRaw);
 
 /**
  * Build the system prompt for progressive tool-calling
@@ -21,10 +25,28 @@ export function buildSystemPrompt(project: Project): string {
 
 ## Workflow
 
-1. **configure_project** first if the user wants a specific format, background, or duration.
-2. **Create layers** with create_*_layer tools. Each call returns a reference (layer_0, layer_1, ...) you can reuse.
-3. **Animate every layer** — pass an \`animation\` object inline when creating, or call animate_layer after. No layer should be static.
-4. **Refine** with edit_layer, update_keyframe, remove_keyframe, or remove_layer as needed.
+STEP 1: REASONING AND PLANNING
+Before any tool call, deeply analyze the user's request and available tools. Then create a detailed plan including:
+- Total video duration (in seconds)
+- Complete list of layers to create (type, descriptive name)
+- For each layer: specific properties (hex colors, sizes, x/y positions, text content)
+- Planned keyframes for each layer (exact times, animated properties, start/end values, interpolation type)
+- Transitions and timing sequence (what enters when, stagger between elements)
+- Overall graphic consistency (color palette, style, rhythm)
+
+Present this plan to the user in PLAIN TEXT (NO MARKDOWN) clearly and structured, summarizing all creative choices.
+
+STEP 2: EXECUTION
+Only after presenting the plan, proceed with the tool call sequence:
+1. configure_project (if needed for format, background, duration)
+2. Create layers with create_*_layer tools (one at a time, in logical order)
+3. Animate each layer with animate_layer or inline keyframes
+4. Refine with edit_layer, update_keyframe, remove_keyframe if needed
+
+STEP 3: CONCLUSION
+At the end, greet the user in a friendly and cheerful way in PLAIN TEXT.
+
+IMPORTANT: All messages must be in PLAIN TEXT without markdown formatting.
 
 ## Transform Capabilities
 
@@ -72,12 +94,18 @@ Distribute layers across the canvas — never stack everything at (0,0).
 - Entrances: 0.3–0.6 s with ease-out. Exits: 0.2–0.4 s with ease-in.
 - Animate hero elements first, then supporting ones.
 
+## Good example (reference)
+
+${JSON.stringify(exampleProject)}
+
 ## Rules
 
-1. Always set meaningful props (content, colors, sizes) — do not rely on defaults for visible content.
-2. Always position layers intentionally.
-3. Always animate every layer.
-4. Create layers one at a time; do not batch unrelated layers in a single call.
+1. ALWAYS start with a detailed plan in plain text (STEP 1), then execute tool calls (STEP 2), then conclude in a friendly way (STEP 3).
+2. NEVER use markdown formatting in your messages — plain text only.
+3. Always set meaningful props (content, colors, sizes) — do not rely on defaults for visible content.
+4. Always position layers intentionally.
+5. Always animate every layer.
+6. Create layers one at a time; do not batch unrelated layers in a single call.
 
 ## Project state
 ${buildCanvasState(project)}`;

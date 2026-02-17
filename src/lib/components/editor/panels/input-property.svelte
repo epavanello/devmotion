@@ -8,6 +8,7 @@
   import FileUpload from '../FileUpload.svelte';
   import BackgroundPicker from './background-picker.svelte';
   import ScrubInput from './scrub-input.svelte';
+  import { ColorPicker } from '$lib/components/ui/color-picker';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -80,12 +81,10 @@
     onchange={(newValue) => onUpdateProp(metadata.name, newValue)}
   />
 {:else if metadata.meta?.widget === 'color'}
-  <Input
-    id={`${targetPath}.${metadata.name}`}
-    type="color"
+  <ColorPicker
     value={typeof value === 'string' ? value : '#000000'}
-    oninput={(e) => onUpdateProp(metadata.name, e.currentTarget.value)}
-    class="min-w-20 p-1"
+    onchange={(newValue) => onUpdateProp(metadata.name, newValue || 'transparent')}
+    optional={metadata.optional}
   />
 {:else if metadata.meta?.widget === 'custom'}
   {@const Component = metadata.meta.component}

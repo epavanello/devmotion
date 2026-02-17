@@ -40,6 +40,7 @@ function loadFromLocalStorage(): Project | null {
       return ProjectSchema.parse(JSON.parse(stored));
     }
   } catch (error) {
+    localStorage.removeItem(STORAGE_KEY);
     console.error('Failed to load project from localStorage:', error);
   }
 

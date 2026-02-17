@@ -17,6 +17,7 @@
     onToggle?: () => void;
     topOffset?: string;
     zIndex?: number;
+    scrollRef?: HTMLElement | null;
   }
 
   let {
@@ -31,7 +32,8 @@
     isOpen = false,
     onToggle,
     topOffset = '0',
-    zIndex = 0
+    zIndex = 0,
+    scrollRef = $bindable(null)
   }: Props = $props();
 </script>
 
@@ -90,11 +92,11 @@
     </div>
 
     {#if disableScroll}
-      <div class="flex-1 overflow-hidden">
+      <div class="flex-1 overflow-hidden" bind:this={scrollRef}>
         {@render content()}
       </div>
     {:else}
-      <ScrollArea class="flex-1">
+      <ScrollArea class="flex-1" bind:ref={scrollRef}>
         {@render content()}
       </ScrollArea>
     {/if}

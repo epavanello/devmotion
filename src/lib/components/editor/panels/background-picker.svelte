@@ -1,10 +1,12 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
   import { Separator } from '$lib/components/ui/separator';
   import { ScrollArea } from '$lib/components/ui/scroll-area';
   import * as Popover from '$lib/components/ui/popover';
+  import { ColorPicker } from '$lib/components/ui/color-picker';
+  import Select from '$lib/components/ui/select/select.svelte';
+  import InputWrapper from './input-wrapper.svelte';
+  import InputsWrapper from './inputs-wrapper.svelte';
 
   import { Palette, Sparkles, Plus, Trash2, ChevronDown } from '@lucide/svelte';
   import {
@@ -21,7 +23,8 @@
     getGradientCategories,
     type GradientPreset
   } from '$lib/engine/gradient-presets';
-  import { watch } from 'runed';
+  import { watchOnce } from 'runed';
+  import ScrubInput from './scrub-input.svelte';
 
   interface Props {
     value: BackgroundValue;
@@ -32,14 +35,13 @@
   let { value, onchange, side = 'left' }: Props = $props();
 
   // Current tab: 'solid' | 'gradient' | 'presets'
-  let activeTab = $derived<'solid' | 'gradient' | 'presets'>(isSolid(value) ? 'solid' : 'gradient');
+  // svelte-ignore state_referenced_locally
+  let activeTab = $state<'solid' | 'gradient' | 'presets'>(isSolid(value) ? 'solid' : 'gradient');
 
-  // For gradient editing
+  // For gradient editing (local state)
   let gradientType = $derived<'linear' | 'radial' | 'conic'>(
     isGradient(value) ? value.type : 'linear'
   );
-
-  // Local state for gradient angle/position
   let angle = $derived(
     isGradient(value) && (value.type === 'linear' || value.type === 'conic') ? value.angle : 180
   );
@@ -62,7 +64,7 @@
   );
 
   // Sync local state when value changes from outside
-  watch(
+  watchOnce(
     () => value,
     () => {
       if (isSolid(value)) {
@@ -165,19 +167,18 @@
 
   function applyPreset(preset: GradientPreset) {
     onchange(preset.value);
-    activeTab = 'gradient';
   }
 </script>
 
 <Popover.Root>
   <Popover.Trigger>
     {#snippet child({ props })}
-      <Button variant="outline" class="h-10 w-full justify-between px-3" {...props}>
+      <Button variant="outline" class="w-full justify-between" {...props}>
         <div class="flex items-center gap-2">
-          <div class="h-6 w-6 rounded border" style:background={previewCSS}></div>
-          <span class="text-sm">{isSolid(value) ? 'Solid' : 'Gradient'}</span>
+          <div class="size-6 rounded border" style:background={previewCSS}></div>
+          <span>{isSolid(value) ? 'Solid' : 'Gradient'}</span>
         </div>
-        <ChevronDown class="h-4 w-4 opacity-50" />
+        <ChevronDown class="size-4 opacity-50" />
       </Button>
     {/snippet}
   </Popover.Trigger>
@@ -185,14 +186,14 @@
   <Popover.Content class="w-80" align="center" {side}>
     <div class="space-y-3">
       <!-- Preview swatch -->
-      <div class="h-12 w-full rounded-md border" style:background={previewCSS}></div>
+      <div class="h-12 rounded-md border" style:background={previewCSS}></div>
 
       <!-- Tab buttons -->
       <div class="flex gap-1">
         <Button
           variant={activeTab === 'solid' ? 'default' : 'outline'}
           size="sm"
-          class="flex-1 text-xs"
+          class="flex-1"
           onclick={() => (activeTab = 'solid')}
         >
           <Palette class="mr-1 size-3" />
@@ -201,7 +202,7 @@
         <Button
           variant={activeTab === 'gradient' ? 'default' : 'outline'}
           size="sm"
-          class="flex-1 text-xs"
+          class="flex-1"
           onclick={() => (activeTab = 'gradient')}
         >
           <Sparkles class="mr-1 size-3" />
@@ -210,7 +211,7 @@
         <Button
           variant={activeTab === 'presets' ? 'default' : 'outline'}
           size="sm"
-          class="flex-1 text-xs"
+          class="flex-1"
           onclick={() => (activeTab = 'presets')}
         >
           Presets
@@ -220,29 +221,15 @@
       <!-- Tab content -->
       {#if activeTab === 'solid'}
         <div class="space-y-3">
-          <!-- Color input -->
-          <div class="flex items-center gap-2">
-            <Input
-              type="color"
-              value={isSolid(value) ? value : '#4a90e2'}
-              oninput={(e) => updateSolidColor(e.currentTarget.value)}
-              class="h-9 w-12 cursor-pointer p-1"
-            />
-            <Input
-              type="text"
-              value={isSolid(value) ? value : '#4a90e2'}
-              oninput={(e) => updateSolidColor(e.currentTarget.value)}
-              class="flex-1 font-mono text-xs"
-              placeholder="#000000"
-            />
-          </div>
+          <!-- Color picker -->
+          <ColorPicker value={isSolid(value) ? value : '#4a90e2'} onchange={updateSolidColor} />
 
           <!-- Quick color swatches -->
           <div class="grid grid-cols-8 gap-1">
             {#each defaultSolidColors as color (color)}
               <button
                 type="button"
-                class="h-6 w-full rounded border transition-transform hover:scale-110"
+                class="size-6 rounded border transition-transform hover:scale-110"
                 style:background-color={color}
                 onclick={() => updateSolidColor(color)}
                 title={color}
@@ -251,118 +238,105 @@
           </div>
         </div>
       {:else if activeTab === 'gradient'}
-        <ScrollArea class="max-h-96">
+        <ScrollArea viewportClass="p-1">
           <div class="space-y-3 pr-2">
             <!-- Gradient type selector -->
-            <div class="space-y-1">
-              <Label class="text-xs">Type</Label>
-              <select
-                class="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs"
+            <InputWrapper for="gradient-type" label="Type">
+              <Select
                 bind:value={gradientType}
-                onchange={updateGradient}
-              >
-                <option value="linear">Linear</option>
-                <option value="radial">Radial</option>
-                <option value="conic">Conic</option>
-              </select>
-            </div>
+                options={[
+                  { value: 'linear', label: 'Linear' },
+                  { value: 'radial', label: 'Radial' },
+                  { value: 'conic', label: 'Conic' }
+                ]}
+                root={{ onValueChange: updateGradient }}
+              />
+            </InputWrapper>
 
             <!-- Angle (for linear and conic) -->
             {#if gradientType === 'linear' || gradientType === 'conic'}
-              <div class="space-y-1">
-                <Label class="text-xs">Angle</Label>
+              <InputWrapper for="gradient-angle" label="Angle">
                 <div class="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="360"
+                  <ScrubInput
+                    id="gradient-angle"
+                    min={0}
+                    max={360}
                     bind:value={angle}
-                    oninput={updateGradient}
-                    class="h-8 flex-1 text-xs"
+                    onchange={updateGradient}
                   />
-                  <span class="text-xs text-muted-foreground">deg</span>
+                  <span class="text-muted-foreground">deg</span>
                 </div>
-              </div>
+              </InputWrapper>
             {/if}
 
             <!-- Position (for radial and conic) -->
             {#if gradientType === 'radial' || gradientType === 'conic'}
-              <div class="space-y-1">
-                <Label class="text-xs">Position</Label>
-                <div class="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="100"
-                    bind:value={posX}
-                    oninput={updateGradient}
-                    class="h-8 flex-1 text-xs"
-                    placeholder="X"
-                  />
-                  <Input
-                    type="number"
-                    min="0"
-                    max="100"
-                    bind:value={posY}
-                    oninput={updateGradient}
-                    class="h-8 flex-1 text-xs"
-                    placeholder="Y"
-                  />
-                  <span class="text-xs text-muted-foreground">%</span>
-                </div>
-              </div>
+              <InputsWrapper
+                fields={[
+                  { for: 'gradient-pos-x', labels: 'X' },
+                  { for: 'gradient-pos-y', labels: 'Y' }
+                ]}
+              >
+                <ScrubInput
+                  id="gradient-pos-x"
+                  min={0}
+                  max={100}
+                  bind:value={posX}
+                  onchange={updateGradient}
+                />
+                <ScrubInput
+                  id="gradient-pos-y"
+                  min={0}
+                  max={100}
+                  bind:value={posY}
+                  onchange={updateGradient}
+                />
+              </InputsWrapper>
             {/if}
 
             <!-- Shape (for radial only) -->
             {#if gradientType === 'radial'}
-              <div class="space-y-1">
-                <Label class="text-xs">Shape</Label>
-                <select
-                  class="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs"
+              <InputWrapper for="gradient-shape" label="Shape">
+                <Select
                   bind:value={radialShape}
-                  onchange={updateGradient}
-                >
-                  <option value="circle">Circle</option>
-                  <option value="ellipse">Ellipse</option>
-                </select>
-              </div>
+                  options={[
+                    { value: 'circle', label: 'Circle' },
+                    { value: 'ellipse', label: 'Ellipse' }
+                  ]}
+                  root={{ onValueChange: updateGradient }}
+                />
+              </InputWrapper>
             {/if}
 
             <Separator />
 
             <!-- Color stops -->
-            <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <Label class="text-xs">Color Stops</Label>
-                <Button variant="ghost" size="sm" class="h-6 px-2 text-xs" onclick={addColorStop}>
-                  <Plus class="size-3" />
-                </Button>
-              </div>
-
+            <InputWrapper for="gradient-stops" label="Color Stops">
               <div class="space-y-2">
+                <Button variant="ghost" size="sm" class="w-full" onclick={addColorStop}>
+                  <Plus class="mr-1 size-3" />
+                  Add Stop
+                </Button>
+
                 {#each stops as stop, index (index)}
                   <div class="flex items-center gap-1">
-                    <Input
-                      type="color"
+                    <ColorPicker
                       value={stop.color}
-                      oninput={(e) => updateColorStop(index, 'color', e.currentTarget.value)}
-                      class="h-7 w-9 cursor-pointer p-0.5"
+                      onchange={(color) => updateColorStop(index, 'color', color)}
+                      showInput={false}
                     />
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
+                    <ScrubInput
+                      min={0}
+                      max={100}
                       value={stop.position}
-                      oninput={(e) =>
-                        updateColorStop(index, 'position', parseInt(e.currentTarget.value) || 0)}
-                      class="h-7 w-14 text-xs"
+                      onchange={(value) => updateColorStop(index, 'position', value)}
+                      postFix="%"
                     />
-                    <span class="text-xs text-muted-foreground">%</span>
                     {#if stops.length > 2}
                       <Button
                         variant="ghost"
                         size="sm"
-                        class="h-6 w-6 p-0"
+                        class="size-6 p-0"
                         onclick={() => removeColorStop(index)}
                       >
                         <Trash2 class="size-3" />
@@ -371,38 +345,38 @@
                   </div>
                 {/each}
               </div>
-            </div>
+            </InputWrapper>
           </div>
         </ScrollArea>
       {:else if activeTab === 'presets'}
         <div class="space-y-3">
           <!-- Category filter -->
-          <div class="space-y-1">
-            <Label class="text-xs">Category</Label>
-            <select
-              class="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs"
+          <InputWrapper for="preset-category" label="Category">
+            <Select
               bind:value={selectedCategory}
-            >
-              <option value="all">All</option>
-              {#each categories as cat (cat)}
-                <option value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
-              {/each}
-            </select>
-          </div>
+              options={[
+                { value: 'all', label: 'All' },
+                ...categories.map((cat) => ({
+                  value: cat,
+                  label: cat.charAt(0).toUpperCase() + cat.slice(1)
+                }))
+              ]}
+            />
+          </InputWrapper>
 
           <!-- Preset grid -->
-          <ScrollArea class="-m-2.5 h-64 p-1">
+          <ScrollArea class="h-64" viewportClass="p-1">
             <div class="grid grid-cols-3 gap-2 p-1.5">
               {#each filteredPresets as preset (preset.id)}
                 <button
                   type="button"
-                  class="group relative h-12 w-full overflow-hidden rounded-md border transition-all hover:ring-2 hover:ring-primary"
+                  class="group relative h-12 overflow-hidden rounded-md border transition-all hover:ring-2 hover:ring-primary"
                   style:background={backgroundValueToCSS(preset.value)}
                   onclick={() => applyPreset(preset)}
                   title={preset.name}
                 >
                   <span
-                    class="absolute inset-x-0 bottom-0 truncate bg-black/60 px-1 py-0.5 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    class="absolute inset-x-0 bottom-0 truncate bg-black/60 px-1 py-0.5 text-white opacity-0 transition-opacity group-hover:opacity-100"
                   >
                     {preset.name}
                   </span>

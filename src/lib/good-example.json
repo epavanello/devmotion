@@ -1,0 +1,364 @@
+{
+  "fps": 30,
+  "name": "Untitled Project",
+  "width": 1280,
+  "height": 720,
+  "layers": [
+    {
+      "id": "random-id-1",
+      "name": "Text",
+      "type": "text",
+      "props": {
+        "color": "#ffffff",
+        "width": 400,
+        "content": "Creating",
+        "fontSize": 48,
+        "autoWidth": true,
+        "textAlign": "center",
+        "fontFamily": "Poppins",
+        "fontWeight": "normal"
+      },
+      "style": {
+        "opacity": 1
+      },
+      "locked": false,
+      "visible": true,
+      "keyframes": [
+        {
+          "id": "random-id-2",
+          "time": 0,
+          "value": -67.5,
+          "property": "position.x",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "ease-in-out"
+          }
+        },
+        {
+          "id": "random-id-3",
+          "time": 0,
+          "value": 0,
+          "property": "position.y",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "ease-in-out"
+          }
+        },
+        {
+          "id": "random-id-4",
+          "time": 0,
+          "value": 0,
+          "property": "opacity",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "ease-in-out"
+          }
+        },
+        {
+          "id": "random-id-5",
+          "time": 0,
+          "value": 0.7,
+          "property": "scale.x",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "ease-in-out"
+          }
+        },
+        {
+          "id": "random-id-5",
+          "time": 0,
+          "value": 0.7,
+          "property": "scale.y",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "ease-in-out"
+          }
+        },
+        {
+          "id": "random-id-6",
+          "time": 0,
+          "value": "Creating",
+          "property": "props.content",
+          "interpolation": {
+            "family": "text",
+            "strategy": "char-reveal"
+          }
+        },
+        {
+          "id": "random-id-6",
+          "time": 0.625,
+          "value": "Creating",
+          "property": "props.content",
+          "interpolation": {
+            "family": "text",
+            "strategy": "word-reveal",
+            "separator": " "
+          }
+        },
+        {
+          "id": "random-id-7",
+          "time": 0.6278125,
+          "value": 1,
+          "property": "scale.y",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "ease-in-out"
+          }
+        },
+        {
+          "id": "random-id-8",
+          "time": 0.6278125,
+          "value": 1,
+          "property": "scale.x",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "ease-in-out"
+          }
+        },
+        {
+          "id": "random-id-9",
+          "time": 0.6278125,
+          "value": -67.5,
+          "property": "position.x",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "ease-in-out"
+          }
+        },
+        {
+          "id": "random-id-10",
+          "time": 1.0278125,
+          "value": 1,
+          "property": "opacity",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "ease-in-out"
+          }
+        },
+        {
+          "id": "random-id-11",
+          "time": 1.1840000000000008,
+          "value": -310.7,
+          "property": "position.x",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "ease-in-out"
+          }
+        },
+        {
+          "id": "random-id-12",
+          "time": 1.5478125,
+          "value": "Creating Motion design videos",
+          "property": "props.content",
+          "interpolation": {
+            "family": "text",
+            "strategy": "word-reveal",
+            "separator": " "
+          }
+        },
+        {
+          "id": "random-id-13",
+          "time": 1.7278125,
+          "value": 1,
+          "property": "opacity",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "ease-in"
+          }
+        },
+        {
+          "id": "random-id-14",
+          "time": 1.7278125,
+          "value": 0,
+          "property": "position.y",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "ease-in-out"
+          }
+        },
+        {
+          "id": "random-id-15",
+          "time": 2.4078125000000017,
+          "value": 0,
+          "property": "opacity",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "linear"
+          }
+        },
+        {
+          "id": "random-id-16",
+          "time": 2.4078125000000017,
+          "value": 42,
+          "property": "position.y",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "ease-in-out"
+          }
+        }
+      ],
+      "transform": {
+        "scale": {
+          "x": 0.7,
+          "y": 0.7
+        },
+        "anchor": "center-left",
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
+    {
+      "id": "random-id-17",
+      "name": "Text",
+      "type": "text",
+      "props": {
+        "color": "#ffffff",
+        "width": 400,
+        "content": "is",
+        "fontSize": 48,
+        "autoWidth": true,
+        "textAlign": "center",
+        "fontFamily": "Poppins",
+        "fontWeight": "normal"
+      },
+      "style": {
+        "opacity": 1
+      },
+      "locked": false,
+      "visible": true,
+      "exitTime": 5.31,
+      "enterTime": 2.4,
+      "keyframes": [
+        {
+          "id": "random-id-18",
+          "time": 2.4378125,
+          "value": 0,
+          "property": "opacity",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "ease-out"
+          }
+        },
+        {
+          "id": "random-id-19",
+          "time": 2.4478125,
+          "value": "is",
+          "property": "props.content",
+          "interpolation": {
+            "family": "text",
+            "strategy": "char-reveal"
+          }
+        },
+        {
+          "id": "random-id-20",
+          "time": 2.4478125,
+          "value": 0,
+          "property": "opacity",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "ease-out"
+          }
+        },
+        {
+          "id": "random-id-21",
+          "time": 2.8478125,
+          "value": 1,
+          "property": "opacity",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "linear"
+          }
+        },
+        {
+          "id": "random-id-22",
+          "time": 2.9378125,
+          "value": 1,
+          "property": "opacity",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "linear"
+          }
+        },
+        {
+          "id": "random-id-23",
+          "time": 4.7178125,
+          "value": 1,
+          "property": "opacity",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "ease-in"
+          }
+        },
+        {
+          "id": "random-id-24",
+          "time": 4.8478125,
+          "value": "is slow & boring",
+          "property": "props.content",
+          "interpolation": {
+            "family": "text",
+            "strategy": "char-reveal"
+          }
+        },
+        {
+          "id": "random-id-25",
+          "time": 5.187812500000001,
+          "value": 0,
+          "property": "opacity",
+          "interpolation": {
+            "family": "continuous",
+            "strategy": "linear"
+          }
+        }
+      ],
+      "transform": {
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "anchor": "center",
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    }
+  ],
+  "duration": 10,
+  "background": {
+    "type": "linear",
+    "angle": 110,
+    "stops": [
+      {
+        "color": "#c4f9ff",
+        "position": 11
+      },
+      {
+        "color": "#eec5f6",
+        "position": 42
+      },
+      {
+        "color": "#edb5fe",
+        "position": 72
+      },
+      {
+        "color": "#7bb7fd",
+        "position": 100
+      }
+    ]
+  },
+  "fontFamily": "Raleway"
+}

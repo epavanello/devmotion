@@ -2,6 +2,7 @@
   import * as InputGroup from '$lib/components/ui/input-group';
   import { GripVertical } from '@lucide/svelte';
   import { cn } from '$lib/utils';
+  import type { Snippet } from 'svelte';
 
   type Props = {
     id?: string;
@@ -9,11 +10,21 @@
     step?: number;
     min?: number;
     max?: number;
-    onchange: (value: number) => void;
+    onchange?: (value: number) => void;
     class?: string;
+    postFix?: string | Snippet;
   };
 
-  let { id, value, step = 1, min, max, onchange, class: className }: Props = $props();
+  let {
+    id,
+    value = $bindable(),
+    step = 1,
+    min,
+    max,
+    onchange,
+    class: className,
+    postFix
+  }: Props = $props();
 
   let isDragging = $state(false);
   let startX = $state(0);
@@ -95,7 +106,8 @@
     const change = deltaX * sensitivity * step * multiplier;
     const newValue = clampValue(roundValue(startValue + change));
 
-    onchange(newValue);
+    value = newValue;
+    onchange?.(newValue);
   }
 
   function handleMouseUp() {
@@ -121,7 +133,8 @@
     const target = e.currentTarget as HTMLInputElement;
     const newValue = parseFloat(target.value);
     if (!isNaN(newValue)) {
-      onchange(clampValue(newValue));
+      value = clampValue(newValue);
+      onchange?.(newValue);
     }
   }
 </script>
@@ -154,5 +167,15 @@
     onfocus={() => (isFocused = true)}
     onblur={() => (isFocused = false)}
     class={cn('number-input-no-spin pr-0! pl-1!', className)}
+    prefix="%"
   />
+  {#if postFix}
+    <InputGroup.Addon align="inline-end">
+      {#if typeof postFix === 'string'}
+        {postFix}
+      {:else}
+        {@render postFix()}
+      {/if}
+    </InputGroup.Addon>
+  {/if}
 </InputGroup.Root>

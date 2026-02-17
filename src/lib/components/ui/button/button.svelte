@@ -42,6 +42,7 @@
       variant?: ButtonVariant;
       size?: ButtonSize;
       icon?: Component;
+      loading?: boolean;
     };
 </script>
 
@@ -57,10 +58,11 @@
     children,
     onclick,
     icon,
+    loading,
     ...restProps
   }: ButtonProps = $props();
 
-  let isLoading = $state(false);
+  let isLoading = $derived(loading);
   const disabled = $derived(externalDisabled || isLoading);
 
   const handleClick: ButtonProps['onclick'] = (event) => {

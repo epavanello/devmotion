@@ -39,6 +39,8 @@
     timeline: false,
     properties: false
   });
+
+  let aiChatScrollRef: HTMLElement | null = $state(null);
 </script>
 
 {#snippet canvasSection()}
@@ -81,9 +83,10 @@
           onToggle={() => (openPanels.aiChat = !openPanels.aiChat)}
           topOffset="calc(40vh)"
           zIndex={10}
+          bind:scrollRef={aiChatScrollRef}
         >
           {#snippet content()}
-            <AiChat bind:selectedModelId={aiChatModelId} />
+            <AiChat bind:selectedModelId={aiChatModelId} scrollRef={aiChatScrollRef} />
           {/snippet}
           {#snippet actionsSnippet()}
             <ModelSelector
@@ -167,9 +170,9 @@
             </ResizablePane>
             <ResizableHandle />
             <ResizablePane defaultSize={40} minSize={20}>
-              <Panel title="AI Chat">
+              <Panel title="AI Chat" bind:scrollRef={aiChatScrollRef}>
                 {#snippet content()}
-                  <AiChat bind:selectedModelId={aiChatModelId} />
+                  <AiChat bind:selectedModelId={aiChatModelId} scrollRef={aiChatScrollRef} />
                 {/snippet}
                 {#snippet actionsSnippet()}
                   <ModelSelector
