@@ -33,8 +33,6 @@
     type GroupLayersInput,
     type UngroupLayersInput,
     type AnimationUITools,
-    isLayerCreationTool,
-    getLayerTypeFromToolName,
     type CreateLayerInput,
     type UpdateKeyframeInput,
     type RemoveKeyframeInput
@@ -46,6 +44,7 @@
   import { PersistedState, watch } from 'runed';
   import ToolPart from './tool-part.svelte';
   import ReasoningPart from './reasoning-part.svelte';
+  import { tick } from 'svelte';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -64,6 +63,24 @@
     []
   );
 
+  function scrollToBottom() {
+    let isAtBottom = false;
+    if (scrollRef) {
+      const top = scrollRef.scrollTop;
+      const scrollHeight = scrollRef.scrollHeight;
+      const clientHeight = scrollRef.clientHeight;
+      const diff = scrollHeight - clientHeight;
+      isAtBottom = top >= diff - 100;
+    }
+    // allow the user to scroll up to read previous messages
+    if (isAtBottom) {
+      scrollRef?.scrollTo({
+        top: scrollRef.scrollHeight,
+        behavior: 'instant'
+      });
+    }
+  }
+
   const chat = new Chat<UIMessage<never, UIDataTypes, AnimationUITools>>({
     transport: new DefaultChatTransport({
       api: resolve('/(app)/chat'),
@@ -80,63 +97,46 @@
       toast.error(parseErrorMessage(error));
     },
     onToolCall({ toolCall }) {
+      console.log('Tool call:', toolCall);
       if (toolCall.dynamic) {
         return;
       }
       const toolName = toolCall.toolName;
       let result: unknown;
 
-      // Handle layer creation tools (create_text_layer, create_icon_layer, etc.)
-      if (isLayerCreationTool(toolName)) {
-        const layerType = getLayerTypeFromToolName(toolName);
-        if (layerType) {
+      // Handle tools
+      switch (toolName) {
+        case 'create_layer': {
           const input = toolCall.input as CreateLayerInput;
-          result = executeCreateLayer(projectStore, {
-            type: layerType,
-            name: input.name,
-            visible: input.visible,
-            locked: input.locked,
-            transform: input.transform,
-            props: input.props || {},
-            animation: input.animation,
-            enterTime: input.enterTime,
-            exitTime: input.exitTime,
-            contentDuration: input.contentDuration,
-            contentOffset: input.contentOffset
-          });
-        } else {
-          result = { success: false, error: `Invalid layer creation tool: ${toolName}` };
+          result = executeCreateLayer(projectStore, input);
+          break;
         }
-      } else {
-        // Handle other tools
-        switch (toolName) {
-          case 'animate_layer':
-            result = executeAnimateLayer(projectStore, toolCall.input as AnimateLayerInput);
-            break;
-          case 'edit_layer':
-            result = executeEditLayer(projectStore, toolCall.input as EditLayerInput);
-            break;
-          case 'update_keyframe':
-            result = executeUpdateKeyframe(projectStore, toolCall.input as UpdateKeyframeInput);
-            break;
-          case 'remove_keyframe':
-            result = executeRemoveKeyframe(projectStore, toolCall.input as RemoveKeyframeInput);
-            break;
-          case 'remove_layer':
-            result = executeRemoveLayer(projectStore, toolCall.input as RemoveLayerInput);
-            break;
-          case 'group_layers':
-            result = executeGroupLayers(projectStore, toolCall.input as GroupLayersInput);
-            break;
-          case 'ungroup_layers':
-            result = executeUngroupLayers(projectStore, toolCall.input as UngroupLayersInput);
-            break;
-          case 'configure_project':
-            result = executeConfigureProject(projectStore, toolCall.input as ConfigureProjectInput);
-            break;
-          default:
-            result = { success: false, error: `Unknown tool: ${toolName}` };
-        }
+        case 'animate_layer':
+          result = executeAnimateLayer(projectStore, toolCall.input as AnimateLayerInput);
+          break;
+        case 'edit_layer':
+          result = executeEditLayer(projectStore, toolCall.input as EditLayerInput);
+          break;
+        case 'update_keyframe':
+          result = executeUpdateKeyframe(projectStore, toolCall.input as UpdateKeyframeInput);
+          break;
+        case 'remove_keyframe':
+          result = executeRemoveKeyframe(projectStore, toolCall.input as RemoveKeyframeInput);
+          break;
+        case 'remove_layer':
+          result = executeRemoveLayer(projectStore, toolCall.input as RemoveLayerInput);
+          break;
+        case 'group_layers':
+          result = executeGroupLayers(projectStore, toolCall.input as GroupLayersInput);
+          break;
+        case 'ungroup_layers':
+          result = executeUngroupLayers(projectStore, toolCall.input as UngroupLayersInput);
+          break;
+        case 'configure_project':
+          result = executeConfigureProject(projectStore, toolCall.input as ConfigureProjectInput);
+          break;
+        default:
+          result = { success: false, error: `Unknown tool: ${toolName}` };
       }
 
       chat.addToolOutput({
@@ -150,12 +150,14 @@
     }
   });
 
-  function sendMessage() {
+  async function sendMessage() {
     // Reset layer tracking for new message
     resetLayerTracking();
 
     chat.sendMessage({ text: prompt.current });
     prompt.current = '';
+    await tick();
+    scrollToBottom();
   }
 
   function onSubmit(event?: Event) {
@@ -178,26 +180,7 @@
     toast.success('Chat history cleared');
   }
 
-  watch.pre(
-    () => $state.snapshot(chat.messages),
-    () => {
-      let isAtBottom = false;
-      if (scrollRef) {
-        const top = scrollRef.scrollTop;
-        const scrollHeight = scrollRef.scrollHeight;
-        const clientHeight = scrollRef.clientHeight;
-        const diff = scrollHeight - clientHeight;
-        isAtBottom = top >= diff - 100;
-      }
-      // allow the user to scroll up to read previous messages
-      if (isAtBottom) {
-        scrollRef?.scrollTo({
-          top: scrollRef.scrollHeight,
-          behavior: 'instant'
-        });
-      }
-    }
-  );
+  watch(() => $state.snapshot(chat.messages), scrollToBottom);
 </script>
 
 <div class="flex h-full flex-col">

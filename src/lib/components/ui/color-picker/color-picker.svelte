@@ -4,6 +4,7 @@
   import { colord } from 'colord';
   import Input from '../input/input.svelte';
   import * as Popover from '$lib/components/ui/popover';
+  import { cn } from '$lib/utils';
 
   type Props = {
     value: string;
@@ -32,7 +33,15 @@
 
 <Popover.Root>
   <Popover.Trigger>
-    <Input {value} readonly class="w-20" style="background-color: {value}; color: {textColor};" />
+    {#snippet child({ props })}
+      <Input
+        {value}
+        readonly
+        style="background-color: {value}; color: {textColor};"
+        {...props}
+        class={cn('w-auto min-w-26', props.class as string)}
+      />
+    {/snippet}
   </Popover.Trigger>
   <Popover.Content
     class="w-auto p-0 [&_.color-picker_.wrapper]:m-0! [&_.color-picker_.wrapper]:border-0!"

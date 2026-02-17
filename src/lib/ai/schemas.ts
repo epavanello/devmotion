@@ -5,51 +5,17 @@
  * Each layer type has its own creation tool (create_text_layer, create_icon_layer, etc.)
  */
 import { z } from 'zod';
-import { InterpolationSchema, TransformSchema } from '$lib/schemas/animation';
+import { InterpolationSchema } from '$lib/schemas/animation';
 import { getPresetIds } from '$lib/engine/presets';
-import { tool, type InferUITools, type Tool } from 'ai';
+import { tool, type InferUITools } from 'ai';
 import { layerRegistry, getAvailableLayerTypes } from '$lib/layers/registry';
-import { AnchorPointSchema, extractDefaultValues } from '$lib/layers/base';
+import { AnchorPointSchema } from '$lib/layers/base';
 import type { LayerTypeString } from '$lib/layers/layer-types';
-
-// ============================================
-// Helper Functions
-// ============================================
-
-/**
- * Check if a tool name is a layer creation tool
- */
-export function isLayerCreationTool(toolName: string): boolean {
-  return toolName.startsWith('create_') && toolName.endsWith('_layer');
-}
-
-/**
- * Extract layer type from tool name
- * e.g., "create_text_layer" → "text"
- */
-export function getLayerTypeFromToolName(toolName: string): string | null {
-  const match = toolName.match(/^create_(.+)_layer$/);
-  return match ? match[1] : null;
-}
+import { CleanTransformSchema } from '$lib/schemas/base';
 
 // ============================================
 // Schema Introspection
 // ============================================
-
-/**
- * Maximum number of key props to show in tool descriptions.
- * Layer authors should place the most important fields first in their schema.
- */
-const MAX_KEY_PROPS = 4;
-
-/**
- * Extract key property names from a Zod object schema.
- * Takes the first N fields from the schema shape, relying on layer authors
- * ordering the most important properties first.
- */
-function extractKeyProps(schema: z.ZodObject<z.ZodRawShape>): string[] {
-  return Object.keys(schema.shape).slice(0, MAX_KEY_PROPS);
-}
 
 const AnimationSchema = z
   .object({
@@ -104,69 +70,74 @@ const validateTimingFields = (data: { enterTime?: number; exitTime?: number }) =
 };
 
 // ============================================
-// Layer Creation Tool Generator
+// Layer Creation Tool Schema
 // ============================================
 
-const CreateLayerInputSchema = z
-  .object({
-    name: z.string().optional().describe('Layer name for identification'),
-    visible: z.boolean().optional().default(true).describe('Layer visibility (default: true)'),
-    locked: z.boolean().optional().default(false).describe('Layer locked state (default: false)'),
-    transform: TransformSchema,
-    animation: AnimationSchema
-  })
-  .extend(TimingFieldsSchema.shape)
-  .refine(validateTimingFields, {
-    message: 'enterTime must be less than exitTime',
-    path: ['enterTime']
-  });
+const BaseCreateLayerSchema = z.object({
+  name: z.string().optional().describe('Layer name for identification'),
+  visible: z.boolean().optional().default(true).describe('Layer visibility (default: true)'),
+  locked: z.boolean().optional().default(false).describe('Layer locked state (default: false)'),
+  transform: CleanTransformSchema,
+  animation: AnimationSchema
+});
+
 /**
- * Generate tool definitions for all layer types from the registry.
- * Key props and defaults are derived directly from each layer's Zod schema,
- * so no manual mapping needs to be maintained.
+ * Generate discriminated union schema for layer type and props.
+ * Each layer type gets its full schema with all metadata preserved.
  */
-function generateLayerCreationTools(): Record<string, Tool> {
-  const tools: Record<string, Tool> = {};
+function generateLayerTypePropsUnion() {
+  const layerSchemas = [] as unknown as [z.ZodObject<z.ZodRawShape>];
 
   for (const layerType of getAvailableLayerTypes() as LayerTypeString[]) {
-    if (layerType === 'project-settings') continue;
+    switch (layerType) {
+      case 'browser':
+      case 'captions':
+      case 'terminal':
+      case 'video':
+      case 'audio':
+      case 'phone':
+      case 'code':
+      case 'project-settings':
+        continue;
+    }
     const definition = layerRegistry[layerType];
     if (!definition) continue;
 
-    const toolName = `create_${layerType}_layer`;
-    const keyProps = extractKeyProps(definition.schema);
-    const defaults = extractDefaultValues(definition.schema);
-
-    // Build key props description with defaults from schema
-    const keyPropsDescription = keyProps
-      .map((prop) => {
-        const defaultVal = defaults[prop];
-        return defaultVal !== undefined ? `${prop} (default: ${JSON.stringify(defaultVal)})` : prop;
-      })
-      .join(', ');
-
-    const description =
-      `Create a ${definition.label} layer. ${definition.description}\n` +
-      `Key props: ${keyPropsDescription}`;
-
-    tools[toolName] = tool({
-      description,
-      inputSchema: CreateLayerInputSchema.extend({
-        props: definition.schema.describe(`Properties for ${definition.label} layer`)
-      })
+    // Create schema for type + props discriminated union
+    const layerSchema = z.object({
+      type: z.literal(layerType),
+      props: definition.schema.describe(`Properties for ${definition.label} layer`)
     });
+
+    layerSchemas.push(layerSchema);
   }
 
-  return tools;
+  return z.discriminatedUnion('type', layerSchemas);
 }
+
+const LayerTypePropsUnion = generateLayerTypePropsUnion();
+
+/**
+ * Full create_layer input schema: base fields + timing + discriminated type/props union
+ */
+export const CreateLayerInputSchema = BaseCreateLayerSchema.extend(TimingFieldsSchema.shape)
+  .refine(validateTimingFields, {
+    message: 'enterTime must be less than exitTime',
+    path: ['enterTime']
+  })
+  .extend({
+    layer: LayerTypePropsUnion
+  });
 
 // ============================================
 // Input/Output Types for Layer Creation
 // ============================================
 
 export type CreateLayerInput = z.infer<typeof CreateLayerInputSchema> & {
-  type: string;
-  props: Record<string, unknown>;
+  layer: {
+    type: string;
+    props: Record<string, unknown>;
+  };
 };
 export interface CreateLayerOutput {
   success: boolean;
@@ -194,18 +165,26 @@ export const AnimateLayerInputSchema = z.object({
   keyframes: z
     .array(
       z.object({
-        time: z.number().min(0).describe('Time in seconds'),
+        time: z.number().min(0).describe('Time in seconds when this value is reached'),
         property: z
           .string()
           .describe(
-            'Property: position.x, position.y, scale.x, scale.y, rotation.z, opacity, props.*'
+            'Property path: position.x/y/z, scale.x/y, rotation.x/y/z, opacity, or props.* for layer-specific (e.g., props.fontSize, props.content for text layers)'
           ),
-        value: z.union([z.number(), z.string(), z.boolean()]),
-        interpolation: InterpolationSchema.optional()
+        value: z
+          .union([z.number(), z.string(), z.boolean()])
+          .describe(
+            'Target value: number for transforms/opacity, hex string (#ff0000) for colors, string for text content, boolean for flags'
+          ),
+        interpolation: InterpolationSchema.optional().describe(
+          'How to animate TO this keyframe. Omit for smooth ease-in-out. Use {family:"text",strategy:"char-reveal"} ONLY on props.content to create typewriter effects'
+        )
       })
     )
     .optional()
-    .describe('Custom keyframes (alternative to preset)')
+    .describe(
+      'Custom keyframes (alternative to preset). IMPORTANT: For text typewriter/reveal effects, animate props.content from "" to full text with text interpolation'
+    )
 });
 
 export type AnimateLayerInput = z.infer<typeof AnimateLayerInputSchema>;
@@ -229,7 +208,7 @@ export const EditLayerInputSchema = z.object({
       name: z.string().optional(),
       visible: z.boolean().optional(),
       locked: z.boolean().optional(),
-      transform: TransformSchema.optional(),
+      transform: CleanTransformSchema.optional(),
       anchor: AnchorPointSchema.optional().describe('Anchor point for transformations'),
       opacity: z.number().min(0).max(1).optional(),
       props: z.record(z.string(), z.unknown()).optional()
@@ -385,12 +364,11 @@ export interface RemoveKeyframeOutput {
 // Tool Definitions for AI SDK
 // ============================================
 
-// Generate layer creation tools from registry
-const layerCreationTools = generateLayerCreationTools();
-
 export const animationTools = {
-  // Layer creation tools (dynamically generated from registry)
-  ...layerCreationTools,
+  create_layer: tool({
+    description: 'Create a new layer.',
+    inputSchema: CreateLayerInputSchema
+  }),
 
   animate_layer: tool({
     description:

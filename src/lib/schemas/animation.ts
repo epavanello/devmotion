@@ -14,87 +14,123 @@ import type { LiteralUnion } from 'type-fest';
 // ============================================
 
 // Continuous interpolation (smooth numeric transitions with easing)
+// Use for: numbers (position, scale, opacity, fontSize, etc.) AND hex colors (including alpha)
+// Colors are interpolated in RGB space (e.g., #ff0000 → #0000ff smoothly transitions through purple)
+// The value smoothly transitions between keyframes using mathematical easing curves
 const ContinuousInterpolationSchema = z.object({
-  family: z.literal('continuous'),
-  strategy: z.enum([
-    'linear',
-    'ease-in',
-    'ease-out',
-    'ease-in-out',
-    // Quad
-    'ease-in-quad',
-    'ease-out-quad',
-    'ease-in-out-quad',
-    // Cubic
-    'ease-in-cubic',
-    'ease-out-cubic',
-    'ease-in-out-cubic',
-    // Quart
-    'ease-in-quart',
-    'ease-out-quart',
-    'ease-in-out-quart',
-    // Quint
-    'ease-in-quint',
-    'ease-out-quint',
-    'ease-in-out-quint',
-    // Sine
-    'ease-in-sine',
-    'ease-out-sine',
-    'ease-in-out-sine',
-    // Expo
-    'ease-in-expo',
-    'ease-out-expo',
-    'ease-in-out-expo',
-    // Circ
-    'ease-in-circ',
-    'ease-out-circ',
-    'ease-in-out-circ',
-    // Back (overshoots)
-    'ease-in-back',
-    'ease-out-back',
-    'ease-in-out-back',
-    // Bounce
-    'ease-in-bounce',
-    'ease-out-bounce',
-    'ease-in-out-bounce',
-    // Elastic
-    'ease-in-elastic',
-    'ease-out-elastic',
-    'ease-in-out-elastic'
-  ])
+  family: z
+    .literal('continuous')
+    .describe(
+      'Smooth interpolation for numbers AND colors. Use for: position, scale, opacity, fontSize, AND color properties (fill, stroke, dropShadowColor). Colors are interpolated in RGB space.'
+    ),
+  strategy: z
+    .enum([
+      'linear',
+      'ease-in',
+      'ease-out',
+      'ease-in-out',
+      // Quad
+      'ease-in-quad',
+      'ease-out-quad',
+      'ease-in-out-quad',
+      // Cubic
+      'ease-in-cubic',
+      'ease-out-cubic',
+      'ease-in-out-cubic',
+      // Quart
+      'ease-in-quart',
+      'ease-out-quart',
+      'ease-in-out-quart',
+      // Quint
+      'ease-in-quint',
+      'ease-out-quint',
+      'ease-in-out-quint',
+      // Sine
+      'ease-in-sine',
+      'ease-out-sine',
+      'ease-in-out-sine',
+      // Expo
+      'ease-in-expo',
+      'ease-out-expo',
+      'ease-in-out-expo',
+      // Circ
+      'ease-in-circ',
+      'ease-out-circ',
+      'ease-in-out-circ',
+      // Back (overshoots)
+      'ease-in-back',
+      'ease-out-back',
+      'ease-in-out-back',
+      // Bounce
+      'ease-in-bounce',
+      'ease-out-bounce',
+      'ease-in-out-bounce',
+      // Elastic
+      'ease-in-elastic',
+      'ease-out-elastic',
+      'ease-in-out-elastic'
+    ])
+    .describe(
+      'Easing curve: ease-out for entrances (fast→slow), ease-in for exits (slow→fast), ease-in-out for middle animations. More dramatic effects: back (overshoot), bounce, elastic. Default: ease-in-out'
+    )
 });
 
 export type ContinuousInterpolation = z.infer<typeof ContinuousInterpolationSchema>;
 export type ContinuousInterpolationStrategy = ContinuousInterpolation['strategy'];
 
 // Discrete interpolation (instant value changes)
+// Use for: properties that should jump instantly between values (visibility, booleans, categorical values)
 const DiscreteInterpolationSchema = z.object({
-  family: z.literal('discrete'),
-  strategy: z.enum(['step-end', 'step-start', 'step-mid'])
+  family: z.literal('discrete').describe('Instant jumps between values with no smooth transition'),
+  strategy: z
+    .enum(['step-end', 'step-start', 'step-mid'])
+    .describe(
+      'When the jump happens: step-end = hold old value until keyframe time, step-start = jump immediately to new value, step-mid = jump halfway between keyframes'
+    )
 });
 
 // Quantized interpolation (continuous but rounded)
+// Use for: numbers that should animate smoothly but snap to whole values (counters, step indicators)
 const QuantizedIntegerSchema = z.object({
-  family: z.literal('quantized'),
-  strategy: z.literal('integer')
+  family: z.literal('quantized').describe('Smooth animation that snaps to discrete values'),
+  strategy: z.literal('integer').describe('Round to nearest whole number (for counters, indices)')
 });
 
 const QuantizedSnapGridSchema = z.object({
-  family: z.literal('quantized'),
-  strategy: z.literal('snap-grid'),
-  increment: z.number().positive()
+  family: z.literal('quantized').describe('Smooth animation that snaps to discrete values'),
+  strategy: z
+    .literal('snap-grid')
+    .describe('Snap to grid increments (e.g., increment: 10 for values like 0, 10, 20, 30)'),
+  increment: z.number().positive().describe('Grid size for snapping (e.g., 5, 10, 100)')
 });
 
 // Text interpolation (string transitions)
+// IMPORTANT: Use ONLY for 'props.content' property on text layers when you want typewriter/reveal effects
+// Requires exactly 2 keyframes: start (empty or partial text) and end (full text)
 const TextCharRevealSchema = z.object({
-  family: z.literal('text'),
-  strategy: z.literal('char-reveal')
+  family: z
+    .literal('text')
+    .describe('Text reveal animations - use ONLY on props.content for text layers'),
+  strategy: z
+    .literal('char-reveal')
+    .describe(
+      'Typewriter effect: reveals text character by character. Example: animate from "" to "Hello World" to type out the text progressively'
+    )
 });
 
 const TextWordRevealSchema = z.object({
-  family: z.literal('text'),
-  strategy: z.literal('word-reveal'),
-  separator: z.string().optional()
+  family: z
+    .literal('text')
+    .describe('Text reveal animations - use ONLY on props.content for text layers'),
+  strategy: z
+    .literal('word-reveal')
+    .describe(
+      'Word-by-word reveal: shows complete words one at a time. Example: animate from "" to "Hello beautiful world" to reveal words sequentially'
+    ),
+  separator: z
+    .string()
+    .optional()
+    .describe('Word separator (default: space " "). Use to split by custom delimiter')
 });
 
 // Union of all interpolation types
@@ -157,19 +193,24 @@ export type {
   BackgroundValue
 } from './background';
 
-// Re-export base schemas for backward compatibility
-export { AnchorPointSchema, TransformSchema, LayerStyleSchema } from './base';
-
 // ============================================
 // Keyframe
 // ============================================
 
 export const KeyframeSchema = z.object({
-  id: z.string(),
-  time: z.number().min(0),
-  property: AnimatablePropertySchema,
-  value: z.union([z.number(), z.string(), z.boolean()]),
-  interpolation: InterpolationSchema.optional()
+  id: z.string().describe('Unique keyframe identifier'),
+  time: z.number().min(0).describe('Time in seconds when this value occurs'),
+  property: AnimatablePropertySchema.describe(
+    'Property to animate: position.x/y/z, scale.x/y, rotation.x/y/z, opacity, or props.* for layer-specific properties (e.g., props.fontSize, props.content)'
+  ),
+  value: z
+    .union([z.number(), z.string(), z.boolean()])
+    .describe(
+      'Target value at this time: number for position/scale/rotation/opacity, hex string (#ffffff) for colors, string for text content, boolean for flags'
+    ),
+  interpolation: InterpolationSchema.optional().describe(
+    'How to transition TO this keyframe from the previous one. If omitted, uses continuous/ease-in-out. Choose based on property type and desired effect'
+  )
 });
 
 // ============================================

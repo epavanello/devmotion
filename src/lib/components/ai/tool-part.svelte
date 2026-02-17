@@ -32,7 +32,13 @@
         <p class="text-sm">{message}</p>
       {:else}
         <p class="text-sm text-muted-foreground italic">
-          {tool.state === 'output-available' ? 'Completed' : 'Processing...'}
+          {#if tool.state === 'output-available'}
+            Completed
+          {:else if tool.state === 'input-streaming'}
+            Processing...
+          {:else if tool.state === 'output-error'}
+            Error
+          {/if}
         </p>
       {/if}
     </div>

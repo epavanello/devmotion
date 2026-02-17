@@ -15,8 +15,14 @@
     html: z
       .string()
       .default('<div class="container">Hello World</div>')
-      .describe('HTML content - use {{varName}} for variable interpolation')
-      .register(fieldRegistry, { widget: 'textarea', interpolationFamily: 'discrete' }),
+      .describe(
+        'The HTML markup to render. Use standard HTML tags. Reference variables with {{varName}} syntax: {{var1}}–{{var5}} for text, {{num1}}–{{num3}} for numbers, {{color1}}/{{color2}} for colors, {{show1}}/{{show2}} for visibility (block/none). HTML is sanitized for security.'
+      )
+      .register(fieldRegistry, {
+        widget: 'textarea',
+        interpolationFamily: 'discrete',
+        label: 'HTML'
+      }),
     css: z
       .string()
       .default(
@@ -28,95 +34,133 @@
   font-family: 'Inter', sans-serif;
 }`
       )
-      .describe('CSS styles (scoped to this layer)')
-      .register(fieldRegistry, { widget: 'textarea', interpolationFamily: 'discrete' }),
+      .describe(
+        'The CSS styles scoped to this layer. Selectors are automatically namespaced so they only affect this layer. Use {{varName}} for variable interpolation in CSS values too (e.g., color: {{color1}}).'
+      )
+      .register(fieldRegistry, {
+        widget: 'textarea',
+        interpolationFamily: 'discrete',
+        label: 'CSS'
+      }),
     width: z
       .number()
       .min(10)
       .max(5000)
       .default(400)
-      .describe('Container width (px)')
-      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+      .describe(
+        'The width of the HTML container in pixels. Also accessible in HTML/CSS via {{width}}. Smoothly animatable.'
+      )
+      .register(fieldRegistry, {
+        group: 'size',
+        interpolationFamily: 'continuous',
+        label: 'Width'
+      }),
     height: z
       .number()
       .min(10)
       .max(5000)
       .default(200)
-      .describe('Container height (px)')
-      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
-    // Dynamic variables that can be interpolated and animated
+      .describe(
+        'The height of the HTML container in pixels. Also accessible in HTML/CSS via {{height}}. Smoothly animatable.'
+      )
+      .register(fieldRegistry, {
+        group: 'size',
+        interpolationFamily: 'continuous',
+        label: 'Height'
+      }),
     var1: z
       .string()
       .default('')
-      .describe('Variable {{var1}} for interpolation')
-      .register(fieldRegistry, { interpolationFamily: 'text' }),
+      .describe(
+        'Text variable injected into HTML/CSS via {{var1}}. Animatable with text interpolation (typewriter reveal). Use for dynamic labels, counters, or any text content.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'text', label: 'var1' }),
     var2: z
       .string()
       .default('')
-      .describe('Variable {{var2}} for interpolation')
-      .register(fieldRegistry, { interpolationFamily: 'text' }),
+      .describe(
+        'Text variable injected into HTML/CSS via {{var2}}. Animatable with text interpolation. Use for secondary dynamic text content.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'text', label: 'var2' }),
     var3: z
       .string()
       .default('')
-      .describe('Variable {{var3}} for interpolation')
-      .register(fieldRegistry, { interpolationFamily: 'text' }),
+      .describe(
+        'Text variable injected into HTML/CSS via {{var3}}. Animatable with text interpolation. Use for tertiary dynamic text content.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'text', label: 'var3' }),
     var4: z
       .string()
       .default('')
-      .describe('Variable {{var4}} for interpolation')
-      .register(fieldRegistry, { interpolationFamily: 'text' }),
+      .describe(
+        'Text variable injected into HTML/CSS via {{var4}}. Animatable with text interpolation.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'text', label: 'var4' }),
     var5: z
       .string()
       .default('')
-      .describe('Variable {{var5}} for interpolation')
-      .register(fieldRegistry, { interpolationFamily: 'text' }),
-    // Numeric variables for animations
+      .describe(
+        'Text variable injected into HTML/CSS via {{var5}}. Animatable with text interpolation.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'text', label: 'var5' }),
     num1: z
       .number()
       .default(0)
-      .describe('Numeric variable {{num1}} for animations')
-      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
+      .describe(
+        'Numeric variable injected into HTML/CSS via {{num1}}. Smoothly animatable with continuous interpolation. Use for counters, percentages, progress bars, or any animated numeric value.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'continuous', label: 'num1' }),
     num2: z
       .number()
       .default(0)
-      .describe('Numeric variable {{num2}} for animations')
-      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
+      .describe(
+        'Numeric variable injected into HTML/CSS via {{num2}}. Smoothly animatable. Use for a secondary animated number.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'continuous', label: 'num2' }),
     num3: z
       .number()
       .default(0)
-      .describe('Numeric variable {{num3}} for animations')
-      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
-    // Color variables
+      .describe(
+        'Numeric variable injected into HTML/CSS via {{num3}}. Smoothly animatable. Use for a third animated number.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'continuous', label: 'num3' }),
     color1: z
       .string()
       .default('#ffffff')
-      .describe('Color variable {{color1}}')
-      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
+      .describe(
+        'Color variable injected into HTML/CSS via {{color1}} as a hex string. Smoothly animatable between colors. Use for animated theme colors, highlights, or backgrounds in CSS.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'continuous', label: 'color1' }),
     color2: z
       .string()
       .default('#000000')
-      .describe('Color variable {{color2}}')
-      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
-    // Boolean for conditional rendering
+      .describe(
+        'Color variable injected into HTML/CSS via {{color2}} as a hex string. Smoothly animatable between colors. Use for a secondary animated color.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'continuous', label: 'color2' }),
     show1: z
       .boolean()
       .default(true)
-      .describe('Boolean {{show1}} for conditional display')
-      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+      .describe(
+        'Boolean variable injected into HTML/CSS via {{show1}} as "block" (true) or "none" (false). Use for conditional CSS display to show/hide elements. Changes discretely.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'discrete', label: 'show1' }),
     show2: z
       .boolean()
       .default(true)
-      .describe('Boolean {{show2}} for conditional display')
-      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+      .describe(
+        'Boolean variable injected into HTML/CSS via {{show2}} as "block" (true) or "none" (false). Use for a secondary conditional element visibility. Changes discretely.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'discrete', label: 'show2' }),
     _aspectRatioLocked: z
       .boolean()
       .default(false)
-      .describe('Aspect ratio locked')
+      .describe('Internal property: whether aspect ratio is locked during resize')
       .register(fieldRegistry, { hidden: true }),
     _aspectRatio: z
       .number()
       .default(1)
-      .describe('Aspect ratio value')
+      .describe('Internal property: stored aspect ratio value when locked')
       .register(fieldRegistry, { hidden: true })
   });
 

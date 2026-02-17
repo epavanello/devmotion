@@ -121,8 +121,8 @@ export function mutateCreateLayer(
   input: CreateLayerInput
 ): MutationResult<CreateLayerOutput> {
   try {
-    const layer = createLayer(input.type, {
-      props: input.props,
+    const layer = createLayer(input.layer.type, {
+      props: input.layer.props,
       transform: input.transform,
       projectDimensions: {
         width: ctx.project.width,
@@ -185,7 +185,7 @@ export function mutateCreateLayer(
         layerId: layer.id,
         layerIndex: ctx.layerCreationIndex, // Return the index used for this layer
         layerName: layer.name,
-        message: `Created ${input.type} layer "${layer.name}"`
+        message: `Created ${input.layer.type} layer "${layer.name}"`
       },
       nextLayerCreationIndex: nextIndex
     };

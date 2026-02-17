@@ -219,6 +219,9 @@ export function extractPropertyMetadata(schema: z.ZodType): PropertyMetadata[] {
       }
 
       propertiesMeta.meta = fieldMeta;
+      if (fieldMeta?.label) {
+        propertiesMeta.description = fieldMeta?.label;
+      }
 
       metadata.push(propertiesMeta);
     }

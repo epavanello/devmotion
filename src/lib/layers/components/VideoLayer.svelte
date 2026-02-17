@@ -14,80 +14,110 @@
     src: z
       .string()
       .default('')
-      .describe('Video source URL or uploaded file URL')
-      .register(fieldRegistry, { widget: 'upload', mediaType: 'video' }),
+      .describe(
+        'The video source URL or uploaded file URL. Can be an external URL or a storage URL from an uploaded file. The video is synchronized to the project timeline automatically.'
+      )
+      .register(fieldRegistry, { widget: 'upload', mediaType: 'video', label: 'Video' }),
     width: z
       .number()
       .min(1)
       .max(5000)
       .default(720)
-      .describe('Width (px)')
-      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+      .describe(
+        'The display width of the video container in pixels. Smoothly animatable for zoom/resize effects.'
+      )
+      .register(fieldRegistry, {
+        group: 'size',
+        interpolationFamily: 'continuous',
+        label: 'Width'
+      }),
     height: z
       .number()
       .min(1)
       .max(5000)
       .default(1280)
-      .describe('Height (px)')
-      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+      .describe(
+        'The display height of the video container in pixels. Smoothly animatable for zoom/resize effects.'
+      )
+      .register(fieldRegistry, {
+        group: 'size',
+        interpolationFamily: 'continuous',
+        label: 'Height'
+      }),
     borderRadius: z
       .number()
       .min(0)
       .max(2_000)
       .default(40)
-      .describe('Border radius (px)')
-      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
+      .describe(
+        'The corner radius of the video frame in pixels. 0 = sharp corners, higher = more rounded. Use a large value for circular video. Smoothly animatable.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'continuous', label: 'Radius' }),
     crop: z
       .number()
       .min(0)
       .max(500)
       .default(0)
-      .describe('Crop inset (px)')
-      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
+      .describe(
+        'Uniform inset crop in pixels applied to all sides of the video. Hides edge content (e.g., to remove borders or notifications). Combined with borderRadius for rounded cropped frames. Smoothly animatable.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'continuous', label: 'Crop' }),
     objectFit: z
       .enum(['contain', 'cover', 'none'])
       .default('cover')
-      .describe('Object fit mode')
-      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
-    /** Playback volume (0-1) */
+      .describe(
+        'How the video fills its container. Cover = crop to fill (no letterbox), Contain = fit inside (may show letterbox), None = use original video size. Changes discretely.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'discrete', label: 'Fit' }),
     volume: z
       .number()
       .min(0)
       .max(1)
       .multipleOf(0.1)
       .default(1)
-      .describe('Volume (0-1)')
-      .register(fieldRegistry, { group: 'playback', interpolationFamily: 'continuous' }),
-    /** Whether the video is muted */
+      .describe(
+        'The audio playback volume from 0.0 (silent) to 1.0 (full volume). Smoothly animatable for fade-in/fade-out audio effects.'
+      )
+      .register(fieldRegistry, {
+        group: 'playback',
+        interpolationFamily: 'continuous',
+        label: 'Volume'
+      }),
     muted: z
       .boolean()
       .default(false)
-      .describe('Mute audio')
-      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
-    /** Playback rate */
+      .describe(
+        'Whether the video audio is muted. When true, audio is completely silent regardless of volume. Changes discretely (on/off).'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'discrete', label: 'Muted' }),
     playbackRate: z
       .number()
       .min(0.1)
       .max(4)
       .multipleOf(0.1)
       .default(1)
-      .describe('Playback rate')
-      .register(fieldRegistry, { group: 'playback', interpolationFamily: 'continuous' }),
+      .describe(
+        'The playback speed multiplier. 1.0 = normal speed, 0.5 = half speed (slow motion), 2.0 = double speed. Smoothly animatable for speed ramp effects.'
+      )
+      .register(fieldRegistry, {
+        group: 'playback',
+        interpolationFamily: 'continuous',
+        label: 'Speed'
+      }),
     _aspectRatioLocked: z
       .boolean()
       .default(false)
-      .describe('Aspect ratio locked')
+      .describe('Internal property: whether aspect ratio is locked during resize')
       .register(fieldRegistry, { hidden: true }),
     _aspectRatio: z
       .number()
       .default(1)
-      .describe('Aspect ratio value')
+      .describe('Internal property: stored aspect ratio value when locked')
       .register(fieldRegistry, { hidden: true }),
-    /** The storage key if file was uploaded (used for cleanup) */
     fileKey: z
       .string()
       .default('')
-      .describe('Storage key (for uploaded files)')
+      .describe('Internal property: S3 storage key for uploaded files, used for cleanup on delete')
       .register(fieldRegistry, { hidden: true })
   });
 

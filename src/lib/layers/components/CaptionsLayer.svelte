@@ -22,82 +22,126 @@
    * Uses 400x200 as default dimensions for captions
    */
   const schema = createSizeWithAspectRatioSchema(400, 200).extend({
-    sourceLayerId: z.string().optional().describe('Source').register(fieldRegistry, {
-      interpolationFamily: 'discrete',
-      widget: 'custom',
-      component: SourceLayerRef
-    }),
+    sourceLayerId: z
+      .string()
+      .optional()
+      .describe(
+        'The ID of the source audio or video layer to sync captions with. When set, captions are driven by the word timestamps from that layer. Leave empty for standalone captions.'
+      )
+      .register(fieldRegistry, {
+        interpolationFamily: 'discrete',
+        widget: 'custom',
+        component: SourceLayerRef,
+        label: 'Source'
+      }),
     mode: z
       .enum(['block', 'word-by-word'])
       .optional()
       .default('word-by-word')
-      .describe('Caption display mode')
-      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+      .describe(
+        'The caption display mode. Word-by-word = highlights each word as it is spoken with scale/opacity animation. Block = shows groups of words at once, fading between segments.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'discrete', label: 'Mode' }),
     blockGap: z
       .number()
       .min(0.5)
       .max(4)
       .optional()
       .default(1)
-      .describe('Gap delay')
-      .register(fieldRegistry, { group: 'captions', interpolationFamily: 'continuous' }),
+      .describe(
+        'The minimum silence gap in seconds between words that triggers a new caption block. Smaller values = more frequent block splits, larger values = longer blocks grouped together.'
+      )
+      .register(fieldRegistry, {
+        group: 'captions',
+        interpolationFamily: 'continuous',
+        label: 'Block Gap'
+      }),
     maxWordsPerBlock: z
       .number()
       .min(1)
       .max(50)
       .optional()
       .default(10)
-      .describe('Max words')
-      .register(fieldRegistry, { group: 'captions', interpolationFamily: 'discrete' }),
+      .describe(
+        'The maximum number of words shown in a single caption block before starting a new one. Limits block length regardless of silence gaps.'
+      )
+      .register(fieldRegistry, {
+        group: 'captions',
+        interpolationFamily: 'discrete',
+        label: 'Max Words'
+      }),
     words: z
       .array(CaptionWordSchema)
       .optional()
       .default([])
-      .describe('Captions')
-      .register(fieldRegistry, { widget: 'custom', component: CaptionsEditor }),
+      .describe(
+        'The array of timed words for captions. Each word has: word (string), start (seconds), end (seconds). Usually generated from transcription. Editable via the captions editor.'
+      )
+      .register(fieldRegistry, { widget: 'custom', component: CaptionsEditor, label: 'Words' }),
     fontSize: z
       .number()
       .min(8)
       .max(120)
       .optional()
       .default(24)
-      .describe('Size (px)')
-      .register(fieldRegistry, { group: 'font', interpolationFamily: 'continuous' }),
+      .describe(
+        'The font size of caption text in pixels. Controls readability and visual prominence. Smoothly animatable.'
+      )
+      .register(fieldRegistry, {
+        group: 'font',
+        interpolationFamily: 'continuous',
+        label: 'Size'
+      }),
     fontFamily: z
       .enum(googleFontValues)
       .optional()
-      .describe('Font family')
+      .describe(
+        'The font family from Google Fonts for caption text. Affects legibility and style. Changes discretely (no animation between fonts).'
+      )
       .register(fieldRegistry, {
         group: 'font',
         interpolationFamily: 'discrete',
         widget: 'custom',
-        component: FontProperty
+        component: FontProperty,
+        label: 'Font'
       }),
     fontWeight: z
       .enum(['400', '500', '600', '700', '800', '900'])
       .optional()
       .default('700')
-      .describe('Weight')
-      .register(fieldRegistry, { group: 'font', interpolationFamily: 'discrete' }),
+      .describe(
+        'The font weight of caption text. 400 = regular, 700 = bold, 900 = black. Active words are automatically bolded. Changes discretely.'
+      )
+      .register(fieldRegistry, {
+        group: 'font',
+        interpolationFamily: 'discrete',
+        label: 'Weight'
+      }),
     textColor: z
       .string()
       .optional()
       .default('#ffffff')
-      .describe('Text color')
+      .describe(
+        'The text color of caption words in hexadecimal format. Used for active/highlighted words. Smoothly animatable for color transitions.'
+      )
       .register(fieldRegistry, {
         group: 'style',
         interpolationFamily: 'continuous',
-        widget: 'color'
+        widget: 'color',
+        label: 'Text Color'
       }),
     bgColor: z
       .string()
       .optional()
       .default('rgba(0, 0, 0, 0.7)')
-      .describe('Background color')
+      .describe(
+        'The background highlight color behind active caption words in hexadecimal or rgba format. Creates a pill/badge effect on the currently spoken word. Smoothly animatable.'
+      )
       .register(fieldRegistry, {
         group: 'style',
         interpolationFamily: 'continuous',
-        widget: 'color'
+        widget: 'color',
+        label: 'Highlight'
       })
   });
 

@@ -19,52 +19,66 @@
     src: z
       .string()
       .default('')
-      .describe('Audio source URL or uploaded file URL')
-      .register(fieldRegistry, { widget: 'upload', mediaType: 'audio' }),
-    /** Display label shown on canvas */
+      .describe(
+        'The audio source URL or uploaded file URL. Can be an external URL or a storage URL from an uploaded file. Audio is synchronized to the project timeline.'
+      )
+      .register(fieldRegistry, { widget: 'upload', mediaType: 'audio', label: 'Audio' }),
     label: z
       .string()
       .default('Audio')
-      .describe('Display label')
-      .register(fieldRegistry, { interpolationFamily: 'text' }),
+      .describe(
+        'The display label shown on the canvas for this audio layer. Used for identification in the editor since audio has no visual output. Supports text animation.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'text', label: 'Label' }),
     volume: z
       .number()
       .min(0)
       .max(1)
       .multipleOf(0.1)
       .default(1)
-      .describe('Volume (0-1)')
-      .register(fieldRegistry, { group: 'playback', interpolationFamily: 'continuous' }),
-    /** Whether audio is muted */
+      .describe(
+        'The audio playback volume from 0.0 (silent) to 1.0 (full volume). Smoothly animatable for fade-in/fade-out effects.'
+      )
+      .register(fieldRegistry, {
+        group: 'playback',
+        interpolationFamily: 'continuous',
+        label: 'Volume'
+      }),
     muted: z
       .boolean()
       .default(false)
-      .describe('Mute audio')
-      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
-    /** Playback rate */
+      .describe(
+        'Whether the audio is muted. When true, audio is completely silent regardless of volume setting. Changes discretely (on/off).'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'discrete', label: 'Muted' }),
     playbackRate: z
       .number()
       .min(0.1)
       .max(4)
       .multipleOf(0.1)
       .default(1)
-      .describe('Playback rate')
-      .register(fieldRegistry, { group: 'playback', interpolationFamily: 'continuous' }),
+      .describe(
+        'The playback speed multiplier. 1.0 = normal speed, 0.5 = half speed (slowed down), 2.0 = double speed. Affects both pitch and tempo. Smoothly animatable.'
+      )
+      .register(fieldRegistry, {
+        group: 'playback',
+        interpolationFamily: 'continuous',
+        label: 'Speed'
+      }),
     _aspectRatioLocked: z
       .boolean()
       .default(false)
-      .describe('Aspect ratio locked')
+      .describe('Internal property: whether aspect ratio is locked during resize')
       .register(fieldRegistry, { hidden: true }),
     _aspectRatio: z
       .number()
       .default(1)
-      .describe('Aspect ratio value')
+      .describe('Internal property: stored aspect ratio value when locked')
       .register(fieldRegistry, { hidden: true }),
-    /** The storage key if file was uploaded (used for cleanup) */
     fileKey: z
       .string()
       .default('')
-      .describe('Storage key (for uploaded files)')
+      .describe('Internal property: S3 storage key for uploaded files, used for cleanup on delete')
       .register(fieldRegistry, { hidden: true })
   });
 

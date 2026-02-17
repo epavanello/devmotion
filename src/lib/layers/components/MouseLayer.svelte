@@ -11,28 +11,42 @@
     pointerType: z
       .enum(['arrow', 'pointer', 'hand', 'crosshair', 'text'])
       .default('arrow')
-      .describe('Mouse pointer type')
-      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+      .describe(
+        'The mouse cursor icon type. Arrow = default cursor, Pointer = click cursor, Hand = grab/clickable, Crosshair = precision selection, Text = text editing. Changes discretely.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'discrete', label: 'Cursor' }),
     size: z
       .number()
       .min(16)
       .max(64)
       .default(24)
-      .describe('Pointer size (px)')
-      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
-    color: z.string().default('#ffffff').describe('Pointer color').register(fieldRegistry, {
-      group: 'appearance',
-      interpolationFamily: 'continuous',
-      widget: 'color'
-    }),
-    backgroundColor: z
+      .describe(
+        'The size of the cursor icon in pixels. Larger sizes make the cursor more visible in videos. Smoothly animatable.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'continuous', label: 'Size' }),
+    color: z
       .string()
-      .default('#000000')
-      .describe('Background circle color')
+      .default('#ffffff')
+      .describe(
+        'The color of the cursor icon in hexadecimal format. Should contrast with the background for visibility. Smoothly animatable for color transitions.'
+      )
       .register(fieldRegistry, {
         group: 'appearance',
         interpolationFamily: 'continuous',
-        widget: 'color'
+        widget: 'color',
+        label: 'Cursor Color'
+      }),
+    backgroundColor: z
+      .string()
+      .default('#000000')
+      .describe(
+        'The color of the background circle behind the cursor in hexadecimal format. Provides contrast and emphasis for the cursor. Smoothly animatable.'
+      )
+      .register(fieldRegistry, {
+        group: 'appearance',
+        interpolationFamily: 'continuous',
+        widget: 'color',
+        label: 'Background'
       })
   });
 

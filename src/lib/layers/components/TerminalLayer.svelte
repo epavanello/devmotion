@@ -13,67 +13,104 @@
     title: z
       .string()
       .default('Terminal')
-      .describe('Terminal window title')
-      .register(fieldRegistry, { interpolationFamily: 'text' }),
+      .describe(
+        'The title text displayed in the terminal window header bar. Typically the shell name or current directory (e.g., "bash", "zsh", "~/projects"). Animatable with text interpolation.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'text', label: 'Title' }),
     content: z
       .string()
       .default('$ Welcome to terminal')
-      .describe('Terminal content/text')
-      .register(fieldRegistry, { widget: 'textarea', interpolationFamily: 'text' }),
+      .describe(
+        'The text content displayed in the terminal body. Write multi-line content with newlines. Supports the $ prompt prefix and any terminal output. Animatable with text interpolation for typewriter effects.'
+      )
+      .register(fieldRegistry, {
+        widget: 'textarea',
+        interpolationFamily: 'text',
+        label: 'Content'
+      }),
     width: z
       .number()
       .min(200)
       .max(2000)
       .default(600)
-      .describe('Width (px)')
-      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+      .describe('The width of the terminal window in pixels. Smoothly animatable.')
+      .register(fieldRegistry, {
+        group: 'size',
+        interpolationFamily: 'continuous',
+        label: 'Width'
+      }),
     height: z
       .number()
       .min(150)
       .max(2000)
       .default(400)
-      .describe('Height (px)')
-      .register(fieldRegistry, { group: 'size', interpolationFamily: 'continuous' }),
+      .describe('The height of the terminal window in pixels. Smoothly animatable.')
+      .register(fieldRegistry, {
+        group: 'size',
+        interpolationFamily: 'continuous',
+        label: 'Height'
+      }),
     fontSize: z
       .number()
       .min(10)
       .max(32)
       .default(14)
-      .describe('Font size (px)')
-      .register(fieldRegistry, { interpolationFamily: 'continuous' }),
+      .describe(
+        'The font size of terminal text in pixels. Uses a monospace font. Larger values improve readability in presentations. Smoothly animatable.'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'continuous', label: 'Font Size' }),
     backgroundColor: z
       .string()
       .default('#1e1e1e')
-      .describe('Background color')
+      .describe(
+        'The background color of the terminal body in hexadecimal. Classic terminals use black (#000000) or dark gray (#1e1e1e). Smoothly animatable.'
+      )
       .register(fieldRegistry, {
         group: 'appearance',
         interpolationFamily: 'continuous',
-        widget: 'color'
+        widget: 'color',
+        label: 'Background'
       }),
-    textColor: z.string().default('#00ff00').describe('Text color').register(fieldRegistry, {
-      group: 'appearance',
-      interpolationFamily: 'continuous',
-      widget: 'color'
-    }),
-    borderColor: z.string().default('#404040').describe('Border color').register(fieldRegistry, {
-      group: 'appearance',
-      interpolationFamily: 'continuous',
-      widget: 'color'
-    }),
+    textColor: z
+      .string()
+      .default('#00ff00')
+      .describe(
+        'The text color inside the terminal in hexadecimal. Classic terminals use green (#00ff00) or white (#ffffff). Smoothly animatable.'
+      )
+      .register(fieldRegistry, {
+        group: 'appearance',
+        interpolationFamily: 'continuous',
+        widget: 'color',
+        label: 'Text Color'
+      }),
+    borderColor: z
+      .string()
+      .default('#404040')
+      .describe(
+        'The border/outline color of the terminal window in hexadecimal. Visible when showBorder is enabled. Smoothly animatable.'
+      )
+      .register(fieldRegistry, {
+        group: 'appearance',
+        interpolationFamily: 'continuous',
+        widget: 'color',
+        label: 'Border Color'
+      }),
     showBorder: z
       .boolean()
       .default(true)
-      .describe('Show terminal border')
-      .register(fieldRegistry, { interpolationFamily: 'discrete' }),
+      .describe(
+        'Whether to display a border/outline around the terminal window. When true, draws a 1px border using the borderColor. Changes discretely (on/off).'
+      )
+      .register(fieldRegistry, { interpolationFamily: 'discrete', label: 'Show Border' }),
     _aspectRatioLocked: z
       .boolean()
       .default(false)
-      .describe('Aspect ratio locked')
+      .describe('Internal property: whether aspect ratio is locked during resize')
       .register(fieldRegistry, { hidden: true }),
     _aspectRatio: z
       .number()
       .default(1)
-      .describe('Aspect ratio value')
+      .describe('Internal property: stored aspect ratio value when locked')
       .register(fieldRegistry, { hidden: true })
   });
 

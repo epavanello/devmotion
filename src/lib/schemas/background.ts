@@ -139,7 +139,10 @@ export function isSolid(value: BackgroundValue): value is SolidBackground {
 /**
  * Convert a BackgroundValue to a CSS background / background-image string
  */
-export function backgroundValueToCSS(value: BackgroundValue): string {
+export function backgroundValueToCSS(
+  value: BackgroundValue,
+  options?: { radialSize?: 'closest-side' | 'closest-corner' | 'farthest-side' | 'farthest-corner' }
+): string {
   if (isSolid(value)) {
     return value;
   }
@@ -152,7 +155,8 @@ export function backgroundValueToCSS(value: BackgroundValue): string {
   if (value.type === 'radial') {
     const stops = value.stops.map((s) => `${s.color} ${s.position}%`).join(', ');
     const pos = `${value.position.x}% ${value.position.y}%`;
-    return `radial-gradient(${value.shape} ${value.size} at ${pos}, ${stops})`;
+    const size = options?.radialSize ?? value.size;
+    return `radial-gradient(${value.shape} ${size} at ${pos}, ${stops})`;
   }
 
   if (value.type === 'conic') {
@@ -167,9 +171,12 @@ export function backgroundValueToCSS(value: BackgroundValue): string {
 /**
  * Get style properties for a background value
  */
-export function getStyleProperties(value: BackgroundValue) {
+export function getStyleProperties(
+  value: BackgroundValue,
+  options?: { radialSize?: 'closest-side' | 'closest-corner' | 'farthest-side' | 'farthest-corner' }
+) {
   return {
-    backgroundImage: getBackgroundImage(value),
+    backgroundImage: getBackgroundImage(value, options),
     backgroundColor: getBackgroundColor(value)
   };
 }
@@ -186,7 +193,10 @@ export function getBackgroundColor(value?: BackgroundValue) {
   return 'transparent';
 }
 
-export function getBackgroundImage(value?: BackgroundValue) {
+export function getBackgroundImage(
+  value?: BackgroundValue,
+  options?: { radialSize?: 'closest-side' | 'closest-corner' | 'farthest-side' | 'farthest-corner' }
+) {
   if (!value) {
     return undefined;
   }
@@ -195,7 +205,7 @@ export function getBackgroundImage(value?: BackgroundValue) {
     return 'none';
   }
 
-  return backgroundValueToCSS(value);
+  return backgroundValueToCSS(value, options);
 }
 
 /** Create a solid background value */

@@ -20,7 +20,7 @@
  */
 import { z } from 'zod';
 import { createMcpHandler } from '@vercel/mcp-adapter';
-import { animationTools, isLayerCreationTool, getLayerTypeFromToolName } from '$lib/ai/schemas.js';
+import { animationTools } from '$lib/ai/schemas.js';
 import { db } from '$lib/server/db';
 import { project } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
@@ -203,48 +203,39 @@ const handler = createMcpHandler(
           let result: any;
 
           // Dispatch to appropriate mutation function
-          if (isLayerCreationTool(name)) {
-            const type = getLayerTypeFromToolName(name);
-            if (!type) {
+          switch (name) {
+            case 'create_layer':
+              result = mutateCreateLayer(ctx, toolInput as any);
+              break;
+            case 'animate_layer':
+              result = mutateAnimateLayer(ctx, toolInput as any);
+              break;
+            case 'edit_layer':
+              result = mutateEditLayer(ctx, toolInput as any);
+              break;
+            case 'update_keyframe':
+              result = mutateUpdateKeyframe(ctx, toolInput as any);
+              break;
+            case 'remove_keyframe':
+              result = mutateRemoveKeyframe(ctx, toolInput as any);
+              break;
+            case 'remove_layer':
+              result = mutateRemoveLayer(ctx, toolInput as any);
+              break;
+            case 'group_layers':
+              result = mutateGroupLayers(ctx, toolInput as any);
+              break;
+            case 'ungroup_layers':
+              result = mutateUngroupLayers(ctx, toolInput as any);
+              break;
+            case 'configure_project':
+              result = mutateConfigureProject(ctx, toolInput as any);
+              break;
+            default:
               return {
                 isError: true,
-                content: [{ type: 'text', text: `Unknown layer type for tool: ${name}` }]
+                content: [{ type: 'text', text: `Unknown tool: ${name}` }]
               };
-            }
-
-            result = mutateCreateLayer(ctx, { ...toolInput, type } as any);
-          } else {
-            switch (name) {
-              case 'animate_layer':
-                result = mutateAnimateLayer(ctx, toolInput as any);
-                break;
-              case 'edit_layer':
-                result = mutateEditLayer(ctx, toolInput as any);
-                break;
-              case 'update_keyframe':
-                result = mutateUpdateKeyframe(ctx, toolInput as any);
-                break;
-              case 'remove_keyframe':
-                result = mutateRemoveKeyframe(ctx, toolInput as any);
-                break;
-              case 'remove_layer':
-                result = mutateRemoveLayer(ctx, toolInput as any);
-                break;
-              case 'group_layers':
-                result = mutateGroupLayers(ctx, toolInput as any);
-                break;
-              case 'ungroup_layers':
-                result = mutateUngroupLayers(ctx, toolInput as any);
-                break;
-              case 'configure_project':
-                result = mutateConfigureProject(ctx, toolInput as any);
-                break;
-              default:
-                return {
-                  isError: true,
-                  content: [{ type: 'text', text: `Unknown tool: ${name}` }]
-                };
-            }
           }
 
           // Handle result (mutations return either direct result or wrapped in { output })

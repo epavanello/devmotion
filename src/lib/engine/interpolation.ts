@@ -2,6 +2,7 @@
  * Animation interpolation and easing functions
  */
 import BezierEasing from 'bezier-easing';
+import { colord } from 'colord';
 import type { Interpolation, Keyframe, AnimatableProperty, LayerStyle } from '$lib/types/animation';
 import type { PropertyMetadata } from '$lib/layers/base';
 import type { ContinuousInterpolationStrategy } from '$lib/schemas/animation';
@@ -34,20 +35,40 @@ export function interpolateValue(
 
 /**
  * CONTINUOUS interpolation - smooth numeric transitions with easing
+ * Also supports color interpolation in RGB space
  */
 function interpolateContinuous(
   start: unknown,
   end: unknown,
   progress: number,
   strategy: ContinuousInterpolationStrategy
-): number {
-  if (typeof start !== 'number' || typeof end !== 'number') {
-    throw new Error('continuous interpolation requires numeric values');
-  }
-
+): number | string {
   // Apply easing curve based on strategy
   const easing = getEasingFunction(strategy);
   const easedProgress = easing(progress);
+
+  // Handle color interpolation
+  if (typeof start === 'string' && typeof end === 'string') {
+    const startColor = colord(start);
+    const endColor = colord(end);
+
+    if (startColor.isValid() && endColor.isValid()) {
+      const startRgb = startColor.toRgb();
+      const endRgb = endColor.toRgb();
+
+      const r = Math.round(startRgb.r + (endRgb.r - startRgb.r) * easedProgress);
+      const g = Math.round(startRgb.g + (endRgb.g - startRgb.g) * easedProgress);
+      const b = Math.round(startRgb.b + (endRgb.b - startRgb.b) * easedProgress);
+      const a = startRgb.a + (endRgb.a - startRgb.a) * easedProgress;
+
+      return colord({ r, g, b, a }).toHex();
+    }
+  }
+
+  // Handle numeric interpolation
+  if (typeof start !== 'number' || typeof end !== 'number') {
+    throw new Error('continuous interpolation requires numeric or color values');
+  }
 
   return start + (end - start) * easedProgress;
 }
