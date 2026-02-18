@@ -78,8 +78,9 @@ export const getProject = query(z.object({ id: z.string() }), async ({ id }) => 
   }
 
   const isOwner = locals.user?.id === result.userId;
+  const isAdmin = locals.user?.role === 'admin';
 
-  if (!result.isPublic && !isOwner) {
+  if (!result.isPublic && !isOwner && !isAdmin) {
     return { error: 'access_denied' as const };
   }
 

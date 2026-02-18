@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Bot, Loader2, User, Trash2, Send } from '@lucide/svelte';
+  import { Bot, Loader2, User, Trash2, Send, Square } from '@lucide/svelte';
   import { DEFAULT_MODEL_ID } from '$lib/ai/models';
   import { Chat } from '@ai-sdk/svelte';
   import {
@@ -96,7 +96,6 @@
       toast.error(parseErrorMessage(error));
     },
     onToolCall({ toolCall }) {
-      console.log('Tool call:', toolCall);
       if (toolCall.dynamic) {
         return;
       }
@@ -257,19 +256,21 @@
     ></textarea>
 
     <div class="flex gap-2">
-      <Button
-        class="flex-1"
-        type="submit"
-        disabled={!prompt.current.trim() || chat.status === 'streaming' || projectStore.isRecording}
-        loading={chat.status === 'streaming' || chat.status === 'submitted'}
-      >
-        {#if chat.status !== 'ready'}
-          Generating...
-        {:else}
+      {#if chat.status === 'streaming' || chat.status === 'submitted'}
+        <Button class="flex-1" type="button" variant="destructive" onclick={() => chat.stop()}>
+          <Square class="size-4" />
+          Stop
+        </Button>
+      {:else}
+        <Button
+          class="flex-1"
+          type="submit"
+          disabled={!prompt.current.trim() || projectStore.isRecording}
+        >
           Send
           <Send class="size-4" />
-        {/if}
-      </Button>
+        </Button>
+      {/if}
 
       {#if chat.messages.length > 0}
         <Button
