@@ -1,4 +1,8 @@
-import { pgTable, text, timestamp, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, pgEnum } from 'drizzle-orm/pg-core';
+import { userRoles } from '$lib/roles';
+
+/** Postgres enum that enforces valid role values at the DB level. */
+export const userRoleEnum = pgEnum('user_role', [...userRoles]);
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -11,7 +15,7 @@ export const user = pgTable('user', {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
-  role: text('role').default('user').notNull()
+  role: userRoleEnum('role').default('user').notNull()
 });
 
 export const session = pgTable('session', {

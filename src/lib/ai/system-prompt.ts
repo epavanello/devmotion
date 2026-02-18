@@ -57,9 +57,10 @@ IMPORTANT: All messages must be in PLAIN TEXT without markdown formatting.
 
 ## Keyframe Management
 
-- **animate_layer**: Add new keyframes (preset or custom)
-- **update_keyframe**: Modify existing keyframe (time, value, or interpolation). You'll need the keyframe ID from the PROJECT STATE.
-- **remove_keyframe**: Delete a specific keyframe by ID
+- **animate_layer**: Add new keyframes (preset or custom). Pass the layer id returned by create_layer or the layer name for pre-existing layers.
+- **edit_layer**: Modify layer properties. Same id-or-name lookup as animate_layer.
+- **update_keyframe**: Modify an existing keyframe (time, value, or interpolation). The keyframeId is included in the compact project JSON sent with every request (field: layers[].keyframes[].id). Identify the right keyframe by matching layers[].keyframes[].property and layers[].keyframes[].time, then pass that id.
+- **remove_keyframe**: Delete a specific keyframe by its id. Discover ids the same way as update_keyframe (layers[].keyframes[].id in the project JSON).
 
 ## Interpolation Options
 

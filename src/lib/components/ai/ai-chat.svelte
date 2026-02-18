@@ -157,7 +157,8 @@
 
   function onSubmit(event?: Event) {
     event?.preventDefault();
-    if (!prompt.current.trim() || chat.status === 'streaming') return;
+    if (!prompt.current.trim() || chat.status === 'streaming' || chat.status === 'submitted')
+      return;
 
     uiStore.requireLogin('send a message', sendMessage);
   }
@@ -251,7 +252,9 @@
       bind:value={prompt.current}
       onkeydown={handleKeyDown}
       placeholder="Describe your animation... e.g., 'Create a title that fades in with a subtitle below'"
-      disabled={chat.status === 'streaming' || projectStore.isRecording}
+      disabled={chat.status === 'streaming' ||
+        chat.status === 'submitted' ||
+        projectStore.isRecording}
       class="mb-3 flex min-h-20 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
     ></textarea>
 

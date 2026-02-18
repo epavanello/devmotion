@@ -1,7 +1,7 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
 
-import type { UserRole } from '$lib/roles';
 import type { Session, User } from 'better-auth';
+import type { UserRole } from '$lib/roles';
 
 // for information about these interfaces
 interface DevMotionAPI {

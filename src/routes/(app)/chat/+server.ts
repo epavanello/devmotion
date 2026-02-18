@@ -214,10 +214,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         if (typeof message.content !== 'string') {
           return message;
         }
+        // Shallow-merge into existing providerOptions so other provider keys
+        // (e.g. sort, reasoning) are preserved alongside the cacheControl entry.
         return {
           ...message,
           providerOptions: {
-            openrouter: { cacheControl: { type: 'ephemeral' /* ttl: '1h' */ } }
+            ...message.providerOptions,
+            openrouter: {
+              ...(message.providerOptions?.openrouter as Record<string, unknown> | undefined),
+              cacheControl: { type: 'ephemeral' /* ttl: '1h' */ }
+            }
           }
         };
       });

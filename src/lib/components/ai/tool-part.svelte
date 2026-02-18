@@ -2,6 +2,15 @@
   import type { AnimationUITools } from '$lib/ai/schemas';
   import type { DynamicToolUIPart, ToolUIPart } from 'ai';
 
+  interface OutputErrorTool {
+    state: 'output-error';
+    errorText?: string;
+  }
+
+  function isOutputError(t: unknown): t is OutputErrorTool {
+    return typeof t === 'object' && t !== null && (t as OutputErrorTool).state === 'output-error';
+  }
+
   const { tool }: { tool: DynamicToolUIPart | ToolUIPart<AnimationUITools> } = $props();
 
   const output = $derived(
@@ -14,7 +23,7 @@
     hasOutput && typeof output.message === 'string' ? output.message : undefined
   );
   const isError = $derived(tool.state === 'output-error');
-  const errorText = $derived(isError ? (tool as { errorText?: string }).errorText : undefined);
+  const errorText = $derived(isOutputError(tool) ? tool.errorText : undefined);
 </script>
 
 <details class="rounded border bg-muted/30 px-2 py-0.5 text-[10px]">

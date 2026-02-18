@@ -1,8 +1,7 @@
 /**
  * AI Tool Executor - Client-side execution of AI tool calls
  *
- * Handles progressive tool execution with layer ID tracking across tool calls.
- * Refactored to use shared 'mutations.ts' logic.
+ * Client-side AI tool execution using shared mutations.ts logic.
  */
 import type { ProjectStore } from '$lib/stores/project.svelte';
 import type {
@@ -37,10 +36,6 @@ import {
   mutateRemoveKeyframe,
   type MutationContext
 } from './mutations';
-
-// ============================================
-// Layer ID Tracking
-// ============================================
 
 // ============================================
 // Context Helper
@@ -100,12 +95,12 @@ export function executeRemoveLayer(
   projectStore: ProjectStore,
   input: RemoveLayerInput
 ): RemoveLayerOutput {
-  const result = mutateRemoveLayer(getContext(projectStore), input);
+  const ctx = getContext(projectStore);
+  const result = mutateRemoveLayer(ctx, input);
   if (result.success) {
     if (
       projectStore.selectedLayerId &&
-      getContext(projectStore).project.layers.find((l) => l.id === projectStore.selectedLayerId) ===
-        undefined
+      ctx.project.layers.find((l) => l.id === projectStore.selectedLayerId) === undefined
     ) {
       projectStore.selectedLayerId = null;
     }
