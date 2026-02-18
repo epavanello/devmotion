@@ -125,10 +125,15 @@ ${JSON.stringify(exampleProject)}
 3. Always set meaningful props (content, colors, sizes) — do not rely on defaults for visible content.
 4. Always position layers intentionally.
 5. Always animate every layer.
-6. Create layers one at a time; do not batch unrelated layers in a single call.
+6. Create layers one at a time; do not batch unrelated layers in a single call.`;
+}
 
-## Project state
-${buildCanvasState(project)}`;
+/**
+ * Build the dynamic project state section (injected as a separate message
+ * so the static system prompt above can be cached by OpenRouter).
+ */
+export function buildProjectStateSection(project: Project): string {
+  return `## Project state\n${buildCanvasState(project)}`;
 }
 
 /**

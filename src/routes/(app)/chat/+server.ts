@@ -9,7 +9,7 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { z } from 'zod';
 import { ProjectSchema } from '$lib/schemas/animation';
 import { animationTools } from '$lib/ai/schemas';
-import { buildSystemPrompt } from '$lib/ai/system-prompt';
+import { buildSystemPrompt, buildProjectStateSection } from '$lib/ai/system-prompt';
 import { getModel } from '$lib/ai/models';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
@@ -151,7 +151,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const { project, modelId, messages } = GenerateRequestSchema.parse(body);
 
     const openrouter = getOpenRouterClient();
+    // Static system prompt — no project state here so OpenRouter can cache it
+    // across requests (automatic caching for Moonshot AI, OpenAI-compatible models).
     const systemPrompt = buildSystemPrompt(project);
+    // Dynamic project state injected as a separate second message so it doesn't
+    // invalidate the cached system prompt on every request.
+    const projectState = buildProjectStateSection(project);
     const model = getModel(modelId);
 
     console.log(`[AI] Using model: ${model.name} (${model.id})`);
@@ -192,8 +197,32 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       }
     });
 
+    // Prepend project state as the first exchange so the static system prompt
+    // above stays cacheable. On Anthropic-compatible models the cacheControl
+    // marker instructs OpenRouter to cache everything before this point (i.e.
+    // the system prompt). On auto-caching models (Moonshot AI, OpenAI-compatible)
+    // the unchanged system prompt prefix is cached automatically.
+    const projectStateMessages = [
+      {
+        role: 'user' as const,
+        content: [
+          {
+            type: 'text' as const,
+            text: projectState,
+            providerOptions: {
+              openrouter: { cacheControl: { type: 'ephemeral' } }
+            }
+          }
+        ]
+      },
+      {
+        role: 'assistant' as const,
+        content: [{ type: 'text' as const, text: 'Understood.' }]
+      }
+    ];
+
     const result = await agent.stream({
-      messages: await convertToModelMessages(messages)
+      messages: [...projectStateMessages, ...(await convertToModelMessages(messages))]
     });
 
     return result.toUIMessageStreamResponse();
