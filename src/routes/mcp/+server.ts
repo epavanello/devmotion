@@ -14,8 +14,7 @@
  * - Each tool call modifies the project data and saves it back to DB
  *
  * Layer References:
- * - Use actual layer IDs (returned from create_layer tools) or layer names
- * - "layer_N" references (layer_0, layer_1) are NOT supported in MCP (stateless)
+ * - Use the layer id returned by create_layer, or layer names for existing layers
  * - Use get_project to inspect current project state and layer IDs
  */
 import { z } from 'zod';
@@ -194,8 +193,6 @@ const handler = createMcpHandler(
           const projectData = dbProject.data;
 
           // Prepare mutation context
-          // NOTE: layer_N references (e.g., "layer_0") only work within a single LLM conversation
-          // For MCP (stateless), users should refer to layers by actual ID or name
           const ctx: MutationContext = {
             project: projectData
           };

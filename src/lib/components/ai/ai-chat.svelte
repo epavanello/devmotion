@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Bot, Loader2, User, Trash2, Send } from '@lucide/svelte';
+  import { Bot, Loader2, User, Trash2, Send, Square } from '@lucide/svelte';
   import { DEFAULT_MODEL_ID } from '$lib/ai/models';
   import { Chat } from '@ai-sdk/svelte';
   import {
@@ -22,8 +22,7 @@
     executeGroupLayers,
     executeUngroupLayers,
     executeUpdateKeyframe,
-    executeRemoveKeyframe,
-    resetLayerTracking
+    executeRemoveKeyframe
   } from '$lib/ai/ai-operations.svelte';
   import {
     type AnimateLayerInput,
@@ -63,7 +62,7 @@
     []
   );
 
-  function scrollToBottom() {
+  function scrollToBottom(force = false) {
     let isAtBottom = false;
     if (scrollRef) {
       const top = scrollRef.scrollTop;
@@ -73,7 +72,7 @@
       isAtBottom = top >= diff - 100;
     }
     // allow the user to scroll up to read previous messages
-    if (isAtBottom) {
+    if (force || isAtBottom) {
       scrollRef?.scrollTo({
         top: scrollRef.scrollHeight,
         behavior: 'instant'
@@ -97,7 +96,6 @@
       toast.error(parseErrorMessage(error));
     },
     onToolCall({ toolCall }) {
-      console.log('Tool call:', toolCall);
       if (toolCall.dynamic) {
         return;
       }
@@ -151,18 +149,16 @@
   });
 
   async function sendMessage() {
-    // Reset layer tracking for new message
-    resetLayerTracking();
-
     chat.sendMessage({ text: prompt.current });
     prompt.current = '';
     await tick();
-    scrollToBottom();
+    scrollToBottom(true);
   }
 
   function onSubmit(event?: Event) {
     event?.preventDefault();
-    if (!prompt.current.trim() || chat.status === 'streaming') return;
+    if (!prompt.current.trim() || chat.status === 'streaming' || chat.status === 'submitted')
+      return;
 
     uiStore.requireLogin('send a message', sendMessage);
   }
@@ -180,7 +176,10 @@
     toast.success('Chat history cleared');
   }
 
-  watch(() => $state.snapshot(chat.messages), scrollToBottom);
+  watch(
+    () => $state.snapshot(chat.messages),
+    () => scrollToBottom()
+  );
 </script>
 
 <div class="flex h-full flex-col">
@@ -253,24 +252,28 @@
       bind:value={prompt.current}
       onkeydown={handleKeyDown}
       placeholder="Describe your animation... e.g., 'Create a title that fades in with a subtitle below'"
-      disabled={chat.status === 'streaming' || projectStore.isRecording}
+      disabled={chat.status === 'streaming' ||
+        chat.status === 'submitted' ||
+        projectStore.isRecording}
       class="mb-3 flex min-h-20 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
     ></textarea>
 
     <div class="flex gap-2">
-      <Button
-        class="flex-1"
-        type="submit"
-        disabled={!prompt.current.trim() || chat.status === 'streaming' || projectStore.isRecording}
-        loading={chat.status === 'streaming' || chat.status === 'submitted'}
-      >
-        {#if chat.status !== 'ready'}
-          Generating...
-        {:else}
+      {#if chat.status === 'streaming' || chat.status === 'submitted'}
+        <Button class="flex-1" type="button" variant="destructive" onclick={() => chat.stop()}>
+          <Square class="size-4" />
+          Stop
+        </Button>
+      {:else}
+        <Button
+          class="flex-1"
+          type="submit"
+          disabled={!prompt.current.trim() || projectStore.isRecording}
+        >
           Send
           <Send class="size-4" />
-        {/if}
-      </Button>
+        </Button>
+      {/if}
 
       {#if chat.messages.length > 0}
         <Button

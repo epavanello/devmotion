@@ -13,6 +13,7 @@ import {
 import { aiUserUnlock } from './db/schema';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { userRoles } from '$lib/roles';
 
 export const auth = betterAuth({
   secret: PRIVATE_BETTER_AUTH_SECRET,
@@ -61,5 +62,18 @@ export const auth = betterAuth({
         }
       }
     })
+  },
+  user: {
+    additionalFields: {
+      role: {
+        type: [...userRoles],
+        required: true,
+        defaultValue: 'user',
+        input: false
+      }
+    },
+    deleteUser: {
+      enabled: true
+    }
   }
 });

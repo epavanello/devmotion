@@ -7,8 +7,6 @@
  * - MCP server: Server-side project modifications (+server.ts)
  *
  * All mutations accept a MutationContext and return typed results.
- * The context includes the project and optional layer ID tracking for
- * resolving temporary layer references (layer_0, layer_1, etc.).
  */
 import { nanoid } from 'nanoid';
 import type { Interpolation, AnimatableProperty, Keyframe } from '$lib/types/animation';
@@ -37,50 +35,19 @@ import type {
 import type { Layer, ProjectData } from '$lib/schemas/animation';
 import { defaultLayerStyle, defaultTransform } from '$lib/schemas/base';
 
-/**
- * Context for resolving layer IDs (e.g. "layer_0" -> "actual-uuid")
- */
 export interface MutationContext {
   project: ProjectData;
-  /**
-   * Map of temporary IDs (e.g. from tool calls) to actual layer IDs.
-   * This should be persisted/passed along if you want continuity between calls.
-   */
-  layerIdMap?: Map<number, string>;
-
-  /**
-   * Current index for assigning new temporary IDs (layer_0, layer_1...)
-   */
-  layerCreationIndex?: number;
 }
 
-/**
- * Helper to update the context after layer creation
- */
 export interface MutationResult<T> {
   output: T;
-  nextLayerCreationIndex?: number;
 }
 
 // ============================================
 // Layer Resolution
 // ============================================
 
-function resolveLayerId(
-  project: ProjectData,
-  ref: string,
-  layerIdMap?: Map<number, string>
-): string | null {
-  // Check for "layer_N" pattern
-  const layerMatch = ref.match(/^layer_(\d+)$/);
-  if (layerMatch && layerIdMap) {
-    const index = parseInt(layerMatch[1], 10);
-    const resolvedId = layerIdMap.get(index);
-    if (resolvedId) {
-      return resolvedId;
-    }
-  }
-
+function resolveLayerId(project: ProjectData, ref: string): string | null {
   // Check if it's an actual layer ID
   const existingLayer = project.layers.find((l) => l.id === ref);
   if (existingLayer) {
@@ -106,8 +73,7 @@ function layerNotFoundError(project: ProjectData, ref: string): string {
   const available = project.layers.map((l) => `"${l.name}" (id: ${l.id})`).join(', ');
   return (
     `Layer "${ref}" not found. ` +
-    `Use layer_N for layers you just created in this conversation, ` +
-    `or reference existing layers by id/name. ` +
+    `Use the exact layer id returned by create_layer, or reference existing layers by id/name. ` +
     `Available layers: ${available}`
   );
 }
@@ -161,13 +127,6 @@ export function mutateCreateLayer(
     // Mutate project
     ctx.project.layers.push(layer);
 
-    // Track ID
-    let nextIndex = ctx.layerCreationIndex ?? 0;
-    if (ctx.layerIdMap) {
-      ctx.layerIdMap.set(nextIndex, layer.id);
-      nextIndex++;
-    }
-
     // Apply animation
     if (input.animation?.preset) {
       applyPresetToProject(
@@ -183,11 +142,9 @@ export function mutateCreateLayer(
       output: {
         success: true,
         layerId: layer.id,
-        layerIndex: ctx.layerCreationIndex, // Return the index used for this layer
         layerName: layer.name,
         message: `Created ${input.layer.type} layer "${layer.name}"`
-      },
-      nextLayerCreationIndex: nextIndex
+      }
     };
   } catch (err) {
     return {
@@ -204,7 +161,7 @@ export function mutateAnimateLayer(
   ctx: MutationContext,
   input: AnimateLayerInput
 ): AnimateLayerOutput {
-  const resolvedId = resolveLayerId(ctx.project, input.layerId, ctx.layerIdMap);
+  const resolvedId = resolveLayerId(ctx.project, input.layerId);
 
   if (!resolvedId) {
     const errMsg = layerNotFoundError(ctx.project, input.layerId);
@@ -273,7 +230,7 @@ export function mutateAnimateLayer(
 }
 
 export function mutateEditLayer(ctx: MutationContext, input: EditLayerInput): EditLayerOutput {
-  const resolvedId = resolveLayerId(ctx.project, input.layerId, ctx.layerIdMap);
+  const resolvedId = resolveLayerId(ctx.project, input.layerId);
   if (!resolvedId) {
     const errMsg = layerNotFoundError(ctx.project, input.layerId);
     return { success: false, message: errMsg, error: errMsg };
@@ -352,7 +309,7 @@ export function mutateRemoveLayer(
   ctx: MutationContext,
   input: RemoveLayerInput
 ): RemoveLayerOutput {
-  const resolvedId = resolveLayerId(ctx.project, input.layerId, ctx.layerIdMap);
+  const resolvedId = resolveLayerId(ctx.project, input.layerId);
   if (!resolvedId) {
     const errMsg = layerNotFoundError(ctx.project, input.layerId);
     return { success: false, message: errMsg, error: errMsg };
@@ -392,7 +349,7 @@ export function mutateGroupLayers(
   try {
     const resolvedIds: string[] = [];
     for (const ref of input.layerIds) {
-      const id = resolveLayerId(ctx.project, ref, ctx.layerIdMap);
+      const id = resolveLayerId(ctx.project, ref);
       if (!id) {
         return {
           success: false,
@@ -484,7 +441,7 @@ export function mutateUngroupLayers(
   ctx: MutationContext,
   input: UngroupLayersInput
 ): UngroupLayersOutput {
-  const resolvedId = resolveLayerId(ctx.project, input.groupId, ctx.layerIdMap);
+  const resolvedId = resolveLayerId(ctx.project, input.groupId);
   if (!resolvedId) {
     const errMsg = layerNotFoundError(ctx.project, input.groupId);
     return { success: false, message: errMsg, error: errMsg };
@@ -587,7 +544,7 @@ export function mutateUpdateKeyframe(
   ctx: MutationContext,
   input: UpdateKeyframeInput
 ): UpdateKeyframeOutput {
-  const resolvedId = resolveLayerId(ctx.project, input.layerId, ctx.layerIdMap);
+  const resolvedId = resolveLayerId(ctx.project, input.layerId);
   if (!resolvedId) {
     const errMsg = layerNotFoundError(ctx.project, input.layerId);
     return { success: false, message: errMsg, error: errMsg };
@@ -640,7 +597,7 @@ export function mutateRemoveKeyframe(
   ctx: MutationContext,
   input: RemoveKeyframeInput
 ): RemoveKeyframeOutput {
-  const resolvedId = resolveLayerId(ctx.project, input.layerId, ctx.layerIdMap);
+  const resolvedId = resolveLayerId(ctx.project, input.layerId);
   if (!resolvedId) {
     const errMsg = layerNotFoundError(ctx.project, input.layerId);
     return { success: false, message: errMsg, error: errMsg };

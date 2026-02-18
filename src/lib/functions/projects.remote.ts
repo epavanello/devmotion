@@ -9,6 +9,7 @@ import { invalid } from '@sveltejs/kit';
 import { projectDataSchema } from '$lib/schemas/animation';
 import { thumbnailQueue } from '$lib/server/thumbnail-queue';
 import { deleteFile } from '$lib/server/storage';
+import { ADMIN_ROLE } from '$lib/roles';
 
 export const saveProject = command(
   z.object({
@@ -78,15 +79,18 @@ export const getProject = query(z.object({ id: z.string() }), async ({ id }) => 
   }
 
   const isOwner = locals.user?.id === result.userId;
+  // Admins can view all projects (public and private) but intentionally have view-only access
+  // to other users' private projects — canEdit is restricted to the project owner only.
+  const isAdmin = locals.user?.role === ADMIN_ROLE;
 
-  if (!result.isPublic && !isOwner) {
+  if (!result.isPublic && !isOwner && !isAdmin) {
     return { error: 'access_denied' as const };
   }
 
   return {
     project: result,
     isOwner,
-    canEdit: isOwner
+    canEdit: isOwner // Admins are intentionally read-only on others' private projects
   };
 });
 

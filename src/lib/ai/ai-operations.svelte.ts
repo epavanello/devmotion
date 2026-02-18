@@ -1,8 +1,7 @@
 /**
  * AI Tool Executor - Client-side execution of AI tool calls
  *
- * Handles progressive tool execution with layer ID tracking across tool calls.
- * Refactored to use shared 'mutations.ts' logic.
+ * Client-side AI tool execution using shared mutations.ts logic.
  */
 import type { ProjectStore } from '$lib/stores/project.svelte';
 import type {
@@ -25,7 +24,6 @@ import type {
   RemoveKeyframeInput,
   RemoveKeyframeOutput
 } from './schemas';
-import { SvelteMap } from 'svelte/reactivity';
 import {
   mutateCreateLayer,
   mutateAnimateLayer,
@@ -40,31 +38,12 @@ import {
 } from './mutations';
 
 // ============================================
-// Layer ID Tracking
-// ============================================
-
-// Track layer IDs created during this conversation
-// Maps index (layer_0 = 0, layer_1 = 1) to actual layer ID
-const layerIdMap = new SvelteMap<number, string>();
-let layerCreationIndex = 0;
-
-/**
- * Reset layer tracking for new conversation turn
- */
-export function resetLayerTracking() {
-  layerIdMap.clear();
-  layerCreationIndex = 0;
-}
-
-// ============================================
 // Context Helper
 // ============================================
 
 function getContext(projectStore: ProjectStore): MutationContext {
   return {
-    project: projectStore.state,
-    layerIdMap: layerIdMap,
-    layerCreationIndex: layerCreationIndex
+    project: projectStore.state
   };
 }
 
@@ -82,17 +61,8 @@ export function executeCreateLayer(
   const ctx = getContext(projectStore);
   const result = mutateCreateLayer(ctx, input);
 
-  // Update local index tracker
-  if (result.nextLayerCreationIndex !== undefined) {
-    layerCreationIndex = result.nextLayerCreationIndex;
-  }
-
   if (result.output.success && result.output.layerId) {
     projectStore.selectedLayerId = result.output.layerId;
-
-    // Trigger reactivity update if needed (Svelte 5 runes usually handle deep obj mutation if proxied,
-    // but array push might need trigger dependin on implementation.
-    // projectStore.project is a Rune, so mutations should be fine.)
   }
 
   return result.output;
@@ -125,12 +95,12 @@ export function executeRemoveLayer(
   projectStore: ProjectStore,
   input: RemoveLayerInput
 ): RemoveLayerOutput {
-  const result = mutateRemoveLayer(getContext(projectStore), input);
+  const ctx = getContext(projectStore);
+  const result = mutateRemoveLayer(ctx, input);
   if (result.success) {
     if (
       projectStore.selectedLayerId &&
-      getContext(projectStore).project.layers.find((l) => l.id === projectStore.selectedLayerId) ===
-        undefined
+      ctx.project.layers.find((l) => l.id === projectStore.selectedLayerId) === undefined
     ) {
       projectStore.selectedLayerId = null;
     }

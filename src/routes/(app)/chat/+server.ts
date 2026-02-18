@@ -2,7 +2,7 @@
  * AI Chat API Routes
  * Progressive tool-calling system for animation generation
  */
-import { convertToModelMessages, ToolLoopAgent, type UIMessage } from 'ai';
+import { convertToModelMessages, ToolLoopAgent, type ModelMessage, type UIMessage } from 'ai';
 import { error, isHttpError } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
@@ -151,17 +151,34 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const { project, modelId, messages } = GenerateRequestSchema.parse(body);
 
     const openrouter = getOpenRouterClient();
+    // Static system prompt — no project state here so OpenRouter can cache it
+    // across requests (automatic caching for Moonshot AI, OpenAI-compatible models).
     const systemPrompt = buildSystemPrompt(project);
+
     const model = getModel(modelId);
 
     console.log(`[AI] Using model: ${model.name} (${model.id})`);
     console.log(`[AI] System prompt length: ${systemPrompt.length} chars`);
 
     const agent = new ToolLoopAgent({
-      model: openrouter(model.id),
-      instructions: systemPrompt,
+      model: openrouter(model.id, {
+        reasoning: {
+          effort: 'none'
+        }
+      }),
+      instructions: {
+        role: 'system',
+        content: systemPrompt,
+        providerOptions: {
+          openrouter: {
+            cacheControl: {
+              type: 'ephemeral'
+            },
+            sort: 'price'
+          }
+        }
+      },
       tools: animationTools,
-
       async onFinish(event) {
         logAIInteraction({
           timestamp: new Date().toISOString(),
@@ -192,8 +209,34 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       }
     });
 
+    function enableCacheControl(messages: ModelMessage[]) {
+      return messages.map((message) => {
+        if (typeof message.content !== 'string') {
+          return message;
+        }
+        // Shallow-merge into existing providerOptions so other provider keys
+        // (e.g. sort, reasoning) are preserved alongside the cacheControl entry.
+        return {
+          ...message,
+          providerOptions: {
+            ...message.providerOptions,
+            openrouter: {
+              ...(message.providerOptions?.openrouter as Record<string, unknown> | undefined),
+              cacheControl: { type: 'ephemeral' /* ttl: '1h' */ }
+            }
+          }
+        };
+      });
+    }
+
     const result = await agent.stream({
-      messages: await convertToModelMessages(messages)
+      messages: [
+        ...enableCacheControl([...(await convertToModelMessages(messages))]),
+        {
+          role: 'system',
+          content: JSON.stringify(project)
+        }
+      ]
     });
 
     return result.toUIMessageStreamResponse();

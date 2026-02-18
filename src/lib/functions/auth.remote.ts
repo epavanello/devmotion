@@ -61,3 +61,10 @@ export const getUser = query(async () => {
   const { locals } = getRequestEvent();
   return locals.user;
 });
+
+export const checkRole = query(z.enum(['admin', 'user']), async (role) => {
+  const { locals } = getRequestEvent();
+  if (locals.user?.role !== role) {
+    redirect(303, '/');
+  }
+});
