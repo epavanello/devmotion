@@ -1,4 +1,4 @@
-import { form, getRequestEvent, query } from '$app/server';
+import { command, form, getRequestEvent, query } from '$app/server';
 import { auth } from '$lib/server/auth';
 import { redirect } from '@sveltejs/kit';
 import { z } from 'zod';
@@ -60,4 +60,11 @@ export const signOut = form(
 export const getUser = query(async () => {
   const { locals } = getRequestEvent();
   return locals.user;
+});
+
+export const checkRole = command(z.enum(['admin', 'user']), async (role) => {
+  const { locals } = getRequestEvent();
+  if (locals.user?.role !== role) {
+    throw redirect(303, '/');
+  }
 });

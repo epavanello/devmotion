@@ -1,5 +1,6 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
 
+import type { UserRole } from '$lib/roles';
 import type { Session, User } from 'better-auth';
 
 // for information about these interfaces
@@ -20,7 +21,7 @@ declare global {
     // interface Error {}
     interface Locals {
       session: Session | null;
-      user: User | null;
+      user: (Omit<User, 'role'> & { role: UserRole }) | null;
     }
     // interface PageData {}
     // interface PageState {}

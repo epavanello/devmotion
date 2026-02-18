@@ -5,6 +5,7 @@ import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { building } from '$app/environment';
 import { sequence } from '@sveltejs/kit/hooks';
 import '$lib/server/thumbnail-queue';
+import type { UserRole } from '$lib/roles';
 
 const handleParaglide: Handle = ({ event, resolve }) =>
   paraglideMiddleware(event.request, ({ request, locale }) => {
@@ -23,7 +24,10 @@ const authHandle: Handle = async ({ event, resolve }) => {
   // Make session and user available on server
   if (session) {
     event.locals.session = session.session;
-    event.locals.user = session.user;
+    event.locals.user = {
+      ...session.user,
+      role: (session.user.role ?? 'user') as UserRole
+    };
   }
   return svelteKitHandler({ event, resolve, auth, building });
 };
