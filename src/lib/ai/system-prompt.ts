@@ -96,8 +96,8 @@ Distribute layers across the canvas — never stack everything at (0,0).
 
 ## Layer references
 
-- **Layers you create**: use layer_0, layer_1, ... (assigned in creation order within this conversation).
-- **Pre-existing layers**: use the exact \`id\` or \`name\` shown in PROJECT STATE. layer_N does NOT work for pre-existing layers.
+- **Layers you create**: use the \`layerId\` returned in the create_layer response.
+- **Pre-existing layers**: use the exact \`id\` or \`name\` shown in PROJECT STATE.
 
 ## Animation tips
 
@@ -126,60 +126,4 @@ ${JSON.stringify(exampleProject)}
 4. Always position layers intentionally.
 5. Always animate every layer.
 6. Create layers one at a time; do not batch unrelated layers in a single call.`;
-}
-
-/**
- * Build the dynamic project state section (injected as a separate message
- * so the static system prompt above can be cached by OpenRouter).
- */
-export function buildProjectStateSection(project: Project): string {
-  return `## Project state\n${buildCanvasState(project)}`;
-}
-
-/**
- * Build a compact view of the current canvas state for the AI.
- */
-function buildCanvasState(project: Project): string {
-  if (project.layers.length === 0) {
-    return 'Empty canvas — no layers yet.';
-  }
-
-  const layerList = project.layers
-    .map((layer, index) => {
-      // Show ALL props
-      const propsPreview = Object.entries(layer.props)
-        .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
-        .join(', ');
-
-      // Group keyframes by property and show all details
-      const keyframesByProp = new Map<string, typeof layer.keyframes>();
-      for (const kf of layer.keyframes) {
-        if (!keyframesByProp.has(kf.property)) {
-          keyframesByProp.set(kf.property, []);
-        }
-        keyframesByProp.get(kf.property)!.push(kf);
-      }
-
-      // Build detailed keyframe info
-      let keyframesDetail = '';
-      if (keyframesByProp.size > 0) {
-        keyframesDetail = '\n   keyframes:';
-        for (const [prop, kfs] of keyframesByProp) {
-          const kfList = kfs
-            .sort((a, b) => a.time - b.time)
-            .map(
-              (kf) => `t=${kf.time}s: ${JSON.stringify(kf.value)} (${kf.interpolation?.strategy})`
-            )
-            .join(', ');
-          keyframesDetail += `\n     ${prop}: [${kfList}]`;
-        }
-      }
-
-      return `${index}. "${layer.name}" (id: "${layer.id}", type: ${layer.type})
-   pos: (${layer.transform.position.x}, ${layer.transform.position.y}) | scale: (${layer.transform.scale.x}, ${layer.transform.scale.y}) | rotation: ${layer.transform.rotation.z} rad | opacity: ${layer.style.opacity}
-   props: {${propsPreview || 'none'}}${keyframesDetail || '\n   keyframes: none'}`;
-    })
-    .join('\n\n');
-
-  return `${project.layers.length} layer(s):\n${layerList}`;
 }

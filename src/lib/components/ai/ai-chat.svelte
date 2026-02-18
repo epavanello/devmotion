@@ -22,8 +22,7 @@
     executeGroupLayers,
     executeUngroupLayers,
     executeUpdateKeyframe,
-    executeRemoveKeyframe,
-    resetLayerTracking
+    executeRemoveKeyframe
   } from '$lib/ai/ai-operations.svelte';
   import {
     type AnimateLayerInput,
@@ -63,7 +62,7 @@
     []
   );
 
-  function scrollToBottom() {
+  function scrollToBottom(force = false) {
     let isAtBottom = false;
     if (scrollRef) {
       const top = scrollRef.scrollTop;
@@ -73,7 +72,7 @@
       isAtBottom = top >= diff - 100;
     }
     // allow the user to scroll up to read previous messages
-    if (isAtBottom) {
+    if (force || isAtBottom) {
       scrollRef?.scrollTo({
         top: scrollRef.scrollHeight,
         behavior: 'instant'
@@ -151,13 +150,10 @@
   });
 
   async function sendMessage() {
-    // Reset layer tracking for new message
-    resetLayerTracking();
-
     chat.sendMessage({ text: prompt.current });
     prompt.current = '';
     await tick();
-    scrollToBottom();
+    scrollToBottom(true);
   }
 
   function onSubmit(event?: Event) {
@@ -180,7 +176,10 @@
     toast.success('Chat history cleared');
   }
 
-  watch(() => $state.snapshot(chat.messages), scrollToBottom);
+  watch(
+    () => $state.snapshot(chat.messages),
+    () => scrollToBottom()
+  );
 </script>
 
 <div class="flex h-full flex-col">

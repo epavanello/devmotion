@@ -98,45 +98,54 @@ export const AI_MODELS = {
   //     input: 3,
   //     output: 15
   //   }
-  // }
-
-  // // Claude 4.5 Sonnet - Great reasoning and creativity
-  // 'anthropic/claude-sonnet-4.5': {
-  //   id: 'anthropic/claude-sonnet-4.5',
-  //   name: 'Claude Sonnet 4.5',
-  //   provider: 'Anthropic',
-  //   description: 'Excellent reasoning and creative capabilities',
+  // },
+  // 'openai/gpt-5.2': {
+  //   id: 'openai/gpt-5.2',
+  //   name: 'GPT-5.2',
+  //   provider: 'OpenAI',
+  //   description: 'Excellent for creative and complex tasks with 128K context',
   //   recommended: false,
   //   costTier: 'high',
   //   pricing: {
-  //     input: 3.0,
-  //     output: 15.0
+  //     input: 1.75,
+  //     output: 14
   //   }
-  // },
-
-  // // GPT-5.1 - Strong all-rounder
-  // 'openai/gpt-5.1': {
-  //   id: 'openai/gpt-5.1',
-  //   name: 'GPT-5.1',
-  //   provider: 'OpenAI',
-  //   description: 'Fast and capable multimodal model',
-  //   costTier: 'medium',
-  //   pricing: {
-  //     input: 1.25,
-  //     output: 10.0
-  //   }
-  // },
-
-  // // Gemini 3 Pro - Good for structured output
-  // 'google/gemini-3-pro-preview': {
-  //   id: 'google/gemini-3-pro-preview',
-  //   name: 'Gemini 3 Pro',
-  //   provider: 'Google',
-  //   description: 'Strong structured output and reasoning',
+  // }
+  // NOT GOOD
+  // 'qwen/qwen3-max-thinking': {
+  //   id: 'qwen/qwen3-max-thinking',
+  //   name: 'Qwen 3 Max Thinking',
+  //   provider: 'Qwen',
+  //   description: 'Excellent for creative and complex tasks with 128K context',
+  //   recommended: false,
   //   costTier: 'high',
   //   pricing: {
-  //     input: 2,
-  //     output: 12
+  //     input: 1.2,
+  //     output: 6
+  //   }
+  // },
+  // 'qwen/qwen3.5-397b-a17b': {
+  //   id: 'qwen/qwen3.5-397b-a17b',
+  //   name: 'Qwen 3.5 397B A17B',
+  //   provider: 'Qwen',
+  //   description: 'Excellent for creative and complex tasks with 128K context',
+  //   recommended: false,
+  //   costTier: 'high',
+  //   pricing: {
+  //     input: 0.15,
+  //     output: 1
+  //   }
+  // }
+  // 'deepseek/deepseek-v3.2': {
+  //   id: 'deepseek/deepseek-v3.2',
+  //   name: 'DeepSeek V3.2',
+  //   provider: 'DeepSeek',
+  //   description: 'Excellent for creative and complex tasks with 128K context',
+  //   recommended: false,
+  //   costTier: 'high',
+  //   pricing: {
+  //     input: 0.26,
+  //     output: 0.38
   //   }
   // }
 } as const satisfies Record<string, AIModel>;

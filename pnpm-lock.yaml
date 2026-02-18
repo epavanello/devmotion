@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@ai-sdk/openai':
-        specifier: ^3.0.18
-        version: 3.0.18(zod@4.3.6)
+        specifier: ^3.0.29
+        version: 3.0.29(zod@4.3.6)
       '@ai-sdk/svelte':
         specifier: ^4.0.64
         version: 4.0.64(svelte@5.48.2)(zod@4.3.6)
@@ -21,8 +21,8 @@ importers:
         specifier: ^3.984.0
         version: 3.984.0
       '@openrouter/ai-sdk-provider':
-        specifier: ^2.0.2
-        version: 2.0.2(ai@6.0.49(zod@4.3.6))(zod@4.3.6)
+        specifier: ^2.2.3
+        version: 2.2.3(ai@6.0.49(zod@4.3.6))(zod@4.3.6)
       '@resvg/resvg-js':
         specifier: ^2.6.2
         version: 2.6.2
@@ -60,8 +60,8 @@ importers:
         specifier: ^5.1.6
         version: 5.1.6
       openai:
-        specifier: ^6.18.0
-        version: 6.18.0(ws@8.18.3)(zod@4.3.6)
+        specifier: ^6.22.0
+        version: 6.22.0(ws@8.18.3)(zod@4.3.6)
       playwright:
         specifier: ^1.58.0
         version: 1.58.0
@@ -213,14 +213,20 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/openai@3.0.18':
-    resolution: {integrity: sha512-uYscTyoaWij9FoPpKRNK8YgtDEuPpQlqREYylJCA8o5YQVQXghV0Dwgk1ehPVpg6USIO4L0C8GqQJ4AMm/Xb1g==}
+  '@ai-sdk/openai@3.0.29':
+    resolution: {integrity: sha512-ugVTIVpuSLKTjzSPe1F1DWiblJT/lwrrHx0OZEKjpMk/EYP6j6VD/F7SJqM1dsqOJryeBCJWFbUzLNqc99PrMA==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
   '@ai-sdk/provider-utils@4.0.11':
     resolution: {integrity: sha512-y/WOPpcZaBjvNaogy83mBsCRPvbtaK0y1sY9ckRrrbTGMvG2HC/9Y/huqNXKnLAxUIME2PGa2uvF2CDwIsxoXQ==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/provider-utils@4.0.15':
+    resolution: {integrity: sha512-8XiKWbemmCbvNN0CLR9u3PQiet4gtEVIrX4zzLxnCj06AwsEDJwJVBbKrEI4t6qE8XRSIvU2irka0dcpziKW6w==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -237,6 +243,10 @@ packages:
 
   '@ai-sdk/provider@3.0.6':
     resolution: {integrity: sha512-hSfoJtLtpMd7YxKM+iTqlJ0ZB+kJ83WESMiWuWrNVey3X8gg97x0OdAAaeAeclZByCX3UdPOTqhvJdK8qYA3ww==}
+    engines: {node: '>=18'}
+
+  '@ai-sdk/provider@3.0.8':
+    resolution: {integrity: sha512-oGMAgGoQdBXbZqNG0Ze56CHjDZ1IDYOwGYxYjO5KLSlz5HiNQ9udIXsPZ61VWaHGZ5XW/jyjmr6t2xz2jGVwbQ==}
     engines: {node: '>=18'}
 
   '@ai-sdk/svelte@4.0.64':
@@ -897,15 +907,12 @@ packages:
     resolution: {integrity: sha512-XlOlEbQcE9fmuXxrVTXCTlG2nlRXa9Rj3rr5Ue/+tX+nmkgbX720YHh0VR3hBF9xDvwnb8D2shVGOwNx+ulArw==}
     engines: {node: '>= 20.19.0'}
 
-  '@openrouter/ai-sdk-provider@2.0.2':
-    resolution: {integrity: sha512-G+8Z7Q4R61anj/nk/hmb1JAAjYpP/LEFA4mjQnitMGDLscoeThPpOl6xFKalzfkd2WSweeKRYAID5HxzEMCbPQ==}
+  '@openrouter/ai-sdk-provider@2.2.3':
+    resolution: {integrity: sha512-NovC+BaCfEeJwhToDrs8JeDYXXlJdEyz7lcxkjtyePSE4eoAKik872SyDK0MzXKcz8MRkv7XlNhPI6zz4TQp0g==}
     engines: {node: '>=18'}
     peerDependencies:
       ai: ^6.0.0
       zod: ^3.25.0 || ^4.0.0
-
-  '@openrouter/sdk@0.1.27':
-    resolution: {integrity: sha512-RH//L10bSmc81q25zAZudiI4kNkLgxF2E+WU42vghp3N6TEvZ6F0jK7uT3tOxkEn91gzmMw9YVmDENy7SJsajQ==}
 
   '@opentelemetry/api@1.9.0':
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
@@ -2876,8 +2883,8 @@ packages:
   once@1.4.0:
     resolution: {integrity: sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==}
 
-  openai@6.18.0:
-    resolution: {integrity: sha512-odLRYyz9rlzz6g8gKn61RM2oP5UUm428sE2zOxZqS9MzVfD5/XW8UoEjpnRkzTuScXP7ZbP/m7fC+bl8jCOZZw==}
+  openai@6.22.0:
+    resolution: {integrity: sha512-7Yvy17F33Bi9RutWbsaYt5hJEEJ/krRPOrwan+f9aCPuMat1WVsb2VNSII5W1EksKT6fF69TG/xj4XzodK3JZw==}
     hasBin: true
     peerDependencies:
       ws: ^8.18.0
@@ -3738,15 +3745,22 @@ snapshots:
       '@vercel/oidc': 3.1.0
       zod: 4.3.6
 
-  '@ai-sdk/openai@3.0.18(zod@4.3.6)':
+  '@ai-sdk/openai@3.0.29(zod@4.3.6)':
     dependencies:
-      '@ai-sdk/provider': 3.0.5
-      '@ai-sdk/provider-utils': 4.0.9(zod@4.3.6)
+      '@ai-sdk/provider': 3.0.8
+      '@ai-sdk/provider-utils': 4.0.15(zod@4.3.6)
       zod: 4.3.6
 
   '@ai-sdk/provider-utils@4.0.11(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.6
+      '@standard-schema/spec': 1.1.0
+      eventsource-parser: 3.0.6
+      zod: 4.3.6
+
+  '@ai-sdk/provider-utils@4.0.15(zod@4.3.6)':
+    dependencies:
+      '@ai-sdk/provider': 3.0.8
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.0.6
       zod: 4.3.6
@@ -3763,6 +3777,10 @@ snapshots:
       json-schema: 0.4.0
 
   '@ai-sdk/provider@3.0.6':
+    dependencies:
+      json-schema: 0.4.0
+
+  '@ai-sdk/provider@3.0.8':
     dependencies:
       json-schema: 0.4.0
 
@@ -4646,14 +4664,9 @@ snapshots:
 
   '@noble/hashes@2.0.1': {}
 
-  '@openrouter/ai-sdk-provider@2.0.2(ai@6.0.49(zod@4.3.6))(zod@4.3.6)':
+  '@openrouter/ai-sdk-provider@2.2.3(ai@6.0.49(zod@4.3.6))(zod@4.3.6)':
     dependencies:
-      '@openrouter/sdk': 0.1.27
       ai: 6.0.49(zod@4.3.6)
-      zod: 4.3.6
-
-  '@openrouter/sdk@0.1.27':
-    dependencies:
       zod: 4.3.6
 
   '@opentelemetry/api@1.9.0': {}
@@ -6649,7 +6662,7 @@ snapshots:
     dependencies:
       wrappy: 1.0.2
 
-  openai@6.18.0(ws@8.18.3)(zod@4.3.6):
+  openai@6.22.0(ws@8.18.3)(zod@4.3.6):
     optionalDependencies:
       ws: 8.18.3
       zod: 4.3.6

@@ -25,7 +25,6 @@ import type {
   RemoveKeyframeInput,
   RemoveKeyframeOutput
 } from './schemas';
-import { SvelteMap } from 'svelte/reactivity';
 import {
   mutateCreateLayer,
   mutateAnimateLayer,
@@ -43,28 +42,13 @@ import {
 // Layer ID Tracking
 // ============================================
 
-// Track layer IDs created during this conversation
-// Maps index (layer_0 = 0, layer_1 = 1) to actual layer ID
-const layerIdMap = new SvelteMap<number, string>();
-let layerCreationIndex = 0;
-
-/**
- * Reset layer tracking for new conversation turn
- */
-export function resetLayerTracking() {
-  layerIdMap.clear();
-  layerCreationIndex = 0;
-}
-
 // ============================================
 // Context Helper
 // ============================================
 
 function getContext(projectStore: ProjectStore): MutationContext {
   return {
-    project: projectStore.state,
-    layerIdMap: layerIdMap,
-    layerCreationIndex: layerCreationIndex
+    project: projectStore.state
   };
 }
 
@@ -82,17 +66,8 @@ export function executeCreateLayer(
   const ctx = getContext(projectStore);
   const result = mutateCreateLayer(ctx, input);
 
-  // Update local index tracker
-  if (result.nextLayerCreationIndex !== undefined) {
-    layerCreationIndex = result.nextLayerCreationIndex;
-  }
-
   if (result.output.success && result.output.layerId) {
     projectStore.selectedLayerId = result.output.layerId;
-
-    // Trigger reactivity update if needed (Svelte 5 runes usually handle deep obj mutation if proxied,
-    // but array push might need trigger dependin on implementation.
-    // projectStore.project is a Rune, so mutations should be fine.)
   }
 
   return result.output;

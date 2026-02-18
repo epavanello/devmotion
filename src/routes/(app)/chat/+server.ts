@@ -2,14 +2,14 @@
  * AI Chat API Routes
  * Progressive tool-calling system for animation generation
  */
-import { convertToModelMessages, ToolLoopAgent, type UIMessage } from 'ai';
+import { convertToModelMessages, ToolLoopAgent, type ModelMessage, type UIMessage } from 'ai';
 import { error, isHttpError } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { z } from 'zod';
 import { ProjectSchema } from '$lib/schemas/animation';
 import { animationTools } from '$lib/ai/schemas';
-import { buildSystemPrompt, buildProjectStateSection } from '$lib/ai/system-prompt';
+import { buildSystemPrompt } from '$lib/ai/system-prompt';
 import { getModel } from '$lib/ai/models';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
@@ -154,19 +154,31 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     // Static system prompt — no project state here so OpenRouter can cache it
     // across requests (automatic caching for Moonshot AI, OpenAI-compatible models).
     const systemPrompt = buildSystemPrompt(project);
-    // Dynamic project state injected as a separate second message so it doesn't
-    // invalidate the cached system prompt on every request.
-    const projectState = buildProjectStateSection(project);
+
     const model = getModel(modelId);
 
     console.log(`[AI] Using model: ${model.name} (${model.id})`);
     console.log(`[AI] System prompt length: ${systemPrompt.length} chars`);
 
     const agent = new ToolLoopAgent({
-      model: openrouter(model.id),
-      instructions: systemPrompt,
+      model: openrouter(model.id, {
+        reasoning: {
+          effort: 'none'
+        }
+      }),
+      instructions: {
+        role: 'system',
+        content: systemPrompt,
+        providerOptions: {
+          openrouter: {
+            cacheControl: {
+              type: 'ephemeral'
+            },
+            sort: 'price'
+          }
+        }
+      },
       tools: animationTools,
-
       async onFinish(event) {
         logAIInteraction({
           timestamp: new Date().toISOString(),
@@ -197,32 +209,28 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       }
     });
 
-    // Prepend project state as the first exchange so the static system prompt
-    // above stays cacheable. On Anthropic-compatible models the cacheControl
-    // marker instructs OpenRouter to cache everything before this point (i.e.
-    // the system prompt). On auto-caching models (Moonshot AI, OpenAI-compatible)
-    // the unchanged system prompt prefix is cached automatically.
-    const projectStateMessages = [
-      {
-        role: 'user' as const,
-        content: [
-          {
-            type: 'text' as const,
-            text: projectState,
-            providerOptions: {
-              openrouter: { cacheControl: { type: 'ephemeral' } }
-            }
+    function enableCacheControl(messages: ModelMessage[]) {
+      return messages.map((message) => {
+        if (typeof message.content !== 'string') {
+          return message;
+        }
+        return {
+          ...message,
+          providerOptions: {
+            openrouter: { cacheControl: { type: 'ephemeral' /* ttl: '1h' */ } }
           }
-        ]
-      },
-      {
-        role: 'assistant' as const,
-        content: [{ type: 'text' as const, text: 'Understood.' }]
-      }
-    ];
+        };
+      });
+    }
 
     const result = await agent.stream({
-      messages: [...projectStateMessages, ...(await convertToModelMessages(messages))]
+      messages: [
+        ...enableCacheControl([...(await convertToModelMessages(messages))]),
+        {
+          role: 'system',
+          content: JSON.stringify(project)
+        }
+      ]
     });
 
     return result.toUIMessageStreamResponse();

@@ -143,7 +143,6 @@ export interface CreateLayerOutput {
   success: boolean;
   message: string;
   layerId?: string;
-  layerIndex?: number;
   layerName?: string;
   error?: string;
 }
@@ -153,7 +152,7 @@ export interface CreateLayerOutput {
 // ============================================
 
 export const AnimateLayerInputSchema = z.object({
-  layerId: z.string().describe('Layer ID or reference (layer_0, layer_1, or actual ID)'),
+  layerId: z.string().describe('Layer ID (returned by create_layer) or layer name'),
   preset: z
     .object({
       id: z.string().describe('Preset ID: ' + getPresetIds().join(', ')),
@@ -373,14 +372,14 @@ export const animationTools = {
   animate_layer: tool({
     description:
       'Add animation to an existing layer via preset or custom keyframes. ' +
-      'Use layer_N for layers you just created, or actual ID/name for existing layers.',
+      'Use the layer id returned by create_layer, or the layer name for existing layers.',
     inputSchema: AnimateLayerInputSchema
   }),
 
   edit_layer: tool({
     description:
       'Modify an existing layer (position, scale, 3D rotation, anchor, opacity, or props). ' +
-      'Use layer_N for layers you just created, or actual ID/name for existing layers.',
+      'Use the layer id returned by create_layer, or the layer name for existing layers.',
     inputSchema: EditLayerInputSchema
   }),
 
@@ -405,7 +404,7 @@ export const animationTools = {
     description:
       'Group multiple layers together so they share a common transform. ' +
       'Moving/rotating/scaling the group affects all children. ' +
-      'Use layer_N for layers you just created, or actual ID/name for existing layers.',
+      'Use layer ids returned by create_layer, or layer names for existing layers.',
     inputSchema: GroupLayersInputSchema
   }),
 
