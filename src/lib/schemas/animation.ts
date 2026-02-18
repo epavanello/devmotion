@@ -160,7 +160,10 @@ export const BuiltInAnimatablePropertySchema = z.enum([
 ]);
 
 // For props properties like props.fontSize, props.fill
-export const PropsAnimatablePropertySchema = z.string().regex(/^props\./);
+export const PropsAnimatablePropertySchema = z
+  .string()
+  .regex(/^props\./)
+  .describe('Layer-specific property, must start with props.');
 
 export const AnimatablePropertySchema = z.union([
   BuiltInAnimatablePropertySchema,

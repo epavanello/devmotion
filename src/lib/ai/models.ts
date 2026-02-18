@@ -14,6 +14,8 @@ export interface AIModel {
   recommended?: boolean;
   /** Cost tier: 'low' | 'medium' | 'high' */
   costTier: 'low' | 'medium' | 'high';
+  /** Disable thinking */
+  disableThinking?: boolean;
   /** Pricing per 1M tokens (in USD) */
   pricing: {
     input: number;

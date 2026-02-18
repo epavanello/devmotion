@@ -15,26 +15,20 @@
   import type { GenerateRequest } from '../../../routes/(app)/chat/+server';
   import {
     executeCreateLayer,
-    executeAnimateLayer,
     executeEditLayer,
     executeRemoveLayer,
     executeConfigureProject,
     executeGroupLayers,
-    executeUngroupLayers,
-    executeUpdateKeyframe,
-    executeRemoveKeyframe
+    executeUngroupLayers
   } from '$lib/ai/ai-operations.svelte';
   import {
-    type AnimateLayerInput,
     type EditLayerInput,
     type RemoveLayerInput,
     type ConfigureProjectInput,
     type GroupLayersInput,
     type UngroupLayersInput,
     type AnimationUITools,
-    type CreateLayerInput,
-    type UpdateKeyframeInput,
-    type RemoveKeyframeInput
+    type CreateLayerInput
   } from '$lib/ai/schemas';
   import { toast } from 'svelte-sonner';
   import { parseErrorMessage } from '$lib/utils';
@@ -102,24 +96,15 @@
       const toolName = toolCall.toolName;
       let result: unknown;
 
-      // Handle tools
+      // Handle simplified tool set
       switch (toolName) {
         case 'create_layer': {
           const input = toolCall.input as CreateLayerInput;
           result = executeCreateLayer(projectStore, input);
           break;
         }
-        case 'animate_layer':
-          result = executeAnimateLayer(projectStore, toolCall.input as AnimateLayerInput);
-          break;
         case 'edit_layer':
           result = executeEditLayer(projectStore, toolCall.input as EditLayerInput);
-          break;
-        case 'update_keyframe':
-          result = executeUpdateKeyframe(projectStore, toolCall.input as UpdateKeyframeInput);
-          break;
-        case 'remove_keyframe':
-          result = executeRemoveKeyframe(projectStore, toolCall.input as RemoveKeyframeInput);
           break;
         case 'remove_layer':
           result = executeRemoveLayer(projectStore, toolCall.input as RemoveLayerInput);

@@ -201,13 +201,6 @@ export async function getSignedFileUrl(key: string, expiresIn = 3600): Promise<s
   const config = getConfig();
   const client = getClient();
 
-  console.log('Generating presigned URL for:', {
-    bucket: config.bucket,
-    key,
-    region: config.region,
-    endpoint: config.endpoint
-  });
-
   try {
     const command = new GetObjectCommand({
       Bucket: config.bucket,

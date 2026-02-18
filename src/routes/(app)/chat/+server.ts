@@ -30,7 +30,7 @@ export type GenerateRequest = z.infer<typeof GenerateRequestSchema>;
 /**
  * Create OpenRouter-compatible client
  */
-function getOpenRouterClient() {
+function getOpenRouterClient(userId: string, projectId?: string) {
   const apiKey = env.OPENROUTER_API_KEY;
   if (!apiKey) {
     throw new Error('OPENROUTER_API_KEY is not configured');
@@ -41,7 +41,9 @@ function getOpenRouterClient() {
       ? {
           baseURL: 'https://openrouter.helicone.ai/api/v1',
           headers: {
-            'Helicone-Auth': `Bearer ${env.HELINE_AUTH}`
+            'Helicone-Auth': `Bearer ${env.HELINE_AUTH}`,
+            'Helicone-User-Id': userId,
+            'Helicone-Property-Project': projectId ?? ''
           }
         }
       : {})
@@ -150,7 +152,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const body = await request.json();
     const { project, modelId, messages } = GenerateRequestSchema.parse(body);
 
-    const openrouter = getOpenRouterClient();
+    const openrouter = getOpenRouterClient(locals.user.email, project.id);
     // Static system prompt — no project state here so OpenRouter can cache it
     // across requests (automatic caching for Moonshot AI, OpenAI-compatible models).
     const systemPrompt = buildSystemPrompt(project);
@@ -163,7 +165,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const agent = new ToolLoopAgent({
       model: openrouter(model.id, {
         reasoning: {
-          effort: 'none'
+          effort: model.disableThinking ? 'none' : 'xhigh'
         }
       }),
       instructions: {

@@ -3,42 +3,31 @@
  * MCP Server for DevMotion Animation Tools
  *
  * This server exposes animation creation tools via the Model Context Protocol (MCP).
- * It provides a free tier where:
- * - Users use their own LLM (e.g., Claude via MCP client)
- * - Projects are stored in our database (anonymous, public by default)
- * - Video generation/preview is provided free
+ * Simplified tool set:
+ * - create_layer: comprehensive layer creation with animation
+ * - edit_layer: patch-style layer modification
+ * - remove_layer, configure_project, group_layers, ungroup_layers
  *
- * Architecture:
- * - Shares mutation logic with the web app via `$lib/ai/mutations.ts`
- * - Projects are stored in PostgreSQL with nullable userId (anonymous projects)
- * - Each tool call modifies the project data and saves it back to DB
- *
- * Layer References:
- * - Use the layer id returned by create_layer, or layer names for existing layers
- * - Use get_project to inspect current project state and layer IDs
+ * No separate animate/update_keyframe/remove_keyframe tools - animation is built into create_layer.
  */
 import { z } from 'zod';
 import { createMcpHandler } from '@vercel/mcp-adapter';
-import { animationTools } from '$lib/ai/schemas.js';
+import { animationTools, toolIDs } from '$lib/ai/schemas.js';
 import { db } from '$lib/server/db';
 import { project } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import {
   mutateCreateLayer,
-  mutateAnimateLayer,
   mutateEditLayer,
   mutateRemoveLayer,
   mutateConfigureProject,
   mutateGroupLayers,
   mutateUngroupLayers,
-  mutateUpdateKeyframe,
-  mutateRemoveKeyframe,
   type MutationContext
 } from '$lib/ai/mutations';
 import { PUBLIC_BASE_URL } from '$env/static/public';
 import type { ProjectData } from '$lib/schemas/animation';
-import type { Entries } from 'type-fest';
 
 // Default project template
 const DEFAULT_PROJECT = {
@@ -154,10 +143,10 @@ const handler = createMcpHandler(
       }
     );
 
-    // Wrap shared animation tools
-    const toolEntries = Object.entries(animationTools) as Entries<typeof animationTools>;
+    // Wrap shared animation tools (only the simplified set)
+    for (const name of toolIDs) {
+      const toolDef = animationTools[name];
 
-    for (const [name, toolDef] of toolEntries) {
       // Extract original Zod schema
       const originalSchema = toolDef.inputSchema as z.ZodObject;
 
@@ -204,17 +193,8 @@ const handler = createMcpHandler(
             case 'create_layer':
               result = mutateCreateLayer(ctx, toolInput as any);
               break;
-            case 'animate_layer':
-              result = mutateAnimateLayer(ctx, toolInput as any);
-              break;
             case 'edit_layer':
               result = mutateEditLayer(ctx, toolInput as any);
-              break;
-            case 'update_keyframe':
-              result = mutateUpdateKeyframe(ctx, toolInput as any);
-              break;
-            case 'remove_keyframe':
-              result = mutateRemoveKeyframe(ctx, toolInput as any);
               break;
             case 'remove_layer':
               result = mutateRemoveLayer(ctx, toolInput as any);

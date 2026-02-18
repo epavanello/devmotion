@@ -2,13 +2,12 @@
  * AI Tool Executor - Client-side execution of AI tool calls
  *
  * Client-side AI tool execution using shared mutations.ts logic.
+ * Simplified: create_layer (comprehensive), edit_layer (patch), and utility tools only.
  */
 import type { ProjectStore } from '$lib/stores/project.svelte';
 import type {
   CreateLayerInput,
   CreateLayerOutput,
-  AnimateLayerInput,
-  AnimateLayerOutput,
   EditLayerInput,
   EditLayerOutput,
   RemoveLayerInput,
@@ -18,22 +17,15 @@ import type {
   GroupLayersInput,
   GroupLayersOutput,
   UngroupLayersInput,
-  UngroupLayersOutput,
-  UpdateKeyframeInput,
-  UpdateKeyframeOutput,
-  RemoveKeyframeInput,
-  RemoveKeyframeOutput
+  UngroupLayersOutput
 } from './schemas';
 import {
   mutateCreateLayer,
-  mutateAnimateLayer,
   mutateEditLayer,
   mutateRemoveLayer,
   mutateConfigureProject,
   mutateGroupLayers,
   mutateUngroupLayers,
-  mutateUpdateKeyframe,
-  mutateRemoveKeyframe,
   type MutationContext
 } from './mutations';
 
@@ -52,7 +44,7 @@ function getContext(projectStore: ProjectStore): MutationContext {
 // ============================================
 
 /**
- * Execute create_layer tool
+ * Execute create_layer tool - comprehensive layer creation
  */
 export function executeCreateLayer(
   projectStore: ProjectStore,
@@ -69,17 +61,7 @@ export function executeCreateLayer(
 }
 
 /**
- * Execute animate_layer tool
- */
-export function executeAnimateLayer(
-  projectStore: ProjectStore,
-  input: AnimateLayerInput
-): AnimateLayerOutput {
-  return mutateAnimateLayer(getContext(projectStore), input);
-}
-
-/**
- * Execute edit_layer tool
+ * Execute edit_layer tool - patch-style layer modification
  */
 export function executeEditLayer(
   projectStore: ProjectStore,
@@ -144,24 +126,4 @@ export function executeUngroupLayers(
     projectStore.selectedLayerId = null;
   }
   return result;
-}
-
-/**
- * Execute update_keyframe tool
- */
-export function executeUpdateKeyframe(
-  projectStore: ProjectStore,
-  input: UpdateKeyframeInput
-): UpdateKeyframeOutput {
-  return mutateUpdateKeyframe(getContext(projectStore), input);
-}
-
-/**
- * Execute remove_keyframe tool
- */
-export function executeRemoveKeyframe(
-  projectStore: ProjectStore,
-  input: RemoveKeyframeInput
-): RemoveKeyframeOutput {
-  return mutateRemoveKeyframe(getContext(projectStore), input);
 }

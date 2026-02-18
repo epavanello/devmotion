@@ -6,7 +6,10 @@
  * - Web app: Client-side project modifications (ai-operations.svelte.ts)
  * - MCP server: Server-side project modifications (+server.ts)
  *
- * All mutations accept a MutationContext and return typed results.
+ * Simplified to match new AI tool schema:
+ * - create_layer: comprehensive (layer + transform + style + timing + animation)
+ * - edit_layer: patch-style (direct fields, no "updates" wrapper)
+ * - remove_layer, configure_project, group_layers, ungroup_layers: simple utilities
  */
 import { nanoid } from 'nanoid';
 import type { Interpolation, AnimatableProperty, Keyframe } from '$lib/types/animation';
@@ -15,8 +18,6 @@ import { getPresetById } from '$lib/engine/presets';
 import type {
   CreateLayerInput,
   CreateLayerOutput,
-  AnimateLayerInput,
-  AnimateLayerOutput,
   EditLayerInput,
   EditLayerOutput,
   RemoveLayerInput,
@@ -26,11 +27,7 @@ import type {
   GroupLayersInput,
   GroupLayersOutput,
   UngroupLayersInput,
-  UngroupLayersOutput,
-  UpdateKeyframeInput,
-  UpdateKeyframeOutput,
-  RemoveKeyframeInput,
-  RemoveKeyframeOutput
+  UngroupLayersOutput
 } from './schemas';
 import type { Layer, ProjectData } from '$lib/schemas/animation';
 import { defaultLayerStyle, defaultTransform } from '$lib/schemas/base';
@@ -87,8 +84,13 @@ export function mutateCreateLayer(
   input: CreateLayerInput
 ): MutationResult<CreateLayerOutput> {
   try {
-    const layer = createLayer(input.layer.type, {
-      props: input.layer.props,
+    // Get layer type and props from the discriminated union
+    const layerData = input.layer as { type: string; props: Record<string, unknown> };
+    const layerType = layerData.type;
+    const layerProps = layerData.props;
+
+    const layer = createLayer(layerType, {
+      props: layerProps,
       transform: input.transform,
       projectDimensions: {
         width: ctx.project.width,
@@ -106,6 +108,11 @@ export function mutateCreateLayer(
     }
     if (input.locked !== undefined) {
       layer.locked = input.locked;
+    }
+
+    // Set style if provided
+    if (input.style) {
+      layer.style = { ...defaultLayerStyle(), ...input.style };
     }
 
     // Set enter/exit time if provided in input
@@ -127,15 +134,37 @@ export function mutateCreateLayer(
     // Mutate project
     ctx.project.layers.push(layer);
 
-    // Apply animation
-    if (input.animation?.preset) {
-      applyPresetToProject(
-        ctx.project,
-        layer.id,
-        input.animation.preset,
-        input.animation.startTime ?? 0,
-        input.animation.duration ?? 0.5
-      );
+    // Apply animation (can use preset AND/OR custom keyframes)
+    if (input.animation) {
+      // Apply preset if provided
+      if (input.animation.preset) {
+        applyPresetToProject(
+          ctx.project,
+          layer.id,
+          input.animation.preset.id,
+          input.animation.preset.startTime ?? 0,
+          input.animation.preset.duration ?? 0.5
+        );
+      }
+      // Apply custom keyframes if provided (can be combined with preset)
+      if (input.animation.keyframes) {
+        for (const kf of input.animation.keyframes) {
+          const interpolation: Interpolation = kf.interpolation ?? {
+            family: 'continuous',
+            strategy: 'ease-in-out'
+          };
+
+          const clampedTime = Math.max(0, Math.min(kf.time, ctx.project.duration));
+
+          addKeyframeToProject(ctx.project, layer.id, {
+            id: nanoid(),
+            time: clampedTime,
+            property: kf.property as AnimatableProperty,
+            value: kf.value as number | string | boolean,
+            interpolation
+          });
+        }
+      }
     }
 
     return {
@@ -143,7 +172,7 @@ export function mutateCreateLayer(
         success: true,
         layerId: layer.id,
         layerName: layer.name,
-        message: `Created ${input.layer.type} layer "${layer.name}"`
+        message: `Created ${layerType} layer "${layer.name}"`
       }
     };
   } catch (err) {
@@ -153,78 +182,6 @@ export function mutateCreateLayer(
         message: 'Failed to create layer',
         error: err instanceof Error ? err.message : 'Unknown error'
       }
-    };
-  }
-}
-
-export function mutateAnimateLayer(
-  ctx: MutationContext,
-  input: AnimateLayerInput
-): AnimateLayerOutput {
-  const resolvedId = resolveLayerId(ctx.project, input.layerId);
-
-  if (!resolvedId) {
-    const errMsg = layerNotFoundError(ctx.project, input.layerId);
-    return { success: false, message: errMsg, error: errMsg };
-  }
-
-  const layer = ctx.project.layers.find((l) => l.id === resolvedId);
-  if (!layer) {
-    return {
-      success: false,
-      message: 'Layer was removed',
-      error: 'The layer no longer exists in the project.'
-    };
-  }
-
-  let keyframesAdded = 0;
-
-  try {
-    // Apply preset
-    if (input.preset) {
-      applyPresetToProject(
-        ctx.project,
-        resolvedId,
-        input.preset.id,
-        input.preset.startTime ?? 0,
-        input.preset.duration ?? 0.5
-      );
-      keyframesAdded += 4; // Approximate
-    }
-
-    // Add custom keyframes
-    if (input.keyframes) {
-      for (const kf of input.keyframes) {
-        // Default to continuous ease-in-out interpolation
-        const interpolation: Interpolation = kf.interpolation ?? {
-          family: 'continuous',
-          strategy: 'ease-in-out'
-        };
-
-        const clampedTime = Math.max(0, Math.min(kf.time, ctx.project.duration));
-
-        addKeyframeToProject(ctx.project, resolvedId, {
-          id: nanoid(),
-          time: clampedTime,
-          property: kf.property as AnimatableProperty,
-          value: kf.value as number | string | boolean,
-          interpolation
-        });
-        keyframesAdded++;
-      }
-    }
-
-    return {
-      success: true,
-      layerId: resolvedId,
-      keyframesAdded,
-      message: `Added ${keyframesAdded} keyframes to "${layer.name}"`
-    };
-  } catch (err) {
-    return {
-      success: false,
-      message: 'Failed to animate layer',
-      error: err instanceof Error ? err.message : 'Unknown error'
     };
   }
 }
@@ -248,47 +205,51 @@ export function mutateEditLayer(ctx: MutationContext, input: EditLayerInput): Ed
   const layer = ctx.project.layers[layerIndex];
 
   try {
-    if (input.updates.name !== undefined) {
-      layer.name = input.updates.name;
+    // Basic fields
+    if (input.name !== undefined) {
+      layer.name = input.name;
     }
-    if (input.updates.visible !== undefined) {
-      layer.visible = input.updates.visible;
+    if (input.visible !== undefined) {
+      layer.visible = input.visible;
     }
-    if (input.updates.locked !== undefined) {
-      layer.locked = input.updates.locked;
-    }
-
-    if (input.updates.transform) {
-      layer.transform = { ...layer.transform, ...input.updates.transform };
+    if (input.locked !== undefined) {
+      layer.locked = input.locked;
     }
 
-    // Handle anchor point
-    if (input.updates.anchor !== undefined) {
-      layer.transform.anchor = input.updates.anchor;
+    // Transform section - replaces if provided
+    if (input.transform) {
+      layer.transform = { ...layer.transform, ...input.transform };
     }
 
-    if (input.updates.opacity !== undefined) {
-      layer.style.opacity = input.updates.opacity;
+    // Handle anchor point separately
+    if (input.anchor !== undefined) {
+      layer.transform.anchor = input.anchor;
     }
 
-    if (input.updates.props) {
-      layer.props = { ...layer.props, ...input.updates.props };
+    // Style section - replaces if provided
+    if (input.style) {
+      layer.style = { ...layer.style, ...input.style };
+    }
+
+    // Props - merged with existing
+    if (input.props) {
+      layer.props = { ...layer.props, ...input.props };
     }
 
     // Update enter/exit times
-    if (input.updates.enterTime !== undefined) {
-      layer.enterTime = Math.max(0, input.updates.enterTime);
+    if (input.enterTime !== undefined) {
+      layer.enterTime = Math.max(0, input.enterTime);
     }
-    if (input.updates.exitTime !== undefined) {
-      layer.exitTime = Math.max(0, input.updates.exitTime);
+    if (input.exitTime !== undefined) {
+      layer.exitTime = Math.max(0, input.exitTime);
     }
 
     // Update content duration and offset (for video/audio layers)
-    if (input.updates.contentDuration !== undefined) {
-      layer.contentDuration = Math.max(0, input.updates.contentDuration);
+    if (input.contentDuration !== undefined) {
+      layer.contentDuration = Math.max(0, input.contentDuration);
     }
-    if (input.updates.contentOffset !== undefined) {
-      layer.contentOffset = Math.max(0, input.updates.contentOffset);
+    if (input.contentOffset !== undefined) {
+      layer.contentOffset = Math.max(0, input.contentOffset);
     }
 
     return {
@@ -537,107 +498,7 @@ export function mutateConfigureProject(
 }
 
 // ============================================
-// Keyframe Mutations
-// ============================================
-
-export function mutateUpdateKeyframe(
-  ctx: MutationContext,
-  input: UpdateKeyframeInput
-): UpdateKeyframeOutput {
-  const resolvedId = resolveLayerId(ctx.project, input.layerId);
-  if (!resolvedId) {
-    const errMsg = layerNotFoundError(ctx.project, input.layerId);
-    return { success: false, message: errMsg, error: errMsg };
-  }
-
-  const layer = ctx.project.layers.find((l) => l.id === resolvedId);
-  if (!layer) {
-    return { success: false, message: 'Layer not found', error: 'Layer was removed' };
-  }
-
-  const keyframeIndex = layer.keyframes.findIndex((k) => k.id === input.keyframeId);
-  if (keyframeIndex === -1) {
-    return {
-      success: false,
-      message: `Keyframe "${input.keyframeId}" not found`,
-      error: 'Keyframe ID not found in layer'
-    };
-  }
-
-  try {
-    const keyframe = layer.keyframes[keyframeIndex];
-
-    if (input.updates.time !== undefined) {
-      keyframe.time = Math.max(0, Math.min(input.updates.time, ctx.project.duration));
-    }
-    if (input.updates.value !== undefined) {
-      keyframe.value = input.updates.value;
-    }
-    if (input.updates.interpolation !== undefined) {
-      keyframe.interpolation = input.updates.interpolation;
-    }
-
-    // Re-sort keyframes by time
-    layer.keyframes.sort((a, b) => a.time - b.time);
-
-    return {
-      success: true,
-      message: `Updated keyframe on "${layer.name}"`
-    };
-  } catch (err) {
-    return {
-      success: false,
-      message: 'Failed to update keyframe',
-      error: err instanceof Error ? err.message : 'Unknown error'
-    };
-  }
-}
-
-export function mutateRemoveKeyframe(
-  ctx: MutationContext,
-  input: RemoveKeyframeInput
-): RemoveKeyframeOutput {
-  const resolvedId = resolveLayerId(ctx.project, input.layerId);
-  if (!resolvedId) {
-    const errMsg = layerNotFoundError(ctx.project, input.layerId);
-    return { success: false, message: errMsg, error: errMsg };
-  }
-
-  const layer = ctx.project.layers.find((l) => l.id === resolvedId);
-  if (!layer) {
-    return { success: false, message: 'Layer not found', error: 'Layer was removed' };
-  }
-
-  if (!input.keyframeId) {
-    return { success: false, message: 'keyframeId is required', error: 'Missing keyframeId' };
-  }
-
-  const keyframeIndex = layer.keyframes.findIndex((k) => k.id === input.keyframeId);
-  if (keyframeIndex === -1) {
-    return {
-      success: false,
-      message: `Keyframe "${input.keyframeId}" not found`,
-      error: 'Keyframe ID not found in layer'
-    };
-  }
-
-  try {
-    layer.keyframes.splice(keyframeIndex, 1);
-    return {
-      success: true,
-      message: `Removed keyframe from "${layer.name}"`
-    };
-  } catch (err) {
-    return {
-      success: false,
-      message: 'Failed to remove keyframe',
-      error: err instanceof Error ? err.message : 'Unknown error'
-    };
-  }
-}
-
-// ============================================
-// Internal Helpers (duplicated/adapted from store/logic)
+// Internal Helpers
 // ============================================
 
 function addKeyframeToProject(project: ProjectData, layerId: string, keyframe: Keyframe) {

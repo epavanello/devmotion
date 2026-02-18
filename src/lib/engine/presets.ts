@@ -1,7 +1,8 @@
 /**
  * Animation presets - reusable animation patterns
- * These can be applied to any layer by the AI using apply_preset action
+ * These can be applied to any layer by the AI using create_layer tool
  */
+import { z } from 'zod';
 import type { AnimationPreset } from '$lib/types/animation';
 
 /**
@@ -924,6 +925,14 @@ export const animationPresets: AnimationPreset[] = [
   }
 ];
 
+/**
+ * Schema for animation preset ID - derived from animationPresets array
+ */
+export const AnimationPresetIdSchema = z.enum(
+  animationPresets.map((p) => p.id) as [string, ...string[]]
+);
+
+export type AnimationPresetId = z.infer<typeof AnimationPresetIdSchema>;
 /**
  * Get a preset by ID
  */
