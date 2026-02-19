@@ -6,11 +6,13 @@
 
 Create stunning animated videos with full manual controls or AI-powered suggestions. Export professional MP4s—free, no watermark, no limits.
 
+![DevMotion Demo](static/demo.gif)
+
 [![GitHub Stars](https://img.shields.io/github/stars/epavanello/devmotion?style=social)](https://github.com/epavanello/devmotion/stargazers)
 [![Live Demo](https://img.shields.io/badge/Try_Live-devmotion.app-2563eb)](https://devmotion.app)
 [![Built with SvelteKit](https://img.shields.io/badge/Built%20with-SvelteKit-FF3E00?logo=svelte)](https://kit.svelte.dev)
 
-[**Try it Live →**](https://devmotion.app) • [**MCP Integration**](#mcp-server) • [**Self-Deploy**](#-self-host)
+[**Try it Live →**](https://devmotion.app) • [**MCP Integration**](#-mcp-server) • [**Self-Deploy**](#-self-host)
 
 </div>
 

@@ -21,6 +21,7 @@ import {
   createVirtualProjectLayer
 } from '$lib/layers/project-layer';
 import { defaultLayerStyle, defaultTransform } from '$lib/schemas/base';
+import { getDefaultProject } from '$lib/contexts/editor.svelte';
 
 /**
  * Cached layer data for a single frame
@@ -56,17 +57,7 @@ export class ProjectStore {
   preparingProgress = $state(0);
 
   constructor(initialProject?: Project) {
-    this.#state = initialProject ?? {
-      id: nanoid(),
-      name: 'Untitled Project',
-      width: 720,
-      height: 1280,
-      duration: 5,
-      fps: 30,
-      background: '#000000',
-      layers: [],
-      fontFamily: 'Inter'
-    };
+    this.#state = initialProject ?? getDefaultProject();
     // Auto-select the project settings layer on creation
     this.selectedLayerId = PROJECT_LAYER_ID;
   }

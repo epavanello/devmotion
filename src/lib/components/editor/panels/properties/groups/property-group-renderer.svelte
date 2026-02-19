@@ -75,28 +75,39 @@
     if (!customPropertyComponents) return [];
     return Object.entries(customPropertyComponents);
   });
+
+  // Helper to get the AnimatableProperty name for keyframes
+  // Style and transform properties don't need the targetPath prefix in keyframes
+  const getAnimatablePropertyName = (fieldName: string): AnimatableProperty => {
+    if (targetPath === 'props') {
+      return `props.${fieldName}` as AnimatableProperty;
+    }
+    // For 'style' and 'transform', use field name directly (e.g., 'opacity', 'position.x')
+    return fieldName as AnimatableProperty;
+  };
 </script>
 
 {#each propertyLayout.items as item (item.kind === 'group' ? `group:${item.group.id}` : `field:${item.field.name}`)}
   {#if item.kind === 'group'}
     <InputsWrapper
-      fields={item.fields.map((field) => ({
-        for: `${targetPath}.${field.name}`,
-        labels: field.description || field.name,
-        ...(showKeyframes
-          ? {
-              property: `${targetPath}.${field.name}` as AnimatableProperty,
-              addKeyframe,
-              hasKeyframes: layer.keyframes.some(
-                (k) => k.property === `${targetPath}.${field.name}`
-              )
-            }
-          : {
-              property: undefined,
-              addKeyframe: undefined,
-              hasKeyframes: false
-            })
-      }))}
+      fields={item.fields.map((field) => {
+        const animProp = getAnimatablePropertyName(field.name);
+        return {
+          for: `${targetPath}.${field.name}`,
+          labels: field.description || field.name,
+          ...(showKeyframes
+            ? {
+                property: animProp,
+                addKeyframe,
+                hasKeyframes: layer.keyframes.some((k) => k.property === animProp)
+              }
+            : {
+                property: undefined,
+                addKeyframe: undefined,
+                hasKeyframes: false
+              })
+        };
+      })}
     >
       {#snippet prefix()}
         <Label class="text-xs text-muted-foreground">{item.group.label}</Label>
@@ -129,7 +140,7 @@
       for={`${targetPath}.${item.field.name}`}
       label={item.field.description || item.field.name}
       {...showKeyframes
-        ? { property: `${targetPath}.${item.field.name}`, addKeyframe }
+        ? { property: getAnimatablePropertyName(item.field.name), addKeyframe }
         : { property: undefined, addKeyframe: undefined }}
     >
       <InputProperty

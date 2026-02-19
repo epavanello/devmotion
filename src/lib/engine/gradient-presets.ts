@@ -14,7 +14,7 @@ export interface GradientPreset {
 /**
  * All available gradient presets
  */
-export const gradientPresets: GradientPreset[] = [
+export const gradientPresets = [
   // ============================================
   // Warm gradients
   // ============================================
@@ -368,7 +368,7 @@ export const gradientPresets: GradientPreset[] = [
       ]
     }
   }
-];
+] as const satisfies GradientPreset[];
 
 /**
  * Get gradient presets by category
@@ -380,7 +380,9 @@ export function getPresetsByCategory(category: GradientPreset['category']): Grad
 /**
  * Get a gradient preset by ID
  */
-export function getGradientPresetById(id: string): GradientPreset | undefined {
+export function getGradientPresetById(
+  id: (typeof gradientPresets)[number]['id']
+): GradientPreset | undefined {
   return gradientPresets.find((p) => p.id === id);
 }
 

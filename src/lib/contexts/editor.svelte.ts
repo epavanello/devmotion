@@ -6,6 +6,7 @@ import { ProjectSchema, type Project } from '$lib/types/animation';
 import { createContext } from 'svelte';
 import { watch } from 'runed';
 import { nanoid } from 'nanoid';
+import { getGradientPresetById } from '$lib/engine/gradient-presets';
 
 const STORAGE_KEY = 'devmotion_store';
 const DEBOUNCE_MS = 500;
@@ -61,13 +62,13 @@ export function getDefaultProject(): Project {
   return {
     id: nanoid(),
     name: 'Untitled Project',
-    width: 720,
-    height: 1280,
+    width: 1280,
+    height: 720,
     duration: 5,
     fps: 30,
-    background: '#000000',
+    background: getGradientPresetById('purple-haze')?.value,
     layers: [],
-    fontFamily: 'Inter'
+    fontFamily: 'Poppins'
   };
 }
 

@@ -28,16 +28,7 @@ import {
 } from '$lib/ai/mutations';
 import { PUBLIC_BASE_URL } from '$env/static/public';
 import type { ProjectData } from '$lib/schemas/animation';
-
-// Default project template
-const DEFAULT_PROJECT = {
-  width: 720,
-  height: 1280,
-  duration: 5,
-  fps: 30,
-  background: '#000000',
-  layers: []
-};
+import { getDefaultProject } from '$lib/contexts/editor.svelte';
 
 const handler = createMcpHandler(
   (server) => {
@@ -57,13 +48,7 @@ const handler = createMcpHandler(
         const id = nanoid();
 
         // Create anonymous public project (userId is null for MCP-created projects)
-        const data: ProjectData = {
-          ...DEFAULT_PROJECT,
-          fontFamily: 'Inter',
-          name,
-          width,
-          height
-        };
+        const data: ProjectData = { ...getDefaultProject(), width, height, name };
 
         await db.insert(project).values({
           id,

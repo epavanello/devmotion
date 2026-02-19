@@ -376,7 +376,7 @@
                   title={preset.name}
                 >
                   <span
-                    class="absolute inset-x-0 bottom-0 truncate bg-black/60 px-1 py-0.5 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    class="absolute inset-x-0 bottom-0 truncate bg-black/60 px-1 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
                   >
                     {preset.name}
                   </span>
