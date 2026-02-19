@@ -1,4 +1,13 @@
-<script lang="ts" generics="T extends Record<string, unknown>">
+<script module lang="ts">
+  export type WrappedLayerProps<T extends Record<string, unknown> = Record<string, unknown>> = T & {
+    layer: Layer;
+    currentTime: number;
+    isPlaying: boolean;
+    isServerSideRendering: boolean;
+  };
+</script>
+
+<script lang="ts" generics="T extends WrappedLayerProps">
   import { generateTransformCSS, type BaseLayerProps } from './base';
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { getAnimatedTransform } from '$lib/engine/interpolation';
@@ -6,6 +15,7 @@
   import type { Component } from 'svelte';
   import { BRAND_COLORS } from '$lib/constants/branding';
   import type { Transform } from '$lib/schemas/base';
+  import type { Layer } from '$lib/schemas/animation';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);

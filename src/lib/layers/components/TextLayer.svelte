@@ -6,6 +6,7 @@
   import { googleFontValues } from '$lib/utils/fonts';
   import ApplyFont from '$lib/components/font/apply-font.svelte';
   import FontProperty from '../properties/FontProperty.svelte';
+  import type { WrappedLayerProps } from '../LayerWrapper.svelte';
 
   /**
    * Schema for Text Layer custom properties
@@ -118,7 +119,39 @@
       .describe(
         'The horizontal alignment of text within its container. Left aligns to the start, center to the middle, right to the end. Changes discretely.'
       )
-      .register(fieldRegistry, { interpolationFamily: 'discrete', label: 'Align' })
+      .register(fieldRegistry, { interpolationFamily: 'discrete', label: 'Align' }),
+    transitionEffect: z
+      .enum([
+        'none',
+        'fade',
+        'scale',
+        'slide-up',
+        'fade-scale',
+        'fade-slide-up',
+        'fade-scale-slide-up'
+      ])
+      .default('fade')
+      .describe(
+        'The enter transition effect for new text fragments. fade = opacity, scale = pop-in, slide-up = rise from below. Combinations apply multiple effects simultaneously.'
+      )
+      .register(fieldRegistry, {
+        group: 'transition',
+        interpolationFamily: 'discrete',
+        label: 'Effect'
+      }),
+    transitionDuration: z
+      .number()
+      .min(0)
+      .max(5000)
+      .default(100)
+      .describe(
+        'Duration in milliseconds for the enter transition of new text fragments. Only used when transitionEffect is not none.'
+      )
+      .register(fieldRegistry, {
+        group: 'transition',
+        interpolationFamily: 'continuous',
+        label: 'Duration (ms)'
+      })
   });
 
   export const meta = {
@@ -132,7 +165,8 @@
     propertyGroups: [
       { id: 'typography', label: 'Typography' },
       { id: 'spacing', label: 'Spacing' },
-      { id: 'layout', label: 'Layout' }
+      { id: 'layout', label: 'Layout' },
+      { id: 'transition', label: 'Transition' }
     ]
   } as const satisfies LayerMeta;
 
@@ -140,6 +174,9 @@
 </script>
 
 <script lang="ts">
+  import { watch } from 'runed';
+  import { ElementTransition, type TransitionEffect } from '$lib/utils/element-transition.svelte';
+
   let {
     content,
     fontSize,
@@ -150,8 +187,48 @@
     lineHeight,
     autoWidth,
     width,
-    textAlign
-  }: Props = $props();
+    textAlign,
+    transitionEffect,
+    transitionDuration,
+    currentTime
+  }: WrappedLayerProps<Props> = $props();
+
+  const effectMap: Record<string, TransitionEffect[]> = {
+    fade: ['fade'],
+    scale: ['scale'],
+    'slide-up': ['slide-up'],
+    'fade-scale': ['fade', 'scale'],
+    'fade-slide-up': ['fade', 'slide-up'],
+    'fade-scale-slide-up': ['fade', 'scale', 'slide-up']
+  };
+
+  const transition = new ElementTransition({
+    get duration() {
+      return transitionDuration;
+    },
+    get effects() {
+      return effectMap[transitionEffect] ?? [];
+    },
+    get slideDistance() {
+      return fontSize * 0.5;
+    },
+    scaleFrom: 0.5
+  });
+
+  const hasTransition = $derived(transitionEffect !== 'none');
+
+  watch(
+    () => [content, currentTime, transitionEffect, transitionDuration] as const,
+    ([content, currentTime, effect, duration]) => {
+      if (effect === 'none') return;
+      transition.config = {
+        ...transition.config,
+        duration,
+        effects: effectMap[effect] ?? []
+      };
+      transition.update(content, currentTime);
+    }
+  );
 </script>
 
 <ApplyFont {fontFamily}>
@@ -166,6 +243,14 @@
     style:width={autoWidth ? 'auto' : `${width}px`}
     style:text-align={textAlign}
   >
-    {content}
+    {#if hasTransition}
+      {#each transition.fragments as fragment, i (i)}
+        {@const style = transition.getStyle(fragment)}
+        {#if style}<span class="inline-block whitespace-pre" {style}>{fragment.text}</span
+          >{:else}<span class="inline-block whitespace-pre">{fragment.text}</span>{/if}
+      {/each}
+    {:else}
+      {content}
+    {/if}
   </div>
 </ApplyFont>

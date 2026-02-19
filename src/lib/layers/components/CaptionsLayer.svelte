@@ -142,6 +142,38 @@
         interpolationFamily: 'continuous',
         widget: 'color',
         label: 'Highlight'
+      }),
+    transitionEffect: z
+      .enum([
+        'none',
+        'fade',
+        'scale',
+        'slide-up',
+        'fade-scale',
+        'fade-slide-up',
+        'fade-scale-slide-up'
+      ])
+      .optional()
+      .default('fade')
+      .describe(
+        'The enter transition effect for active caption words. fade = opacity, scale = pop-in, slide-up = rise from below. Combinations apply multiple effects simultaneously.'
+      )
+      .register(fieldRegistry, {
+        group: 'transition',
+        interpolationFamily: 'discrete',
+        label: 'Effect'
+      }),
+    transitionDuration: z
+      .number()
+      .min(0)
+      .max(5000)
+      .optional()
+      .default(100)
+      .describe('Duration in milliseconds for the enter transition of active caption words.')
+      .register(fieldRegistry, {
+        group: 'transition',
+        interpolationFamily: 'continuous',
+        label: 'Duration (ms)'
       })
   });
 
@@ -157,7 +189,8 @@
       { id: 'size', label: 'Size', widget: AspectRatioToggle },
       { id: 'captions', label: 'Captions' },
       { id: 'style', label: 'Style' },
-      { id: 'font', label: 'Font' }
+      { id: 'font', label: 'Font' },
+      { id: 'transition', label: 'Transition' }
     ],
 
     middleware: sizeMiddleware
@@ -171,8 +204,18 @@
   import CaptionsEditor from '../properties/CaptionsEditor.svelte';
   import FontProperty from '../properties/FontProperty.svelte';
   import ApplyFont from '$lib/components/font/apply-font.svelte';
+  import { ElementTransition, type TransitionEffect } from '$lib/utils/element-transition.svelte';
 
   type CaptionWord = z.infer<typeof CaptionWordSchema>;
+
+  const effectMap: Record<string, TransitionEffect[]> = {
+    fade: ['fade'],
+    scale: ['scale'],
+    'slide-up': ['slide-up'],
+    'fade-scale': ['fade', 'scale'],
+    'fade-slide-up': ['fade', 'slide-up'],
+    'fade-scale-slide-up': ['fade', 'scale', 'slide-up']
+  };
 
   let {
     width,
@@ -186,12 +229,24 @@
     fontWeight,
     textColor,
     bgColor,
+    transitionEffect,
+    transitionDuration,
     layer,
     currentTime
   }: Props & {
     layer: TypedLayer;
     currentTime: number;
   } = $props();
+
+  const transition = new ElementTransition({
+    get duration() {
+      return transitionDuration ?? 300;
+    },
+    get effects() {
+      return effectMap[transitionEffect ?? 'fade-scale'] ?? [];
+    },
+    scaleFrom: 0.85
+  });
 
   /**
    * Calculate relative time (time within the layer's content)
@@ -286,35 +341,8 @@
       .filter((w) => w.start <= relativeTime);
   });
 
-  // Animation constants (hardcoded defaults)
-  const TRANSITION_DURATION = 0.3; // seconds for enter/exit animations
-  const OPACITY_INACTIVE = 0.85;
-  const SCALE_ACTIVE = 1;
-  const SCALE_ENTER = 1.15;
-
-  /**
-   * Calculate interpolated opacity based on time since word start
-   * Transitions from 0 to 1 during TRANSITION_DURATION
-   */
-  function getWordOpacity(wordStart: number): number {
-    const timeSinceStart = relativeTime - wordStart;
-    if (timeSinceStart < 0) return OPACITY_INACTIVE;
-    if (timeSinceStart >= TRANSITION_DURATION) return 1;
-    // Linear interpolation: 0 -> 1
-    return timeSinceStart / TRANSITION_DURATION;
-  }
-
-  /**
-   * Calculate interpolated scale based on time since word start
-   * Scales from SCALE_ENTER down to SCALE_ACTIVE during TRANSITION_DURATION
-   */
-  function getWordScale(wordStart: number): number {
-    const timeSinceStart = relativeTime - wordStart;
-    if (timeSinceStart < 0) return SCALE_ACTIVE;
-    if (timeSinceStart >= TRANSITION_DURATION) return SCALE_ACTIVE;
-    // Linear interpolation: SCALE_ENTER -> SCALE_ACTIVE
-    const progress = timeSinceStart / TRANSITION_DURATION;
-    return SCALE_ENTER - (SCALE_ENTER - SCALE_ACTIVE) * progress;
+  function getWordFragment(wordStart: number) {
+    return transition.fragmentFromTime('', relativeTime, wordStart);
   }
 </script>
 
@@ -329,17 +357,16 @@
     >
       {#each currentWords as { word, start, end }, i (i)}
         {@const isActive = relativeTime >= start && relativeTime < end}
-        {@const wordOpacity = isActive ? getWordOpacity(start) : OPACITY_INACTIVE}
-        {@const wordScale = isActive ? getWordScale(start) : 1}
+        {@const frag = isActive && transitionEffect !== 'none' ? getWordFragment(start) : null}
+        {@const transitionStyle = frag ? transition.getStyle(frag) : ''}
         <span
-          class="inline-block rounded"
+          class="inline-block rounded whitespace-pre"
           style:font-size="{fontSize}px"
           style:font-weight={isActive ? '700' : fontWeight}
           style:color={textColor}
           style:background-color={isActive ? bgColor : 'transparent'}
           style:padding={isActive ? '4px 8px' : '2px 4px'}
-          style:opacity={wordOpacity}
-          style:transform="scale({wordScale})"
+          style={transitionStyle || undefined}
         >
           {word}
         </span>
