@@ -68,9 +68,10 @@
 
     {#if layer.type === 'group'}
       <!-- Group: apply group transform and render children inside -->
-      {@const { transform: groupTransform, style: groupStyle } = getLayerRenderData(layer)}
+      {@const { transform: groupTransform, style: groupStyle, customProps: groupProps } = getLayerRenderData(layer)}
       {@const groupVisible = layer.visible && isInTimeRange}
       {@const groupTransformCSS = generateTransformCSS(groupTransform)}
+      {@const flexEnabled = groupProps?.flexEnabled === true}
 
       <div
         class="layer-group absolute top-1/2 left-1/2"
@@ -79,6 +80,12 @@
         style:transform-style="preserve-3d"
         style:opacity={groupStyle.opacity}
         style:visibility={groupVisible ? 'visible' : 'hidden'}
+        style:display={flexEnabled ? 'flex' : undefined}
+        style:flex-direction={flexEnabled ? String(groupProps?.flexDirection ?? 'row') : undefined}
+        style:flex-wrap={flexEnabled ? String(groupProps?.flexWrap ?? 'nowrap') : undefined}
+        style:justify-content={flexEnabled ? String(groupProps?.justifyContent ?? 'flex-start') : undefined}
+        style:align-items={flexEnabled ? String(groupProps?.alignItems ?? 'flex-start') : undefined}
+        style:gap={flexEnabled ? `${Number(groupProps?.gap ?? 0)}px` : undefined}
       >
         {#each getChildLayers(layer.id) as child (child.id)}
           {@const childEnter = child.enterTime ?? 0}
@@ -108,6 +115,7 @@
               {style}
               {component}
               customProps={enhancedProps}
+              insideFlexGroup={flexEnabled}
             />
           {/if}
         {/each}

@@ -35,6 +35,12 @@
      * Whether this layer is selected
      */
     selected?: boolean;
+
+    /**
+     * When true, the layer is inside a flex group container.
+     * Disables absolute centering so the item participates in flex layout.
+     */
+    insideFlexGroup?: boolean;
   }
 
   let {
@@ -45,7 +51,8 @@
     locked,
     component: C,
     customProps,
-    selected = false
+    selected = false,
+    insideFlexGroup = false
   }: Props = $props();
 
   const transformCSS = $derived(generateTransformCSS(transform));
@@ -251,7 +258,7 @@
 </script>
 
 <div
-  class="layer-wrapper absolute top-1/2 left-1/2 *:pointer-events-none"
+  class="layer-wrapper *:pointer-events-none {insideFlexGroup ? '' : 'absolute top-1/2 left-1/2'}"
   class:selected
   class:locked
   data-layer-id={id}
