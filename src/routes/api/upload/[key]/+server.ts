@@ -28,8 +28,6 @@ export const GET: RequestHandler = async ({ params }) => {
     // Decode the key (it may contain URL-encoded characters)
     const decodedKey = decodeURIComponent(key);
 
-    console.log('Attempting to get signed URL for key:', decodedKey);
-
     // Generate presigned URL valid for 1 hour
     const signedUrl = await getSignedFileUrl(decodedKey, 3600);
 

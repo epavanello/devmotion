@@ -51,6 +51,8 @@ export class ElementTransition {
   /** Maps fragment index → currentTime when it first appeared */
   private appearedAt: SvelteMap<number, number> = new SvelteMap();
   private prevValue = '';
+  /** Track if this is the very first update (to skip initial transition) */
+  private isFirstUpdate = true;
 
   constructor(config: TransitionConfig = {}) {
     this.config = $derived({
@@ -69,7 +71,23 @@ export class ElementTransition {
    */
   update(value: string, currentTime: number): void {
     const prev = this.prevValue;
+
+    // If value hasn't changed, just update progress for ongoing transitions
+    if (prev === value && !this.isFirstUpdate) {
+      this.rebuildFragments(value, currentTime);
+      return;
+    }
+
     this.prevValue = value;
+
+    // On first update, mark all content as "already present" (no transition)
+    if (this.isFirstUpdate) {
+      this.isFirstUpdate = false;
+      // Don't set appearedAt for initial content - it will get progress=1
+      // Build fragments with progress=1 for all initial content
+      this.fragments = value ? [{ text: value, progress: 1 }] : [];
+      return;
+    }
 
     // Detect the common prefix length to figure out the granularity of change
     const commonLen = commonPrefixLength(prev, value);
@@ -91,8 +109,13 @@ export class ElementTransition {
       }
     }
 
-    // Build fragments: group consecutive characters that share the same appearedAt time
-    // Characters in the stable prefix that have no appearedAt are "original" (progress=1)
+    this.rebuildFragments(value, currentTime);
+  }
+
+  /**
+   * Rebuild fragments array based on current value and time
+   */
+  private rebuildFragments(value: string, currentTime: number): void {
     const frags: TransitionFragment[] = [];
     let i = 0;
 
@@ -181,6 +204,7 @@ export class ElementTransition {
     this.fragments = [];
     this.appearedAt.clear();
     this.prevValue = '';
+    this.isFirstUpdate = true;
   }
 
   /**

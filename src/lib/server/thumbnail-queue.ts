@@ -47,7 +47,6 @@ class ThumbnailQueue {
     this.jobs.delete(projectId);
 
     try {
-      console.log(`[ThumbnailQueue] Processing thumbnail for project ${projectId}`);
       const baseUrl = PUBLIC_BASE_URL;
 
       await generateThumbnail({
