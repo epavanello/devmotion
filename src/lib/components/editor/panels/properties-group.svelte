@@ -1,5 +1,6 @@
 <script lang="ts">
   import Label from '$lib/components/ui/label/label.svelte';
+  import { cn } from '$lib/utils';
   import { ChevronRight } from '@lucide/svelte';
   import type { Snippet } from 'svelte';
 
@@ -12,10 +13,10 @@
   let isOpen = $derived(defaultOpen);
 </script>
 
-<div class="space-y-3">
+<div class="properties-group-content space-y-3" data-open={isOpen}>
   <button
     type="button"
-    class="flex w-full items-center gap-1.5 text-left transition-colors hover:text-foreground"
+    class="properties-group-header flex w-full items-center gap-1.5 text-left transition-colors hover:text-foreground"
     onclick={() => (isOpen = !isOpen)}
   >
     <ChevronRight
@@ -29,9 +30,7 @@
     {/if}
   </button>
 
-  {#if isOpen}
-    <div class="space-y-3">
-      {@render children()}
-    </div>
-  {/if}
+  <div class={cn('space-y-3', { hidden: !isOpen })}>
+    {@render children()}
+  </div>
 </div>

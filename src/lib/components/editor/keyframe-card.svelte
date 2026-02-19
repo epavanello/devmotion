@@ -221,6 +221,14 @@
     // Find input by ID
     const input = document.getElementById(inputId) as HTMLElement | null;
     if (input) {
+      const groupToggle = input
+        .closest('.properties-group-content[data-open="false"]')
+        ?.querySelector<HTMLButtonElement>('.properties-group-header');
+
+      if (groupToggle) {
+        groupToggle.click();
+      }
+
       input.scrollIntoView({ behavior: 'smooth', block: 'center' });
       setTimeout(() => {
         (input as HTMLInputElement)?.focus?.();
