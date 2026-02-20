@@ -4,6 +4,7 @@
     currentTime: number;
     isPlaying: boolean;
     isServerSideRendering: boolean;
+    globalVolume: number;
   };
 </script>
 

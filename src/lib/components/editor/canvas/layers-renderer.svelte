@@ -1,5 +1,5 @@
 <script lang="ts">
-  import LayerWrapper from '$lib/layers/LayerWrapper.svelte';
+  import LayerWrapper, { type WrappedLayerProps } from '$lib/layers/LayerWrapper.svelte';
   import { getLayerComponent } from '$lib/layers/registry';
   import { getLayerTransform, getLayerStyle, getLayerProps } from '$lib/engine/layer-rendering';
   import { generateTransformCSS } from '$lib/layers/base';
@@ -17,7 +17,8 @@
     disableSelection = false,
     getCachedFrame,
     isServerSideRendering = false,
-    projectFont
+    projectFont,
+    globalVolume = 100
   }: {
     layers: TypedLayer[];
     currentTime: number;
@@ -28,6 +29,7 @@
     getCachedFrame?: (time: number) => FrameCache | null;
     isServerSideRendering?: boolean;
     projectFont?: GoogleFont;
+    globalVolume?: number;
   } = $props();
 
   /**
@@ -95,7 +97,8 @@
               layer: child,
               currentTime,
               isPlaying,
-              isServerSideRendering
+              isServerSideRendering,
+              globalVolume
             }}
 
             <LayerWrapper
@@ -125,8 +128,9 @@
           layer,
           currentTime,
           isPlaying,
-          isServerSideRendering
-        }}
+          isServerSideRendering,
+          globalVolume
+        } satisfies WrappedLayerProps}
 
         <LayerWrapper
           id={layer.id}

@@ -156,6 +156,7 @@
       disableSelection={true}
       isServerSideRendering={true}
       projectFont={project.fontFamily}
+      globalVolume={100}
     />
   </div>
 

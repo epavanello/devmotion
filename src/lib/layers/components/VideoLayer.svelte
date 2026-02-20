@@ -146,8 +146,8 @@
 </script>
 
 <script lang="ts">
-  import type { TypedLayer } from '$lib/layers/typed-registry';
   import { watch } from 'runed';
+  import type { WrappedLayerProps } from '../LayerWrapper.svelte';
 
   let {
     src,
@@ -162,13 +162,9 @@
     layer,
     currentTime,
     isPlaying,
-    isServerSideRendering = false
-  }: Props & {
-    layer: TypedLayer;
-    currentTime: number;
-    isPlaying: boolean;
-    isServerSideRendering?: boolean;
-  } = $props();
+    isServerSideRendering = false,
+    globalVolume = 100
+  }: WrappedLayerProps<Props> = $props();
 
   let videoEl: HTMLVideoElement | undefined = $state();
 
@@ -216,10 +212,12 @@
   );
 
   // Sync volume/muted/playbackRate
-  watch([() => volume, () => muted, () => playbackRate, () => videoEl], () => {
+  watch([() => volume, () => muted, () => playbackRate, () => globalVolume, () => videoEl], () => {
     if (!videoEl) return;
-    if (volume) {
-      videoEl.volume = volume;
+    if (volume !== undefined) {
+      // Apply both layer volume and global volume (globalVolume is 0-100, convert to 0-1)
+      const effectiveVolume = volume * (globalVolume / 100);
+      videoEl.volume = effectiveVolume;
     }
     videoEl.muted = muted;
     if (playbackRate) {

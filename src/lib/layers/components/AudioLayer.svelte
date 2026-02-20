@@ -7,8 +7,6 @@
   import { sizeMiddleware } from '$lib/schemas/size';
   import { fieldRegistry } from '$lib/layers/properties/field-registry';
 
-  import type { Layer } from '$lib/schemas/animation';
-
   /**
    * Schema for Audio Layer custom properties
    *
@@ -103,6 +101,7 @@
 
 <script lang="ts">
   import { watch } from 'runed';
+  import type { WrappedLayerProps } from '../LayerWrapper.svelte';
 
   let {
     src,
@@ -113,13 +112,9 @@
     layer,
     currentTime,
     isPlaying,
-    isServerSideRendering = false
-  }: Props & {
-    layer: Layer;
-    currentTime: number;
-    isPlaying: boolean;
-    isServerSideRendering?: boolean;
-  } = $props();
+    isServerSideRendering = false,
+    globalVolume = 100
+  }: WrappedLayerProps<Props> = $props();
 
   let audioEl: HTMLAudioElement | undefined = $state();
 
@@ -167,9 +162,11 @@
   );
 
   // Sync volume/muted/playbackRate
-  watch([() => volume, () => muted, () => playbackRate, () => audioEl], () => {
+  watch([() => volume, () => muted, () => playbackRate, () => globalVolume, () => audioEl], () => {
     if (!audioEl) return;
-    audioEl.volume = volume;
+    // Apply both layer volume and global volume (globalVolume is 0-100, convert to 0-1)
+    const effectiveVolume = volume * (globalVolume / 100);
+    audioEl.volume = effectiveVolume;
     audioEl.muted = muted;
     audioEl.playbackRate = playbackRate;
   });

@@ -294,6 +294,7 @@
             disableSelection={projectStore.isRecording}
             getCachedFrame={projectStore.isRecording ? projectStore.getCachedFrame : undefined}
             projectFont={projectStore.state.fontFamily}
+            globalVolume={projectStore.globalVolume}
           />
         </div>
 
