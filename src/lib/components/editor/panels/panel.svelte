@@ -18,6 +18,8 @@
     topOffset?: string;
     zIndex?: number;
     scrollRef?: HTMLElement | null;
+    class?: string;
+    scrollAreaClass?: string;
   }
 
   let {
@@ -33,13 +35,15 @@
     onToggle,
     topOffset = '0',
     zIndex = 0,
-    scrollRef = $bindable(null)
+    scrollRef = $bindable(null),
+    class: className = '',
+    scrollAreaClass = ''
   }: Props = $props();
 </script>
 
 {#if collapsible}
   <!-- Mobile: collapsible sticky panel -->
-  <div class="sticky bg-background" style="top: {topOffset}; z-index: {zIndex};">
+  <div class={cn('sticky bg-background', className)} style="top: {topOffset}; z-index: {zIndex};">
     <button
       onclick={onToggle}
       class="flex w-full items-center justify-between border-t border-b bg-muted/80 p-4 font-medium backdrop-blur-sm transition-colors hover:bg-muted"
@@ -75,7 +79,7 @@
   </div>
 {:else}
   <!-- Desktop: standard panel with header -->
-  <div class="flex h-full flex-col bg-background">
+  <div class={cn('flex h-full flex-col bg-background', className)}>
     <div class="flex items-center justify-between border-b bg-muted/50 px-4 py-3">
       <div class="flex items-center gap-2">
         <h2 class="text-sm font-semibold">{title}</h2>
@@ -96,7 +100,7 @@
         {@render content()}
       </div>
     {:else}
-      <ScrollArea class="flex-1" bind:ref={scrollRef}>
+      <ScrollArea class={cn('flex-1')} viewportClass={scrollAreaClass} bind:ref={scrollRef}>
         {@render content()}
       </ScrollArea>
     {/if}

@@ -14,6 +14,7 @@
   import { DEFAULT_MODEL_ID } from '$lib/ai/models';
   import AddLayer from './panels/add-layer.svelte';
   import { IsMobile } from '$lib/hooks/is-mobile.svelte';
+  import * as Tabs from '$lib/components/ui/tabs';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -155,40 +156,8 @@
     {:else}
       <!-- Desktop Layout: Resizable panes -->
       <ResizablePaneGroup direction="horizontal" class="h-full">
-        <!-- Left Panel: Layers and AI Chat -->
-        <ResizablePane defaultSize={25} minSize={15} maxSize={30}>
-          <ResizablePaneGroup direction="vertical">
-            <ResizablePane defaultSize={60} minSize={30}>
-              <Panel
-                title="Layers ({projectStore.state.layers.length})"
-                actionsComponent={AddLayer}
-              >
-                {#snippet content()}
-                  <LayersPanel />
-                {/snippet}
-              </Panel>
-            </ResizablePane>
-            <ResizableHandle />
-            <ResizablePane defaultSize={40} minSize={20}>
-              <Panel title="AI Chat" bind:scrollRef={aiChatScrollRef}>
-                {#snippet content()}
-                  <AiChat bind:selectedModelId={aiChatModelId} scrollRef={aiChatScrollRef} />
-                {/snippet}
-                {#snippet actionsSnippet()}
-                  <ModelSelector
-                    selectedModelId={aiChatModelId}
-                    onModelChange={(id) => (aiChatModelId = id)}
-                  />
-                {/snippet}
-              </Panel>
-            </ResizablePane>
-          </ResizablePaneGroup>
-        </ResizablePane>
-
-        <ResizableHandle />
-
-        <!-- Center: Canvas and Timeline -->
-        <ResizablePane defaultSize={60} minSize={40}>
+        <!-- Canvas & Timeline -->
+        <ResizablePane>
           <ResizablePaneGroup direction="vertical">
             <ResizablePane defaultSize={70} minSize={30}>
               {@render canvasSection()}
@@ -215,15 +184,51 @@
 
         <ResizableHandle />
 
-        <!-- Right Panel: Properties -->
-        <ResizablePane defaultSize={25} minSize={15} maxSize={30}>
-          {#if !isRecording}
-            <Panel title="Properties">
-              {#snippet content()}
-                <PropertiesPanel />
-              {/snippet}
-            </Panel>
-          {/if}
+        <ResizablePane defaultSize={30} minSize={30} maxSize={40}>
+          <Tabs.Root value="chat" class="flex h-full flex-col gap-0">
+            <div class="p-1.5">
+              <Tabs.List class="w-full">
+                <Tabs.Trigger value="chat">Chat</Tabs.Trigger>
+                <Tabs.Trigger value="editor">Editor</Tabs.Trigger>
+              </Tabs.List>
+            </div>
+            <Tabs.Content value="chat">
+              <Panel title="AI Chat" bind:scrollRef={aiChatScrollRef} class="border-t">
+                {#snippet content()}
+                  <AiChat bind:selectedModelId={aiChatModelId} scrollRef={aiChatScrollRef} />
+                {/snippet}
+                {#snippet actionsSnippet()}
+                  <ModelSelector
+                    selectedModelId={aiChatModelId}
+                    onModelChange={(id) => (aiChatModelId = id)}
+                  />
+                {/snippet}
+              </Panel>
+            </Tabs.Content>
+            <Tabs.Content value="editor">
+              <ResizablePaneGroup direction="vertical">
+                <ResizablePane>
+                  <Panel
+                    title="Layers ({projectStore.state.layers.length})"
+                    actionsComponent={AddLayer}
+                    class="border-t"
+                  >
+                    {#snippet content()}
+                      <LayersPanel />
+                    {/snippet}
+                  </Panel>
+                </ResizablePane>
+                <ResizableHandle />
+                <ResizablePane>
+                  <Panel title="Properties">
+                    {#snippet content()}
+                      <PropertiesPanel />
+                    {/snippet}
+                  </Panel>
+                </ResizablePane>
+              </ResizablePaneGroup>
+            </Tabs.Content>
+          </Tabs.Root>
         </ResizablePane>
       </ResizablePaneGroup>
     {/if}

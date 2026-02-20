@@ -64,6 +64,18 @@ export const AI_MODELS = {
       input: 0.2,
       output: 0.5
     }
+  },
+  'google/gemini-3.1-pro-preview': {
+    id: 'google/gemini-3.1-pro-preview',
+    name: 'Gemini 3.1 Pro',
+    provider: 'Google',
+    description: 'Excellent for creative and complex tasks with 128K context',
+    recommended: false,
+    costTier: 'high',
+    pricing: {
+      input: 2,
+      output: 12
+    }
   }
   // 'x-ai/grok-4': {
   //   id: 'x-ai/grok-4',
@@ -75,18 +87,6 @@ export const AI_MODELS = {
   //   pricing: {
   //     input: 3,
   //     output: 15
-  //   }
-  // },
-  // 'google/gemini-3-pro-preview': {
-  //   id: 'google/gemini-3-pro-preview',
-  //   name: 'Gemini 3 Pro',
-  //   provider: 'Google',
-  //   description: 'Excellent for creative and complex tasks with 128K context',
-  //   recommended: false,
-  //   costTier: 'high',
-  //   pricing: {
-  //     input: 2,
-  //     output: 12
   //   }
   // },
   // 'anthropic/claude-sonnet-4.6': {

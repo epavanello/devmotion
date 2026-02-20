@@ -50,6 +50,7 @@ export class ProjectStore {
   isPlaying = $state(false);
   isRecording = $state(false);
   currentTime = $state(0);
+  globalVolume = $state(100);
   selectedKeyframeIds = new SvelteSet<string>();
 
   // Frame cache for optimized recording

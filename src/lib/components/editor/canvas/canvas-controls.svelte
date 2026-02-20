@@ -23,7 +23,7 @@
 </script>
 
 <div
-  class="absolute right-4 bottom-4 flex items-center rounded-lg border bg-background/95 p-2 shadow-lg"
+  class="absolute right-4 bottom-4 flex items-center rounded-2xl border border-foreground/10 bg-background/95 p-2 shadow-lg"
 >
   <Button variant="ghost" size="sm" onclick={zoomOut} disabled={projectStore.isRecording}>
     <ZoomOut />
