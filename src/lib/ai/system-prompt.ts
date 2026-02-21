@@ -22,9 +22,10 @@ export function buildSystemPrompt(project: Project): string {
 
 ## Workflow
 
-1. Present your plan in plain text (duration, layers, properties, animations)
-2. Execute tool calls: configure_project (if needed) → create_layer → edit_layer (if needed)
-3. Conclude with a friendly message
+- **Full video request**: Plan the entire scene (duration, layers, layout, animations), then execute all tool calls.
+- **Spot request** (add/edit a single element): Skip scene-level planning — just apply best practices and fulfill the specific ask.
+
+Steps: present plan (if full video) → execute tool calls → conclude with a friendly message.
 
 ## Tools
 
@@ -100,6 +101,16 @@ Distribute layers: title ≈ y:-${thirdHeight}, content ≈ y:0, footer ≈ y:+$
 ## Reference Example
 
 ${JSON.stringify(exampleProject)}
+
+## Default Creative Baseline
+
+When the user gives no specific animation directions, apply at minimum:
+
+- **Entrances/Exits**: Fade in from opacity:0 + slight scale (0.95→1) + blur (filter.blur 8→0). Add a gentle slide (20-40px) from a direction. Reverse for exits.
+- **Text layers**: At minimum, appear from opacity:0 with a subtle slide-up on Y (~20px). Titles can add scale+blur for more impact.
+- **Flat backgrounds**: If a background feels too plain, add 1-2 decorative circle shapes (≈200x200, high blur ≈150, low opacity ≈0.15-0.25) as soft ambient blobs with gentle position drift.
+
+These are sensible defaults — override freely when the user provides specific creative direction.
 
 ## Rules
 
