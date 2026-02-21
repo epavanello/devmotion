@@ -2,7 +2,7 @@
   import LayerWrapper, { type WrappedLayerProps } from '$lib/layers/LayerWrapper.svelte';
   import { getLayerComponent } from '$lib/layers/registry';
   import { getLayerTransform, getLayerStyle, getLayerProps } from '$lib/engine/layer-rendering';
-  import { generateTransformCSS } from '$lib/layers/base';
+  import { generateFilterCSS, generateTransformCSS } from '$lib/layers/base';
   import type { TypedLayer } from '$lib/layers/typed-registry';
   import type { FrameCache } from '$lib/stores/project.svelte';
   import type { GoogleFont } from '$lib/utils/fonts';
@@ -73,11 +73,13 @@
       {@const { transform: groupTransform, style: groupStyle } = getLayerRenderData(layer)}
       {@const groupVisible = layer.visible && isInTimeRange}
       {@const groupTransformCSS = generateTransformCSS(groupTransform)}
+      {@const groupFilterCSS = generateFilterCSS(groupStyle)}
 
       <div
         class="layer-group absolute top-1/2 left-1/2"
         data-group-id={layer.id}
         style:transform={groupTransformCSS}
+        style:filter={groupFilterCSS}
         style:transform-style="preserve-3d"
         style:opacity={groupStyle.opacity}
         style:visibility={groupVisible ? 'visible' : 'hidden'}

@@ -9,7 +9,7 @@
 </script>
 
 <script lang="ts" generics="T extends WrappedLayerProps">
-  import { generateTransformCSS, type BaseLayerProps } from './base';
+  import { generateFilterCSS, generateTransformCSS, type BaseLayerProps } from './base';
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { getAnimatedTransform } from '$lib/engine/interpolation';
   import { nanoid } from 'nanoid';
@@ -51,19 +51,7 @@
 
   const transformCSS = $derived(generateTransformCSS(transform));
 
-  const filterCSS = $derived.by(() => {
-    const parts: string[] = [];
-    if (style.blur > 0) parts.push(`blur(${style.blur}px)`);
-    if (style.brightness !== 1) parts.push(`brightness(${style.brightness})`);
-    if (style.contrast !== 1) parts.push(`contrast(${style.contrast})`);
-    if (style.saturate !== 1) parts.push(`saturate(${style.saturate})`);
-    if (style.dropShadowBlur > 0 || style.dropShadowX !== 0 || style.dropShadowY !== 0) {
-      parts.push(
-        `drop-shadow(${style.dropShadowX}px ${style.dropShadowY}px ${style.dropShadowBlur}px ${style.dropShadowColor})`
-      );
-    }
-    return parts.length > 0 ? parts.join(' ') : undefined;
-  });
+  const filterCSS = $derived(generateFilterCSS(style));
 
   // Drag state
   let isDragging = $state(false);
