@@ -10,10 +10,9 @@ import {
   PRIVATE_GOOGLE_CLIENT_ID,
   PRIVATE_GOOGLE_CLIENT_SECRET
 } from '$env/static/private';
-import { aiUserUnlock } from './db/schema';
+import { aiUserUnlock, userRoles } from './db/schema';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { userRoles } from '$lib/roles';
 
 export const auth = betterAuth({
   secret: PRIVATE_BETTER_AUTH_SECRET,

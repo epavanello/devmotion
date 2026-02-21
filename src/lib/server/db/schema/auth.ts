@@ -1,5 +1,6 @@
 import { pgTable, text, timestamp, boolean, pgEnum } from 'drizzle-orm/pg-core';
-import { userRoles } from '$lib/roles';
+export const userRoles = ['user', 'admin'] as const;
+export type UserRole = (typeof userRoles)[number];
 
 /** Postgres enum that enforces valid role values at the DB level. */
 export const userRoleEnum = pgEnum('user_role', [...userRoles]);

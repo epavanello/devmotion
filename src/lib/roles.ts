@@ -1,5 +1,4 @@
-export const userRoles = ['user', 'admin'] as const;
-export type UserRole = (typeof userRoles)[number];
+import type { UserRole } from './server/db/schema';
 
 /** Canonical role constants for type-safe role comparisons. */
 export const ADMIN_ROLE = 'admin' as const satisfies UserRole;

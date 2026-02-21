@@ -1,5 +1,7 @@
-import { pgTable, text, timestamp, boolean, real, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, real, index, pgEnum } from 'drizzle-orm/pg-core';
 import { user } from './auth';
+
+export const aiPlanEnum = pgEnum('ai_plan', ['free', 'pro']);
 
 export const aiUserUnlock = pgTable(
   'ai_user_unlock',
@@ -9,7 +11,8 @@ export const aiUserUnlock = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     enabled: boolean('enabled').default(true).notNull(),
-    maxCostPerMonth: real('max_cost_per_month'), // null = unlimited
+    maxCostPerMonth: real('max_cost_per_month').notNull(),
+    plan: aiPlanEnum('plan').default('free').notNull(),
     notes: text('notes'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')

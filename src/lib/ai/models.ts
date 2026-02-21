@@ -21,6 +21,7 @@ export interface AIModel {
     input: number;
     output: number;
   };
+  proOnly?: boolean;
 }
 
 /**
@@ -75,81 +76,48 @@ export const AI_MODELS = {
     pricing: {
       input: 2,
       output: 12
-    }
+    },
+    proOnly: true
+  },
+  'x-ai/grok-4': {
+    id: 'x-ai/grok-4',
+    name: 'Grok 4',
+    provider: 'X AI',
+    description: 'Excellent for creative and complex tasks with 256K context',
+    recommended: false,
+    costTier: 'medium',
+    pricing: {
+      input: 3,
+      output: 15
+    },
+    proOnly: true
+  },
+  'anthropic/claude-sonnet-4.6': {
+    id: 'anthropic/claude-sonnet-4.6',
+    name: 'Claude Sonnet 4.6',
+    provider: 'Anthropic',
+    description: 'Excellent for creative and complex tasks with 1M context',
+    recommended: false,
+    costTier: 'high',
+    pricing: {
+      input: 3,
+      output: 15
+    },
+    proOnly: true
+  },
+  'openai/gpt-5.2': {
+    id: 'openai/gpt-5.2',
+    name: 'GPT-5.2',
+    provider: 'OpenAI',
+    description: 'Excellent for creative and complex tasks with 128K context',
+    recommended: false,
+    costTier: 'high',
+    pricing: {
+      input: 1.75,
+      output: 14
+    },
+    proOnly: true
   }
-  // 'x-ai/grok-4': {
-  //   id: 'x-ai/grok-4',
-  //   name: 'Grok 4',
-  //   provider: 'X AI',
-  //   description: 'Excellent for creative and complex tasks with 256K context',
-  //   recommended: false,
-  //   costTier: 'medium',
-  //   pricing: {
-  //     input: 3,
-  //     output: 15
-  //   }
-  // },
-  // 'anthropic/claude-sonnet-4.6': {
-  //   id: 'anthropic/claude-sonnet-4.6',
-  //   name: 'Claude Sonnet 4.6',
-  //   provider: 'Anthropic',
-  //   description: 'Excellent for creative and complex tasks with 1M context',
-  //   recommended: false,
-  //   costTier: 'high',
-  //   pricing: {
-  //     input: 3,
-  //     output: 15
-  //   }
-  // },
-  // 'openai/gpt-5.2': {
-  //   id: 'openai/gpt-5.2',
-  //   name: 'GPT-5.2',
-  //   provider: 'OpenAI',
-  //   description: 'Excellent for creative and complex tasks with 128K context',
-  //   recommended: false,
-  //   costTier: 'high',
-  //   pricing: {
-  //     input: 1.75,
-  //     output: 14
-  //   }
-  // }
-  // NOT GOOD
-  // 'qwen/qwen3-max-thinking': {
-  //   id: 'qwen/qwen3-max-thinking',
-  //   name: 'Qwen 3 Max Thinking',
-  //   provider: 'Qwen',
-  //   description: 'Excellent for creative and complex tasks with 128K context',
-  //   recommended: false,
-  //   costTier: 'high',
-  //   pricing: {
-  //     input: 1.2,
-  //     output: 6
-  //   }
-  // },
-  // 'qwen/qwen3.5-397b-a17b': {
-  //   id: 'qwen/qwen3.5-397b-a17b',
-  //   name: 'Qwen 3.5 397B A17B',
-  //   provider: 'Qwen',
-  //   description: 'Excellent for creative and complex tasks with 128K context',
-  //   recommended: false,
-  //   costTier: 'high',
-  //   pricing: {
-  //     input: 0.15,
-  //     output: 1
-  //   }
-  // }
-  // 'deepseek/deepseek-v3.2': {
-  //   id: 'deepseek/deepseek-v3.2',
-  //   name: 'DeepSeek V3.2',
-  //   provider: 'DeepSeek',
-  //   description: 'Excellent for creative and complex tasks with 128K context',
-  //   recommended: false,
-  //   costTier: 'high',
-  //   pricing: {
-  //     input: 0.26,
-  //     output: 0.38
-  //   }
-  // }
 } as const satisfies Record<string, AIModel>;
 
 export type ModelId = keyof typeof AI_MODELS;

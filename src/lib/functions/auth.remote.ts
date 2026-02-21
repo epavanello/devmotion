@@ -3,6 +3,9 @@ import { auth } from '$lib/server/auth';
 import { redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { withErrorHandling } from '.';
+import { db } from '$lib/server/db';
+import { aiUserUnlock } from '$lib/server/db/schema';
+import { eq } from 'drizzle-orm';
 
 export const login = form(
   z.object({ email: z.email(), password: z.string() }),
@@ -59,7 +62,15 @@ export const signOut = form(
 
 export const getUser = query(async () => {
   const { locals } = getRequestEvent();
-  return locals.user;
+  const user = locals.user;
+  if (!user?.id) {
+    return null;
+  }
+  const plan = await db
+    .select({ plan: aiUserUnlock.plan })
+    .from(aiUserUnlock)
+    .where(eq(aiUserUnlock.userId, user.id));
+  return { ...locals.user, plan: plan[0]?.plan };
 });
 
 export const checkRole = query(z.enum(['admin', 'user']), async (role) => {
