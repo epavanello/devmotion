@@ -167,6 +167,15 @@
   }: WrappedLayerProps<Props> = $props();
 
   let videoEl: HTMLVideoElement | undefined = $state();
+  let hasError = $state(false);
+
+  function handleError() {
+    hasError = true;
+  }
+
+  function handleLoad() {
+    hasError = false;
+  }
 
   // Sync the video element's currentTime to the project timeline
   watch(
@@ -227,7 +236,7 @@
 </script>
 
 <div style:width="{width}px" style:height="{height}px">
-  {#if src}
+  {#if src && !hasError}
     <!-- svelte-ignore a11y_media_has_caption -->
     <video
       bind:this={videoEl}
@@ -241,7 +250,17 @@
           : undefined}
       preload="auto"
       playsinline
+      onerror={handleError}
+      onloadeddata={handleLoad}
     ></video>
+  {:else if hasError}
+    <div
+      class="flex h-full w-full flex-col items-center justify-center gap-2 bg-gray-500/20 text-sm"
+      style:border-radius="{borderRadius}px"
+    >
+      <span>Video not available</span>
+      <span class="text-xs text-destructive">The source may be missing or deleted</span>
+    </div>
   {:else}
     <div
       class="flex h-full w-full items-center justify-center bg-gray-800 text-sm text-gray-400"

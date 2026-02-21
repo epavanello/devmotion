@@ -10,6 +10,7 @@
   import { createLayer } from '$lib/engine/layer-factory';
   import { defaultTransform } from '$lib/schemas/base';
   import { ASSET_DRAG_TYPE, type DragAsset } from '../panels/assets-panel.svelte';
+  import { prepareMediaLayerData, applyMediaLayerData } from '$lib/utils/media';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -171,6 +172,15 @@
       const layerType = { image: 'image', video: 'video', audio: 'audio' }[mediaType] ?? null;
       if (!layerType) return;
 
+      // Prepare layer timing data using centralized logic
+      const mediaResult = prepareMediaLayerData({
+        duration: duration ?? undefined,
+        mediaType,
+        currentTime: projectStore.currentTime,
+        projectDuration: projectStore.state.duration,
+        name: originalName
+      });
+
       const layer = createLayer(layerType, {
         props: { src: url },
         transform: {
@@ -182,12 +192,18 @@
           height: projectStore.state.height
         },
         layer: {
-          contentDuration: duration ?? undefined,
-          name: originalName ?? undefined
+          contentDuration: mediaResult.layerData.contentDuration,
+          enterTime: mediaResult.layerData.enterTime,
+          exitTime: mediaResult.layerData.exitTime,
+          name: mediaResult.layerData.name
         }
       });
 
       projectStore.addLayer(layer);
+
+      // Apply media layer data (handles duration, exit time, and project extension)
+      applyMediaLayerData(projectStore, layer.id, mediaResult);
+
       projectStore.selectedLayerId = layer.id;
     } catch {
       // Invalid data, ignore

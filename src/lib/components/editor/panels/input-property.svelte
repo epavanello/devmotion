@@ -9,6 +9,7 @@
   import BackgroundPicker from './background-picker.svelte';
   import ScrubInput from './scrub-input.svelte';
   import { ColorPicker } from '$lib/components/ui/color-picker';
+  import { prepareMediaLayerData, applyMediaLayerData } from '$lib/utils/media';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -37,44 +38,25 @@
     mediaType={metadata.meta.mediaType}
     projectId={editorState.dbProjectId ?? undefined}
     onUpload={(result) => {
+      if (metadata.meta?.widget !== 'upload') {
+        return;
+      }
       onUpdateProp(metadata.name, result.url);
       onUpdateProp('fileKey', result.key);
 
-      const enterTime = layer.enterTime ?? 0;
+      const mediaType = metadata.meta.mediaType;
 
-      // Set content duration and exit time based on media type
-      if (result.duration !== undefined) {
-        // Video/Audio with duration
-        projectStore.updateLayer(layer.id, {
-          contentDuration: result.duration
-        });
-        const newExitTime = enterTime + result.duration;
-        projectStore.setLayerExitTime(layer.id, newExitTime);
-
-        // Extend project duration if content extends beyond it
-        const currentProjectDuration = projectStore.state.duration;
-        if (newExitTime > currentProjectDuration) {
-          projectStore.updateProject({ duration: newExitTime });
-        }
-      } else if (
-        metadata?.meta &&
-        'mediaType' in metadata.meta &&
-        metadata.meta.mediaType === 'image'
-      ) {
-        // Image without duration - set exit time to end of project
-        projectStore.setLayerExitTime(layer.id, projectStore.state.duration);
-      }
-    }}
-    onRemove={() => {
-      onUpdateProp(metadata.name, '');
-      onUpdateProp('fileKey', '');
-      projectStore.updateLayer(layer.id, {
-        contentDuration: 0,
-        contentOffset: 0
+      // Use centralized media layer data handling
+      const mediaResult = prepareMediaLayerData({
+        duration: result.duration ?? undefined,
+        mediaType,
+        currentTime: layer.enterTime ?? 0,
+        projectDuration: projectStore.state.duration,
+        name: result.fileName
       });
-      // Reset exit time to match enter time (empty timeline)
-      const enterTime = layer.enterTime ?? 0;
-      projectStore.setLayerExitTime(layer.id, enterTime);
+
+      // Apply media layer data (handles duration, exit time, and project extension)
+      applyMediaLayerData(projectStore, layer.id, mediaResult);
     }}
   />
 {:else if metadata.meta?.widget === 'textarea'}

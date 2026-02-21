@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
-  import { Upload, Trash2, Loader2, FolderOpen } from '@lucide/svelte';
+  import { Upload, Loader2, FolderOpen } from '@lucide/svelte';
   import * as Popover from '$lib/components/ui/popover';
   import AudioRecorder from './AudioRecorder.svelte';
   import VideoRecorder from './VideoRecorder.svelte';
@@ -9,6 +9,8 @@
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { getUserAssets } from '$lib/functions/assets.remote';
   import type { Asset } from '$lib/server/db/schema';
+  import { extractMediaDuration } from '$lib/utils/media';
+  import ScrollArea from '../ui/scroll-area/scroll-area.svelte';
 
   interface Props {
     /** Current file URL (if already uploaded or set) */
@@ -19,24 +21,14 @@
     mediaType: 'image' | 'video' | 'audio';
     /** Callback when file is uploaded */
     onUpload: (result: { url: string; key: string; fileName: string; duration?: number }) => void;
-    /** Callback when file is removed */
-    onRemove?: () => void;
     /** Optional project ID for organizing uploads */
     projectId?: string;
   }
 
-  let {
-    value = '',
-    currentFileName = '',
-    mediaType,
-    onUpload,
-    onRemove,
-    projectId
-  }: Props = $props();
+  let { value = '', currentFileName = '', mediaType, onUpload, projectId }: Props = $props();
 
   const editorState = $derived(getEditorState());
 
-  let isUploading = $state(false);
   let uploadError = $state('');
   let fileInputEl: HTMLInputElement | undefined = $state();
   let displayName = $derived(currentFileName || '');
@@ -77,44 +69,6 @@
           audio: '1MB'
         };
 
-  /**
-   * Extract duration from video or audio file
-   */
-  async function extractMediaDuration(file: File): Promise<number | undefined> {
-    return new Promise((resolve) => {
-      const url = URL.createObjectURL(file);
-
-      if (mediaType === 'video') {
-        const video = document.createElement('video');
-        video.preload = 'metadata';
-        video.onloadedmetadata = () => {
-          URL.revokeObjectURL(url);
-          resolve(video.duration);
-        };
-        video.onerror = () => {
-          URL.revokeObjectURL(url);
-          resolve(undefined);
-        };
-        video.src = url;
-      } else if (mediaType === 'audio') {
-        const audio = document.createElement('audio');
-        audio.preload = 'metadata';
-        audio.onloadedmetadata = () => {
-          URL.revokeObjectURL(url);
-          resolve(audio.duration);
-        };
-        audio.onerror = () => {
-          URL.revokeObjectURL(url);
-          resolve(undefined);
-        };
-        audio.src = url;
-      } else {
-        URL.revokeObjectURL(url);
-        resolve(undefined);
-      }
-    });
-  }
-
   async function handleFileSelect(e: Event) {
     await uiStore.requireLogin('save your project', () => {
       uiStore.requireCreateProject(editorState, () => performFileUpload(e));
@@ -126,14 +80,13 @@
     const file = input.files?.[0];
     if (!file) return;
 
-    isUploading = true;
     uploadError = '';
 
     try {
       // Extract duration for video/audio files
       let duration: number | undefined;
       if (mediaType === 'video' || mediaType === 'audio') {
-        duration = await extractMediaDuration(file);
+        duration = await extractMediaDuration(file, mediaType);
       }
 
       const formData = new FormData();
@@ -168,15 +121,8 @@
     } catch (err) {
       uploadError = err instanceof Error ? err.message : 'Upload failed';
     } finally {
-      isUploading = false;
       // Reset input
       if (input) input.value = '';
-    }
-  }
-
-  function handleRemove() {
-    if (onRemove) {
-      onRemove();
     }
   }
 </script>
@@ -214,74 +160,62 @@
       variant="outline"
       size="sm"
       class="flex-1 justify-start text-xs"
-      disabled={isUploading}
       onclick={() => fileInputEl?.click()}
+      icon={Upload}
     >
-      {#if isUploading}
-        <Loader2 class="mr-2 size-3 animate-spin" />
-        <span>Uploading...</span>
-      {:else}
-        <Upload class="mr-2 size-3" />
-        <span>{value ? 'Replace' : `Upload ${mediaType}`}</span>
-      {/if}
+      {value ? 'Replace' : `Upload ${mediaType}`}
     </Button>
 
-    {#if value}
-      <Button
-        variant="outline"
-        size="sm"
-        class="text-xs text-destructive hover:bg-destructive/10"
-        onclick={handleRemove}
-      >
-        <Trash2 class="size-3" />
-      </Button>
-    {/if}
+    <!-- Pick from existing assets -->
+    <Popover.Root bind:open={assetPickerOpen}>
+      <Popover.Trigger>
+        {#snippet child({ props })}
+          <Button
+            {...props}
+            variant="outline"
+            size="sm"
+            icon={FolderOpen}
+            class="flex-1 justify-start text-xs"
+          >
+            Pick from assets
+          </Button>
+        {/snippet}
+      </Popover.Trigger>
+      <Popover.Content class="w-64 p-0" align="end">
+        <ScrollArea viewportClass="max-h-48">
+          {#if isLoadingAssets}
+            <div class="flex items-center justify-center py-4">
+              <Loader2 class="size-4 animate-spin text-muted-foreground" />
+            </div>
+          {:else if existingAssets?.length === 0}
+            <div class="px-3 py-4 text-center text-xs text-muted-foreground">
+              No {mediaType} assets found
+            </div>
+          {:else}
+            {#each existingAssets as asset (asset.id)}
+              <button
+                class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted/50"
+                onclick={() => selectExistingAsset(asset)}
+              >
+                {#if asset.mediaType === 'image'}
+                  <img
+                    src={asset.url}
+                    alt={asset.originalName}
+                    class="size-8 shrink-0 rounded object-cover"
+                  />
+                {:else}
+                  <div class="flex size-8 shrink-0 items-center justify-center rounded bg-muted">
+                    <FolderOpen class="size-3 text-muted-foreground" />
+                  </div>
+                {/if}
+                <span class="truncate">{asset.originalName}</span>
+              </button>
+            {/each}
+          {/if}
+        </ScrollArea>
+      </Popover.Content>
+    </Popover.Root>
   </div>
-
-  <!-- Pick from existing assets -->
-  <Popover.Root bind:open={assetPickerOpen}>
-    <Popover.Trigger>
-      {#snippet child({ props })}
-        <Button variant="outline" size="sm" class="w-full justify-start text-xs" {...props}>
-          <FolderOpen class="mr-2 size-3" />
-          <span>Pick from assets</span>
-        </Button>
-      {/snippet}
-    </Popover.Trigger>
-    <Popover.Content class="w-64 p-0" align="start">
-      {#if isLoadingAssets}
-        <div class="flex items-center justify-center py-4">
-          <Loader2 class="size-4 animate-spin text-muted-foreground" />
-        </div>
-      {:else if existingAssets?.length === 0}
-        <div class="px-3 py-4 text-center text-xs text-muted-foreground">
-          No {mediaType} assets found
-        </div>
-      {:else}
-        <div class="max-h-48 overflow-y-auto">
-          {#each existingAssets as asset (asset.id)}
-            <button
-              class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted/50"
-              onclick={() => selectExistingAsset(asset)}
-            >
-              {#if asset.mediaType === 'image'}
-                <img
-                  src={asset.url}
-                  alt={asset.originalName}
-                  class="size-8 shrink-0 rounded object-cover"
-                />
-              {:else}
-                <div class="flex size-8 shrink-0 items-center justify-center rounded bg-muted">
-                  <FolderOpen class="size-3 text-muted-foreground" />
-                </div>
-              {/if}
-              <span class="truncate">{asset.originalName}</span>
-            </button>
-          {/each}
-        </div>
-      {/if}
-    </Popover.Content>
-  </Popover.Root>
 
   <!-- Record/Capture option -->
   {#if mediaType === 'audio'}

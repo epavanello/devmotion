@@ -298,7 +298,40 @@
         />
       </div>
 
+      <!-- Layer-specific properties (dynamic based on schema) -->
+      {#if hasLayerProperties}
+        <Separator />
+        <PropertiesGroup label={isProjectSettings ? 'Project' : 'Layer'} icon={Layers}>
+          {#if currentValues}
+            <LayerPropertiesGroup
+              layer={selectedLayer}
+              {currentValues}
+              {updateProperty}
+              {addKeyframe}
+            />
+          {/if}
+        </PropertiesGroup>
+      {/if}
+
       {#if !isProjectSettings}
+        <Separator />
+
+        <!-- Transform -->
+        <PropertiesGroup label="Transform" icon={Move}>
+          {#if currentValues}
+            <TransformGroup layer={selectedLayer} {currentValues} {updateProperty} {addKeyframe} />
+          {/if}
+        </PropertiesGroup>
+
+        <Separator />
+
+        <!-- Style -->
+        <PropertiesGroup label="Style" icon={Palette}>
+          {#if currentValues}
+            <StyleGroup {currentValues} layer={selectedLayer} {updateProperty} {addKeyframe} />
+          {/if}
+        </PropertiesGroup>
+
         <Separator />
 
         <!-- Time Range -->
@@ -317,42 +350,6 @@
             </div>
           {/snippet}
           <TimeRangeGroup layer={selectedLayer} />
-        </PropertiesGroup>
-
-        <Separator />
-
-        <!-- Transform -->
-        <PropertiesGroup label="Transform" icon={Move}>
-          {#if currentValues}
-            <TransformGroup layer={selectedLayer} {currentValues} {updateProperty} {addKeyframe} />
-          {/if}
-        </PropertiesGroup>
-
-        <Separator />
-
-        <!-- Style -->
-        <PropertiesGroup label="Style" icon={Palette}>
-          {#if currentValues}
-            <StyleGroup {currentValues} layer={selectedLayer} {updateProperty} {addKeyframe} />
-          {/if}
-        </PropertiesGroup>
-      {/if}
-
-      <!-- Layer-specific properties (dynamic based on schema) -->
-      {#if hasLayerProperties}
-        <Separator />
-        <PropertiesGroup
-          label={isProjectSettings ? 'Project Properties' : 'Layer Properties'}
-          icon={Layers}
-        >
-          {#if currentValues}
-            <LayerPropertiesGroup
-              layer={selectedLayer}
-              {currentValues}
-              {updateProperty}
-              {addKeyframe}
-            />
-          {/if}
         </PropertiesGroup>
       {/if}
 

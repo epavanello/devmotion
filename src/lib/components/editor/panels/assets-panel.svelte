@@ -1,7 +1,7 @@
 <script module lang="ts">
   export type DragAsset = {
     url: string;
-    mediaType: string;
+    mediaType: 'image' | 'video' | 'audio';
     originalName: string;
     duration: number | null;
   };
@@ -15,22 +15,19 @@
   import { Upload, Trash2, Loader2, Image, Video, Music, FileIcon } from '@lucide/svelte';
   import { uiStore } from '$lib/stores/ui.svelte';
   import { getEditorState } from '$lib/contexts/editor.svelte';
-  import { SvelteSet } from 'svelte/reactivity';
   import type { Asset } from '$lib/server/db/schema';
+  import { extractMediaDuration, formatDuration, formatFileSize } from '$lib/utils/media';
 
   const editorState = $derived(getEditorState());
 
   let filterType = $state<'all' | 'image' | 'video' | 'audio'>('all');
 
-  const assets = $derived(
-    getUserAssets({ mediaType: filterType === 'all' ? undefined : filterType })
-  );
+  const assets = $derived(getUserAssets({}));
 
   let isLoading = $derived(assets.loading);
 
   let isUploading = $state(false);
   let uploadError = $state('');
-  let deletingIds = $state(new Set<string>());
 
   let fileInputEl: HTMLInputElement | undefined = $state();
 
@@ -39,12 +36,6 @@
       ? assets.current
       : assets.current?.filter((a) => a.mediaType === filterType)
   );
-
-  function formatSize(bytes: number): string {
-    if (bytes < 1024) return `${bytes}B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-  }
 
   function getMediaIcon(mediaType: string) {
     switch (mediaType) {
@@ -72,8 +63,26 @@
     uploadError = '';
 
     try {
+      // Detect media type from MIME
+      let mediaType: 'image' | 'video' | 'audio' | undefined;
+      if (file.type.startsWith('image/')) mediaType = 'image';
+      else if (file.type.startsWith('video/')) mediaType = 'video';
+      else if (file.type.startsWith('audio/')) mediaType = 'audio';
+
+      // Extract duration for video/audio files
+      let duration: number | undefined;
+      if (mediaType && (mediaType === 'video' || mediaType === 'audio')) {
+        duration = await extractMediaDuration(file, mediaType);
+      }
+
       const formData = new FormData();
       formData.append('file', file);
+      if (mediaType) {
+        formData.append('mediaType', mediaType);
+      }
+      if (duration !== undefined) {
+        formData.append('duration', duration.toString());
+      }
       // projectId is optional now
       const pid = editorState.dbProjectId;
       if (pid) {
@@ -101,16 +110,9 @@
   }
 
   async function handleDelete(assetItem: Asset) {
-    deletingIds = new Set([...deletingIds, assetItem.id]);
-    try {
-      const result = await deleteAsset({ id: assetItem.id });
-      if (result.success) {
-        assets.refresh();
-      }
-    } finally {
-      const next = new SvelteSet(deletingIds);
-      next.delete(assetItem.id);
-      deletingIds = next;
+    const result = await deleteAsset({ id: assetItem.id });
+    if (result.success) {
+      assets.refresh();
     }
   }
 
@@ -120,7 +122,7 @@
       ASSET_DRAG_TYPE,
       JSON.stringify({
         url: assetItem.url,
-        mediaType: assetItem.mediaType,
+        mediaType: assetItem.mediaType as 'image' | 'video' | 'audio',
         originalName: assetItem.originalName,
         duration: assetItem.duration
       } satisfies DragAsset)
@@ -210,7 +212,10 @@
             <div class="min-w-0 flex-1">
               <p class="truncate text-xs font-medium">{assetItem.originalName}</p>
               <p class="text-[10px] text-muted-foreground">
-                {formatSize(assetItem.size)} &middot; {assetItem.mediaType}
+                {formatFileSize(assetItem.size)} &middot; {assetItem.mediaType}
+                {#if assetItem.duration}
+                  &middot; {formatDuration(assetItem.duration)}
+                {/if}
               </p>
             </div>
 
@@ -220,15 +225,9 @@
                 variant="ghost"
                 size="sm"
                 class="size-7 p-0 text-destructive hover:bg-destructive/10"
-                disabled={deletingIds.has(assetItem.id)}
                 onclick={() => handleDelete(assetItem)}
-              >
-                {#if deletingIds.has(assetItem.id)}
-                  <Loader2 class="size-3 animate-spin" />
-                {:else}
-                  <Trash2 class="size-3" />
-                {/if}
-              </Button>
+                icon={Trash2}
+              />
             </div>
           </div>
         {/each}
