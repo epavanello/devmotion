@@ -2,13 +2,19 @@
   import Label from '$lib/components/ui/label/label.svelte';
   import { cn } from '$lib/utils';
   import { ChevronRight } from '@lucide/svelte';
-  import type { Snippet } from 'svelte';
+  import type { Snippet, Component } from 'svelte';
 
   let {
     label,
+    icon,
     children,
     defaultOpen = false
-  }: { label: string | Snippet; children: Snippet; defaultOpen?: boolean } = $props();
+  }: {
+    label: string | Snippet;
+    icon?: Component;
+    children: Snippet;
+    defaultOpen?: boolean;
+  } = $props();
 
   let isOpen = $derived(defaultOpen);
 </script>
@@ -23,6 +29,10 @@
       class="h-3.5 w-3.5 shrink-0 transition-transform duration-200"
       style="transform: rotate({isOpen ? 90 : 0}deg)"
     />
+    {#if icon}
+      {@const Icon = icon}
+      <Icon class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+    {/if}
     {#if typeof label === 'string'}
       <Label class="pointer-events-none cursor-pointer font-semibold">{label}</Label>
     {:else}

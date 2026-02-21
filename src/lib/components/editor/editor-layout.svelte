@@ -167,7 +167,7 @@
 
             <ResizablePane defaultSize={30} minSize={20}>
               {#if !isRecording}
-                <Panel title="Timeline" icon={Clock} disableScroll={true}>
+                <Panel title="Timeline" disableScroll={true}>
                   {#snippet content()}
                     <Timeline />
                   {/snippet}
@@ -193,12 +193,7 @@
               </Tabs.List>
             </div>
             <Tabs.Content value="chat" class="overflow-auto">
-              <Panel
-                title="AI Chat"
-                icon={Sparkles}
-                bind:scrollRef={aiChatScrollRef}
-                class="border-t"
-              >
+              <Panel title="AI Chat" bind:scrollRef={aiChatScrollRef} class="border-t">
                 {#snippet content()}
                   <AiChat bind:selectedModelId={aiChatModelId} scrollRef={aiChatScrollRef} />
                 {/snippet}
@@ -215,7 +210,6 @@
                 <ResizablePane defaultSize={30} minSize={10} maxSize={60}>
                   <Panel
                     title="Layers ({projectStore.state.layers.length})"
-                    icon={Layers}
                     actionsComponent={AddLayer}
                     class="border-t"
                   >
@@ -226,7 +220,7 @@
                 </ResizablePane>
                 <ResizableHandle />
                 <ResizablePane>
-                  <Panel title="Properties" icon={Settings}>
+                  <Panel title="Properties">
                     {#snippet content()}
                       <PropertiesPanel />
                     {/snippet}

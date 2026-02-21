@@ -19,6 +19,7 @@
   import type { Layer } from '$lib/schemas/animation';
   import { getDefaultInterpolationForProperty } from '$lib/utils/interpolation-utils';
   import { defaultLayerStyle, defaultTransform } from '$lib/schemas/base';
+  import { Clock, Move, Palette, Layers, Sparkles, Boxes } from '@lucide/svelte';
 
   // Property group components
   import TimeRangeGroup from './properties/groups/time-range-group.svelte';
@@ -301,7 +302,7 @@
         <Separator />
 
         <!-- Time Range -->
-        <PropertiesGroup>
+        <PropertiesGroup icon={Clock}>
           {#snippet label()}
             <div class="flex w-full items-center justify-between">
               <Label class="font-semibold">Time Range</Label>
@@ -321,7 +322,7 @@
         <Separator />
 
         <!-- Transform -->
-        <PropertiesGroup label="Transform">
+        <PropertiesGroup label="Transform" icon={Move}>
           {#if currentValues}
             <TransformGroup layer={selectedLayer} {currentValues} {updateProperty} {addKeyframe} />
           {/if}
@@ -330,7 +331,7 @@
         <Separator />
 
         <!-- Style -->
-        <PropertiesGroup label="Style">
+        <PropertiesGroup label="Style" icon={Palette}>
           {#if currentValues}
             <StyleGroup {currentValues} layer={selectedLayer} {updateProperty} {addKeyframe} />
           {/if}
@@ -340,7 +341,10 @@
       <!-- Layer-specific properties (dynamic based on schema) -->
       {#if hasLayerProperties}
         <Separator />
-        <PropertiesGroup label={isProjectSettings ? 'Project Properties' : 'Layer Properties'}>
+        <PropertiesGroup
+          label={isProjectSettings ? 'Project Properties' : 'Layer Properties'}
+          icon={Layers}
+        >
           {#if currentValues}
             <LayerPropertiesGroup
               layer={selectedLayer}
@@ -356,14 +360,14 @@
         <Separator />
 
         <!-- Animation Presets -->
-        <PropertiesGroup label="Animation Presets">
+        <PropertiesGroup label="Animation Presets" icon={Sparkles}>
           <AnimationPresetsGroup layer={selectedLayer} />
         </PropertiesGroup>
 
         <Separator />
 
         <!-- Keyframes -->
-        <PropertiesGroup label={`Keyframes (${selectedLayer.keyframes.length})`}>
+        <PropertiesGroup label={`Keyframes (${selectedLayer.keyframes.length})`} icon={Boxes}>
           <KeyframesGroup layer={selectedLayer} />
         </PropertiesGroup>
       {/if}
