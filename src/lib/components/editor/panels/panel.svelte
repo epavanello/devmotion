@@ -31,7 +31,7 @@
     headerExtra,
     disableScroll = false,
     collapsible = false,
-    isOpen = false,
+    isOpen = $bindable(false),
     onToggle,
     topOffset = '0',
     zIndex = 0,
@@ -45,7 +45,10 @@
   <!-- Mobile: collapsible sticky panel -->
   <div class={cn('sticky bg-background', className)} style="top: {topOffset}; z-index: {zIndex};">
     <button
-      onclick={onToggle}
+      onclick={() => {
+        isOpen = !isOpen;
+        onToggle?.();
+      }}
       class="flex w-full items-center justify-between border-t border-b bg-muted/80 p-4 font-medium backdrop-blur-sm transition-colors hover:bg-muted"
     >
       <div class="flex items-center gap-2">

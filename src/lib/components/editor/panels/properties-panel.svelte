@@ -301,7 +301,7 @@
       <!-- Layer-specific properties (dynamic based on schema) -->
       {#if hasLayerProperties}
         <Separator />
-        <PropertiesGroup label={isProjectSettings ? 'Project' : 'Layer'} icon={Layers}>
+        <PropertiesGroup label={isProjectSettings ? 'Project' : 'Layer'} icon={Layers} defaultOpen>
           {#if currentValues}
             <LayerPropertiesGroup
               layer={selectedLayer}

@@ -209,7 +209,7 @@
             </Tabs.Content>
             <Tabs.Content value="editor">
               <ResizablePaneGroup direction="vertical">
-                <ResizablePane defaultSize={30} minSize={10} maxSize={60}>
+                <ResizablePane defaultSize={30} minSize={0} maxSize={60}>
                   <Panel
                     title="Layers ({projectStore.state.layers.length})"
                     actionsComponent={AddLayer}
