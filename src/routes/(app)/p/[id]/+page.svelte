@@ -39,6 +39,7 @@
           layers: projectData.layers,
           fontFamily: projectData.fontFamily
         });
+        editorState.markAsSaved();
 
         editorState.setDbContext(
           data.project.id,

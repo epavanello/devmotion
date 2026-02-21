@@ -12,11 +12,21 @@
 <script lang="ts">
   import { getUserAssets, deleteAsset } from '$lib/functions/assets.remote';
   import { Button } from '$lib/components/ui/button';
-  import { Upload, Trash2, Loader2, Image, Video, Music, FileIcon } from '@lucide/svelte';
+  import {
+    Upload,
+    Trash2,
+    Loader2,
+    Image,
+    Video,
+    Music,
+    FileIcon,
+    CornerUpLeft
+  } from '@lucide/svelte';
   import { uiStore } from '$lib/stores/ui.svelte';
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import type { Asset } from '$lib/server/db/schema';
   import { extractMediaDuration, formatDuration, formatFileSize } from '$lib/utils/media';
+  import { resolve } from '$app/paths';
 
   const editorState = $derived(getEditorState());
 
@@ -210,12 +220,19 @@
 
             <!-- Info -->
             <div class="min-w-0 flex-1">
-              <p class="truncate text-xs font-medium">{assetItem.originalName}</p>
-              <p class="text-[10px] text-muted-foreground">
+              <p class="truncate text-xs font-medium">
+                {assetItem.originalName}
+              </p>
+              <p class="flex items-center gap-1 text-[10px] text-muted-foreground">
                 {formatFileSize(assetItem.size)} &middot; {assetItem.mediaType}
                 {#if assetItem.duration}
                   &middot; {formatDuration(assetItem.duration)}
                 {/if}
+                {#each assetItem.projectIds as projectId (projectId)}
+                  <a href={resolve(`/p/${projectId}`)}>
+                    <CornerUpLeft class="size-2.5 text-muted-foreground" />
+                  </a>
+                {/each}
               </p>
             </div>
 

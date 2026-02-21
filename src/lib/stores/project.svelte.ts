@@ -569,6 +569,7 @@ export class ProjectStore {
     this.#state = project;
     await tick();
     this.selectedLayerId = PROJECT_LAYER_ID;
+
     this.isPlaying = false;
     this.isLoading = false;
   }
