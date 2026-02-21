@@ -8,7 +8,8 @@
   import KeyboardHandler from './keyboard-handler.svelte';
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from '$lib/components/ui/resizable';
   import { getEditorState } from '$lib/contexts/editor.svelte';
-  import { Layers, Settings, Clock, Sparkles } from '@lucide/svelte';
+  import { Layers, Settings, Clock, Sparkles, FolderOpen } from '@lucide/svelte';
+  import AssetsPanel from './panels/assets-panel.svelte';
   import AiChat from '$lib/components/ai/ai-chat.svelte';
   import ModelSelector from '$lib/components/ai/model-selector.svelte';
   import { DEFAULT_MODEL_ID } from '$lib/ai/models';
@@ -190,6 +191,7 @@
               <Tabs.List class="w-full">
                 <Tabs.Trigger value="chat">Chat</Tabs.Trigger>
                 <Tabs.Trigger value="editor">Editor</Tabs.Trigger>
+                <Tabs.Trigger value="assets">Assets</Tabs.Trigger>
               </Tabs.List>
             </div>
             <Tabs.Content value="chat" class="overflow-auto">
@@ -227,6 +229,13 @@
                   </Panel>
                 </ResizablePane>
               </ResizablePaneGroup>
+            </Tabs.Content>
+            <Tabs.Content value="assets" class="overflow-auto">
+              <Panel title="Assets" icon={FolderOpen} class="border-t">
+                {#snippet content()}
+                  <AssetsPanel />
+                {/snippet}
+              </Panel>
             </Tabs.Content>
           </Tabs.Root>
         </ResizablePane>

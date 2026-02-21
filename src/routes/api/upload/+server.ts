@@ -3,7 +3,7 @@
  *
  * Handles multipart file uploads for images, videos, and audio files.
  * Stores files in S3-compatible storage and returns URLs.
- * Files must be linked to a saved project.
+ * Assets are user-level; projectId is optional (for S3 path organization).
  */
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
@@ -16,8 +16,7 @@ import {
   type MediaType
 } from '$lib/server/storage';
 import { db } from '$lib/server/db';
-import { project, asset } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { asset } from '$lib/server/db/schema';
 import { checkStorageQuota } from '$lib/server/utils/storage-quota';
 import { nanoid } from 'nanoid';
 
@@ -50,29 +49,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const mediaTypeHint = formData.get('mediaType') as string | null;
-    const projectId = formData.get('projectId') as string | null;
+    const durationStr = formData.get('duration') as string | null;
+    const duration = durationStr ? parseFloat(durationStr) : null;
 
     if (!file) {
       error(400, 'No file provided');
-    }
-
-    // Require projectId - uploads must be linked to a saved project
-    if (!projectId) {
-      error(400, 'Project ID is required. Save your project before uploading files.');
-    }
-
-    // Verify project exists and user has access to it
-    const existingProject = await db.query.project.findFirst({
-      where: eq(project.id, projectId)
-    });
-
-    if (!existingProject) {
-      error(404, 'Project not found');
-    }
-
-    // Verify user owns the project (or project is MCP-created with no owner)
-    if (existingProject.userId && existingProject.userId !== locals.user.id) {
-      error(403, 'You do not have permission to upload files to this project');
     }
 
     // Check user's storage quota
@@ -111,20 +92,27 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const buffer = Buffer.from(arrayBuffer);
 
     // Upload to storage
-    const result = await uploadFile(buffer, file.name, file.type, mediaType, projectId);
+    const result = await uploadFile(
+      buffer,
+      file.name,
+      file.type,
+      mediaType,
+      'media',
+      locals.user.id
+    );
 
     // Save asset metadata to database
     const assetId = nanoid();
     await db.insert(asset).values({
       id: assetId,
-      projectId,
       userId: locals.user.id,
       storageKey: result.key,
       url: result.url,
       originalName: result.originalName,
       mimeType: result.mimeType,
       mediaType: result.mediaType,
-      size: result.size
+      size: result.size,
+      duration: duration && isFinite(duration) ? Math.floor(duration) : null
     });
 
     return json({

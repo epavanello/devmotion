@@ -48,15 +48,13 @@ export const projectRelations = relations(project, ({ one, many }) => ({
 }));
 
 /**
- * Asset table - stores uploaded files (images, videos, audio) linked to projects
+ * Asset table - stores uploaded files (images, videos, audio) owned by users.
+ * Assets are user-level and shared across all of a user's projects.
  */
 export const asset = pgTable(
   'asset',
   {
     id: text('id').primaryKey(),
-    projectId: text('project_id')
-      .notNull()
-      .references(() => project.id, { onDelete: 'cascade' }),
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
@@ -66,19 +64,15 @@ export const asset = pgTable(
     mimeType: text('mime_type').notNull(),
     mediaType: text('media_type').notNull(), // 'image', 'video', or 'audio'
     size: integer('size').notNull(), // File size in bytes
+    duration: integer('duration'), // Media duration in seconds (for video/audio), nullable
     createdAt: timestamp('created_at').defaultNow().notNull()
   },
-  (table) => [
-    index('asset_project_id_idx').on(table.projectId),
-    index('asset_user_id_idx').on(table.userId)
-  ]
+  (table) => [index('asset_user_id_idx').on(table.userId)]
 );
 
+export type Asset = typeof asset.$inferSelect;
+
 export const assetRelations = relations(asset, ({ one }) => ({
-  project: one(project, {
-    fields: [asset.projectId],
-    references: [project.id]
-  }),
   user: one(user, {
     fields: [asset.userId],
     references: [user.id]

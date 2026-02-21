@@ -116,7 +116,7 @@ export async function generateThumbnail(config: ThumbnailConfig): Promise<string
       `${projectId}-thumbnail.gif`,
       'image/gif',
       'image',
-      projectId
+      'thumbnail'
     );
 
     await db.update(project).set({ thumbnailUrl: result.url }).where(eq(project.id, projectId));

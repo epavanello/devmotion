@@ -148,7 +148,8 @@ export async function uploadFile(
   originalName: string,
   mimeType: string,
   mediaType: MediaType,
-  projectId?: string
+  kind: 'media' | 'thumbnail',
+  userId?: string
 ): Promise<UploadResult> {
   const config = getConfig();
   const client = getClient();
@@ -158,7 +159,7 @@ export async function uploadFile(
 
   const fileId = nanoid();
   const ext = getExtension(mimeType);
-  const prefix = projectId ? `projects/${projectId}` : 'uploads';
+  const prefix = `${userId || 'public'}/${kind}`;
   const key = `${prefix}/${mediaType}/${fileId}.${ext}`;
 
   await client.send(

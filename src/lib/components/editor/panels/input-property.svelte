@@ -39,13 +39,15 @@
     onUpload={(result) => {
       onUpdateProp(metadata.name, result.url);
       onUpdateProp('fileKey', result.key);
-      // Set content duration if available
+
+      const enterTime = layer.enterTime ?? 0;
+
+      // Set content duration and exit time based on media type
       if (result.duration !== undefined) {
+        // Video/Audio with duration
         projectStore.updateLayer(layer.id, {
           contentDuration: result.duration
         });
-        // Auto-set exit time based on content duration if layer has no exit time yet
-        const enterTime = layer.enterTime ?? 0;
         const newExitTime = enterTime + result.duration;
         projectStore.setLayerExitTime(layer.id, newExitTime);
 
@@ -54,6 +56,13 @@
         if (newExitTime > currentProjectDuration) {
           projectStore.updateProject({ duration: newExitTime });
         }
+      } else if (
+        metadata?.meta &&
+        'mediaType' in metadata.meta &&
+        metadata.meta.mediaType === 'image'
+      ) {
+        // Image without duration - set exit time to end of project
+        projectStore.setLayerExitTime(layer.id, projectStore.state.duration);
       }
     }}
     onRemove={() => {

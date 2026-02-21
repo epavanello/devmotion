@@ -7,6 +7,9 @@
   import Watermark from './watermark.svelte';
   import { getBackgroundColor, getBackgroundImage } from '$lib/schemas/background';
   import { cn } from '$lib/utils';
+  import { createLayer } from '$lib/engine/layer-factory';
+  import { defaultTransform } from '$lib/schemas/base';
+  import { ASSET_DRAG_TYPE, type DragAsset } from '../panels/assets-panel.svelte';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -28,6 +31,7 @@
   let containerWidth = $state(1);
   let containerHeight = $state(1);
   let resizeObserver: ResizeObserver;
+  let isDragOver = $state(false);
 
   onMount(() => {
     animationFrameId = requestAnimationFrame(animate);
@@ -138,6 +142,58 @@
     projectStore.setZoom(Math.max(0.1, Math.min(5, newZoom)));
   }
 
+  // ========================================
+  // Asset drag-and-drop onto canvas
+  // ========================================
+
+  function onCanvasDragOver(event: DragEvent) {
+    if (projectStore.isRecording) return;
+    if (event.dataTransfer?.types.includes(ASSET_DRAG_TYPE)) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'copy';
+      isDragOver = true;
+    }
+  }
+
+  function onCanvasDragLeave() {
+    isDragOver = false;
+  }
+
+  function onCanvasDrop(event: DragEvent) {
+    isDragOver = false;
+    if (!event.dataTransfer?.types.includes(ASSET_DRAG_TYPE)) return;
+    event.preventDefault();
+
+    try {
+      const data = JSON.parse(event.dataTransfer.getData(ASSET_DRAG_TYPE));
+      const { url, mediaType, originalName, duration } = data as DragAsset;
+
+      const layerType = { image: 'image', video: 'video', audio: 'audio' }[mediaType] ?? null;
+      if (!layerType) return;
+
+      const layer = createLayer(layerType, {
+        props: { src: url },
+        transform: {
+          ...defaultTransform(),
+          position: { x: 0, y: 0, z: 0 }
+        },
+        projectDimensions: {
+          width: projectStore.state.width,
+          height: projectStore.state.height
+        },
+        layer: {
+          contentDuration: duration ?? undefined,
+          name: originalName ?? undefined
+        }
+      });
+
+      projectStore.addLayer(layer);
+      projectStore.selectedLayerId = layer.id;
+    } catch {
+      // Invalid data, ignore
+    }
+  }
+
   // Calculate scale factor to fit project dimensions in viewport
   // This maintains aspect ratio and leaves some padding
   const VIEWPORT_PADDING = 0.9; // Use 90% of available space for padding
@@ -181,6 +237,9 @@
     onmousemove={onCanvasMouseMove}
     onmouseup={onCanvasMouseUp}
     onwheel={onCanvasWheel}
+    ondragover={onCanvasDragOver}
+    ondragleave={onCanvasDragLeave}
+    ondrop={onCanvasDrop}
     role="presentation"
   >
     <!-- Viewport transform container (pan and zoom) -->
@@ -249,6 +308,18 @@
             globalVolume={projectStore.globalVolume}
           />
         </div>
+
+        {#if isDragOver}
+          <div
+            class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-2xl border-2 border-dashed border-primary/50 bg-primary/10"
+          >
+            <span
+              class="rounded-md bg-background/80 px-3 py-1.5 text-sm font-medium text-foreground"
+            >
+              Drop to add layer
+            </span>
+          </div>
+        {/if}
 
         <Watermark />
 

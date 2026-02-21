@@ -1,11 +1,14 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
-  import { Upload, Trash2, Loader2 } from '@lucide/svelte';
+  import { Upload, Trash2, Loader2, FolderOpen } from '@lucide/svelte';
+  import * as Popover from '$lib/components/ui/popover';
   import AudioRecorder from './AudioRecorder.svelte';
   import VideoRecorder from './VideoRecorder.svelte';
   import CameraCapture from './CameraCapture.svelte';
   import { uiStore } from '$lib/stores/ui.svelte';
   import { getEditorState } from '$lib/contexts/editor.svelte';
+  import { getUserAssets } from '$lib/functions/assets.remote';
+  import type { Asset } from '$lib/server/db/schema';
 
   interface Props {
     /** Current file URL (if already uploaded or set) */
@@ -37,6 +40,22 @@
   let uploadError = $state('');
   let fileInputEl: HTMLInputElement | undefined = $state();
   let displayName = $derived(currentFileName || '');
+
+  let assetPickerOpen = $state(false);
+
+  let assets = $derived(getUserAssets({ mediaType }));
+  const existingAssets = $derived(assets.current?.filter((asset) => asset.mediaType === mediaType));
+  let isLoadingAssets = $derived(assets.loading);
+
+  function selectExistingAsset(asset: Asset) {
+    assetPickerOpen = false;
+    onUpload({
+      url: asset.url,
+      key: asset.storageKey,
+      fileName: asset.originalName,
+      duration: asset.duration ?? undefined
+    });
+  }
 
   // Accept patterns for file input - MP4 only for consistency with FFmpeg
   const acceptPatterns = {
@@ -122,6 +141,9 @@
       formData.append('mediaType', mediaType);
       if (projectId) {
         formData.append('projectId', projectId);
+      }
+      if (duration !== undefined) {
+        formData.append('duration', duration.toString());
       }
 
       const res = await fetch('/api/upload', {
@@ -215,6 +237,51 @@
       </Button>
     {/if}
   </div>
+
+  <!-- Pick from existing assets -->
+  <Popover.Root bind:open={assetPickerOpen}>
+    <Popover.Trigger>
+      {#snippet child({ props })}
+        <Button variant="outline" size="sm" class="w-full justify-start text-xs" {...props}>
+          <FolderOpen class="mr-2 size-3" />
+          <span>Pick from assets</span>
+        </Button>
+      {/snippet}
+    </Popover.Trigger>
+    <Popover.Content class="w-64 p-0" align="start">
+      {#if isLoadingAssets}
+        <div class="flex items-center justify-center py-4">
+          <Loader2 class="size-4 animate-spin text-muted-foreground" />
+        </div>
+      {:else if existingAssets?.length === 0}
+        <div class="px-3 py-4 text-center text-xs text-muted-foreground">
+          No {mediaType} assets found
+        </div>
+      {:else}
+        <div class="max-h-48 overflow-y-auto">
+          {#each existingAssets as asset (asset.id)}
+            <button
+              class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted/50"
+              onclick={() => selectExistingAsset(asset)}
+            >
+              {#if asset.mediaType === 'image'}
+                <img
+                  src={asset.url}
+                  alt={asset.originalName}
+                  class="size-8 shrink-0 rounded object-cover"
+                />
+              {:else}
+                <div class="flex size-8 shrink-0 items-center justify-center rounded bg-muted">
+                  <FolderOpen class="size-3 text-muted-foreground" />
+                </div>
+              {/if}
+              <span class="truncate">{asset.originalName}</span>
+            </button>
+          {/each}
+        </div>
+      {/if}
+    </Popover.Content>
+  </Popover.Root>
 
   <!-- Record/Capture option -->
   {#if mediaType === 'audio'}

@@ -110,32 +110,22 @@ export class ProjectStore {
     this.state.layers = [...this.state.layers, layer];
   }
 
-  async removeLayer(layerId: string) {
+  removeLayer(layerId: string) {
     // Never allow removing the virtual project settings layer
     if (isProjectLayer(layerId)) return;
 
-    // Find the layer to check if it has uploaded files to clean up
     const layer = this.state.layers.find((l) => l.id === layerId);
 
     // If removing a group, also remove all children
     if (layer?.type === 'group') {
       const childIds = this.getChildLayers(layerId).map((c) => c.id);
       for (const childId of childIds) {
-        await this.removeLayer(childId);
+        this.removeLayer(childId);
       }
     }
 
-    // Clean up uploaded files if the layer has a fileKey
-    if (layer && layer.props.fileKey && typeof layer.props.fileKey === 'string') {
-      try {
-        await fetch(`/api/upload/${encodeURIComponent(layer.props.fileKey as string)}`, {
-          method: 'DELETE'
-        });
-      } catch (err) {
-        console.warn('Failed to delete file from storage:', err);
-        // Continue with layer deletion even if file cleanup fails
-      }
-    }
+    // Assets are user-level and managed from the Assets panel.
+    // No S3 cleanup on layer removal.
 
     this.state.layers = this.state.layers.filter((l) => l.id !== layerId);
     if (this.selectedLayerId === layerId) {
