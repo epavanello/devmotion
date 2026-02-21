@@ -82,6 +82,10 @@
   <div class={cn('flex h-full flex-col bg-background', className)}>
     <div class="flex items-center justify-between border-b bg-muted/50 px-4 py-3">
       <div class="flex items-center gap-2">
+        {#if icon}
+          {@const Icon = icon}
+          <Icon class="size-4 text-muted-foreground" />
+        {/if}
         <h2 class="text-sm font-semibold">{title}</h2>
         {#if headerExtra}
           {@render headerExtra()}
