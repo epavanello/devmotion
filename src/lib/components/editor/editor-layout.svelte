@@ -192,8 +192,13 @@
                 <Tabs.Trigger value="editor">Editor</Tabs.Trigger>
               </Tabs.List>
             </div>
-            <Tabs.Content value="chat">
-              <Panel title="AI Chat" icon={Sparkles} bind:scrollRef={aiChatScrollRef} class="border-t">
+            <Tabs.Content value="chat" class="overflow-auto">
+              <Panel
+                title="AI Chat"
+                icon={Sparkles}
+                bind:scrollRef={aiChatScrollRef}
+                class="border-t"
+              >
                 {#snippet content()}
                   <AiChat bind:selectedModelId={aiChatModelId} scrollRef={aiChatScrollRef} />
                 {/snippet}
