@@ -24,19 +24,9 @@
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start">
     {#each models as model (model.id)}
-      <DropdownMenu.Item
-        disabled={'proOnly' in model && model.proOnly && !isPro}
-        onclick={() => {
-          if (!('proOnly' in model && model.proOnly && !isPro)) {
-            onModelChange(model.id);
-          }
-        }}
-      >
+      <DropdownMenu.Item onclick={() => onModelChange(model.id)}>
         <span class="flex items-center gap-1.5">
           {model.name}
-          {#if 'proOnly' in model && model.proOnly && !isPro}
-            <Lock class="h-3 w-3 text-muted-foreground" />
-          {/if}
         </span>
         {#if model.recommended}
           <span class="text-[10px] text-primary">Recommended</span>

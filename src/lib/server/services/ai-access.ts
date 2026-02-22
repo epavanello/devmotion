@@ -80,26 +80,26 @@ export async function canUserAccessAI(userId: string): Promise<{
   }
 
   // Check monthly cost limit if set
-  if (unlock.maxCostPerMonth !== null) {
-    const currentCost = await getMonthlyUsageCost(userId);
+  if (unlock.maxCostPerMonth === null) {
+    return { allowed: false, reason: 'AI access is disabled' };
+  }
 
-    if (currentCost >= unlock.maxCostPerMonth) {
-      return {
-        allowed: false,
-        reason: 'Monthly cost limit exceeded',
-        currentCost,
-        maxCost: unlock.maxCostPerMonth
-      };
-    }
+  const currentCost = await getMonthlyUsageCost(userId);
 
+  if (currentCost >= unlock.maxCostPerMonth) {
     return {
-      allowed: true,
+      allowed: false,
+      reason: 'Monthly cost limit exceeded',
       currentCost,
       maxCost: unlock.maxCostPerMonth
     };
   }
 
-  return { allowed: true };
+  return {
+    allowed: true,
+    currentCost,
+    maxCost: unlock.maxCostPerMonth
+  };
 }
 
 /**
