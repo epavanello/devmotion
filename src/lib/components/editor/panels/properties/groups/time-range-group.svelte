@@ -1,19 +1,48 @@
 <script lang="ts">
-  import { Label } from '$lib/components/ui/label';
   import { Button } from '$lib/components/ui/button';
-  import ScrubInput from '../../scrub-input.svelte';
+  import { Label } from '$lib/components/ui/label';
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import type { TypedLayer } from '$lib/layers/typed-registry';
+  import { getEnterPresets, getExitPresets } from '$lib/engine/presets';
+  import type { LayerTransition } from '$lib/schemas/animation';
+  import InputsWrapper from '../../inputs-wrapper.svelte';
+  import ScrubInput from '../../scrub-input.svelte';
+  import AnimationPresetSelect from '../animation-preset-select.svelte';
 
   const { layer }: { layer: TypedLayer } = $props();
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
+
+  const enterPresets = $derived([
+    { id: '', name: 'None', category: 'enter' as const, keyframes: [] },
+    ...getEnterPresets()
+  ]);
+
+  const exitPresets = $derived([
+    { id: '', name: 'None', category: 'exit' as const, keyframes: [] },
+    ...getExitPresets()
+  ]);
+
+  let enterPresetId = $derived<string>(layer.enterTransition?.presetId ?? '');
+  let enterDuration = $derived<number>(layer.enterTransition?.duration ?? 0.5);
+  let exitPresetId = $derived<string>(layer.exitTransition?.presetId ?? '');
+  let exitDuration = $derived<number>(layer.exitTransition?.duration ?? 0.5);
+
+  function updateTransition(type: 'enter' | 'exit', presetId: string, duration: number) {
+    const transition: LayerTransition | undefined = presetId ? { presetId, duration } : undefined;
+    const key = type === 'enter' ? 'enterTransition' : 'exitTransition';
+    projectStore.updateLayer(layer.id, { [key]: transition });
+  }
 </script>
 
-<div class="grid grid-cols-2 gap-2">
-  <div class="space-y-1">
-    <Label class="text-xs text-muted-foreground">Enter (s)</Label>
+<div class="space-y-3">
+  <InputsWrapper
+    fields={[
+      { for: 'enter-time', labels: 'Enter (s)' },
+      { for: 'exit-time', labels: 'Exit (s)' }
+    ]}
+  >
     <ScrubInput
       id="enter-time"
       value={layer.enterTime ?? 0}
@@ -27,9 +56,6 @@
       step={0.1}
       onchange={(v) => projectStore.setLayerEnterTime(layer.id, v)}
     />
-  </div>
-  <div class="space-y-1">
-    <Label class="text-xs text-muted-foreground">Exit (s)</Label>
     <ScrubInput
       id="exit-time"
       value={layer.exitTime ?? projectStore.state.duration}
@@ -38,6 +64,72 @@
       step={0.1}
       onchange={(v) => projectStore.setLayerExitTime(layer.id, v)}
     />
+  </InputsWrapper>
+
+  <div class="space-y-2">
+    <Label class="text-xs text-muted-foreground">Enter Transition</Label>
+    <InputsWrapper
+      fields={[
+        { for: 'enter-preset', labels: 'Animation' },
+        { for: 'enter-duration', labels: 'Duration (s)' }
+      ]}
+    >
+      <AnimationPresetSelect
+        value={enterPresetId}
+        options={enterPresets}
+        placeholder="None"
+        onchange={(v) => {
+          enterPresetId = v;
+          updateTransition('enter', v, enterDuration);
+        }}
+      />
+      {#if enterPresetId}
+        <ScrubInput
+          id="enter-duration"
+          value={enterDuration}
+          min={0.1}
+          max={5}
+          step={0.1}
+          onchange={(v) => {
+            enterDuration = v;
+            updateTransition('enter', enterPresetId, v);
+          }}
+        />
+      {/if}
+    </InputsWrapper>
+  </div>
+
+  <div class="space-y-2">
+    <Label class="text-xs text-muted-foreground">Exit Transition</Label>
+    <InputsWrapper
+      fields={[
+        { for: 'exit-preset', labels: 'Animation' },
+        { for: 'exit-duration', labels: 'Duration (s)' }
+      ]}
+    >
+      <AnimationPresetSelect
+        value={exitPresetId}
+        options={exitPresets}
+        placeholder="None"
+        onchange={(v) => {
+          exitPresetId = v;
+          updateTransition('exit', v, exitDuration);
+        }}
+      />
+      {#if exitPresetId}
+        <ScrubInput
+          id="exit-duration"
+          value={exitDuration}
+          min={0.1}
+          max={5}
+          step={0.1}
+          onchange={(v) => {
+            exitDuration = v;
+            updateTransition('exit', exitPresetId, v);
+          }}
+        />
+      {/if}
+    </InputsWrapper>
   </div>
 </div>
 

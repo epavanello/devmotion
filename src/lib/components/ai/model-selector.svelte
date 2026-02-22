@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronDown, Lock } from '@lucide/svelte';
+  import { ChevronDown } from '@lucide/svelte';
   import { AI_MODELS, getModel } from '$lib/ai/models';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { getUser } from '$lib/functions/auth.remote';
