@@ -8,9 +8,9 @@
 </script>
 
 <SeoHead
-  title="DevMotion - AI-Powered Animation Editor | Create Videos Free"
-  description="Create stunning animated videos with AI-powered editor. Intuitive controls, smart assistance, free export. Perfect for creators and marketers."
-  keywords="animation editor, video creator, ai animation, video export, motion graphics, animation software, free video editor, animated video maker, ai video generator"
+  title="DevMotion - Motion Graphics, Reinvented for the Web | AI-Powered Animation Studio"
+  description="Professional motion graphics editor in your browser. AI-powered timeline, keyframe animation, layer system. Like After Effects, but web-native and free. Export MP4 videos instantly."
+  keywords="motion graphics, animation editor, after effects alternative, web animation, ai animation, video creator, keyframe editor, timeline editor, browser animation tool, free video editor"
 />
 
 <!-- JSON-LD: Organization Schema -->
@@ -25,7 +25,7 @@
       url: `${baseUrl}/favicon.svg`
     },
     description:
-      'DevMotion is an AI-powered animation editor that helps creators build stunning animated videos with intuitive controls and intelligent assistance.',
+      'DevMotion is a professional motion graphics editor for the web. Like After Effects, but browser-based with AI assistance. Create animations with timeline control, keyframes, and layer system.',
     foundingDate: '2026'
   }}
 />
@@ -38,7 +38,7 @@
     name: 'DevMotion',
     url: baseUrl,
     description:
-      'AI-powered animation editor for creating professional animated videos. Free to use with intuitive controls and smart assistance.',
+      'Professional motion graphics editor reimagined for the web. AI-powered timeline, keyframe animation, and layer-based composition. Free to use, no installation required.',
     potentialAction: {
       '@type': 'SearchAction',
       target: {
@@ -72,7 +72,7 @@
       priceCurrency: 'USD'
     },
     description:
-      'Create stunning animated videos with AI-powered animation editor. Free online tool for motion graphics, video creation, and animation.',
+      'Professional motion graphics and animation studio for the web. Timeline editor, keyframe animation, AI assistance. Like After Effects, but browser-based and free.',
     featureList: [
       'AI-powered animation suggestions',
       'Intuitive keyframe editor',
@@ -94,6 +94,6 @@
 />
 
 <!-- SEO: H1 for homepage (visually hidden but accessible to search engines) -->
-<h1 class="sr-only">DevMotion - AI-Powered Animation Editor</h1>
+<h1 class="sr-only">DevMotion - Motion Graphics in Your Browser, Powered by AI</h1>
 
 <EditorLayout />

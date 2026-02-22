@@ -2,9 +2,9 @@
 
 # DevMotion
 
-**AI-Powered Animation Video Creator**
+**After Effects meets AI. In your browser.**
 
-Create stunning animated videos with full manual controls or AI-powered suggestions. Export professional MP4s—free, no watermark, no limits.
+Professional motion graphics editor with timeline control, keyframes, and AI assistance. Create stunning animations and export MP4 videos—all in your browser, free forever.
 
 ![DevMotion Demo](static/demo.gif)
 
@@ -125,7 +125,9 @@ MIT — See [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-**DevMotion** — Create, animate, export. Free forever.
+**DevMotion** — After Effects meets AI. In your browser.
+
+Motion graphics reimagined for the web.
 
 [devmotion.app](https://devmotion.app)
 

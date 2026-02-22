@@ -42,8 +42,8 @@
 </svelte:head>
 
 <SeoHead
-  title="Community Gallery - Explore Animations | DevMotion"
-  description="Discover stunning animations created by the DevMotion community. Browse {data.total} creative projects, view stats, and get inspired by talented creators."
+  title="Community Gallery - Motion Graphics Showcase | DevMotion"
+  description="Explore {data.total} motion graphics and animations created with DevMotion. Browse professional projects from our community, get inspired, and see what's possible in your browser."
   canonical={currentPageUrl}
 />
 
@@ -54,7 +54,7 @@
     '@type': 'CollectionPage',
     name: 'DevMotion Community Gallery',
     description:
-      'Explore amazing animations and videos created by the DevMotion community. Discover creative projects, animations, and visual content.',
+      'Showcase of motion graphics and animations created with DevMotion. Discover professional projects, creative animations, and inspiring visual content from our community.',
     url: galleryUrl,
     mainEntity: {
       '@type': 'ItemList',
@@ -109,7 +109,7 @@
         Community Gallery
       </h1>
       <p class="mx-auto max-w-2xl text-xl text-muted-foreground">
-        Discover creative animations built by our community.
+        Discover motion graphics and animations built with DevMotion. All created in the browser.
       </p>
     </div>
 

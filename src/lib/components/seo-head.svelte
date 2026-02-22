@@ -2,8 +2,8 @@
   import { page } from '$app/state';
 
   let {
-    title = 'DevMotion - AI Motion Design',
-    description = 'AI-Powered Motion Design Editor. Create professional animations with manual controls and AI generation.',
+    title = 'DevMotion - Motion Graphics, Reinvented for the Web',
+    description = 'Professional motion graphics editor in your browser. AI-powered timeline, keyframe animation, and layer system. Like After Effects, but web-native and free.',
     image = '/og.png',
     type = 'website',
     keywords = '',

@@ -30,6 +30,13 @@ declare global {
 
   interface Window {
     __DEVMOTION__?: DevMotionAPI;
+
+    plausible:
+      | {
+          (eventName: string, options?: Record<string, unknown>): void;
+          q: Array<[string, Record<string, unknown>?]>;
+        }
+      | undefined;
   }
 }
 

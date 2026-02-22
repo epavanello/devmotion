@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Bot, Loader2, User, Trash2, Send, Square } from '@lucide/svelte';
+  import { Bot, Loader2, User, Trash2, Send, Square, CreditCard, Bitcoin } from '@lucide/svelte';
   import { DEFAULT_MODEL_ID } from '$lib/ai/models';
   import { Chat } from '@ai-sdk/svelte';
   import {
@@ -33,6 +33,7 @@
   import { toast } from 'svelte-sonner';
   import { parseErrorMessage } from '$lib/utils';
   import { uiStore } from '$lib/stores/ui.svelte';
+  import { getCredits } from '$lib/functions/ai.remote';
 
   import { PersistedState, watch } from 'runed';
   import ToolPart from './tool-part.svelte';
@@ -49,6 +50,9 @@
 
   let { selectedModelId = $bindable(DEFAULT_MODEL_ID), scrollRef }: Props = $props();
   let prompt = new PersistedState('prompt', '');
+
+  // Credits state
+  let credits = $derived(getCredits());
 
   // svelte-ignore state_referenced_locally
   const persistedMessages = new PersistedState<UIMessage<never, UIDataTypes, AnimationUITools>[]>(
@@ -130,6 +134,8 @@
     },
     onFinish() {
       persistedMessages.current = chat.messages;
+      // Refresh credits after AI response
+      credits.refresh();
     }
   });
 
@@ -168,6 +174,48 @@
 </script>
 
 <div class="flex h-full flex-col">
+  <!-- Header with Credits -->
+  {#if credits.current}
+    <div class="flex w-full items-center justify-between gap-3 border-b bg-background px-4 py-2">
+      <div class="flex flex-col gap-1">
+        <div class="flex items-center gap-1">
+          <span class="font-mono text-xs text-muted-foreground">
+            {Math.round(credits.current.remainingCredits * 100)}/{Math.round(
+              credits.current.maxCredits * 100
+            )}
+          </span>
+          <Bitcoin class="size-3" />
+          <div class="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
+            <div
+              class="h-full transition-all {credits.current.remainingCredits /
+                credits.current.maxCredits <
+              0.2
+                ? 'bg-destructive'
+                : 'bg-primary'}"
+              style="width: {(credits.current.remainingCredits / credits.current.maxCredits) *
+                100}%"
+            ></div>
+          </div>
+        </div>
+      </div>
+      <Button
+        size="sm"
+        variant="outline"
+        class="h-7 gap-1.5 text-xs"
+        icon={CreditCard}
+        onclick={() => {
+          window.plausible?.('buy_credits');
+          window.open(
+            'mailto:credits@devmotion.app?subject=Credits Request&body=I need credits',
+            '_blank'
+          );
+        }}
+      >
+        Buy Credits
+      </Button>
+    </div>
+  {/if}
+
   <!-- Messages -->
   <div class="flex-1 p-4">
     {#if chat.messages.length === 0}

@@ -16,7 +16,7 @@
   const baseUrl = PUBLIC_BASE_URL;
   const projectName = $derived(editorState.project.state.name || 'Untitled Project');
   const projectDescription = $derived(
-    `${projectName} - Animated video created with DevMotion. Design with manual controls or use AI-powered suggestions.`
+    `${projectName} - Motion graphics created with DevMotion. Professional animation editor for the web, powered by AI.`
   );
   const projectUrl = $derived(`${baseUrl}/p/${data.project.id}`);
   const ogImage = $derived(`${baseUrl}/p/${data.project.id}/og.png`);
