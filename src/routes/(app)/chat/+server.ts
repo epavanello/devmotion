@@ -28,6 +28,12 @@ const GenerateRequestSchema = z.object({
 export type GenerateRequest = z.infer<typeof GenerateRequestSchema>;
 
 /**
+ * Maximum allowed size for image attachments (200KB)
+ * Images should be heavily compressed client-side to ~100KB
+ */
+const MAX_IMAGE_SIZE = 200 * 1024;
+
+/**
  * Create OpenRouter-compatible client
  */
 function getOpenRouterClient(userId: string, projectId?: string) {
@@ -135,6 +141,67 @@ function logAIInteraction(data: {
 }
 
 /**
+ * Validate image sizes in messages
+ */
+function validateImageSizes(messages: UIMessage[]): void {
+  for (const message of messages) {
+    if (!message.parts) continue;
+
+    for (const part of message.parts) {
+      // Check for image data in the part
+      if ('image' in part && typeof part.image === 'string') {
+        // Extract base64 data and calculate size
+        const base64Data = part.image.split(',')[1];
+        if (base64Data) {
+          const sizeInBytes = Math.floor((base64Data.length * 3) / 4);
+          if (sizeInBytes > MAX_IMAGE_SIZE) {
+            error(
+              413,
+              `Image size (${Math.round(sizeInBytes / 1024)}KB) exceeds maximum allowed size (${MAX_IMAGE_SIZE / 1024}KB)`
+            );
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Filter images from messages except the most recent user message with an image.
+ * This keeps context lightweight while preserving the current image being discussed.
+ */
+function filterImagesFromOldMessages(messages: UIMessage[]): UIMessage[] {
+  // Find the index of the last user message with an image
+  let lastImageMessageIndex = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === 'user' && messages[i].parts?.some((p) => p.type === 'file')) {
+      lastImageMessageIndex = i;
+      break;
+    }
+  }
+
+  // Filter images from all messages except the most recent one
+  return messages.map((msg, idx) => {
+    if (msg.role !== 'user' || idx === lastImageMessageIndex) {
+      return msg;
+    }
+
+    // Remove images from this message and add note
+    const hasImage = msg.parts?.some((p) => p.type === 'file');
+    if (!hasImage) return msg;
+
+    return {
+      ...msg,
+      parts: msg.parts?.map((part) =>
+        part.type === 'file'
+          ? { type: 'text', text: '(image removed to reduce context size)' }
+          : part
+      )
+    };
+  });
+}
+
+/**
  * POST /api/chat - Progressive animation generation with tool calls
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
@@ -151,6 +218,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
     const body = await request.json();
     const { project, modelId, messages } = GenerateRequestSchema.parse(body);
+
+    // Validate image sizes
+    validateImageSizes(messages);
+
+    // Filter old images to keep context lightweight
+    const filteredMessages = filterImagesFromOldMessages(messages);
 
     const openrouter = getOpenRouterClient(locals.user.email, project.id);
     // Static system prompt — no project state here so OpenRouter can cache it
@@ -233,7 +306,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
     const result = await agent.stream({
       messages: [
-        ...enableCacheControl([...(await convertToModelMessages(messages))]),
+        ...enableCacheControl([...(await convertToModelMessages(filteredMessages))]),
         {
           role: 'system',
           content: JSON.stringify(project)

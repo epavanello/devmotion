@@ -130,7 +130,7 @@
         'fade-slide-up',
         'fade-scale-slide-up'
       ])
-      .default('fade')
+      .default('none')
       .describe(
         'The enter transition effect for new text fragments. fade = opacity, scale = pop-in, slide-up = rise from below. Combinations apply multiple effects simultaneously.'
       )
@@ -143,7 +143,7 @@
       .number()
       .min(0)
       .max(5000)
-      .default(100)
+      .default(0)
       .describe(
         'Duration in milliseconds for the enter transition of new text fragments. Only used when transitionEffect is not none.'
       )

@@ -9,7 +9,9 @@
     Send,
     Square,
     CreditCard,
-    Bitcoin
+    Bitcoin,
+    ImagePlus,
+    X
   } from '@lucide/svelte';
   import { DEFAULT_MODEL_ID } from '$lib/ai/models';
   import { Chat } from '@ai-sdk/svelte';
@@ -43,6 +45,7 @@
   import { parseErrorMessage } from '$lib/utils';
   import { uiStore } from '$lib/stores/ui.svelte';
   import { getCredits } from '$lib/functions/ai.remote';
+  import { compressImage, isImageFile, formatBytes } from '$lib/utils/image-compression';
 
   import { PersistedState, watch } from 'runed';
   import ToolPart from './tool-part.svelte';
@@ -59,6 +62,8 @@
 
   let { selectedModelId = $bindable(DEFAULT_MODEL_ID), scrollRef }: Props = $props();
   let prompt = new PersistedState('prompt', '');
+  let attachedImage = $state<{ dataUrl: string; size: number; mediaType: string } | null>(null);
+  let fileInput = $state<HTMLInputElement | null>(null);
 
   // Credits state
   let credits = $derived(getCredits());
@@ -149,16 +154,31 @@
   });
 
   async function sendMessage() {
-    chat.sendMessage({ text: prompt.current });
+    if (attachedImage) {
+      chat.sendMessage({
+        text: prompt.current,
+        files: [
+          {
+            type: 'file',
+            mediaType: attachedImage.mediaType,
+            url: attachedImage.dataUrl
+          }
+        ]
+      });
+    } else {
+      chat.sendMessage({ text: prompt.current });
+    }
+
     prompt.current = '';
+    attachedImage = null;
     await tick();
     scrollToBottom(true);
   }
 
   function onSubmit(event?: Event) {
     event?.preventDefault();
-    if (!prompt.current.trim() || chat.status === 'streaming' || chat.status === 'submitted')
-      return;
+    const hasContent = prompt.current.trim() || attachedImage;
+    if (!hasContent || chat.status === 'streaming' || chat.status === 'submitted') return;
 
     uiStore.requireLogin('send a message', sendMessage);
   }
@@ -170,9 +190,66 @@
     }
   }
 
+  async function handlePaste(e: ClipboardEvent) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          await processImageFile(file);
+        }
+        break;
+      }
+    }
+  }
+
+  async function handleFileSelect(e: Event) {
+    const target = e.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (file && isImageFile(file)) {
+      await processImageFile(file);
+    }
+    // Reset input
+    target.value = '';
+  }
+
+  async function processImageFile(file: File) {
+    try {
+      const compressed = await compressImage(file, {
+        maxWidth: 800,
+        maxHeight: 600,
+        quality: 0.7,
+        mimeType: 'image/jpeg',
+        targetMaxSize: 100 * 1024 // 100KB target
+      });
+
+      // Check if compressed size exceeds 200KB (safety limit)
+      if (compressed.size > 200 * 1024) {
+        toast.error('Image is too large. Please use a simpler image.');
+        return;
+      }
+
+      attachedImage = {
+        dataUrl: compressed.dataUrl,
+        size: compressed.size,
+        mediaType: compressed.mediaType
+      };
+    } catch {
+      toast.error('Failed to compress image');
+    }
+  }
+
+  function removeImage() {
+    attachedImage = null;
+  }
+
   function resetMessages() {
     chat.messages = [];
     persistedMessages.current = [];
+    attachedImage = null;
     toast.success('Chat history cleared');
   }
 
@@ -273,6 +350,8 @@
                   <ReasoningPart reasoning={part.text} />
                 {:else if part.type === 'text' && part.text.trim()}
                   <p class="text-sm whitespace-pre-wrap">{part.text}</p>
+                {:else if part.type === 'file' && part.mediaType.startsWith('image/')}
+                  <img src={part.url} alt="User uploaded" class="max-w-xs rounded-lg border" />
                 {:else if isToolUIPart(part)}
                   <ToolPart tool={part} />
                 {/if}
@@ -301,15 +380,49 @@
 
   <!-- Input -->
   <form onsubmit={onSubmit} class="sticky bottom-0 border-t bg-background p-4">
-    <textarea
-      bind:value={prompt.current}
-      onkeydown={handleKeyDown}
-      placeholder="Describe your animation... e.g., 'Create a title that fades in with a subtitle below'"
-      disabled={chat.status === 'streaming' ||
-        chat.status === 'submitted' ||
-        projectStore.isRecording}
-      class="mb-3 flex min-h-20 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-    ></textarea>
+    <div class="relative">
+      <textarea
+        bind:value={prompt.current}
+        onkeydown={handleKeyDown}
+        onpaste={handlePaste}
+        placeholder="Describe your animation... e.g., 'Create a title that fades in with a subtitle below'"
+        disabled={chat.status === 'streaming' ||
+          chat.status === 'submitted' ||
+          projectStore.isRecording}
+        class="mb-3 flex min-h-20 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 {attachedImage
+          ? 'pb-24'
+          : ''}"
+      ></textarea>
+
+      {#if attachedImage}
+        <div
+          class="absolute right-3 bottom-4 flex items-start gap-2 rounded-lg border bg-background p-2 shadow-sm"
+        >
+          <img src={attachedImage.dataUrl} alt="Attached" class="size-16 rounded object-cover" />
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-muted-foreground">{formatBytes(attachedImage.size)}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              class="size-5"
+              onclick={removeImage}
+              title="Remove image"
+            >
+              <X class="size-3" />
+            </Button>
+          </div>
+        </div>
+      {/if}
+    </div>
+
+    <input
+      bind:this={fileInput}
+      type="file"
+      accept="image/*"
+      onchange={handleFileSelect}
+      class="hidden"
+    />
 
     <div class="flex gap-2">
       {#if chat.status === 'streaming' || chat.status === 'submitted'}
@@ -319,9 +432,18 @@
         </Button>
       {:else}
         <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onclick={() => fileInput?.click()}
+          disabled={projectStore.isRecording || !!attachedImage}
+          title="Attach image"
+          icon={ImagePlus}
+        />
+        <Button
           class="flex-1"
           type="submit"
-          disabled={!prompt.current.trim() || projectStore.isRecording}
+          disabled={(!prompt.current.trim() && !attachedImage) || projectStore.isRecording}
         >
           Send
           <Send class="size-4" />
