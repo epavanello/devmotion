@@ -21,11 +21,6 @@
   // Enter/exit time for the layer
   const enterTime = $derived(layer.enterTime ?? 0);
   const exitTime = $derived(layer.exitTime ?? projectStore.state.duration);
-  const hasTimeRange = $derived(enterTime > 0 || exitTime < projectStore.state.duration);
-
-  const isMediaLayer = $derived(
-    layer.type === 'video' || layer.type === 'audio' || layer.type === 'captions'
-  );
 
   // Duration bar position and width
   const barLeft = $derived(enterTime * pixelsPerSecond);
@@ -142,7 +137,15 @@
     window.removeEventListener('mouseup', handleDragEnd);
   });
 
-  const isGroupLayer = $derived(layer.type === 'group');
+  // Transition markers
+  const enterTransitionWidth = $derived(
+    layer.enterTransition ? layer.enterTransition.duration * pixelsPerSecond : 0
+  );
+  const exitTransitionWidth = $derived(
+    layer.exitTransition ? layer.exitTransition.duration * pixelsPerSecond : 0
+  );
+
+  const _isGroupLayer = $derived(layer.type === 'group');
 
   // Color for the duration bar based on layer type
   const barColor = $derived.by(() => {
@@ -164,9 +167,6 @@
     if (layer.type === 'group') return 'Group';
     return '';
   });
-
-  // Always show the bar for groups so users can drag the group range
-  const showBar = $derived(hasTimeRange || isMediaLayer || isGroupLayer);
 </script>
 
 <div
@@ -184,50 +184,74 @@
   >
     <div class="flex flex-col">
       <span class="truncate">{layer.name}</span>
-      {#if hasTimeRange || isMediaLayer || isGroupLayer}
-        <span class="text-[10px] text-muted-foreground">
-          {enterTime.toFixed(1)}s – {exitTime.toFixed(1)}s
-        </span>
-      {/if}
+      <span class="text-[10px] text-muted-foreground">
+        {enterTime.toFixed(1)}s – {exitTime.toFixed(1)}s
+      </span>
     </div>
   </div>
 
   <!-- Keyframes area -->
   <div class="relative h-12 min-h-12 flex-1">
     <!-- Duration bar (shown for all layers with enter/exit times, and groups) -->
-    {#if showBar}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="absolute top-1 bottom-1 rounded-sm border {barColor}"
+      style:left="{barLeft}px"
+      style:width="{barWidth}px"
+      style:cursor={isDraggingBar ? 'grabbing' : 'grab'}
+      onmousedown={startDragBar}
+    >
+      <!-- Enter handle -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
-        class="absolute top-1 bottom-1 rounded-sm border {barColor}"
-        style:left="{barLeft}px"
-        style:width="{barWidth}px"
-        style:cursor={isDraggingBar ? 'grabbing' : 'grab'}
-        onmousedown={startDragBar}
-      >
-        <!-- Enter handle -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div
-          class="absolute top-0 bottom-0 left-0 w-1.5 cursor-col-resize rounded-l-sm bg-white/30 hover:bg-white/50"
-          onmousedown={startDragEnter}
-        ></div>
+        class="absolute top-0 bottom-0 left-0 w-1.5 cursor-col-resize rounded-l-sm bg-white/30 hover:bg-white/50"
+        onmousedown={startDragEnter}
+      ></div>
 
-        <!-- Exit handle -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div
-          class="absolute top-0 right-0 bottom-0 w-1.5 cursor-col-resize rounded-r-sm bg-white/30 hover:bg-white/50"
-          onmousedown={startDragExit}
-        ></div>
+      <!-- Exit handle -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="absolute top-0 right-0 bottom-0 w-1.5 cursor-col-resize rounded-r-sm bg-white/30 hover:bg-white/50"
+        onmousedown={startDragExit}
+      ></div>
 
-        <!-- Label -->
-        {#if barLabel && barWidth > 40}
-          <span
-            class="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-[9px] font-medium text-white/60"
-          >
-            {barLabel}
-          </span>
-        {/if}
-      </div>
-    {/if}
+      <!-- Enter transition zone -->
+      {#if enterTransitionWidth > 0}
+        <div
+          class="pointer-events-none absolute top-0 bottom-0 left-0 rounded-l-sm bg-sky-400/25"
+          style:width="{Math.min(enterTransitionWidth, barWidth)}px"
+        >
+          {#if enterTransitionWidth > 20}
+            <span class="absolute top-1/2 left-1 -translate-y-1/2 text-[8px] text-sky-300/70">
+              In
+            </span>
+          {/if}
+        </div>
+      {/if}
+
+      <!-- Exit transition zone -->
+      {#if exitTransitionWidth > 0}
+        <div
+          class="pointer-events-none absolute top-0 right-0 bottom-0 rounded-r-sm bg-orange-400/25"
+          style:width="{Math.min(exitTransitionWidth, barWidth)}px"
+        >
+          {#if exitTransitionWidth > 20}
+            <span class="absolute top-1/2 right-1 -translate-y-1/2 text-[8px] text-orange-300/70">
+              Out
+            </span>
+          {/if}
+        </div>
+      {/if}
+
+      <!-- Label -->
+      {#if barLabel && barWidth > 40}
+        <span
+          class="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-[9px] font-medium text-white/60"
+        >
+          {barLabel}
+        </span>
+      {/if}
+    </div>
 
     <!-- Keyframes -->
     {#each keyframeGroups as group (group.time)}

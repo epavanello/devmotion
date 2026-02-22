@@ -896,8 +896,8 @@ export class ProjectStore {
       // Pre-calculate values for all layers using shared rendering functions
       for (const layer of this.state.layers) {
         frameData[layer.id] = {
-          transform: getLayerTransform(layer, time),
-          style: getLayerStyle(layer, time),
+          transform: getLayerTransform(layer, time, this.state.duration),
+          style: getLayerStyle(layer, time, this.state.duration),
           customProps: getLayerProps(layer, time)
         };
       }

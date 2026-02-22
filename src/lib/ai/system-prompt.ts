@@ -3,9 +3,11 @@
  *
  * Tools: create_layer, edit_layer, remove_layer, configure_project, group_layers, ungroup_layers
  * Animation: can use preset AND/OR custom keyframes in create_layer.
+ * Transitions: can set enterTransition/exitTransition on layers via edit_layer.
  */
 import type { Project } from '$lib/types/animation';
 import { projectDataSchema } from '$lib/schemas/animation';
+import { getPresetsSummaryForAI } from '$lib/engine/presets';
 import goodExampleRaw from '$lib/good-example.json';
 
 const exampleProject = projectDataSchema.parse(goodExampleRaw);
@@ -29,11 +31,46 @@ Steps: present plan (if full video) → execute tool calls → conclude with a f
 
 ## Tools
 
-- **create_layer**: Layer type + props + transform + style + animation + timing
-- **edit_layer**: Modify existing layer (provide fields to change)
+- **create_layer**: Layer type + props + transform + style + animation + timing + enterTransition/exitTransition
+- **edit_layer**: Modify existing layer (provide fields to change, including enterTransition/exitTransition)
 - **remove_layer**: Delete layer by ID or name
 - **configure_project**: Project settings (name, dimensions, duration, background)
 - **group_layers** / **ungroup_layers**: Group/ungroup layers
+
+## Animation System
+
+Two complementary ways to animate layers:
+
+### 1. Transitions (enterTransition / exitTransition)
+Automatic enter/exit animations applied at runtime (no keyframes created).
+Set via create_layer or edit_layer. Position presets are relative offsets from the layer's base position.
+Scale and opacity presets are applied as factors (e.g., scale 0→1 means from invisible to full size).
+When the transition finishes, the layer returns to its base values.
+
+\`\`\`json
+{ "enterTransition": { "presetId": "fade-in", "duration": 0.5 } }
+{ "exitTransition": { "presetId": "slide-out-left", "duration": 0.3 } }
+\`\`\`
+
+### 2. Keyframe Presets (animation.preset in create_layer)
+Bakes preset keyframes onto the layer at a specific time. Good for emphasis effects or custom timing.
+Position values are added as offsets to the layer's current base position.
+
+\`\`\`json
+{ "animation": { "preset": { "id": "pulse", "startTime": 1.0, "duration": 0.5 } } }
+\`\`\`
+
+### 3. Custom Keyframes (animation.keyframes in create_layer)
+Full control over individual property animations. Can be combined with presets.
+
+### When to use which:
+- **Transitions**: Best for entrance/exit effects. No keyframes cluttering the timeline. Automatically tied to layer enter/exit time.
+- **Keyframe presets**: Best for emphasis effects (pulse, shake, bounce) at specific moments.
+- **Custom keyframes**: Best for unique, hand-crafted animations.
+
+## Available Presets
+
+${getPresetsSummaryForAI()}
 
 ## Graphic Style - MANDATORY DIRECTIVES
 
@@ -106,8 +143,8 @@ ${JSON.stringify(exampleProject)}
 
 When the user gives no specific animation directions, apply at minimum:
 
-- **Entrances/Exits**: Fade in from opacity:0 + slight scale (0.95→1) + blur (filter.blur 8→0). Add a gentle slide (20-40px) from a direction. Reverse for exits.
-- **Text layers**: At minimum, appear from opacity:0 with a subtle slide-up on Y (~20px). Titles can add scale+blur for more impact.
+- **Entrances/Exits**: Use enterTransition/exitTransition with appropriate presets (fade-in, slide-in-*, scale-in for entrances; fade-out, slide-out-*, scale-out for exits). Default duration 0.3-0.6s.
+- **Text layers**: At minimum, use enterTransition with fade-in or slide-in-bottom (duration 0.4s). Titles can use pop or bounce-in for more impact.
 - **Flat backgrounds**: If a background feels too plain, add 1-2 decorative circle shapes (≈200x200, high blur ≈150, low opacity ≈0.15-0.25) as soft ambient blobs with gentle position drift.
 
 These are sensible defaults — override freely when the user provides specific creative direction.

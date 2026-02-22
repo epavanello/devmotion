@@ -46,8 +46,8 @@
     }
     // Otherwise compute using shared rendering functions
     return {
-      transform: getLayerTransform(layer, currentTime),
-      style: getLayerStyle(layer, currentTime),
+      transform: getLayerTransform(layer, currentTime, duration),
+      style: getLayerStyle(layer, currentTime, duration),
       customProps: getLayerProps(layer, currentTime)
     };
   }
