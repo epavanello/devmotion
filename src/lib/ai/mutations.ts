@@ -131,6 +131,26 @@ export function mutateCreateLayer(
       layer.contentOffset = input.contentOffset;
     }
 
+    // Set enter/exit transitions if provided
+    if (input.enterTransition) {
+      const preset = getPresetById(input.enterTransition.presetId);
+      if (preset) {
+        layer.enterTransition = {
+          presetId: input.enterTransition.presetId,
+          duration: input.enterTransition.duration
+        };
+      }
+    }
+    if (input.exitTransition) {
+      const preset = getPresetById(input.exitTransition.presetId);
+      if (preset) {
+        layer.exitTransition = {
+          presetId: input.exitTransition.presetId,
+          duration: input.exitTransition.duration
+        };
+      }
+    }
+
     // Mutate project
     ctx.project.layers.push(layer);
 
@@ -250,6 +270,34 @@ export function mutateEditLayer(ctx: MutationContext, input: EditLayerInput): Ed
     }
     if (input.contentOffset !== undefined) {
       layer.contentOffset = Math.max(0, input.contentOffset);
+    }
+
+    // Update enter/exit transitions
+    if (input.enterTransition !== undefined) {
+      if (input.enterTransition) {
+        const preset = getPresetById(input.enterTransition.presetId);
+        if (preset) {
+          layer.enterTransition = {
+            presetId: input.enterTransition.presetId,
+            duration: input.enterTransition.duration
+          };
+        }
+      } else {
+        layer.enterTransition = undefined;
+      }
+    }
+    if (input.exitTransition !== undefined) {
+      if (input.exitTransition) {
+        const preset = getPresetById(input.exitTransition.presetId);
+        if (preset) {
+          layer.exitTransition = {
+            presetId: input.exitTransition.presetId,
+            duration: input.exitTransition.duration
+          };
+        }
+      } else {
+        layer.exitTransition = undefined;
+      }
     }
 
     return {

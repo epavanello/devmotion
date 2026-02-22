@@ -14,20 +14,21 @@
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
 
-  const enterPresets = $derived([
-    { id: '', name: 'None', category: 'enter' as const, keyframes: [] },
+  const enterPresets = [
+    { id: '', name: 'None', description: '', category: 'enter' as const, keyframes: [] },
     ...getEnterPresets()
-  ]);
+  ];
 
-  const exitPresets = $derived([
-    { id: '', name: 'None', category: 'exit' as const, keyframes: [] },
+  const exitPresets = [
+    { id: '', name: 'None', description: '', category: 'exit' as const, keyframes: [] },
     ...getExitPresets()
-  ]);
+  ];
 
-  let enterPresetId = $derived<string>(layer.enterTransition?.presetId ?? '');
-  let enterDuration = $derived<number>(layer.enterTransition?.duration ?? 0.5);
-  let exitPresetId = $derived<string>(layer.exitTransition?.presetId ?? '');
-  let exitDuration = $derived<number>(layer.exitTransition?.duration ?? 0.5);
+  // Derived read-only values from the layer
+  const enterPresetId = $derived(layer.enterTransition?.presetId ?? '');
+  const enterDuration = $derived(layer.enterTransition?.duration ?? 0.5);
+  const exitPresetId = $derived(layer.exitTransition?.presetId ?? '');
+  const exitDuration = $derived(layer.exitTransition?.duration ?? 0.5);
 
   function updateTransition(type: 'enter' | 'exit', presetId: string, duration: number) {
     const transition: LayerTransition | undefined = presetId ? { presetId, duration } : undefined;
@@ -78,10 +79,7 @@
         value={enterPresetId}
         options={enterPresets}
         placeholder="None"
-        onchange={(v) => {
-          enterPresetId = v;
-          updateTransition('enter', v, enterDuration);
-        }}
+        onchange={(v) => updateTransition('enter', v, enterDuration)}
       />
       {#if enterPresetId}
         <ScrubInput
@@ -90,10 +88,7 @@
           min={0.1}
           max={5}
           step={0.1}
-          onchange={(v) => {
-            enterDuration = v;
-            updateTransition('enter', enterPresetId, v);
-          }}
+          onchange={(v) => updateTransition('enter', enterPresetId, v)}
         />
       {/if}
     </InputsWrapper>
@@ -111,10 +106,7 @@
         value={exitPresetId}
         options={exitPresets}
         placeholder="None"
-        onchange={(v) => {
-          exitPresetId = v;
-          updateTransition('exit', v, exitDuration);
-        }}
+        onchange={(v) => updateTransition('exit', v, exitDuration)}
       />
       {#if exitPresetId}
         <ScrubInput
@@ -123,10 +115,7 @@
           min={0.1}
           max={5}
           step={0.1}
-          onchange={(v) => {
-            exitDuration = v;
-            updateTransition('exit', exitPresetId, v);
-          }}
+          onchange={(v) => updateTransition('exit', exitPresetId, v)}
         />
       {/if}
     </InputsWrapper>

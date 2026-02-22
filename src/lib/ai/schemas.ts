@@ -46,6 +46,19 @@ const TimingFieldsSchema = z.object({
 });
 
 // ============================================
+// Layer Transition (enter/exit preset)
+// ============================================
+
+const LayerTransitionFieldSchema = z
+  .object({
+    presetId: AnimationPresetIdSchema.describe('Animation preset ID to apply as transition'),
+    duration: z.number().positive().describe('Transition duration in seconds (typically 0.3-0.8)')
+  })
+  .describe(
+    'Automatic animation applied at layer enter/exit. Position presets are relative offsets from the layer base position. Scale/opacity are factors (0→1 means invisible→visible).'
+  );
+
+// ============================================
 // Layer Type + Props Union
 // ============================================
 
@@ -123,9 +136,17 @@ export const CreateLayerInputSchema = z
     // Layer type and properties
     layer: LayerTypePropsUnion,
 
-    // Animation (preset OR custom keyframes)
+    // Transitions (automatic enter/exit animations, no keyframes created)
+    enterTransition: LayerTransitionFieldSchema.optional().describe(
+      'Auto-play animation when layer enters (e.g., fade-in, slide-in-left). Applied as offset/factor on base transform.'
+    ),
+    exitTransition: LayerTransitionFieldSchema.optional().describe(
+      'Auto-play animation when layer exits (e.g., fade-out, slide-out-right). Applied as offset/factor on base transform.'
+    ),
+
+    // Animation (preset OR custom keyframes - baked as keyframes)
     animation: CreateLayerAnimationSchema.optional().describe(
-      'Animation: preset OR custom keyframes'
+      'Animation as keyframes: preset (baked at startTime) OR custom keyframes'
     )
   })
   .refine(
@@ -199,7 +220,15 @@ export const EditLayerInputSchema = z
       .describe('Layer-specific properties to update (merged with existing)'),
 
     // Timing fields
-    ...TimingFieldsSchema.shape
+    ...TimingFieldsSchema.shape,
+
+    // Transitions (automatic enter/exit animations)
+    enterTransition: LayerTransitionFieldSchema.optional().describe(
+      'Set enter transition preset. Omit to keep existing, set to null to remove.'
+    ),
+    exitTransition: LayerTransitionFieldSchema.optional().describe(
+      'Set exit transition preset. Omit to keep existing, set to null to remove.'
+    )
   })
   .refine(
     (data) => {
@@ -295,11 +324,12 @@ export const animationTools = {
 - Position, rotation, scale, anchor point
 - Layer-specific props (text content, colors, sizes, etc.)
 - Style (opacity, blur, filters, drop shadow)
-- Animation via preset OR custom keyframes
+- Enter/exit transitions (automatic preset animations at layer boundaries)
+- Animation via preset (baked as keyframes) OR custom keyframes
 - Timing (enter/exit times, content duration/offset)
 
-Example: Create a text layer with animation:
-{ "layer": { "type": "text", "props": { "content": "Hello World", "fontSize": 48, "fill": "#ffffff" } }, "transform": { "position": { "x": 0, "y": -200 } }, "animation": { "preset": { "id": "fade-in", "startTime": 0, "duration": 0.5 } } }`,
+Example with enter transition:
+{ "layer": { "type": "text", "props": { "content": "Hello", "fontSize": 48, "fill": "#fff" } }, "transform": { "position": { "x": 0, "y": -200 } }, "enterTransition": { "presetId": "fade-in", "duration": 0.5 }, "exitTransition": { "presetId": "fade-out", "duration": 0.3 } }`,
     inputSchema: CreateLayerInputSchema
   }),
 
@@ -308,6 +338,7 @@ Example: Create a text layer with animation:
 - Provide only the fields you want to change
 - transform/style sections replace entire object if provided
 - props are merged with existing props
+- enterTransition/exitTransition: set automatic enter/exit animations
 - Use layer ID from create_layer response or layer name`,
     inputSchema: EditLayerInputSchema
   }),

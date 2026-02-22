@@ -2,8 +2,9 @@
  * Shared layer rendering utilities
  * Used by both canvas rendering and frame cache preparation
  */
-import type { Transform, Keyframe, LayerStyle } from '$lib/types/animation';
+import type { Transform } from '$lib/types/animation';
 import type { TypedLayer } from '$lib/layers/typed-registry';
+import type { PresetKeyframe } from './presets';
 import {
   getAnimatedTransform,
   getAnimatedStyle,
@@ -15,7 +16,11 @@ import { extractPropertyMetadata } from '$lib/layers/base';
 import { getPresetById } from './presets';
 
 /**
- * Get animated transform for a layer, merging base transform with animated values and transitions
+ * Get animated transform for a layer, merging base transform with animated values and transitions.
+ *
+ * Priority: transition presets > keyframe animations > base layer values.
+ * Position and rotation preset values are offsets added to the base.
+ * Scale and opacity preset values are multiplicative with the base.
  */
 export function getLayerTransform(
   layer: TypedLayer,
@@ -23,63 +28,54 @@ export function getLayerTransform(
   projectDuration: number
 ): Transform {
   const animatedTransform = getAnimatedTransform(layer.keyframes, currentTime);
-  const { transform: transitionTransform } = applyTransitionPresets(
-    layer,
-    currentTime,
-    projectDuration
-  );
+  const transition = computeTransitionValues(layer, currentTime, projectDuration);
+
+  const baseX = animatedTransform.position?.x ?? layer.transform.position.x;
+  const baseY = animatedTransform.position?.y ?? layer.transform.position.y;
+  const baseZ = animatedTransform.position?.z ?? layer.transform.position.z;
+
+  const baseRotX = animatedTransform.rotation?.x ?? layer.transform.rotation.x;
+  const baseRotY = animatedTransform.rotation?.y ?? layer.transform.rotation.y;
+  const baseRotZ = animatedTransform.rotation?.z ?? layer.transform.rotation.z;
+
+  const baseSX = animatedTransform.scale?.x ?? layer.transform.scale.x;
+  const baseSY = animatedTransform.scale?.y ?? layer.transform.scale.y;
 
   return {
     position: {
-      x:
-        transitionTransform.position?.x ??
-        animatedTransform.position?.x ??
-        layer.transform.position.x,
-      y:
-        transitionTransform.position?.y ??
-        animatedTransform.position?.y ??
-        layer.transform.position.y,
-      z:
-        transitionTransform.position?.z ??
-        animatedTransform.position?.z ??
-        layer.transform.position.z
+      x: baseX + (transition.positionOffset?.x ?? 0),
+      y: baseY + (transition.positionOffset?.y ?? 0),
+      z: baseZ + (transition.positionOffset?.z ?? 0)
     },
     rotation: {
-      x:
-        transitionTransform.rotation?.x ??
-        animatedTransform.rotation?.x ??
-        layer.transform.rotation.x,
-      y:
-        transitionTransform.rotation?.y ??
-        animatedTransform.rotation?.y ??
-        layer.transform.rotation.y,
-      z:
-        transitionTransform.rotation?.z ??
-        animatedTransform.rotation?.z ??
-        layer.transform.rotation.z
+      x: baseRotX + (transition.rotationOffset?.x ?? 0),
+      y: baseRotY + (transition.rotationOffset?.y ?? 0),
+      z: baseRotZ + (transition.rotationOffset?.z ?? 0)
     },
     scale: {
-      x: transitionTransform.scale?.x ?? animatedTransform.scale?.x ?? layer.transform.scale.x,
-      y: transitionTransform.scale?.y ?? animatedTransform.scale?.y ?? layer.transform.scale.y
+      x: baseSX * (transition.scaleFactor?.x ?? 1),
+      y: baseSY * (transition.scaleFactor?.y ?? 1)
     },
     anchor: layer.transform.anchor ?? 'center'
   };
 }
 
 /**
- * Get animated style for a layer, merging base style with animated values and transitions
+ * Get animated style for a layer, merging base style with animated values and transitions.
+ * Opacity from transitions is multiplied with the base opacity.
  */
 export function getLayerStyle(layer: TypedLayer, currentTime: number, projectDuration: number) {
   const animatedStyle = getAnimatedStyle(layer.keyframes, currentTime);
-  const { style: transitionStyle } = applyTransitionPresets(layer, currentTime, projectDuration);
+  const transition = computeTransitionValues(layer, currentTime, projectDuration);
+
+  const baseOpacity = animatedStyle.opacity ?? layer.style.opacity;
 
   return {
-    opacity: transitionStyle.opacity ?? animatedStyle.opacity ?? layer.style.opacity,
-    blur: transitionStyle.blur ?? animatedStyle.blur ?? layer.style.blur ?? 0,
-    brightness:
-      transitionStyle.brightness ?? animatedStyle.brightness ?? layer.style.brightness ?? 1,
-    contrast: transitionStyle.contrast ?? animatedStyle.contrast ?? layer.style.contrast ?? 1,
-    saturate: transitionStyle.saturate ?? animatedStyle.saturate ?? layer.style.saturate ?? 1,
+    opacity: baseOpacity * (transition.opacityFactor ?? 1),
+    blur: transition.blur ?? animatedStyle.blur ?? layer.style.blur ?? 0,
+    brightness: transition.brightness ?? animatedStyle.brightness ?? layer.style.brightness ?? 1,
+    contrast: transition.contrast ?? animatedStyle.contrast ?? layer.style.contrast ?? 1,
+    saturate: transition.saturate ?? animatedStyle.saturate ?? layer.style.saturate ?? 1,
     dropShadowX: animatedStyle.dropShadowX ?? layer.style.dropShadowX ?? 0,
     dropShadowY: animatedStyle.dropShadowY ?? layer.style.dropShadowY ?? 0,
     dropShadowBlur: animatedStyle.dropShadowBlur ?? layer.style.dropShadowBlur ?? 0,
@@ -96,76 +92,95 @@ export function getLayerProps(layer: TypedLayer, currentTime: number): Record<st
   return getAnimatedProps(layer.keyframes, layer.props, propsMetadata, currentTime);
 }
 
+// ============================================
+// Transition system
+// ============================================
+
 /**
- * Apply transition presets to transform/style based on enter/exit time
- * Returns additional transform/style modifications to merge with base values
+ * Computed transition values as offsets/factors to apply on top of base values.
+ * Position/rotation = additive offsets. Scale/opacity = multiplicative factors.
  */
-export function applyTransitionPresets(
+interface TransitionValues {
+  positionOffset?: { x: number; y: number; z: number };
+  rotationOffset?: { x: number; y: number; z: number };
+  scaleFactor?: { x: number; y: number };
+  opacityFactor?: number;
+  blur?: number;
+  brightness?: number;
+  contrast?: number;
+  saturate?: number;
+}
+
+/**
+ * Compute transition values from enter/exit presets.
+ * Returns offsets and factors that should be applied to the base values.
+ */
+function computeTransitionValues(
   layer: TypedLayer,
   currentTime: number,
   projectDuration: number
-): {
-  transform: Partial<Transform>;
-  style: Partial<LayerStyle>;
-} {
+): TransitionValues {
   const enterTime = layer.enterTime ?? 0;
   const exitTime = layer.exitTime ?? projectDuration;
 
-  let transitionTransform: Partial<Transform> = {};
-  let transitionStyle: Partial<LayerStyle> = {};
+  let result: TransitionValues = {};
 
-  // Apply enter transition if within duration
+  // Apply enter transition if within its duration
   if (layer.enterTransition && currentTime >= enterTime) {
     const timeSinceEnter = currentTime - enterTime;
     if (timeSinceEnter <= layer.enterTransition.duration) {
       const preset = getPresetById(layer.enterTransition.presetId);
       if (preset) {
-        const { transform, style } = applyPresetAtTime(
-          preset.keyframes,
-          timeSinceEnter,
-          layer.enterTransition.duration
+        result = mergeTransitionValues(
+          result,
+          interpolatePresetKeyframes(
+            preset.keyframes,
+            timeSinceEnter,
+            layer.enterTransition.duration
+          )
         );
-        transitionTransform = { ...transitionTransform, ...transform };
-        transitionStyle = { ...transitionStyle, ...style };
       }
     }
   }
 
-  // Apply exit transition if within duration
+  // Apply exit transition if within its duration
   if (layer.exitTransition && currentTime <= exitTime) {
     const timeUntilExit = exitTime - currentTime;
     if (timeUntilExit <= layer.exitTransition.duration) {
       const preset = getPresetById(layer.exitTransition.presetId);
       if (preset) {
-        // For exit transitions, we interpolate from end backwards
         const transitionProgress = layer.exitTransition.duration - timeUntilExit;
-        const { transform, style } = applyPresetAtTime(
-          preset.keyframes,
-          transitionProgress,
-          layer.exitTransition.duration
+        result = mergeTransitionValues(
+          result,
+          interpolatePresetKeyframes(
+            preset.keyframes,
+            transitionProgress,
+            layer.exitTransition.duration
+          )
         );
-        transitionTransform = { ...transitionTransform, ...transform };
-        transitionStyle = { ...transitionStyle, ...style };
       }
     }
   }
 
-  return { transform: transitionTransform, style: transitionStyle };
+  return result;
 }
 
 /**
- * Apply a preset's keyframes at a specific normalized time
+ * Interpolate preset keyframes at a given absolute time within a duration.
+ * Returns transition values as offsets/factors relative to the layer's resting state.
+ *
+ * Convention: preset keyframe values at time=1 represent the "resting" state:
+ * - position 0 = no offset from base position
+ * - scale 1 = 100% of base scale
+ * - opacity 1 = 100% of base opacity
+ * - rotation 0 = no offset from base rotation
  */
-function applyPresetAtTime(
-  presetKeyframes: Omit<Keyframe, 'id'>[],
+function interpolatePresetKeyframes(
+  presetKeyframes: PresetKeyframe[],
   currentTime: number,
   duration: number
-): {
-  transform: Partial<Transform>;
-  style: Partial<LayerStyle>;
-} {
-  const transform: Partial<Transform> = {};
-  const style: Partial<LayerStyle> = {};
+): TransitionValues {
+  const result: TransitionValues = {};
 
   // Scale preset keyframe times to actual duration
   const scaledKeyframes = presetKeyframes.map((kf) => ({
@@ -173,16 +188,14 @@ function applyPresetAtTime(
     time: kf.time * duration
   }));
 
-  // Group keyframes by property
-  const propertiesByName = new Map<string, typeof scaledKeyframes>();
+  // Group by property
+  const byProperty = new Map<string, typeof scaledKeyframes>();
   for (const kf of scaledKeyframes) {
-    const existing = propertiesByName.get(kf.property) ?? [];
-    propertiesByName.set(kf.property, [...existing, kf]);
+    const existing = byProperty.get(kf.property) ?? [];
+    byProperty.set(kf.property, [...existing, kf]);
   }
 
-  // Interpolate each property
-  for (const [property, keyframes] of propertiesByName) {
-    // Sort by time
+  for (const [property, keyframes] of byProperty) {
     keyframes.sort((a, b) => a.time - b.time);
 
     // Find surrounding keyframes
@@ -197,49 +210,73 @@ function applyPresetAtTime(
       }
     }
 
-    // Calculate progress between keyframes (0-1)
     const progress =
       prevKf.time === nextKf.time ? 1 : (currentTime - prevKf.time) / (nextKf.time - prevKf.time);
 
-    // Interpolate value using the interpolation function
     const value = interpolateValue(
       prevKf.value,
       nextKf.value,
       Math.max(0, Math.min(1, progress)),
       nextKf.interpolation ?? { family: 'continuous', strategy: 'ease-in-out' }
-    );
+    ) as number;
 
-    // Map to transform or style
+    // Map to offsets/factors
+    // Position: value IS the offset (at rest = 0)
     if (property === 'position.x') {
-      if (!transform.position) transform.position = { x: 0, y: 0, z: 0 };
-      transform.position.x = value as number;
+      if (!result.positionOffset) result.positionOffset = { x: 0, y: 0, z: 0 };
+      result.positionOffset.x = value;
     } else if (property === 'position.y') {
-      if (!transform.position) transform.position = { x: 0, y: 0, z: 0 };
-      transform.position.y = value as number;
+      if (!result.positionOffset) result.positionOffset = { x: 0, y: 0, z: 0 };
+      result.positionOffset.y = value;
     } else if (property === 'position.z') {
-      if (!transform.position) transform.position = { x: 0, y: 0, z: 0 };
-      transform.position.z = value as number;
-    } else if (property === 'scale.x') {
-      if (!transform.scale) transform.scale = { x: 1, y: 1 };
-      transform.scale.x = value as number;
+      if (!result.positionOffset) result.positionOffset = { x: 0, y: 0, z: 0 };
+      result.positionOffset.z = value;
+    }
+    // Scale: value IS the factor (at rest = 1)
+    else if (property === 'scale.x') {
+      if (!result.scaleFactor) result.scaleFactor = { x: 1, y: 1 };
+      result.scaleFactor.x = value;
     } else if (property === 'scale.y') {
-      if (!transform.scale) transform.scale = { x: 1, y: 1 };
-      transform.scale.y = value as number;
-    } else if (property === 'rotation.x') {
-      if (!transform.rotation) transform.rotation = { x: 0, y: 0, z: 0 };
-      transform.rotation.x = value as number;
+      if (!result.scaleFactor) result.scaleFactor = { x: 1, y: 1 };
+      result.scaleFactor.y = value;
+    }
+    // Rotation: value IS the offset (at rest = 0)
+    else if (property === 'rotation.x') {
+      if (!result.rotationOffset) result.rotationOffset = { x: 0, y: 0, z: 0 };
+      result.rotationOffset.x = value;
     } else if (property === 'rotation.y') {
-      if (!transform.rotation) transform.rotation = { x: 0, y: 0, z: 0 };
-      transform.rotation.y = value as number;
+      if (!result.rotationOffset) result.rotationOffset = { x: 0, y: 0, z: 0 };
+      result.rotationOffset.y = value;
     } else if (property === 'rotation.z') {
-      if (!transform.rotation) transform.rotation = { x: 0, y: 0, z: 0 };
-      transform.rotation.z = value as number;
-    } else if (property === 'opacity') style.opacity = value as number;
-    else if (property === 'blur') style.blur = value as number;
-    else if (property === 'brightness') style.brightness = value as number;
-    else if (property === 'contrast') style.contrast = value as number;
-    else if (property === 'saturate') style.saturate = value as number;
+      if (!result.rotationOffset) result.rotationOffset = { x: 0, y: 0, z: 0 };
+      result.rotationOffset.z = value;
+    }
+    // Opacity: value IS the factor (at rest = 1)
+    else if (property === 'opacity') {
+      result.opacityFactor = value;
+    }
+    // Style filters: absolute replacement
+    else if (property === 'blur') result.blur = value;
+    else if (property === 'brightness') result.brightness = value;
+    else if (property === 'contrast') result.contrast = value;
+    else if (property === 'saturate') result.saturate = value;
   }
 
-  return { transform, style };
+  return result;
+}
+
+function mergeTransitionValues(a: TransitionValues, b: TransitionValues): TransitionValues {
+  return {
+    positionOffset: b.positionOffset ?? a.positionOffset,
+    rotationOffset: b.rotationOffset ?? a.rotationOffset,
+    scaleFactor: b.scaleFactor ?? a.scaleFactor,
+    opacityFactor:
+      a.opacityFactor !== undefined && b.opacityFactor !== undefined
+        ? a.opacityFactor * b.opacityFactor
+        : (b.opacityFactor ?? a.opacityFactor),
+    blur: b.blur ?? a.blur,
+    brightness: b.brightness ?? a.brightness,
+    contrast: b.contrast ?? a.contrast,
+    saturate: b.saturate ?? a.saturate
+  };
 }

@@ -137,7 +137,15 @@
     window.removeEventListener('mouseup', handleDragEnd);
   });
 
-  const isGroupLayer = $derived(layer.type === 'group');
+  // Transition markers
+  const enterTransitionWidth = $derived(
+    layer.enterTransition ? layer.enterTransition.duration * pixelsPerSecond : 0
+  );
+  const exitTransitionWidth = $derived(
+    layer.exitTransition ? layer.exitTransition.duration * pixelsPerSecond : 0
+  );
+
+  const _isGroupLayer = $derived(layer.type === 'group');
 
   // Color for the duration bar based on layer type
   const barColor = $derived.by(() => {
@@ -206,6 +214,34 @@
         class="absolute top-0 right-0 bottom-0 w-1.5 cursor-col-resize rounded-r-sm bg-white/30 hover:bg-white/50"
         onmousedown={startDragExit}
       ></div>
+
+      <!-- Enter transition zone -->
+      {#if enterTransitionWidth > 0}
+        <div
+          class="pointer-events-none absolute top-0 bottom-0 left-0 rounded-l-sm bg-sky-400/25"
+          style:width="{Math.min(enterTransitionWidth, barWidth)}px"
+        >
+          {#if enterTransitionWidth > 20}
+            <span class="absolute top-1/2 left-1 -translate-y-1/2 text-[8px] text-sky-300/70">
+              In
+            </span>
+          {/if}
+        </div>
+      {/if}
+
+      <!-- Exit transition zone -->
+      {#if exitTransitionWidth > 0}
+        <div
+          class="pointer-events-none absolute top-0 right-0 bottom-0 rounded-r-sm bg-orange-400/25"
+          style:width="{Math.min(exitTransitionWidth, barWidth)}px"
+        >
+          {#if exitTransitionWidth > 20}
+            <span class="absolute top-1/2 right-1 -translate-y-1/2 text-[8px] text-orange-300/70">
+              Out
+            </span>
+          {/if}
+        </div>
+      {/if}
 
       <!-- Label -->
       {#if barLabel && barWidth > 40}
