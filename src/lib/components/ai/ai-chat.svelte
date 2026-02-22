@@ -1,7 +1,16 @@
 <script lang="ts">
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Bot, Loader2, User, Trash2, Send, Square, CreditCard, Bitcoin } from '@lucide/svelte';
+  import {
+    Bot,
+    Loader2,
+    User,
+    Trash2,
+    Send,
+    Square,
+    CreditCard,
+    Bitcoin
+  } from '@lucide/svelte';
   import { DEFAULT_MODEL_ID } from '$lib/ai/models';
   import { Chat } from '@ai-sdk/svelte';
   import {
@@ -175,16 +184,16 @@
 
 <div class="flex h-full flex-col">
   <!-- Header with Credits -->
-  {#if credits.current}
-    <div class="flex w-full items-center justify-between gap-3 border-b bg-background px-4 py-2">
-      <div class="flex flex-col gap-1">
+  <div class="flex w-full flex-col border-b bg-background">
+    {#if credits.current}
+      <div class="flex items-center justify-between gap-3 px-4 py-2">
         <div class="flex items-center gap-1">
           <span class="font-mono text-xs text-muted-foreground">
             {Math.round(credits.current.remainingCredits * 100)}/{Math.round(
               credits.current.maxCredits * 100
             )}
           </span>
-          <Bitcoin class="size-3" />
+          <Bitcoin class="size-3 text-muted-foreground" />
           <div class="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
             <div
               class="h-full transition-all {credits.current.remainingCredits /
@@ -197,24 +206,35 @@
             ></div>
           </div>
         </div>
+        <Button
+          size="sm"
+          variant="outline"
+          class="h-7 gap-1.5 text-xs"
+          icon={CreditCard}
+          onclick={() => {
+            window.plausible?.('buy_credits');
+            window.open(
+              'mailto:credits@devmotion.app?subject=Credits Request&body=I need credits',
+              '_blank'
+            );
+          }}
+        >
+          Buy Credits
+        </Button>
       </div>
-      <Button
-        size="sm"
-        variant="outline"
-        class="h-7 gap-1.5 text-xs"
-        icon={CreditCard}
-        onclick={() => {
-          window.plausible?.('buy_credits');
-          window.open(
-            'mailto:credits@devmotion.app?subject=Credits Request&body=I need credits',
-            '_blank'
-          );
-        }}
-      >
-        Buy Credits
-      </Button>
+    {/if}
+    <div class="bg-muted/30 px-4 py-1.5 {credits.current ? 'border-t' : ''}">
+      <p class="text-xs text-muted-foreground">
+        Share your demo on X with <a
+          href="https://x.com/intent/tweet?text=Check%20out%20my%20animation%20made%20with%20DevMotion!%20%40emadev01"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="font-semibold text-foreground hover:underline"
+          onclick={() => window.plausible?.('share_on_x_click')}>@emadev01</a
+        > to earn free credits
+      </p>
     </div>
-  {/if}
+  </div>
 
   <!-- Messages -->
   <div class="flex-1 p-4">
