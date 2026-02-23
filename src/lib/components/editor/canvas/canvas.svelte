@@ -315,7 +315,7 @@
           <LayersRenderer
             layers={projectStore.state.layers}
             currentTime={projectStore.currentTime}
-            duration={projectStore.state.duration}
+            projectDuration={projectStore.state.duration}
             isPlaying={projectStore.isPlaying}
             selectedLayerId={projectStore.selectedLayerId}
             disableSelection={projectStore.isRecording}

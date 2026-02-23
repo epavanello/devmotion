@@ -152,7 +152,7 @@
     <LayersRenderer
       layers={project.layers}
       {currentTime}
-      duration={project.duration}
+      projectDuration={project.duration}
       disableSelection={true}
       isServerSideRendering={true}
       projectFont={project.fontFamily}

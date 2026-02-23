@@ -11,7 +11,7 @@
   let {
     layers,
     currentTime,
-    duration,
+    projectDuration,
     isPlaying = false,
     selectedLayerId = null,
     disableSelection = false,
@@ -22,7 +22,7 @@
   }: {
     layers: TypedLayer[];
     currentTime: number;
-    duration: number;
+    projectDuration: number;
     isPlaying?: boolean;
     selectedLayerId?: string | null;
     disableSelection?: boolean;
@@ -46,8 +46,8 @@
     }
     // Otherwise compute using shared rendering functions
     return {
-      transform: getLayerTransform(layer, currentTime, duration),
-      style: getLayerStyle(layer, currentTime, duration),
+      transform: getLayerTransform(layer, currentTime, projectDuration),
+      style: getLayerStyle(layer, currentTime, projectDuration),
       customProps: getLayerProps(layer, currentTime)
     };
   }
@@ -65,7 +65,7 @@
   <!-- Top-level layers and groups -->
   {#each topLevelLayers as layer (layer.id)}
     {@const enterTime = layer.enterTime ?? 0}
-    {@const exitTime = layer.exitTime ?? duration}
+    {@const exitTime = layer.exitTime ?? projectDuration}
     {@const isInTimeRange = currentTime >= enterTime && currentTime <= exitTime}
 
     {#if layer.type === 'group'}
@@ -86,7 +86,7 @@
       >
         {#each getChildLayers(layer.id) as child (child.id)}
           {@const childEnter = child.enterTime ?? 0}
-          {@const childExit = child.exitTime ?? duration}
+          {@const childExit = child.exitTime ?? projectDuration}
           {@const childInRange = currentTime >= childEnter && currentTime <= childExit}
           {@const mustKeepWarm =
             child.type === 'video' || child.type === 'image' || child.type === 'audio'}
