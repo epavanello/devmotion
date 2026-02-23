@@ -11,6 +11,7 @@
   import { SvelteMap } from 'svelte/reactivity';
   import type { Component } from 'svelte';
   import { defaultTransform } from '$lib/schemas/base';
+  import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -69,33 +70,35 @@
       </Button>
     {/snippet}
   </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="start" class="max-h-80 overflow-y-auto">
+  <DropdownMenu.Content align="center">
     <!-- Folder/Group option at the top -->
     <DropdownMenu.Item onclick={() => addLayer('group')}>
       <Folder class="mr-2 h-4 w-4" />
       Folder
     </DropdownMenu.Item>
     <DropdownMenu.Separator />
-    {#each groupedLayers as group, i (group.category)}
-      <DropdownMenu.Group>
-        <DropdownMenu.GroupHeading class="flex items-center">
-          {@const CatIcon = group.icon}
-          <CatIcon class="mr-2 h-3.5 w-3.5" />
-          {group.label}
-        </DropdownMenu.GroupHeading>
-        {#each group.layers as layer (layer.type)}
-          <DropdownMenu.Item onclick={() => addLayer(layer.type)}>
-            {#if layer.icon}
-              {@const Icon = layer.icon}
-              <Icon class="mr-2 h-4 w-4" />
-            {/if}
-            {layer.label}
-          </DropdownMenu.Item>
-        {/each}
-      </DropdownMenu.Group>
-      {#if i < groupedLayers.length - 1}
-        <DropdownMenu.Separator />
-      {/if}
-    {/each}
+    <ScrollArea viewportClass="max-h-80">
+      {#each groupedLayers as group, i (group.category)}
+        <DropdownMenu.Group>
+          <DropdownMenu.GroupHeading class="flex items-center">
+            {@const CatIcon = group.icon}
+            <CatIcon class="mr-2 h-3.5 w-3.5" />
+            {group.label}
+          </DropdownMenu.GroupHeading>
+          {#each group.layers as layer (layer.type)}
+            <DropdownMenu.Item onclick={() => addLayer(layer.type)}>
+              {#if layer.icon}
+                {@const Icon = layer.icon}
+                <Icon class="mr-2 h-4 w-4" />
+              {/if}
+              {layer.label}
+            </DropdownMenu.Item>
+          {/each}
+        </DropdownMenu.Group>
+        {#if i < groupedLayers.length - 1}
+          <DropdownMenu.Separator />
+        {/if}
+      {/each}
+    </ScrollArea>
   </DropdownMenu.Content>
 </DropdownMenu.Root>

@@ -11,12 +11,14 @@
   const {
     for: htmlFor,
     label,
+    labelExtra,
     children,
     property,
     addKeyframe
   }: {
     for: string;
     label: string;
+    labelExtra?: Snippet;
     children: Snippet;
   } & (
     | {
@@ -44,7 +46,10 @@
     {#if property}
       <InputPin {property} active={!!hasKeyframes} {label} {addKeyframe} {removeKeyframes} />
     {/if}
-    <Label for={htmlFor} class="text-[10px] text-muted-foreground">{label}</Label>
+    <Label for={htmlFor} class="flex-1 text-[10px] text-muted-foreground">{label}</Label>
+    {#if labelExtra}
+      {@render labelExtra()}
+    {/if}
   </div>
 
   {@render children()}

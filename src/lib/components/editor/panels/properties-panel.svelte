@@ -19,13 +19,12 @@
   import type { Layer } from '$lib/schemas/animation';
   import { getDefaultInterpolationForProperty } from '$lib/utils/interpolation-utils';
   import { defaultLayerStyle, defaultTransform } from '$lib/schemas/base';
-  import { Clock, Move, Palette, Layers, Sparkles, Boxes } from '@lucide/svelte';
+  import { Clock, Move, Palette, Layers, Boxes } from '@lucide/svelte';
 
   // Property group components
   import TimeRangeGroup from './properties/groups/time-range-group.svelte';
   import TransformGroup from './properties/groups/transform-group.svelte';
   import StyleGroup from './properties/groups/style-group.svelte';
-  import AnimationPresetsGroup from './properties/groups/animation-presets-group.svelte';
   import KeyframesGroup from './properties/groups/keyframes-group.svelte';
   import LayerPropertiesGroup from './properties/groups/layer-properties-group.svelte';
 
@@ -334,11 +333,11 @@
 
         <Separator />
 
-        <!-- Time Range -->
+        <!-- Time Range & Transitions -->
         <PropertiesGroup icon={Clock}>
           {#snippet label()}
             <div class="flex w-full items-center justify-between">
-              <Label class="font-semibold">Time Range</Label>
+              <Label class="font-semibold">Time & Transitions</Label>
               {#if selectedLayer.contentDuration !== undefined}
                 {@const contentDuration = selectedLayer.contentDuration}
                 {@const contentOffset = selectedLayer.contentOffset ?? 0}
@@ -350,15 +349,6 @@
             </div>
           {/snippet}
           <TimeRangeGroup layer={selectedLayer} />
-        </PropertiesGroup>
-      {/if}
-
-      {#if !isProjectSettings}
-        <Separator />
-
-        <!-- Animation Presets -->
-        <PropertiesGroup label="Animation Presets" icon={Sparkles}>
-          <AnimationPresetsGroup layer={selectedLayer} />
         </PropertiesGroup>
 
         <Separator />
