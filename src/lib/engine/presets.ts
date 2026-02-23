@@ -6,7 +6,7 @@ import { z } from 'zod';
 import type { Paths } from 'type-fest';
 import type { Interpolation } from '$lib/types/animation';
 import type { Transform, LayerStyle } from '$lib/schemas/base';
-import type { EditLayerStyleSection } from '$lib/ai/schemas';
+
 
 // ============================================
 // Type-safe preset system
