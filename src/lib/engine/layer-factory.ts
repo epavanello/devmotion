@@ -26,7 +26,6 @@ export function createLayer<T extends LayerTypeString>(
     projectDimensions?: { width: number; height: number };
   }
 ): TypedLayer {
-  const { x = 0, y = 0 } = override?.transform?.position || {};
   const definition = getLayerDefinition(type);
 
   // Extract default values from the Zod schema

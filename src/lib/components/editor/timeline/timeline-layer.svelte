@@ -137,8 +137,6 @@
     window.removeEventListener('mouseup', handleDragEnd);
   });
 
-  const isGroupLayer = $derived(layer.type === 'group');
-
   // Color for the duration bar based on layer type
   const barColor = $derived.by(() => {
     switch (layer.type) {

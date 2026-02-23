@@ -2,7 +2,6 @@
   import { ChevronDown } from '@lucide/svelte';
   import { AI_MODELS, getModel } from '$lib/ai/models';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-  import { getUser } from '$lib/functions/auth.remote';
 
   interface Props {
     selectedModelId: string;
@@ -13,8 +12,6 @@
 
   const models = Object.values(AI_MODELS);
   const selectedModel = $derived(getModel(selectedModelId));
-  const user = $derived(getUser());
-  const isPro = $derived(user.current?.plan === 'pro');
 </script>
 
 <DropdownMenu.Root>
