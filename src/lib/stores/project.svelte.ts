@@ -702,7 +702,7 @@ export class ProjectStore {
 
       // Clamp and validate exit time
       const clampedExitTime = Math.max(0, Math.min(exitTime, maxExitTime));
-      const validExitTime = Math.max(clampedExitTime, enterTime);
+      const validExitTime = Math.max(clampedExitTime, enterTime + 0.1);
 
       return { ...layer, exitTime: validExitTime };
     });
