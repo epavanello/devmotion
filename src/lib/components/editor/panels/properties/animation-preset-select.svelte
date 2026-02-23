@@ -24,7 +24,7 @@
 
   let hoveredPresetId = $state<string | null>(null);
   let previewTime = $state(0);
-  let animationFrameId = $state<number | null>(null);
+  let animationFrameId: number | null = null;
 
   const selectedPreset = $derived(options.find((opt) => opt.id === value));
   const hoveredPreset = $derived(options.find((opt) => opt.id === hoveredPresetId));
@@ -85,11 +85,13 @@
   });
 
   // Get current transform and style for preview at current time
+  // previewTime is normalized 0..1, but functions expect absolute milliseconds
+  const previewTimeMs = $derived(previewTime * duration * 1000);
   const previewTransform = $derived(
-    getLayerTransform(previewLayerWithKeyframes, previewTime, duration * 1000)
+    getLayerTransform(previewLayerWithKeyframes, previewTimeMs, duration * 1000)
   );
   const previewStyle = $derived(
-    getLayerStyle(previewLayerWithKeyframes, previewTime, duration * 1000)
+    getLayerStyle(previewLayerWithKeyframes, previewTimeMs, duration * 1000)
   );
   const previewTransformCSS = $derived(generateTransformCSS(previewTransform));
   const previewFilterCSS = $derived(generateFilterCSS(previewStyle));
@@ -125,6 +127,12 @@
       stopPreview();
     }
   }
+
+  $effect(() => {
+    return () => {
+      stopPreview();
+    };
+  });
 </script>
 
 <Select.Root type="single" {value} onValueChange={handleValueChange}>
