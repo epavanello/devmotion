@@ -54,11 +54,13 @@
   }
 
   function handleMouseDown(e: MouseEvent) {
+    if (disabled) return;
     e.preventDefault();
     startDrag(e.clientX);
   }
 
   function handleTouchStart(e: TouchEvent) {
+    if (disabled) return;
     e.preventDefault();
     // Only handle single touch
     if (e.touches.length === 1) {
@@ -81,12 +83,12 @@
   }
 
   function handleMouseMove(e: MouseEvent) {
-    if (!isDragging) return;
+    if (!isDragging || disabled) return;
     updateValue(e.clientX, e.shiftKey, e.altKey);
   }
 
   function handleTouchMove(e: TouchEvent) {
-    if (!isDragging) return;
+    if (!isDragging || disabled) return;
     e.preventDefault();
     // Only handle single touch
     if (e.touches.length === 1) {
@@ -95,6 +97,7 @@
   }
 
   function updateValue(clientX: number, shiftKey: boolean, altKey: boolean) {
+    if (disabled) return;
     const deltaX = clientX - startX;
 
     let multiplier = 1;
