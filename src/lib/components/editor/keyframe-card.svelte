@@ -22,6 +22,8 @@
     getSupportedInterpolationFamilies
   } from '$lib/utils/interpolation-utils';
   import Select from '../ui/select/select.svelte';
+  import { BaseAnimatablePropertyLabels, type BaseAnimatableProperty } from '$lib/schemas/base';
+  import type { LiteralUnion } from 'type-fest';
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
 
@@ -63,20 +65,10 @@
     text: 'Text'
   };
 
-  function getPropertyLabel(property: string): string {
-    const labels: Record<string, string> = {
-      'position.x': 'Position X',
-      'position.y': 'Position Y',
-      'position.z': 'Position Z',
-      'rotation.x': 'Rotation X',
-      'rotation.y': 'Rotation Y',
-      'rotation.z': 'Rotation Z',
-      'scale.x': 'Scale X',
-      'scale.y': 'Scale Y',
-      opacity: 'Opacity',
-      color: 'Color'
-    };
-    if (labels[property]) return labels[property];
+  function getPropertyLabel(property: LiteralUnion<BaseAnimatableProperty, string>): string {
+    if (property in BaseAnimatablePropertyLabels) {
+      return BaseAnimatablePropertyLabels[property as BaseAnimatableProperty];
+    }
 
     if (property.startsWith('props.')) {
       const propName = property.slice(6);

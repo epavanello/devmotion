@@ -3,30 +3,8 @@
  * These can be applied to any layer by the AI using create_layer tool
  */
 import { z } from 'zod';
-import type { Paths } from 'type-fest';
 import type { Interpolation } from '$lib/types/animation';
-import type { Transform, LayerStyle } from '$lib/schemas/base';
-
-
-// ============================================
-// Type-safe preset system
-// ============================================
-
-/**
- * Animatable transform properties - auto-inferred from Transform type
- * Excludes 'anchor' and parent objects, only includes leaf paths (e.g., 'position.x')
- */
-export type TransformProperty = Extract<Paths<Transform>, `${string}.${string}`>;
-
-/**
- * Animatable style properties - extracted from LayerStyle type
- */
-export type StyleProperty = keyof Omit<LayerStyle, 'dropShadowColor'>;
-
-/**
- * All base animatable properties (transform + style)
- */
-export type BaseAnimatableProperty = TransformProperty | StyleProperty;
+import type { BaseAnimatableProperty, TransformProperty, StyleProperty } from '$lib/schemas/base';
 
 /**
  * Preset category based on usage context
@@ -42,7 +20,7 @@ export type PresetKeyframe<P extends BaseAnimatableProperty = BaseAnimatableProp
   property: P;
   value: P extends TransformProperty
     ? number
-    : P extends StyleProperty
+    : P extends Omit<StyleProperty, 'dropShadowColor'>
       ? number
       : P extends 'dropShadowColor'
         ? string

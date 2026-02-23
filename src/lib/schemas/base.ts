@@ -5,6 +5,7 @@
  */
 import { fieldRegistry } from '$lib/layers/properties/field-registry';
 import type { PropertyGroup } from '$lib/layers/registry';
+import type { Paths } from 'type-fest';
 import { z } from 'zod';
 
 // ============================================
@@ -271,3 +272,43 @@ export const BaseLayerFieldsSchema = z.object({
 });
 
 export type BaseLayerFields = z.infer<typeof BaseLayerFieldsSchema>;
+
+// ============================================
+// Type-safe preset system
+// ============================================
+
+/**
+ * Animatable transform properties - auto-inferred from Transform type
+ * Excludes 'anchor' and parent objects, only includes leaf paths (e.g., 'position.x')
+ */
+export type TransformProperty = Extract<Paths<Transform>, `${string}.${string}`>;
+
+/**
+ * Animatable style properties - extracted from LayerStyle type
+ */
+export type StyleProperty = keyof LayerStyle;
+
+/**
+ * All base animatable properties (transform + style)
+ */
+export type BaseAnimatableProperty = TransformProperty | StyleProperty;
+
+export const BaseAnimatablePropertyLabels: Record<BaseAnimatableProperty, string> = {
+  'position.x': 'Position X',
+  'position.y': 'Position Y',
+  'position.z': 'Position Z',
+  'rotation.x': 'Rotation X',
+  'rotation.y': 'Rotation Y',
+  'rotation.z': 'Rotation Z',
+  'scale.x': 'Scale X',
+  'scale.y': 'Scale Y',
+  opacity: 'Opacity',
+  blur: 'Blur',
+  brightness: 'Brightness',
+  contrast: 'Contrast',
+  saturate: 'Saturate',
+  dropShadowBlur: 'Drop Shadow Blur',
+  dropShadowColor: 'Drop Shadow Color',
+  dropShadowX: 'Drop Shadow X',
+  dropShadowY: 'Drop Shadow Y'
+};

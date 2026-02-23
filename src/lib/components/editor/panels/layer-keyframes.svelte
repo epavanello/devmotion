@@ -3,6 +3,7 @@
   import { Select } from '$lib/components/ui/select';
   import { SvelteSet } from 'svelte/reactivity';
   import type { TypedLayer } from '$lib/layers/typed-registry';
+  import InputWrapper from './input-wrapper.svelte';
 
   let { layer }: { layer: TypedLayer } = $props();
 
@@ -49,32 +50,27 @@
   }
 </script>
 
-<div class="space-y-3">
-  {#if availableProperties.length > 1}
-    <div class="flex items-center gap-2">
-      <label for="property-filter" class="text-sm font-medium text-muted-foreground">
-        Filter:
-      </label>
-      <Select
-        trigger={{
-          id: 'property-filter'
-        }}
-        bind:value={selectedProperty}
-        options={availableProperties.map((property) => ({
-          value: property,
-          label: formatPropertyLabel(property)
-        }))}
-      />
-    </div>
-  {/if}
+{#if availableProperties.length > 1}
+  <InputWrapper label="Filter" for="property-filter">
+    <Select
+      trigger={{
+        id: 'property-filter'
+      }}
+      bind:value={selectedProperty}
+      options={availableProperties.map((property) => ({
+        value: property,
+        label: formatPropertyLabel(property)
+      }))}
+    />
+  </InputWrapper>
+{/if}
 
-  <div class="space-y-2">
-    {#if filteredKeyframes.length === 0}
-      <p class="py-4 text-center text-sm text-muted-foreground">No keyframes found</p>
-    {:else}
-      {#each filteredKeyframes as keyframe (keyframe.id)}
-        <KeyframeCard {keyframe} layerId={layer.id} layerType={layer.type} />
-      {/each}
-    {/if}
-  </div>
+<div class="space-y-2">
+  {#if filteredKeyframes.length === 0}
+    <p class="py-4 text-center text-sm text-muted-foreground">No keyframes found</p>
+  {:else}
+    {#each filteredKeyframes as keyframe (keyframe.id)}
+      <KeyframeCard {keyframe} layerId={layer.id} layerType={layer.type} />
+    {/each}
+  {/if}
 </div>
