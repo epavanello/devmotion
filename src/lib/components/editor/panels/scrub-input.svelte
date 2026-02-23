@@ -10,6 +10,7 @@
     step?: number;
     min?: number;
     max?: number;
+    disabled?: boolean;
     onchange?: (value: number) => void;
     class?: string;
     postFix?: string | Snippet;
@@ -21,6 +22,7 @@
     step = 1,
     min,
     max,
+    disabled = false,
     onchange,
     class: className,
     postFix
@@ -163,6 +165,7 @@
     {id}
     type="number"
     value={displayValue}
+    {disabled}
     oninput={handleInput}
     onfocus={() => (isFocused = true)}
     onblur={() => (isFocused = false)}

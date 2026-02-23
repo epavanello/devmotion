@@ -27,7 +27,6 @@
   import StyleGroup from './properties/groups/style-group.svelte';
   import KeyframesGroup from './properties/groups/keyframes-group.svelte';
   import LayerPropertiesGroup from './properties/groups/layer-properties-group.svelte';
-  import AnimationPresetsGroup from './properties/groups/animation-presets-group.svelte';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -350,7 +349,6 @@
             </div>
           {/snippet}
           <TimeRangeGroup layer={selectedLayer} />
-          <AnimationPresetsGroup layer={selectedLayer} />
         </PropertiesGroup>
 
         <Separator />

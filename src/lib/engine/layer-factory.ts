@@ -9,6 +9,7 @@ import type { LayerProps, LayerTypeString } from '$lib/layers/layer-types';
 import type { TypedLayer } from '$lib/layers/typed-registry';
 import { calculateCoverDimensions, ASPECT_RATIOS } from '$lib/utils/media';
 import { defaultLayerStyle, defaultTransform } from '$lib/schemas/base';
+import type { LiteralUnion } from 'type-fest';
 
 /**
  * Default interpolation for initial keyframes
@@ -22,7 +23,7 @@ const defaultInterpolation: Interpolation = { family: 'continuous', strategy: 'e
  * @returns A new layer with inferred prop types based on the layer type
  */
 export function createLayer<T extends LayerTypeString>(
-  type: T | string,
+  type: LiteralUnion<T, string>,
   override?: {
     props?: Partial<LayerProps<T>>;
     transform?: Partial<Transform>;
@@ -50,22 +51,7 @@ export function createLayer<T extends LayerTypeString>(
   }
 
   // Create initial keyframes for position properties
-  const initialKeyframes: Keyframe[] = [
-    {
-      id: nanoid(),
-      time: 0,
-      property: 'position.x',
-      value: x,
-      interpolation: defaultInterpolation
-    },
-    {
-      id: nanoid(),
-      time: 0,
-      property: 'position.y',
-      value: y,
-      interpolation: defaultInterpolation
-    }
-  ];
+  const initialKeyframes: Keyframe[] = [];
 
   return {
     id: nanoid(),
