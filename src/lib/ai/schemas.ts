@@ -156,6 +156,7 @@ export interface CreateLayerOutput {
  * Style section: provide all style fields to replace entire style object.
  * Transform section: provide all transform fields to replace entire transform object.
  */
+// TODO replace with LayerStyleSchema
 const EditLayerStyleSection = z
   .object({
     opacity: z.number().min(0).max(1).optional(),

@@ -223,19 +223,6 @@ export const KeyframeSchema = z.object({
 export const LayerTypeSchema = z.enum(getAvailableLayerTypes());
 
 // ============================================
-// Layer Transitions
-// ============================================
-
-/**
- * Layer transition configuration
- * Defines an animation preset to apply automatically at layer enter/exit
- */
-export const LayerTransitionSchema = z.object({
-  presetId: z.string().describe('ID of the animation preset to apply'),
-  duration: z.number().positive().describe('Duration of the transition in seconds')
-});
-
-// ============================================
 // Layer
 // ============================================
 
@@ -272,17 +259,7 @@ export const LayerSchema = BaseLayerFieldsSchema.extend({
    * Combined with enter/exit times, this determines what portion of content is shown.
    * Only applicable when contentDuration is defined.
    */
-  contentOffset: z.number().min(0).optional(),
-  /**
-   * Enter transition - animation preset to apply automatically when layer enters
-   * Applied at runtime without creating keyframes
-   */
-  enterTransition: LayerTransitionSchema.optional(),
-  /**
-   * Exit transition - animation preset to apply automatically when layer exits
-   * Applied at runtime without creating keyframes
-   */
-  exitTransition: LayerTransitionSchema.optional()
+  contentOffset: z.number().min(0).optional()
 }).refine(
   (data) => {
     // Validate contentOffset doesn't exceed contentDuration
@@ -391,5 +368,4 @@ export type ProjectData = z.infer<typeof projectDataSchema>;
 
 export type ViewportSettings = z.infer<typeof ViewportSettingsSchema>;
 export type AnimationPreset = z.infer<typeof AnimationPresetSchema>;
-export type LayerTransition = z.infer<typeof LayerTransitionSchema>;
 export type ExportSettings = z.infer<typeof ExportSettingsSchema>;

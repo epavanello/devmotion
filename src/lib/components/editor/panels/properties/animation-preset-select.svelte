@@ -87,12 +87,8 @@
   // Get current transform and style for preview at current time
   // previewTime is normalized 0..1, but functions expect absolute milliseconds
   const previewTimeMs = $derived(previewTime * duration * 1000);
-  const previewTransform = $derived(
-    getLayerTransform(previewLayerWithKeyframes, previewTimeMs, duration * 1000)
-  );
-  const previewStyle = $derived(
-    getLayerStyle(previewLayerWithKeyframes, previewTimeMs, duration * 1000)
-  );
+  const previewTransform = $derived(getLayerTransform(previewLayerWithKeyframes, previewTimeMs));
+  const previewStyle = $derived(getLayerStyle(previewLayerWithKeyframes, previewTimeMs));
   const previewTransformCSS = $derived(generateTransformCSS(previewTransform));
   const previewFilterCSS = $derived(generateFilterCSS(previewStyle));
 

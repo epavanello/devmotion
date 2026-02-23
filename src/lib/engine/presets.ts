@@ -6,6 +6,7 @@ import { z } from 'zod';
 import type { Paths } from 'type-fest';
 import type { Interpolation } from '$lib/types/animation';
 import type { Transform, LayerStyle } from '$lib/schemas/base';
+import type { EditLayerStyleSection } from '$lib/ai/schemas';
 
 // ============================================
 // Type-safe preset system
@@ -20,7 +21,7 @@ export type TransformProperty = Extract<Paths<Transform>, `${string}.${string}`>
 /**
  * Animatable style properties - extracted from LayerStyle type
  */
-export type StyleProperty = keyof LayerStyle;
+export type StyleProperty = keyof Omit<LayerStyle, 'dropShadowColor'>;
 
 /**
  * All base animatable properties (transform + style)
@@ -41,15 +42,7 @@ export type PresetKeyframe<P extends BaseAnimatableProperty = BaseAnimatableProp
   property: P;
   value: P extends TransformProperty
     ? number
-    : P extends
-          | 'opacity'
-          | 'blur'
-          | 'brightness'
-          | 'contrast'
-          | 'saturate'
-          | 'dropShadowX'
-          | 'dropShadowY'
-          | 'dropShadowBlur'
+    : P extends StyleProperty
       ? number
       : P extends 'dropShadowColor'
         ? string
