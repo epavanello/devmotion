@@ -137,7 +137,8 @@ export function applyTransitionPresets(
     if (timeUntilExit <= layer.exitTransition.duration) {
       const preset = getPresetById(layer.exitTransition.presetId);
       if (preset) {
-        // For exit transitions, we interpolate from end backwards
+        // For exit transitions, play the preset forward as the layer approaches exit.
+        // Exit presets must be authored to animate from visible → hidden state.
         const transitionProgress = layer.exitTransition.duration - timeUntilExit;
         const { transform, style } = applyPresetAtTime(
           preset.keyframes,
