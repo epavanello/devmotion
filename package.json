@@ -16,6 +16,7 @@
     "lint:fix": "eslint . --fix",
     "test:unit": "vitest",
     "test": "npm run test:unit -- --run",
+    "auth:generate": "better-auth generate --output src/lib/server/db/schema/auth.ts",
     "db:start": "docker compose up",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
@@ -23,6 +24,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "devDependencies": {
+    "@better-auth/cli": "^1.4.19",
     "@eslint/compat": "^1.4.1",
     "@eslint/js": "^9.39.2",
     "@inlang/paraglide-js": "^2.9.1",

@@ -69,6 +69,12 @@ export const auth = betterAuth({
         required: true,
         defaultValue: 'user',
         input: false
+      },
+      emailConsent: {
+        type: 'boolean',
+        required: true,
+        defaultValue: true,
+        input: false
       }
     },
     deleteUser: {
@@ -76,3 +82,6 @@ export const auth = betterAuth({
     }
   }
 });
+
+export type Session = typeof auth.$Infer.Session.session;
+export type User = typeof auth.$Infer.Session.user;
