@@ -44,6 +44,11 @@
       onUpdateProp(metadata.name, result.url);
       onUpdateProp('fileKey', result.key);
 
+      // Handle Lummi attribution if present
+      if ('attribution' in result && result.attribution) {
+        onUpdateProp('attribution', result.attribution);
+      }
+
       const mediaType = metadata.meta.mediaType;
 
       // Use centralized media layer data handling

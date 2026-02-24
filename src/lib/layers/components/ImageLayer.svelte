@@ -1,4 +1,5 @@
 <script module lang="ts">
+  /* eslint-disable svelte/no-navigation-without-resolve */
   import { z } from 'zod';
   import type { LayerMeta } from '../registry';
   import { Image } from '@lucide/svelte';
@@ -71,6 +72,15 @@
       .string()
       .default('')
       .describe('Internal property: original filename of the uploaded image, used for alt text')
+      .register(fieldRegistry, { hidden: true }),
+    attribution: z
+      .object({
+        imageUrl: z.string(),
+        authorUrl: z.string(),
+        authorName: z.string()
+      })
+      .optional()
+      .describe('Internal property: attribution data for Lummi stock images')
       .register(fieldRegistry, { hidden: true })
   });
 
@@ -92,12 +102,36 @@
 </script>
 
 <script lang="ts">
-  let { src, width, height, objectFit, fileKey: _fileKey, fileName }: Props = $props();
+  let { src, width, height, objectFit, fileKey: _fileKey, fileName, attribution }: Props = $props();
 </script>
 
-<div class="overflow-hidden" style:width="{width}px" style:height="{height}px">
+<div class="relative overflow-hidden" style:width="{width}px" style:height="{height}px">
   {#if src}
     <img {src} alt={fileName || ''} class="h-full w-full" style:object-fit={objectFit} />
+
+    {#if attribution}
+      <div
+        class="absolute right-0 bottom-0 left-0 bg-black/70 px-2 py-1 text-[9px] leading-tight text-white"
+      >
+        <a
+          href={attribution.imageUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hover:underline"
+        >
+          Image from Lummi
+        </a>
+        •
+        <a
+          href={attribution.authorUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hover:underline"
+        >
+          by {attribution.authorName}
+        </a>
+      </div>
+    {/if}
   {:else}
     <div class="flex h-full w-full items-center justify-center bg-gray-800 text-sm text-gray-400">
       No image source

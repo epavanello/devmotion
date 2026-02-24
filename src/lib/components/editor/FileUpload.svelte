@@ -1,10 +1,11 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
-  import { Upload, Loader2, FolderOpen } from '@lucide/svelte';
+  import { Upload, Loader2, FolderOpen, Image } from '@lucide/svelte';
   import * as Popover from '$lib/components/ui/popover';
   import AudioRecorder from './AudioRecorder.svelte';
   import VideoRecorder from './VideoRecorder.svelte';
   import CameraCapture from './CameraCapture.svelte';
+  import LummiImagePicker from './LummiImagePicker.svelte';
   import { uiStore } from '$lib/stores/ui.svelte';
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { getUserAssets } from '$lib/functions/assets.remote';
@@ -20,7 +21,13 @@
     /** Media type: image, video, or audio */
     mediaType: 'image' | 'video' | 'audio';
     /** Callback when file is uploaded */
-    onUpload: (result: { url: string; key: string; fileName: string; duration?: number }) => void;
+    onUpload: (result: {
+      url: string;
+      key: string;
+      fileName: string;
+      duration?: number;
+      attribution?: { imageUrl: string; authorUrl: string; authorName: string };
+    }) => void;
     /** Optional project ID for organizing uploads */
     projectId?: string;
   }
@@ -34,6 +41,7 @@
   let displayName = $derived(currentFileName || '');
 
   let assetPickerOpen = $state(false);
+  let lummiPickerOpen = $state(false);
 
   let assets = $derived(getUserAssets({ mediaType }));
   const existingAssets = $derived(assets.current?.filter((asset) => asset.mediaType === mediaType));
@@ -46,6 +54,20 @@
       key: asset.storageKey,
       fileName: asset.originalName,
       duration: asset.duration ?? undefined
+    });
+  }
+
+  function selectLummiImage(result: {
+    url: string;
+    fileName: string;
+    attribution: { imageUrl: string; authorUrl: string; authorName: string };
+  }) {
+    lummiPickerOpen = false;
+    onUpload({
+      url: result.url,
+      key: '',
+      fileName: result.fileName,
+      attribution: result.attribution
     });
   }
 
@@ -155,66 +177,84 @@
   {/if}
 
   <!-- Upload/Replace button -->
-  <div class="flex gap-1.5">
-    <Button
-      variant="outline"
-      size="sm"
-      class="flex-1 justify-start text-xs"
-      onclick={() => fileInputEl?.click()}
-      icon={Upload}
-    >
-      {value ? 'Replace' : `Upload ${mediaType}`}
-    </Button>
+  <div class="flex flex-col gap-1.5">
+    <div class="flex gap-1.5">
+      <Button
+        variant="outline"
+        size="sm"
+        class="flex-1 justify-start text-xs"
+        onclick={() => fileInputEl?.click()}
+        icon={Upload}
+      >
+        {value ? 'Replace' : `Upload ${mediaType}`}
+      </Button>
 
-    <!-- Pick from existing assets -->
-    <Popover.Root bind:open={assetPickerOpen}>
-      <Popover.Trigger>
-        {#snippet child({ props })}
-          <Button
-            {...props}
-            variant="outline"
-            size="sm"
-            icon={FolderOpen}
-            class="flex-1 justify-start text-xs"
-          >
-            Pick from assets
-          </Button>
-        {/snippet}
-      </Popover.Trigger>
-      <Popover.Content class="w-64 p-0" align="end">
-        <ScrollArea viewportClass="max-h-[calc(100vh-20rem)]">
-          {#if isLoadingAssets}
-            <div class="flex items-center justify-center py-4">
-              <Loader2 class="size-4 animate-spin text-muted-foreground" />
-            </div>
-          {:else if existingAssets?.length === 0}
-            <div class="px-3 py-4 text-center text-xs text-muted-foreground">
-              No {mediaType} assets found
-            </div>
-          {:else}
-            {#each existingAssets as asset (asset.id)}
-              <button
-                class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted/50"
-                onclick={() => selectExistingAsset(asset)}
-              >
-                {#if asset.mediaType === 'image'}
-                  <img
-                    src={asset.url}
-                    alt={asset.originalName}
-                    class="size-8 shrink-0 rounded object-cover"
-                  />
-                {:else}
-                  <div class="flex size-8 shrink-0 items-center justify-center rounded bg-muted">
-                    <FolderOpen class="size-3 text-muted-foreground" />
-                  </div>
-                {/if}
-                <span class="truncate">{asset.originalName}</span>
-              </button>
-            {/each}
-          {/if}
-        </ScrollArea>
-      </Popover.Content>
-    </Popover.Root>
+      <!-- Pick from existing assets -->
+      <Popover.Root bind:open={assetPickerOpen}>
+        <Popover.Trigger>
+          {#snippet child({ props })}
+            <Button
+              {...props}
+              variant="outline"
+              size="sm"
+              icon={FolderOpen}
+              class="flex-1 justify-start text-xs"
+            >
+              Pick from assets
+            </Button>
+          {/snippet}
+        </Popover.Trigger>
+        <Popover.Content class="w-64 p-0" align="end">
+          <ScrollArea viewportClass="max-h-[calc(100vh-20rem)]">
+            {#if isLoadingAssets}
+              <div class="flex items-center justify-center py-4">
+                <Loader2 class="size-4 animate-spin text-muted-foreground" />
+              </div>
+            {:else if existingAssets?.length === 0}
+              <div class="px-3 py-4 text-center text-xs text-muted-foreground">
+                No {mediaType} assets found
+              </div>
+            {:else}
+              {#each existingAssets as asset (asset.id)}
+                <button
+                  class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted/50"
+                  onclick={() => selectExistingAsset(asset)}
+                >
+                  {#if asset.mediaType === 'image'}
+                    <img
+                      src={asset.url}
+                      alt={asset.originalName}
+                      class="size-8 shrink-0 rounded object-cover"
+                    />
+                  {:else}
+                    <div class="flex size-8 shrink-0 items-center justify-center rounded bg-muted">
+                      <FolderOpen class="size-3 text-muted-foreground" />
+                    </div>
+                  {/if}
+                  <span class="truncate">{asset.originalName}</span>
+                </button>
+              {/each}
+            {/if}
+          </ScrollArea>
+        </Popover.Content>
+      </Popover.Root>
+    </div>
+
+    <!-- Lummi stock images (image type only) -->
+    {#if mediaType === 'image'}
+      <Popover.Root bind:open={lummiPickerOpen}>
+        <Popover.Trigger>
+          {#snippet child({ props })}
+            <Button {...props} variant="outline" size="sm" icon={Image} class="w-full text-xs">
+              Browse Lummi stock images
+            </Button>
+          {/snippet}
+        </Popover.Trigger>
+        <Popover.Content class="w-[400px] p-4" align="end">
+          <LummiImagePicker onSelect={selectLummiImage} />
+        </Popover.Content>
+      </Popover.Root>
+    {/if}
   </div>
 
   <!-- Record/Capture option -->
