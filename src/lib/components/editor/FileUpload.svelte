@@ -182,7 +182,7 @@
         {/snippet}
       </Popover.Trigger>
       <Popover.Content class="w-64 p-0" align="end">
-        <ScrollArea viewportClass="max-h-48">
+        <ScrollArea viewportClass="max-h-[calc(100vh-20rem)]">
           {#if isLoadingAssets}
             <div class="flex items-center justify-center py-4">
               <Loader2 class="size-4 animate-spin text-muted-foreground" />

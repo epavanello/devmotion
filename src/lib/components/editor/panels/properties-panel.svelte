@@ -333,11 +333,11 @@
 
         <Separator />
 
-        <!-- Time Range & Transitions -->
+        <!-- Time Range & Animations -->
         <PropertiesGroup icon={Clock}>
           {#snippet label()}
             <div class="flex w-full items-center justify-between">
-              <Label class="font-semibold">Time & Transitions</Label>
+              <Label class="font-semibold">Time & Animations</Label>
               {#if selectedLayer.contentDuration !== undefined}
                 {@const contentDuration = selectedLayer.contentDuration}
                 {@const contentOffset = selectedLayer.contentOffset ?? 0}

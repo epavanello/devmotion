@@ -18,6 +18,7 @@
     fields: ({
       for: string;
       labels: string;
+      postFix?: string | Snippet;
     } & (
       | {
           property?: never;
@@ -41,6 +42,8 @@
       projectStore.removeKeyframesByProperty(selectedLayer.id, property);
     }
   }
+
+  const hasPostFix = $derived(fields.some((f) => f.postFix));
 </script>
 
 <div class="flex flex-col gap-1">
@@ -71,3 +74,17 @@
     {@render children()}
   </ButtonGroup.Root>
 </div>
+{#if hasPostFix}
+  <div class="flex gap-1">
+    {#each fields as field (field.for)}
+      <div class="flex flex-1 items-center gap-0.5">
+        {#if typeof field.postFix === 'string'}
+          <span class="text-[10px] text-muted-foreground">{field.postFix}</span>
+        {/if}
+        {#if typeof field.postFix === 'function'}
+          {@render field.postFix()}
+        {/if}
+      </div>
+    {/each}
+  </div>
+{/if}

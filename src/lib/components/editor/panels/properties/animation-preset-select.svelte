@@ -135,7 +135,7 @@
   <Select.Trigger class="w-full" {id}>
     {selectedPreset?.name ?? placeholder}
   </Select.Trigger>
-  <Select.Content class="w-80" onmouseleave={stopPreview}>
+  <Select.Content class="max-h-[calc(100vh-20rem)] w-80 p-0" onmouseleave={stopPreview}>
     <!-- Sticky preview at the top -->
     {#if hoveredPreset}
       <div
