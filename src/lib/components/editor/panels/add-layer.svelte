@@ -77,7 +77,7 @@
       Folder
     </DropdownMenu.Item>
     <DropdownMenu.Separator />
-    <ScrollArea viewportClass="max-h-80">
+    <ScrollArea viewportClass="max-h-[calc(100vh-20rem)]">
       {#each groupedLayers as group, i (group.category)}
         <DropdownMenu.Group>
           <DropdownMenu.GroupHeading class="flex items-center">

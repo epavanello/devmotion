@@ -205,7 +205,9 @@ function easeOutBounce(t: number): number {
 /**
  * Get easing function for continuous interpolation strategies
  */
-function getEasingFunction(strategy: ContinuousInterpolationStrategy): (t: number) => number {
+export function getEasingFunction(
+  strategy: ContinuousInterpolationStrategy
+): (t: number) => number {
   switch (strategy) {
     // CSS standard
     case 'linear':

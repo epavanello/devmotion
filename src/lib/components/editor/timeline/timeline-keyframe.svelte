@@ -4,7 +4,8 @@
   import * as Popover from '$lib/components/ui/popover';
   import { Button } from '$lib/components/ui/button';
   import { Clock, Trash2 } from '@lucide/svelte';
-  import KeyframeCard from '../keyframe-card.svelte';
+  import KeyframeSegment from '../keyframe-segment.svelte';
+  import { groupKeyframesIntoSegments, getUniqueProperties } from '$lib/utils/keyframe-segments';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -22,6 +23,18 @@
   const firstKeyframe = $derived(keyframes[0]);
   const position = $derived(firstKeyframe.time * pixelsPerSecond);
   const isSelected = $derived(keyframes.some((kf) => projectStore.selectedKeyframeIds.has(kf.id)));
+
+  // Generate segments for each property at this time point
+  const segments = $derived.by(() => {
+    const properties = getUniqueProperties(keyframes);
+    return properties.flatMap((prop) => {
+      // Get all keyframes for the layer (not just at this time)
+      const allLayerKeyframes = layer?.keyframes ?? [];
+      const propertySegments = groupKeyframesIntoSegments(allLayerKeyframes, prop);
+      // Find the segment that starts at this time
+      return propertySegments.filter((seg) => seg.startKeyframe.time === firstKeyframe.time);
+    });
+  });
 
   let isDragging = $state(false);
   let startX = 0;
@@ -119,14 +132,14 @@
         {/if}
       </div>
 
-      <!-- Keyframe Cards -->
+      <!-- Keyframe Segments -->
       <div class="space-y-2">
-        {#each keyframes as keyframe (keyframe.id)}
-          <KeyframeCard
-            {keyframe}
+        {#each segments as segment (segment.startKeyframe.id)}
+          <KeyframeSegment
+            {segment}
             {layerId}
             {layerType}
-            readonlyTime
+            compact
             onGoToPropertyClick={() => (popoverOpen = false)}
           />
         {/each}
