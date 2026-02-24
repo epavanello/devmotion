@@ -75,7 +75,7 @@
 
     const keyframes = hoveredPreset.keyframes.map((kf) => ({
       id: crypto.randomUUID(),
-      time: kf.time,
+      time: kf.time * duration * 1000, // Convert normalized time (0-1) to milliseconds
       property: kf.property,
       value: kf.value,
       interpolation: kf.interpolation
@@ -125,9 +125,8 @@
   }
 
   $effect(() => {
-    return () => {
-      stopPreview();
-    };
+    // Cleanup on component unmount
+    return stopPreview;
   });
 </script>
 
@@ -135,7 +134,7 @@
   <Select.Trigger class="w-full" {id}>
     {selectedPreset?.name ?? placeholder}
   </Select.Trigger>
-  <Select.Content class="max-h-[calc(100vh-20rem)] w-80 p-0" onmouseleave={stopPreview}>
+  <Select.Content class="max-h-[calc(50vh)] w-80 p-0" onmouseleave={stopPreview}>
     <!-- Sticky preview at the top -->
     {#if hoveredPreset}
       <div
