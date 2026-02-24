@@ -13,7 +13,8 @@
     Globe,
     Github,
     Sun,
-    Moon
+    Moon,
+    UserCircle
   } from '@lucide/svelte';
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import ExportDialog from './export-dialog.svelte';
@@ -325,6 +326,11 @@
                   </p>
                 </div>
               </DropdownMenu.Label>
+              <DropdownMenu.Separator />
+              <DropdownMenu.Item onclick={() => goto(resolve('/profile'))}>
+                <UserCircle />
+                Profile
+              </DropdownMenu.Item>
               <DropdownMenu.Separator />
               <form {...signOut}>
                 <DropdownMenu.Item>

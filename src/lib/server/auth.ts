@@ -74,7 +74,7 @@ export const auth = betterAuth({
         type: 'boolean',
         required: true,
         defaultValue: true,
-        input: false
+        input: true
       }
     },
     deleteUser: {

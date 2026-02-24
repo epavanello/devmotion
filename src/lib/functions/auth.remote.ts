@@ -1,6 +1,6 @@
 import { form, getRequestEvent, query } from '$app/server';
 import { auth } from '$lib/server/auth';
-import { redirect } from '@sveltejs/kit';
+import { invalid, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { withErrorHandling } from '.';
 import { db } from '$lib/server/db';
@@ -79,3 +79,20 @@ export const checkRole = query(z.enum(['admin', 'user']), async (role) => {
     redirect(303, '/');
   }
 });
+
+export const updateUser = form(
+  z.object({
+    name: z.string().min(1, 'Name is required'),
+    emailConsent: z.boolean()
+  }),
+  withErrorHandling(async ({ name, emailConsent }, issues) => {
+    const { request, locals } = getRequestEvent();
+
+    // Check authentication
+    if (!locals.user?.id) {
+      invalid(issues('Not authenticated'));
+    }
+
+    await auth.api.updateUser({ body: { name, emailConsent }, headers: request.headers });
+  })
+);
