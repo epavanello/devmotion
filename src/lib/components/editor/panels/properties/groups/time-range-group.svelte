@@ -43,12 +43,12 @@
 
 <InputsWrapper
   fields={[
-    { for: 'enter-time', labels: 'Enter (s)' },
-    { for: 'exit-time', labels: 'Exit (s)' }
+    { for: `enter-time-${layer.id}`, labels: 'Enter (s)' },
+    { for: `exit-time-${layer.id}`, labels: 'Exit (s)' }
   ]}
 >
   <ScrubInput
-    id="enter-time"
+    id={`enter-time-${layer.id}`}
     value={layer.enterTime ?? 0}
     min={Math.max(
       0,
@@ -64,7 +64,7 @@
     onchange={(v) => projectStore.setLayerEnterTime(layer.id, v)}
   />
   <ScrubInput
-    id="exit-time"
+    id={`exit-time-${layer.id}`}
     value={layer.exitTime ?? projectStore.state.duration}
     min={0}
     max={Math.min(

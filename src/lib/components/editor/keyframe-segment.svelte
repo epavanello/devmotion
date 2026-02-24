@@ -226,14 +226,9 @@
           <span class="font-mono font-medium">{formatValue(startKeyframe.value)}</span>
         </div>
       {:else}
-        <InputsWrapper
-          fields={[
-            { for: 'final-time', labels: 'Time' },
-            { for: 'final-value', labels: 'Value' }
-          ]}
-        >
+        <InputsWrapper fields={[{ for: `final-time-${startKeyframe.id}`, labels: 'Time' }]}>
           <ScrubInput
-            id="final-time"
+            id={`final-time-${startKeyframe.id}`}
             value={startKeyframe.time}
             step={0.01}
             min={0}
@@ -265,12 +260,20 @@
       {:else}
         <InputsWrapper
           fields={[
-            { for: 'start-time', labels: 'From', postFix: `= ${formatValue(startKeyframe.value)}` },
-            { for: 'end-time', labels: 'To', postFix: `= ${formatValue(endKeyframe.value)}` }
+            {
+              for: `start-time-${startKeyframe.id}`,
+              labels: 'From',
+              postFix: `= ${formatValue(startKeyframe.value)}`
+            },
+            {
+              for: `end-time-${endKeyframe.id}`,
+              labels: 'To',
+              postFix: `= ${formatValue(endKeyframe.value)}`
+            }
           ]}
         >
           <ScrubInput
-            id="start-time"
+            id={`start-time-${startKeyframe.id}`}
             value={startKeyframe.time}
             step={0.01}
             min={0}
@@ -279,7 +282,7 @@
             postFix="s"
           />
           <ScrubInput
-            id="end-time"
+            id={`end-time-${endKeyframe.id}`}
             value={endKeyframe.time}
             step={0.01}
             min={0}
@@ -290,7 +293,7 @@
         </InputsWrapper>
 
         <InterpolationSelect
-          id="interpolation"
+          id="interpolation-${startKeyframe.id}`}
           {layerType}
           property={startKeyframe.property}
           value={startKeyframe.interpolation}
