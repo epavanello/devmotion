@@ -20,7 +20,7 @@ export type PresetKeyframe<P extends BaseAnimatableProperty = BaseAnimatableProp
   property: P;
   value: P extends TransformProperty
     ? number
-    : P extends Omit<StyleProperty, 'dropShadowColor'>
+    : P extends Exclude<StyleProperty, 'dropShadowColor'>
       ? number
       : P extends 'dropShadowColor'
         ? string
