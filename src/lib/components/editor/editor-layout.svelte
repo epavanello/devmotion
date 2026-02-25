@@ -207,9 +207,17 @@
                 {/snippet}
               </Panel>
             </Tabs.Content>
-            <Tabs.Content value="editor">
-              <ResizablePaneGroup direction="vertical">
-                <ResizablePane defaultSize={30} minSize={0} maxSize={60}>
+            <Tabs.Content value="editor" class="overflow-hidden">
+              <Tabs.Root value="layers" class="flex h-full flex-col gap-0">
+                <div class="px-1.5 pb-1.5">
+                  <Tabs.List class="w-full">
+                    <Tabs.Trigger value="layers">
+                      Layers ({projectStore.state.layers.length})
+                    </Tabs.Trigger>
+                    <Tabs.Trigger value="properties">Properties</Tabs.Trigger>
+                  </Tabs.List>
+                </div>
+                <Tabs.Content value="layers">
                   <Panel
                     title="Layers ({projectStore.state.layers.length})"
                     actionsComponent={AddLayer}
@@ -219,16 +227,15 @@
                       <LayersPanel />
                     {/snippet}
                   </Panel>
-                </ResizablePane>
-                <ResizableHandle />
-                <ResizablePane>
-                  <Panel title="Properties">
+                </Tabs.Content>
+                <Tabs.Content value="properties">
+                  <Panel title="Properties" class="border-t">
                     {#snippet content()}
                       <PropertiesPanel />
                     {/snippet}
                   </Panel>
-                </ResizablePane>
-              </ResizablePaneGroup>
+                </Tabs.Content>
+              </Tabs.Root>
             </Tabs.Content>
             <Tabs.Content value="assets" class="overflow-auto">
               <Panel title="Assets" icon={FolderOpen} class="border-t">
