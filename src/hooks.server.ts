@@ -1,20 +1,10 @@
 import type { Handle } from '@sveltejs/kit';
-import { paraglideMiddleware } from '$lib/paraglide/server';
 import { auth } from '$lib/server/auth';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { building } from '$app/environment';
 import { sequence } from '@sveltejs/kit/hooks';
 import '$lib/server/thumbnail-queue';
 import type { UserRole } from '$lib/server/db/schema';
-
-const handleParaglide: Handle = ({ event, resolve }) =>
-  paraglideMiddleware(event.request, ({ request, locale }) => {
-    event.request = request;
-
-    return resolve(event, {
-      transformPageChunk: ({ html }) => html.replace('%paraglide.lang%', locale)
-    });
-  });
 
 const authHandle: Handle = async ({ event, resolve }) => {
   // Fetch current session from Better Auth
@@ -70,4 +60,4 @@ const cacheHandle: Handle = async ({ event, resolve }) => {
   return response;
 };
 
-export const handle: Handle = sequence(handleParaglide, authHandle, cacheHandle);
+export const handle: Handle = sequence(authHandle, cacheHandle);
