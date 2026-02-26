@@ -6,28 +6,100 @@
 
   let { pixelsPerSecond, duration }: Props = $props();
 
-  const markers = $derived.by(() => {
+  // Calculate appropriate sub-divisions based on zoom level
+  const timeScale = $derived.by(() => {
+    const pps = pixelsPerSecond;
+
+    // Determine major/minor divisions based on pixels per second
+    if (pps >= 400) {
+      // Very zoomed in: show 0.1s increments
+      return { major: 0.5, minor: 0.1, sub: 0.02, format: (t: number) => `${t.toFixed(1)}s` };
+    } else if (pps >= 200) {
+      // Zoomed in: show 0.2s increments
+      return { major: 1, minor: 0.2, sub: 0.1, format: (t: number) => `${t.toFixed(1)}s` };
+    } else if (pps >= 100) {
+      // Normal: show 0.5s increments
+      return { major: 1, minor: 0.5, sub: 0.1, format: (t: number) => `${t}s` };
+    } else if (pps >= 50) {
+      // Zoomed out: show 1s increments
+      return { major: 5, minor: 1, sub: 0.5, format: (t: number) => `${t}s` };
+    } else {
+      // Very zoomed out: show 5s increments
+      return { major: 10, minor: 5, sub: 1, format: (t: number) => `${t}s` };
+    }
+  });
+
+  const majorMarks = $derived.by(() => {
     const marks = [];
-    const totalSeconds = Math.ceil(duration);
-    for (let i = 0; i <= totalSeconds; i++) {
+    const step = timeScale.major;
+    for (let i = 0; i <= duration; i += step) {
+      marks.push(i);
+    }
+    return marks;
+  });
+
+  const minorMarks = $derived.by(() => {
+    const marks = [];
+    const step = timeScale.minor;
+    for (let i = 0; i <= duration; i += step) {
+      // Skip if it's a major mark
+      if (i % timeScale.major === 0) continue;
+      marks.push(i);
+    }
+    return marks;
+  });
+
+  const subMarks = $derived.by(() => {
+    const marks = [];
+    const step = timeScale.sub;
+    for (let i = 0; i <= duration; i += step) {
+      // Skip if it's a major or minor mark
+      if (i % timeScale.minor === 0) continue;
       marks.push(i);
     }
     return marks;
   });
 </script>
 
-<div class="timeline-ruler relative flex h-8 bg-muted/30">
+<div class="timeline-ruler relative flex h-10 bg-muted/20">
   <!-- Layer names spacer -->
-  <div class="w-[200px] shrink-0 border-r"></div>
+  <div class="flex w-60 shrink-0 items-center border-r bg-background px-3">
+    <span class="text-xs font-medium text-muted-foreground">LAYERS</span>
+  </div>
 
   <!-- Time markers -->
-  <div class="relative flex-1">
-    {#each markers as second, index (index)}
+  <div class="relative flex-1 bg-muted/10">
+    <!-- Sub marks (thinnest) -->
+    {#each subMarks as time (time)}
       <div
-        class="absolute h-full border-l border-muted-foreground/20"
-        style="left: {second * pixelsPerSecond}px"
+        class="absolute bottom-0 h-2 border-l border-muted-foreground/10"
+        style="left: {time * pixelsPerSecond}px"
+      ></div>
+    {/each}
+
+    <!-- Minor marks -->
+    {#each minorMarks as time (time)}
+      <div
+        class="absolute bottom-0 h-3 border-l border-muted-foreground/20"
+        style="left: {time * pixelsPerSecond}px"
+      ></div>
+    {/each}
+
+    <!-- Major marks with labels -->
+    {#each majorMarks as time (time)}
+      {@const position = time * pixelsPerSecond}
+      {@const labelWidth = 30}
+      {@const isNearEnd = position > duration * pixelsPerSecond - labelWidth}
+      <div
+        class="absolute h-full border-l border-muted-foreground/30"
+        style="left: {position}px"
       >
-        <span class="ml-1 text-xs text-muted-foreground">{second}s</span>
+        <span
+          class="absolute top-1 text-[10px] font-medium text-muted-foreground"
+          style={isNearEnd ? 'right: 1px' : 'left: 1px'}
+        >
+          {timeScale.format(time)}
+        </span>
       </div>
     {/each}
   </div>

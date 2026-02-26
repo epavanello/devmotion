@@ -8,9 +8,6 @@
   import InputsWrapper from './panels/inputs-wrapper.svelte';
   import InterpolationSelect from './panels/properties/interpolation-select.svelte';
   import {
-    getPropertyCategory,
-    getTransformInputId,
-    getStyleInputId,
     isTransformProperty,
     isStyleProperty
   } from '$lib/utils/property-names';
@@ -18,6 +15,7 @@
   import type { LiteralUnion } from 'type-fest';
   import type { AnimatableProperty, Interpolation } from '$lib/types/animation';
   import * as Card from '$lib/components/ui/card';
+  import { navigateToProperty } from '$lib/utils/property-navigation';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -93,43 +91,9 @@
 
   const Icon = $derived(getPropertyIcon(startKeyframe.property));
 
-  function getInputIdFromProperty(property: AnimatableProperty): string {
-    const category = getPropertyCategory(property);
-
-    if (category === 'transform') {
-      return getTransformInputId(property);
-    }
-    if (category === 'style') {
-      return getStyleInputId(property);
-    }
-    if (property.startsWith('props.')) {
-      return property;
-    }
-
-    return property;
-  }
-
   function handleGoToProperty() {
     onGoToPropertyClick?.();
-    const property = startKeyframe.property;
-    const inputId = getInputIdFromProperty(property);
-
-    const input = document.getElementById(inputId) as HTMLElement | null;
-    if (input) {
-      const groupToggle = input
-        .closest('.properties-group-content[data-open="false"]')
-        ?.querySelector<HTMLButtonElement>('.properties-group-header');
-
-      if (groupToggle) {
-        groupToggle.click();
-      }
-
-      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(() => {
-        (input as HTMLInputElement)?.focus?.();
-        (input as HTMLInputElement)?.select?.();
-      }, 500);
-    }
+    navigateToProperty(startKeyframe.property);
   }
 </script>
 

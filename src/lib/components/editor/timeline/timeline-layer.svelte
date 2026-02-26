@@ -1,9 +1,12 @@
 <script lang="ts">
-  import type { Keyframe } from '$lib/types/animation';
-  import { getEditorState } from '$lib/contexts/editor.svelte';
-  import TimelineKeyframe from './timeline-keyframe.svelte';
-  import { onDestroy } from 'svelte';
   import type { TypedLayer } from '$lib/layers/typed-registry';
+  import { getEditorState } from '$lib/contexts/editor.svelte';
+  import { ChevronDown, ChevronRight } from '@lucide/svelte';
+  import { SvelteSet } from 'svelte/reactivity';
+  import TimelinePropertyTrack from './timeline-property-track.svelte';
+  import { onDestroy } from 'svelte';
+  import { cn } from '$lib/utils';
+  import { getLayerDefinition } from '$lib/layers/registry';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -12,9 +15,21 @@
     layer: TypedLayer;
     pixelsPerSecond: number;
     indent?: number;
+    isExpanded: boolean;
+    onToggleExpanded: () => void;
+    expandedProperties: SvelteSet<string>;
+    onToggleProperty: (property: string) => void;
   }
 
-  let { layer, pixelsPerSecond, indent = 0 }: Props = $props();
+  let {
+    layer,
+    pixelsPerSecond,
+    indent = 0,
+    isExpanded,
+    onToggleExpanded,
+    expandedProperties,
+    onToggleProperty
+  }: Props = $props();
 
   const isSelected = $derived(projectStore.selectedLayerId === layer.id);
 
@@ -26,33 +41,17 @@
   const barLeft = $derived(enterTime * pixelsPerSecond);
   const barWidth = $derived((exitTime - enterTime) * pixelsPerSecond);
 
-  // Group keyframes by timestamp
-  const keyframeGroups = $derived.by(() => {
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const groups = new Map<number, Keyframe[]>();
-    for (const keyframe of layer.keyframes) {
-      const existing = groups.get(keyframe.time);
-      if (existing) {
-        existing.push(keyframe);
-      } else {
-        groups.set(keyframe.time, [keyframe]);
-      }
+  // Get unique animated properties
+  const animatedProperties = $derived.by(() => {
+    const props = new SvelteSet<string>();
+    for (const kf of layer.keyframes) {
+      props.add(kf.property);
     }
-    return Array.from(groups.entries()).map(([time, keyframes]) => ({
-      time,
-      keyframes
-    }));
+    return Array.from(props).sort();
   });
 
   function selectLayer() {
     projectStore.selectedLayerId = layer.id;
-  }
-
-  function handleKeyDown(e: KeyboardEvent) {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      selectLayer();
-    }
   }
 
   // Drag state for resizing enter/exit time
@@ -131,93 +130,113 @@
     window.removeEventListener('mouseup', handleDragEnd);
   }
 
-  // Clean up listeners on unmount
   onDestroy(() => {
     window.removeEventListener('mousemove', handleDragMove);
     window.removeEventListener('mouseup', handleDragEnd);
   });
 
-  // Color for the duration bar based on layer type
   const barColor = $derived.by(() => {
     switch (layer.type) {
       case 'video':
-        return 'bg-purple-500/30 border-purple-500/50';
+        return 'bg-purple-500/20 border-purple-500/40';
       case 'audio':
-        return 'bg-blue-500/30 border-blue-500/50';
+        return 'bg-blue-500/20 border-blue-500/40';
       case 'group':
-        return 'bg-emerald-500/25 border-emerald-500/40';
+        return 'bg-emerald-500/15 border-emerald-500/30';
       default:
-        return 'bg-primary/15 border-primary/30';
+        return 'bg-primary/10 border-primary/20';
     }
   });
 
-  const barLabel = $derived.by(() => {
-    if (layer.type === 'video') return 'Video';
-    if (layer.type === 'audio') return 'Audio';
-    if (layer.type === 'group') return 'Group';
-    return '';
-  });
+  const hasAnimatedProperties = $derived(animatedProperties.length > 0);
+  const Icon = $derived(getLayerDefinition(layer.type).icon);
 </script>
 
+<!-- Layer row -->
 <div
-  class="flex border-b transition-colors hover:bg-muted/50"
-  class:bg-muted={isSelected}
-  onclick={selectLayer}
-  onkeydown={handleKeyDown}
-  role="button"
-  tabindex="0"
+  class={cn('border-b', {
+    'bg-muted/30': isSelected
+  })}
 >
-  <!-- Layer name -->
-  <div
-    class="w-50 shrink-0 truncate border-r px-3 py-2 text-sm"
-    style:padding-left="{12 + indent * 16}px"
-  >
-    <div class="flex flex-col">
-      <span class="truncate">{layer.name}</span>
-      <span class="text-[10px] text-muted-foreground">
-        {enterTime.toFixed(1)}s – {exitTime.toFixed(1)}s
-      </span>
-    </div>
-  </div>
-
-  <!-- Keyframes area -->
-  <div class="relative h-12 min-h-12 flex-1">
-    <!-- Duration bar (shown for all layers with enter/exit times, and groups) -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="flex items-stretch transition-colors hover:bg-muted/20">
+    <!-- Layer header -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div
-      class="absolute top-1 bottom-1 rounded-sm border {barColor}"
-      style:left="{barLeft}px"
-      style:width="{barWidth}px"
-      style:cursor={isDraggingBar ? 'grabbing' : 'grab'}
-      onmousedown={startDragBar}
+      data-layer-header
+      class="flex w-60 shrink-0 items-center gap-1.5 border-r bg-background px-2 py-1.5"
+      style:padding-left="{8 + indent * 16}px"
+      onclick={selectLayer}
+      role="button"
+      tabindex="0"
     >
-      <!-- Enter handle -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="absolute top-0 bottom-0 left-0 w-1.5 cursor-col-resize rounded-l-sm bg-white/30 hover:bg-white/50"
-        onmousedown={startDragEnter}
-      ></div>
-
-      <!-- Exit handle -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="absolute top-0 right-0 bottom-0 w-1.5 cursor-col-resize rounded-r-sm bg-white/30 hover:bg-white/50"
-        onmousedown={startDragExit}
-      ></div>
-
-      <!-- Label -->
-      {#if barLabel && barWidth > 40}
-        <span
-          class="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-[9px] font-medium text-white/60"
+      <!-- Expand toggle (only if has animated properties) -->
+      {#if hasAnimatedProperties}
+        <button
+          class="flex h-4 w-4 shrink-0 items-center justify-center rounded transition-colors hover:bg-muted"
+          onclick={(e) => {
+            e.stopPropagation();
+            onToggleExpanded();
+          }}
+          aria-label={isExpanded ? 'Collapse layer' : 'Expand layer'}
         >
-          {barLabel}
-        </span>
+          {#if isExpanded}
+            <ChevronDown class="h-3 w-3 text-muted-foreground" />
+          {:else}
+            <ChevronRight class="h-3 w-3 text-muted-foreground" />
+          {/if}
+        </button>
+      {:else}
+        <div class="w-4"></div>
       {/if}
+
+      <!-- Layer icon -->
+      <Icon class="h-4 w-4 shrink-0 text-muted-foreground" />
+
+      <!-- Layer name -->
+      <div class="min-w-0 flex-1">
+        <div class="truncate text-sm font-medium">{layer.name}</div>
+      </div>
     </div>
 
-    <!-- Keyframes -->
-    {#each keyframeGroups as group (group.time)}
-      <TimelineKeyframe keyframes={group.keyframes} {pixelsPerSecond} layerId={layer.id} />
-    {/each}
+    <!-- Timeline area with duration bar -->
+    <div class="relative h-11 flex-1">
+      <!-- Duration bar -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="absolute top-1.5 bottom-1.5 rounded border {barColor} transition-colors"
+        style:left="{barLeft}px"
+        style:width="{barWidth}px"
+        style:cursor={isDraggingBar ? 'grabbing' : 'grab'}
+        onmousedown={startDragBar}
+      >
+        <!-- Enter handle -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="absolute inset-y-0 left-0 w-1 cursor-col-resize rounded-l bg-white/20 transition-colors hover:bg-white/40"
+          onmousedown={startDragEnter}
+        ></div>
+
+        <!-- Exit handle -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="absolute inset-y-0 right-0 w-1 cursor-col-resize rounded-r bg-white/20 transition-colors hover:bg-white/40"
+          onmousedown={startDragExit}
+        ></div>
+      </div>
+    </div>
   </div>
+
+  <!-- Expanded property tracks -->
+  {#if isExpanded && hasAnimatedProperties}
+    {#each animatedProperties as property (property)}
+      <TimelinePropertyTrack
+        {layer}
+        {property}
+        {pixelsPerSecond}
+        indent={indent + 1}
+        isExpanded={expandedProperties.has(`${layer.id}:${property}`)}
+        onToggleExpanded={() => onToggleProperty(property)}
+      />
+    {/each}
+  {/if}
 </div>
