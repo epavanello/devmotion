@@ -1,7 +1,6 @@
 <script lang="ts">
   import Toolbar from './toolbar.svelte';
   import Canvas from './canvas/canvas.svelte';
-  import Timeline from './timeline/timeline.svelte';
   import LayersPanel from './panels/layers-panel.svelte';
   import PropertiesPanel from './panels/properties-panel.svelte';
   import Panel from './panels/panel.svelte';
@@ -16,6 +15,7 @@
   import AddLayer from './panels/add-layer.svelte';
   import { IsMobile } from '$lib/hooks/is-mobile.svelte';
   import * as Tabs from '$lib/components/ui/tabs';
+  import Timeline from './timeline/timeline.svelte';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
