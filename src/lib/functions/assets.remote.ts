@@ -38,25 +38,30 @@ export const getUserAssets = query(
 
     if (assets.length === 0) return [];
 
-    // Map storage key to project IDs
-    const keyToProjectIds = new Map<string, string[]>();
+    const storageKeys = assets.map((a) => a.storageKey);
 
-    // For each asset, find projects that use it with a direct JSONB query
-    for (const assetItem of assets) {
-      const result = await db.execute<{ id: string }>(
-        sql`
-          SELECT id
-          FROM project
-          WHERE user_id = ${locals.user.id}
-            AND EXISTS (
-              SELECT 1
-              FROM jsonb_array_elements(data->'layers') AS layer
-              WHERE layer->'props'->>'fileKey' = ${assetItem.storageKey}
-            )
-        `
-      );
-      const projectIds = Array.isArray(result) ? result.map((r) => r.id) : [];
-      keyToProjectIds.set(assetItem.storageKey, projectIds);
+    const keysArray = sql`ARRAY[${sql.join(
+      storageKeys.map((k) => sql`${k}`),
+      sql`, `
+    )}]`;
+    const result = await db.execute<{ id: string; storage_key: string }>(
+      sql`
+        SELECT DISTINCT
+          p.id,
+          layer->'props'->>'fileKey' as storage_key
+        FROM project p,
+        LATERAL jsonb_array_elements(p.data->'layers') AS layer
+        WHERE p.user_id = ${locals.user.id}
+          AND layer->'props'->>'fileKey' = ANY(${keysArray})
+      `
+    );
+
+    // Build map of storage key -> project IDs
+    const keyToProjectIds = new Map<string, string[]>();
+    for (const row of result) {
+      const existing = keyToProjectIds.get(row.storage_key) || [];
+      existing.push(row.id);
+      keyToProjectIds.set(row.storage_key, existing);
     }
 
     // Map project IDs to each asset

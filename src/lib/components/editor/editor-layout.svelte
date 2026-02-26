@@ -240,7 +240,10 @@
             <Tabs.Content value="assets" class="overflow-auto">
               <Panel title="Assets" icon={FolderOpen} class="border-t">
                 {#snippet content()}
-                  <AssetsPanel />
+                  <svelte:boundary>
+                    <AssetsPanel />
+                    {#snippet pending()}{/snippet}
+                  </svelte:boundary>
                 {/snippet}
               </Panel>
             </Tabs.Content>
