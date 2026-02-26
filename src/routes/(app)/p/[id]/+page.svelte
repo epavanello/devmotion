@@ -8,6 +8,7 @@
   import { ProjectSchema } from '$lib/types/animation';
   import { toast } from 'svelte-sonner';
   import { watch } from 'runed';
+  import { Loader2 } from '@lucide/svelte';
 
   let { data }: { data: PageData } = $props();
 
@@ -134,4 +135,11 @@
 <!-- SEO: H1 for project page (visually hidden but accessible to search engines) -->
 <h1 class="sr-only">{projectName} - Animation by {data.project.user?.name || 'Community'}</h1>
 
-<EditorLayout />
+<svelte:boundary>
+  {#snippet pending()}
+    <div class="flex h-screen items-center justify-center">
+      <Loader2 class="animate-spin" />
+    </div>
+  {/snippet}
+  <EditorLayout />
+</svelte:boundary>

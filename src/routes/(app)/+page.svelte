@@ -3,6 +3,7 @@
   import SeoHead from '$lib/components/seo-head.svelte';
   import JsonLd from '$lib/components/json-ld.svelte';
   import { PUBLIC_BASE_URL } from '$env/static/public';
+  import { Loader2 } from '@lucide/svelte';
 
   const baseUrl = PUBLIC_BASE_URL;
 </script>
@@ -96,4 +97,11 @@
 <!-- SEO: H1 for homepage (visually hidden but accessible to search engines) -->
 <h1 class="sr-only">DevMotion - Motion Graphics in Your Browser, Powered by AI</h1>
 
-<EditorLayout />
+<svelte:boundary>
+  {#snippet pending()}
+    <div class="flex h-screen items-center justify-center">
+      <Loader2 class="animate-spin" />
+    </div>
+  {/snippet}
+  <EditorLayout />
+</svelte:boundary>
