@@ -185,7 +185,7 @@
 
         <ResizableHandle />
 
-        <ResizablePane defaultSize={30} minSize={30} maxSize={40}>
+        <ResizablePane defaultSize={30} minSize={20} maxSize={40}>
           <Tabs.Root value="chat" class="flex h-full flex-col gap-0">
             <div class="p-1.5">
               <Tabs.List class="w-full">

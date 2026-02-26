@@ -135,12 +135,38 @@
 
     event.preventDefault();
 
-    // Zoom with scroll wheel
-    const delta = event.deltaY > 0 ? 0.9 : 1.1;
-    const newZoom = projectStore.viewport.zoom * delta;
+    // Pinch-to-zoom on trackpad (browser fires ctrlKey: true for pinch gestures)
+    // Also handles Ctrl+scroll on mouse for zoom
+    if (event.ctrlKey || event.metaKey) {
+      // Pinch zoom: deltaY is the zoom amount (negative = zoom in, positive = zoom out)
+      const zoomFactor = 1 - event.deltaY * 0.01;
+      const oldZoom = projectStore.viewport.zoom;
+      const newZoom = Math.max(0.1, Math.min(5, oldZoom * zoomFactor));
 
-    // Clamp zoom between 0.1 and 5
-    projectStore.setZoom(Math.max(0.1, Math.min(5, newZoom)));
+      zoomTowardMouse(event, oldZoom, newZoom);
+      projectStore.setZoom(newZoom);
+    } else {
+      // Scroll without modifier → pan (trackpad two-finger drag or mouse wheel)
+      const currentPan = projectStore.viewport.pan;
+      projectStore.setPan(currentPan.x - event.deltaX, currentPan.y - event.deltaY);
+    }
+  }
+
+  function zoomTowardMouse(event: WheelEvent, oldZoom: number, newZoom: number) {
+    if (!canvasContainer) return;
+
+    const rect = canvasContainer.getBoundingClientRect();
+    // Mouse position relative to container center
+    const mouseX = event.clientX - rect.left - rect.width / 2;
+    const mouseY = event.clientY - rect.top - rect.height / 2;
+
+    const pan = projectStore.viewport.pan;
+    const scaleFactor = newZoom / oldZoom;
+    // Adjust pan so the world-point under the cursor stays in place
+    const newPanX = mouseX - scaleFactor * (mouseX - pan.x);
+    const newPanY = mouseY - scaleFactor * (mouseY - pan.y);
+
+    projectStore.setPan(newPanX, newPanY);
   }
 
   // ========================================
