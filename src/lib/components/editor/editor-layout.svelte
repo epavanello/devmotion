@@ -217,7 +217,7 @@
                     <Tabs.Trigger value="properties">Properties</Tabs.Trigger>
                   </Tabs.List>
                 </div>
-                <Tabs.Content value="layers">
+                <Tabs.Content value="layers" class="overflow-auto">
                   <Panel
                     title="Layers ({projectStore.state.layers.length})"
                     actionsComponent={AddLayer}
@@ -228,7 +228,7 @@
                     {/snippet}
                   </Panel>
                 </Tabs.Content>
-                <Tabs.Content value="properties">
+                <Tabs.Content value="properties" class="overflow-auto">
                   <Panel title="Properties" class="border-t">
                     {#snippet content()}
                       <PropertiesPanel />
