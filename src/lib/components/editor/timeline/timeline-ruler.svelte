@@ -63,7 +63,7 @@
 
 <div class="timeline-ruler relative flex h-10 bg-muted/20">
   <!-- Layer names spacer -->
-  <div class="flex w-60 shrink-0 items-center border-r bg-background px-3">
+  <div class="sticky left-0 z-10 flex w-60 shrink-0 items-center border-r bg-background px-3">
     <span class="text-xs font-medium text-muted-foreground">LAYERS</span>
   </div>
 

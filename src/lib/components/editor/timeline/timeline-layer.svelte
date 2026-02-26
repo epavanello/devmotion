@@ -163,7 +163,7 @@
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div
       data-layer-header
-      class="flex w-60 shrink-0 items-center gap-1.5 border-r bg-background px-2 py-1.5"
+      class="sticky left-0 z-10 flex w-60 shrink-0 items-center gap-1.5 border-r bg-background px-2 py-1.5"
       style:padding-left="{8 + indent * 16}px"
       onclick={selectLayer}
       role="button"
