@@ -172,16 +172,19 @@
 
       // Get mouse position relative to timeline for zoom origin
       if (scrollContainer && timelineContainer) {
-        const rect = timelineContainer.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left - 240;
-        const timeAtMouse = (scrollContainer.scrollLeft + mouseX) / pixelsPerSecond;
+        // Mouse position relative to the scroll viewport (not the full container)
+        const scrollViewportRect = scrollContainer.getBoundingClientRect();
+        const mouseXInViewport = e.clientX - scrollViewportRect.left - 240;
+
+        // Calculate the time value at the mouse position before zoom
+        const timeAtMouse = (scrollContainer.scrollLeft + mouseXInViewport) / pixelsPerSecond;
 
         pixelsPerSecond = newPixelsPerSecond;
 
-        // Adjust scroll to keep the same time under the mouse
+        // Adjust scroll to keep the same time under the mouse after zoom
         requestAnimationFrame(() => {
           if (scrollContainer) {
-            const newScrollLeft = timeAtMouse * newPixelsPerSecond - mouseX;
+            const newScrollLeft = timeAtMouse * newPixelsPerSecond - mouseXInViewport;
             scrollContainer.scrollLeft = Math.max(0, newScrollLeft);
           }
         });
