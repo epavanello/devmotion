@@ -168,14 +168,14 @@ export class ElementTransition {
   /** Get computed opacity for a fragment */
   getOpacity(fragment: TransitionFragment): number {
     if (!this.config.effects.includes('fade')) return 1;
-    return fragment.progress;
+    return fragment.linearProgress;
   }
 
   /** Get computed scale for a fragment */
   getScale(fragment: TransitionFragment): number {
     if (!this.config.effects.includes('scale')) return 1;
     const from = this.config.scaleFrom;
-    return from + (1 - from) * fragment.progress;
+    return from + (1 - from) * fragment.linearProgress;
   }
 
   /** Get computed translateY in px for a fragment */
@@ -207,7 +207,7 @@ export class ElementTransition {
     }
 
     if (hasSmeEffects) {
-      parts.push(`width:calc-size(auto, size * ${fragment.progress.toFixed(3)})`);
+      parts.push(`width:calc-size(auto, size * ${fragment.linearProgress.toFixed(3)})`);
     }
 
     return parts.join(';');
