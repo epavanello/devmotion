@@ -566,6 +566,11 @@ export class ProjectStore {
     this.#state = { ...this.#state, ...updates };
   }
 
+  selectLayer(layerId: string) {
+    document.getElementById('properties-tab')?.click();
+    this.selectedLayerId = layerId;
+  }
+
   async loadProject(project: Project) {
     this.isLoading = true;
     this.#state = project;

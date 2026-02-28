@@ -1,8 +1,8 @@
 <script lang="ts">
   import { getEditorState } from '$lib/contexts/editor.svelte';
-  import { Button } from '$lib/components/ui/button';
+  
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { Code, Film, Folder, LayoutGrid, Plus, Shapes, Type } from '@lucide/svelte';
+  import { Code, Film, Folder, LayoutGrid, Shapes, Type } from '@lucide/svelte';
   import { layerRegistry, type LayerMeta } from '$lib/layers/registry';
   import { createLayer } from '$lib/engine/layer-factory';
   import type { LayerTypeString } from '$lib/layers/layer-types';
@@ -25,7 +25,7 @@
       }
     });
     projectStore.addLayer(layer);
-    projectStore.selectedLayerId = layer.id;
+    projectStore.selectLayer(layer.id);
   }
 
   const hiddenTypes = new Set<LiteralUnion<LayerTypeString, string>>([

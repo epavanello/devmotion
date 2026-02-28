@@ -54,7 +54,7 @@
         e.preventDefault();
         const layer = createLayer('text');
         projectStore.addLayer(layer);
-        projectStore.selectedLayerId = layer.id;
+        projectStore.selectLayer(layer.id);
       }
 
       // R - Add rectangle
@@ -62,7 +62,7 @@
         e.preventDefault();
         const layer = createLayer('shape');
         projectStore.addLayer(layer);
-        projectStore.selectedLayerId = layer.id;
+        projectStore.selectLayer(layer.id);
       }
 
       // Home - Go to start

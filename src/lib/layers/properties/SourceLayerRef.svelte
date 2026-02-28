@@ -18,7 +18,7 @@
 
   function handleActivateSource() {
     if (sourceLayerId) {
-      projectStore.selectedLayerId = sourceLayerId;
+      projectStore.selectLayer(sourceLayerId);
     }
   }
 </script>

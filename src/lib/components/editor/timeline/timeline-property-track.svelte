@@ -55,7 +55,7 @@
 
     // Select the layer if not already selected
     if (projectStore.selectedLayerId !== layer.id) {
-      projectStore.selectedLayerId = layer.id;
+      projectStore.selectLayer(layer.id);
     }
 
     // Select keyframe - if it's already selected and not shift-clicking, keep selection

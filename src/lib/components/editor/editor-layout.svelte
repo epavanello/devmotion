@@ -6,7 +6,7 @@
   import KeyboardHandler from './keyboard-handler.svelte';
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from '$lib/components/ui/resizable';
   import { getEditorState } from '$lib/contexts/editor.svelte';
-  import { Settings, Clock, Sparkles, FolderOpen } from '@lucide/svelte';
+  import { Settings, Clock, Sparkles } from '@lucide/svelte';
   import AssetsPanel from './panels/assets-panel.svelte';
   import AiChat from '$lib/components/ai/ai-chat.svelte';
   import ModelSelector from '$lib/components/ai/model-selector.svelte';
@@ -168,15 +168,15 @@
 
         <ResizablePane defaultSize={30} minSize={20} maxSize={40}>
           <Tabs.Root value="chat" class="flex h-full flex-col gap-0">
-            <div class="p-1.5">
+            <div class="border-b p-1.5">
               <Tabs.List class="w-full">
                 <Tabs.Trigger value="chat">Chat</Tabs.Trigger>
-                <Tabs.Trigger value="editor" id="editor-tab">Editor</Tabs.Trigger>
+                <Tabs.Trigger value="properties" id="properties-tab">Properties</Tabs.Trigger>
                 <Tabs.Trigger value="assets">Assets</Tabs.Trigger>
               </Tabs.List>
             </div>
             <Tabs.Content value="chat" class="overflow-auto">
-              <Panel title="AI Chat" bind:scrollRef={aiChatScrollRef} class="border-t">
+              <Panel title="AI Chat" bind:scrollRef={aiChatScrollRef}>
                 {#snippet content()}
                   <AiChat bind:selectedModelId={aiChatModelId} scrollRef={aiChatScrollRef} />
                 {/snippet}
@@ -188,22 +188,14 @@
                 {/snippet}
               </Panel>
             </Tabs.Content>
-            <Tabs.Content value="editor" class="overflow-auto">
-              <Panel title="Properties" class="border-t">
-                {#snippet content()}
-                  <PropertiesPanel />
-                {/snippet}
-              </Panel>
+            <Tabs.Content value="properties" class="overflow-auto">
+              <PropertiesPanel />
             </Tabs.Content>
             <Tabs.Content value="assets" class="overflow-auto">
-              <Panel title="Assets" icon={FolderOpen} class="border-t">
-                {#snippet content()}
-                  <svelte:boundary>
-                    <AssetsPanel />
-                    {#snippet pending()}{/snippet}
-                  </svelte:boundary>
-                {/snippet}
-              </Panel>
+              <svelte:boundary>
+                <AssetsPanel />
+                {#snippet pending()}{/snippet}
+              </svelte:boundary>
             </Tabs.Content>
           </Tabs.Root>
         </ResizablePane>

@@ -230,7 +230,7 @@
       // Apply media layer data (handles duration, exit time, and project extension)
       applyMediaLayerData(projectStore, layer.id, mediaResult);
 
-      projectStore.selectedLayerId = layer.id;
+      projectStore.selectLayer(layer.id);
     } catch {
       // Invalid data, ignore
     }

@@ -102,7 +102,7 @@
 
   function startDrag(screenX: number, screenY: number) {
     // Select this layer
-    projectStore.selectedLayerId = id;
+    projectStore.selectLayer(id);
 
     // Start dragging
     isDragging = true;

@@ -103,8 +103,7 @@
 >
   <DropdownMenu.Trigger disabled={!user.current}>
     {#snippet child({ props })}
-      <Button variant="outline" size="sm" class="max-w-48" {...props}>
-        <FolderOpen />
+      <Button variant="outline" size="sm" class="max-w-48" icon={FolderOpen} {...props}>
         <ChevronDown />
       </Button>
     {/snippet}

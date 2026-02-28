@@ -137,8 +137,7 @@
   });
 
   function selectLayer() {
-    document.getElementById('editor-tab')?.click();
-    projectStore.selectedLayerId = layer.id;
+    projectStore.selectLayer(layer.id);
   }
 
   // Drag state for resizing enter/exit time
