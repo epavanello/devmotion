@@ -418,8 +418,8 @@
 
   <!-- Expanded property tracks -->
   {#if isExpanded && hasAnimatedProperties}
-    {#each animatedProperties as property (property)}
-      <TimelinePropertyTrack {layer} {property} {pixelsPerSecond} indent={indent + 1} />
+    {#each animatedProperties as property, index (property)}
+      <TimelinePropertyTrack {layer} {property} {pixelsPerSecond} indent={indent + 1} {index} />
     {/each}
   {/if}
 </div>

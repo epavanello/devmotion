@@ -17,9 +17,10 @@
     property: string;
     pixelsPerSecond: number;
     indent?: number;
+    index?: number;
   }
 
-  let { layer, property, pixelsPerSecond, indent = 0 }: Props = $props();
+  let { layer, property, pixelsPerSecond, indent = 0, index }: Props = $props();
 
   // Get all keyframes for this property
   const keyframes = $derived(
@@ -132,7 +133,11 @@
   );
 </script>
 
-<div class="flex items-stretch border-t transition-colors hover:bg-muted/10">
+<div
+  class={cn('flex items-stretch transition-colors hover:bg-muted/10', {
+    'border-t': index === 0
+  })}
+>
   <!-- Property header -->
   <div
     data-property-header
