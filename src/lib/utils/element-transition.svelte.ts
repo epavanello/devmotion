@@ -18,6 +18,7 @@
 import { SvelteMap } from 'svelte/reactivity';
 import { getEasingFunction } from '$lib/engine/interpolation';
 import type { ContinuousInterpolationStrategy } from '$lib/schemas/animation';
+import { colord } from 'colord';
 
 export type TransitionEffect =
   | 'fade'
@@ -41,6 +42,10 @@ export interface TransitionConfig {
   slideDistance?: number;
   /** Blur amount in px when using 'blur' effect (default 10) */
   blurAmount?: number;
+  /** Starting color for color transition (optional) */
+  colorFrom?: string;
+  /** Target color for color transition (optional) */
+  colorTo?: string;
 }
 
 export interface TransitionFragment {
@@ -57,7 +62,9 @@ const DEFAULTS = {
   easing: 'ease-out' as ContinuousInterpolationStrategy,
   scaleFrom: 0,
   slideDistance: 8,
-  blurAmount: 10
+  blurAmount: 10,
+  colorFrom: undefined,
+  colorTo: undefined
 } as const;
 
 export class ElementTransition {
@@ -78,7 +85,9 @@ export class ElementTransition {
       easing: config.easing ?? DEFAULTS.easing,
       scaleFrom: config.scaleFrom ?? DEFAULTS.scaleFrom,
       slideDistance: config.slideDistance ?? DEFAULTS.slideDistance,
-      blurAmount: config.blurAmount ?? DEFAULTS.blurAmount
+      blurAmount: config.blurAmount ?? DEFAULTS.blurAmount,
+      colorFrom: config.colorFrom ?? DEFAULTS.colorFrom!,
+      colorTo: config.colorTo ?? DEFAULTS.colorTo!
     });
   }
 
@@ -217,6 +226,28 @@ export class ElementTransition {
     return this.config.blurAmount * (1 - fragment.linearProgress);
   }
 
+  /** Get interpolated color for a fragment */
+  getColor(fragment: TransitionFragment): string | undefined {
+    if (!this.config.colorFrom || !this.config.colorTo) return undefined;
+    if (fragment.linearProgress >= 1) return this.config.colorTo;
+
+    const startColor = colord(this.config.colorFrom);
+    const endColor = colord(this.config.colorTo);
+
+    if (!startColor.isValid() || !endColor.isValid()) return undefined;
+
+    const startRgb = startColor.toRgb();
+    const endRgb = endColor.toRgb();
+
+    const t = fragment.linearProgress;
+    const r = Math.round(startRgb.r + (endRgb.r - startRgb.r) * t);
+    const g = Math.round(startRgb.g + (endRgb.g - startRgb.g) * t);
+    const b = Math.round(startRgb.b + (endRgb.b - startRgb.b) * t);
+    const a = startRgb.a + (endRgb.a - endRgb.a) * t;
+
+    return colord({ r, g, b, a }).toHex();
+  }
+
   /** Get a combined inline style string for a fragment */
   getStyle(fragment: TransitionFragment): string {
     // Use linearProgress to determine completion, not progress (which can overshoot)
@@ -241,6 +272,9 @@ export class ElementTransition {
 
     const blur = this.getBlur(fragment);
     if (blur > 0) filters.push(`blur(${blur.toFixed(1)}px)`);
+
+    const color = this.getColor(fragment);
+    if (color) parts.push(`color:${color}`);
 
     if (transforms.length > 0) {
       parts.push(`transform:${transforms.join(' ')}`);

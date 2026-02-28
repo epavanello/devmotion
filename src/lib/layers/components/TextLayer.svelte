@@ -209,6 +209,18 @@
         group: 'transition-appearance',
         interpolationFamily: 'continuous',
         label: 'Blur Amount (px)'
+      }),
+    transitionColorFrom: z
+      .string()
+      .optional()
+      .describe(
+        'Starting color for the color transition effect. The text will animate from this color to the final color during the enter transition. Leave empty to disable color animation.'
+      )
+      .register(fieldRegistry, {
+        group: 'transition-appearance',
+        interpolationFamily: 'continuous',
+        widget: 'color',
+        label: 'Color From'
       })
   });
 
@@ -255,6 +267,7 @@
     slideDistance,
     scaleFrom,
     blurAmount,
+    transitionColorFrom,
     currentTime
   }: WrappedLayerProps<Props> = $props();
 
@@ -276,6 +289,12 @@
     },
     get blurAmount() {
       return blurAmount;
+    },
+    get colorFrom() {
+      return transitionColorFrom ?? color;
+    },
+    get colorTo() {
+      return color;
     }
   });
 

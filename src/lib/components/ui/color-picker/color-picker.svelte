@@ -44,7 +44,7 @@
     {/snippet}
   </Popover.Trigger>
   <Popover.Content
-    class="w-auto p-0 [&_.color-picker_.wrapper]:m-0! [&_.color-picker_.wrapper]:border-0!"
+    class="w-auto p-0 text-black [&_.color-picker_.wrapper]:m-0! [&_.color-picker_.wrapper]:border-0!"
     align="end"
     side="left"
   >
