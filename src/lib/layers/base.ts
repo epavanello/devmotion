@@ -63,7 +63,7 @@ export type PropertyMetadata = {
   min?: number;
   max?: number;
   step?: number;
-  options?: Array<{ value: string | number; label: string }>;
+  options?: Array<{ value: string; label: string }>;
   /**
    * Supported interpolation family/families for this property
    * Can be a single family or an array of families if multiple are supported

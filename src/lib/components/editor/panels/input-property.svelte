@@ -10,6 +10,8 @@
   import ScrubInput from './scrub-input.svelte';
   import { ColorPicker } from '$lib/components/ui/color-picker';
   import { prepareMediaLayerData, applyMediaLayerData } from '$lib/utils/media';
+  import * as Select from '$lib/components/ui/select/index.js';
+  import { Check } from '@lucide/svelte';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -110,6 +112,39 @@
     />
     <span class="text-sm">Enable</span>
   </label>
+{:else if metadata.meta?.widget === 'multi-select' && metadata.meta.options}
+  {@const selectedValues = Array.isArray(value) ? value : []}
+  <Select.Root
+    type="multiple"
+    value={selectedValues}
+    onValueChange={(newValue) => onUpdateProp(metadata.name, newValue)}
+  >
+    <Select.Trigger class="min-w-40">
+      {#if selectedValues.length === 0}
+        <span class="text-muted-foreground">Select effects...</span>
+      {:else}
+        <span>{selectedValues.length} selected</span>
+      {/if}
+    </Select.Trigger>
+
+    <Select.Content>
+      <Select.Group>
+        {#each metadata.meta.options as option (option.value)}
+          {@const isSelected = selectedValues.includes(option.value)}
+          <Select.Item value={option.value} label={option.label}>
+            <div class="flex items-center gap-2">
+              <div class="w-4">
+                {#if isSelected}
+                  <Check class="h-4 w-4" />
+                {/if}
+              </div>
+              <span>{option.label}</span>
+            </div>
+          </Select.Item>
+        {/each}
+      </Select.Group>
+    </Select.Content>
+  </Select.Root>
 {:else if metadata.type === 'select' && metadata.options}
   <select
     id={`${targetPath}.${metadata.name}`}

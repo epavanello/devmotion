@@ -121,24 +121,28 @@
         'The horizontal alignment of text within its container. Left aligns to the start, center to the middle, right to the end. Changes discretely.'
       )
       .register(fieldRegistry, { interpolationFamily: 'discrete', label: 'Align' }),
-    transitionEffect: z
-      .enum([
-        'none',
-        'fade',
-        'scale',
-        'slide-up',
-        'fade-scale',
-        'fade-slide-up',
-        'fade-scale-slide-up'
-      ])
-      .default('none')
+    transitionEffects: z
+      .array(
+        z.enum(['fade', 'scale', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'blur'])
+      )
+      .default([])
       .describe(
-        'The enter transition effect for new text fragments. fade = opacity, scale = pop-in, slide-up = rise from below. Combinations apply multiple effects simultaneously.'
+        'The enter transition effects for new text fragments. Select multiple effects to combine them: fade = opacity transition, scale = pop-in effect, slide = motion from different directions, blur = focus transition.'
       )
       .register(fieldRegistry, {
-        group: 'transition',
+        group: 'transition-basic',
         interpolationFamily: 'discrete',
-        label: 'Effect'
+        label: 'Effects',
+        widget: 'multi-select',
+        options: [
+          { value: 'fade', label: 'Fade' },
+          { value: 'scale', label: 'Scale' },
+          { value: 'slide-up', label: 'Slide ↑' },
+          { value: 'slide-down', label: 'Slide ↓' },
+          { value: 'slide-left', label: 'Slide ←' },
+          { value: 'slide-right', label: 'Slide →' },
+          { value: 'blur', label: 'Blur' }
+        ]
       }),
     transitionDuration: z
       .number()
@@ -150,9 +154,22 @@
         'Duration in milliseconds for the enter transition of new text fragments. Only used when transitionEffect is not none.'
       )
       .register(fieldRegistry, {
-        group: 'transition-params',
+        group: 'transition-basic',
         interpolationFamily: 'continuous',
         label: 'Duration (ms)'
+      }),
+    slideDistance: z
+      .number()
+      .min(0)
+      .max(500)
+      .default(24)
+      .describe(
+        'Distance in pixels for slide effects (up/down/left/right). Determines how far from the final position the text starts when using slide transitions.'
+      )
+      .register(fieldRegistry, {
+        group: 'transition-motion',
+        interpolationFamily: 'continuous',
+        label: 'Slide Distance (px)'
       }),
     transitionEasing: z
       .enum(ContinuousInterpolationStrategies)
@@ -161,24 +178,11 @@
         'Easing curve for the enter transition. Controls the acceleration of the animation. ease-out = starts fast and slows down, ease-in = starts slow and speeds up, bounce/elastic = playful overshooting effects.'
       )
       .register(fieldRegistry, {
-        group: 'transition-params',
+        group: 'transition-motion',
         interpolationFamily: 'discrete',
         label: 'Easing',
         widget: 'custom',
         component: EasingSelect
-      }),
-    slideDistance: z
-      .number()
-      .min(0)
-      .max(500)
-      .default(24)
-      .describe(
-        'Distance in pixels for the slide-up effect. Determines how far below the final position the text starts when using slide-up transitions.'
-      )
-      .register(fieldRegistry, {
-        group: 'transition-params',
-        interpolationFamily: 'continuous',
-        label: 'Slide Distance (px)'
       }),
     scaleFrom: z
       .number()
@@ -189,9 +193,22 @@
         'Initial scale value for the scale effect. 0 = invisible, 0.5 = half size, 1 = full size (no scaling). Only used when scale transition effect is enabled.'
       )
       .register(fieldRegistry, {
-        group: 'transition-params',
+        group: 'transition-appearance',
         interpolationFamily: 'continuous',
         label: 'Scale From'
+      }),
+    blurAmount: z
+      .number()
+      .min(0)
+      .max(50)
+      .default(10)
+      .describe(
+        'Maximum blur amount in pixels for the blur effect. The blur starts at this value and animates to 0 (no blur). Only used when blur transition effect is enabled.'
+      )
+      .register(fieldRegistry, {
+        group: 'transition-appearance',
+        interpolationFamily: 'continuous',
+        label: 'Blur Amount (px)'
       })
   });
 
@@ -207,8 +224,9 @@
       { id: 'typography', label: 'Typography' },
       { id: 'spacing', label: 'Spacing' },
       { id: 'layout', label: 'Layout' },
-      { id: 'transition', label: 'Transition' },
-      { id: 'transition-params', label: 'Transition Parameters' }
+      { id: 'transition-basic', label: 'Effects & Duration' },
+      { id: 'transition-motion', label: 'Slide & Easing' },
+      { id: 'transition-appearance', label: 'Scale & Blur' }
     ]
   } as const satisfies LayerMeta;
 
@@ -231,29 +249,21 @@
     autoWidth,
     width,
     textAlign,
-    transitionEffect,
+    transitionEffects = [],
     transitionDuration,
     transitionEasing,
     slideDistance,
     scaleFrom,
+    blurAmount,
     currentTime
   }: WrappedLayerProps<Props> = $props();
-
-  const effectMap: Record<string, TransitionEffect[]> = {
-    fade: ['fade'],
-    scale: ['scale'],
-    'slide-up': ['slide-up'],
-    'fade-scale': ['fade', 'scale'],
-    'fade-slide-up': ['fade', 'slide-up'],
-    'fade-scale-slide-up': ['fade', 'scale', 'slide-up']
-  };
 
   const transition = new ElementTransition({
     get duration() {
       return transitionDuration;
     },
     get effects() {
-      return effectMap[transitionEffect] ?? [];
+      return transitionEffects as TransitionEffect[];
     },
     get easing() {
       return transitionEasing;
@@ -263,15 +273,18 @@
     },
     get scaleFrom() {
       return scaleFrom;
+    },
+    get blurAmount() {
+      return blurAmount;
     }
   });
 
-  const hasTransition = $derived(transitionEffect !== 'none');
+  const hasTransition = $derived(transitionEffects.length > 0);
 
   watch(
     () => [content, currentTime] as const,
     ([content, currentTime]) => {
-      if (transitionEffect === 'none') return;
+      if (transitionEffects.length === 0) return;
       transition.update(content, currentTime);
     }
   );

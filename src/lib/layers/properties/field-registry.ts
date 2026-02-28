@@ -29,6 +29,10 @@ export type FieldMeta = {
       widget?: 'textarea' | 'background' | 'color';
     }
   | {
+      widget: 'multi-select';
+      options: Array<{ value: string; label: string }>;
+    }
+  | {
       widget: 'upload';
       mediaType: 'image' | 'video' | 'audio';
     }

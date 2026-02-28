@@ -19,7 +19,14 @@ import { SvelteMap } from 'svelte/reactivity';
 import { getEasingFunction } from '$lib/engine/interpolation';
 import type { ContinuousInterpolationStrategy } from '$lib/schemas/animation';
 
-export type TransitionEffect = 'fade' | 'scale' | 'slide-up';
+export type TransitionEffect =
+  | 'fade'
+  | 'scale'
+  | 'slide-up'
+  | 'slide-down'
+  | 'slide-left'
+  | 'slide-right'
+  | 'blur';
 
 export interface TransitionConfig {
   /** Duration in milliseconds for the enter transition (default 300) */
@@ -32,6 +39,8 @@ export interface TransitionConfig {
   scaleFrom?: number;
   /** Slide distance in px when using 'slide-up' effect (default 8) */
   slideDistance?: number;
+  /** Blur amount in px when using 'blur' effect (default 10) */
+  blurAmount?: number;
 }
 
 export interface TransitionFragment {
@@ -47,7 +56,8 @@ const DEFAULTS = {
   effects: ['fade'] as TransitionEffect[],
   easing: 'ease-out' as ContinuousInterpolationStrategy,
   scaleFrom: 0,
-  slideDistance: 8
+  slideDistance: 8,
+  blurAmount: 10
 } as const;
 
 export class ElementTransition {
@@ -67,7 +77,8 @@ export class ElementTransition {
       effects: config.effects ?? DEFAULTS.effects,
       easing: config.easing ?? DEFAULTS.easing,
       scaleFrom: config.scaleFrom ?? DEFAULTS.scaleFrom,
-      slideDistance: config.slideDistance ?? DEFAULTS.slideDistance
+      slideDistance: config.slideDistance ?? DEFAULTS.slideDistance,
+      blurAmount: config.blurAmount ?? DEFAULTS.blurAmount
     });
   }
 
@@ -180,8 +191,30 @@ export class ElementTransition {
 
   /** Get computed translateY in px for a fragment */
   getTranslateY(fragment: TransitionFragment): number {
-    if (!this.config.effects.includes('slide-up')) return 0;
-    return this.config.slideDistance * (1 - fragment.progress);
+    if (this.config.effects.includes('slide-up')) {
+      return this.config.slideDistance * (1 - fragment.progress);
+    }
+    if (this.config.effects.includes('slide-down')) {
+      return -this.config.slideDistance * (1 - fragment.progress);
+    }
+    return 0;
+  }
+
+  /** Get computed translateX in px for a fragment */
+  getTranslateX(fragment: TransitionFragment): number {
+    if (this.config.effects.includes('slide-right')) {
+      return -this.config.slideDistance * (1 - fragment.progress);
+    }
+    if (this.config.effects.includes('slide-left')) {
+      return this.config.slideDistance * (1 - fragment.progress);
+    }
+    return 0;
+  }
+
+  /** Get computed blur amount in px for a fragment */
+  getBlur(fragment: TransitionFragment): number {
+    if (!this.config.effects.includes('blur')) return 0;
+    return this.config.blurAmount * (1 - fragment.linearProgress);
   }
 
   /** Get a combined inline style string for a fragment */
@@ -191,6 +224,7 @@ export class ElementTransition {
 
     const parts: string[] = [];
     const transforms: string[] = [];
+    const filters: string[] = [];
     const hasSomeEffects = this.config.effects.length > 0;
 
     const opacity = this.getOpacity(fragment);
@@ -199,11 +233,21 @@ export class ElementTransition {
     const scale = this.getScale(fragment);
     if (scale !== 1) transforms.push(`scale(${scale.toFixed(3)})`);
 
+    const tx = this.getTranslateX(fragment);
     const ty = this.getTranslateY(fragment);
-    if (ty !== 0) transforms.push(`translateY(${ty.toFixed(1)}px)`);
+    if (tx !== 0 || ty !== 0) {
+      transforms.push(`translate(${tx.toFixed(1)}px, ${ty.toFixed(1)}px)`);
+    }
+
+    const blur = this.getBlur(fragment);
+    if (blur > 0) filters.push(`blur(${blur.toFixed(1)}px)`);
 
     if (transforms.length > 0) {
       parts.push(`transform:${transforms.join(' ')}`);
+    }
+
+    if (filters.length > 0) {
+      parts.push(`filter:${filters.join(' ')}`);
     }
 
     if (hasSomeEffects) {
