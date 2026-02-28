@@ -107,6 +107,17 @@ export class ProjectStore {
 
   // Layer operations
   addLayer(layer: TypedLayer) {
+    // If there's a selected layer, insert after it
+    if (this.selectedLayerId && !isProjectLayer(this.selectedLayerId)) {
+      const selectedIndex = this.state.layers.findIndex((l) => l.id === this.selectedLayerId);
+      if (selectedIndex !== -1) {
+        const layers = [...this.state.layers];
+        layers.splice(selectedIndex + 1, 0, layer);
+        this.state.layers = layers;
+        return;
+      }
+    }
+    // Otherwise, add to the end
     this.state.layers = [...this.state.layers, layer];
   }
 

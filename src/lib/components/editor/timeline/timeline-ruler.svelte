@@ -78,7 +78,9 @@
         size="icon-xs"
         icon={allExpanded ? Minimize2 : Maximize2}
         onclick={onToggleAll}
-        title={allExpanded ? 'Collapse all layers and properties' : 'Expand all layers and properties'}
+        title={allExpanded
+          ? 'Collapse all layers and properties'
+          : 'Expand all layers and properties'}
       />
 
       <!-- Add Layer -->
