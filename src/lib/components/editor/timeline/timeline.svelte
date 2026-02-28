@@ -464,11 +464,4 @@
       {/if}
     </div>
   </ScrollArea>
-
-  <!-- Zoom indicator -->
-  <div
-    class="absolute right-2 bottom-2 rounded border bg-background/90 px-2 py-1 text-xs text-muted-foreground shadow-sm"
-  >
-    {(pixelsPerSecond / 100).toFixed(1)}x
-  </div>
 </div>

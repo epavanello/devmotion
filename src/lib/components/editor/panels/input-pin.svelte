@@ -31,10 +31,9 @@
       {#snippet child({ props })}
         <Button
           variant="ghost"
-          size="sm"
-          class="h-5 w-5 p-0"
-          {...props}
+          size="icon-sm"
           title={`Remove all keyframes for ${label}`}
+          {...props}
         >
           <Pin class="size-2.5" fill="currentColor" />
         </Button>
@@ -66,8 +65,7 @@
 {:else}
   <Button
     variant="ghost"
-    size="sm"
-    class="h-5 w-5 p-0"
+    size="icon-sm"
     onclick={() => addKeyframe(property)}
     title={`Add keyframe for ${label}`}
   >
