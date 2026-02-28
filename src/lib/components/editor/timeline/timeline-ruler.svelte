@@ -1,14 +1,16 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
-  import { Plus } from '@lucide/svelte';
+  import { Plus, Maximize2, Minimize2 } from '@lucide/svelte';
   import AddLayer from '../panels/add-layer-dropdown.svelte';
 
   interface Props {
     pixelsPerSecond: number;
     duration: number;
+    allExpanded: boolean;
+    onToggleAll?: () => void;
   }
 
-  let { pixelsPerSecond, duration }: Props = $props();
+  let { pixelsPerSecond, duration, allExpanded, onToggleAll }: Props = $props();
 
   // Calculate appropriate sub-divisions based on zoom level
   const timeScale = $derived.by(() => {
@@ -69,12 +71,23 @@
   >
     <span class="text-xs font-medium text-muted-foreground">LAYERS</span>
 
-    <!-- Add Layer -->
-    <AddLayer>
-      {#snippet child({ props })}
-        <Button variant="ghost" size="sm" class="h-7 w-7 p-0" icon={Plus} {...props} />
-      {/snippet}
-    </AddLayer>
+    <div class="flex items-center gap-0.5">
+      <!-- Toggle Expand/Collapse All -->
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        icon={allExpanded ? Minimize2 : Maximize2}
+        onclick={onToggleAll}
+        title={allExpanded ? 'Collapse all layers and properties' : 'Expand all layers and properties'}
+      />
+
+      <!-- Add Layer -->
+      <AddLayer>
+        {#snippet child({ props })}
+          <Button variant="ghost" size="sm" class="h-7 w-7 p-0" icon={Plus} {...props} />
+        {/snippet}
+      </AddLayer>
+    </div>
   </div>
 
   <!-- Time markers -->

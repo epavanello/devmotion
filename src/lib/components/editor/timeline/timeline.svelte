@@ -25,6 +25,12 @@
   // Expanded layers state
   const expandedLayers = new SvelteSet<string>();
 
+  // Track if all layers are expanded
+  const allExpanded = $derived(
+    projectStore.state.layers.length > 0 &&
+      projectStore.state.layers.every((layer) => expandedLayers.has(layer.id))
+  );
+
   // Drag & drop state for layer reordering
   let dropTargetId = $state<string | null>(null);
   let dropPosition = $state<'above' | 'below' | 'inside' | null>(null);
@@ -160,6 +166,18 @@
       expandedLayers.delete(layerId);
     } else {
       expandedLayers.add(layerId);
+    }
+  }
+
+  function toggleAllLayers() {
+    if (allExpanded) {
+      // If all are expanded, collapse all
+      expandedLayers.clear();
+    } else {
+      // Otherwise, expand all layers (both groups and individual layers with properties)
+      for (const layer of projectStore.state.layers) {
+        expandedLayers.add(layer.id);
+      }
     }
   }
 
@@ -368,7 +386,12 @@
     >
       <!-- Ruler -->
       <div class="sticky top-0 z-20 border-b bg-background">
-        <TimelineRuler {pixelsPerSecond} duration={projectStore.state.duration} />
+        <TimelineRuler
+          {pixelsPerSecond}
+          duration={projectStore.state.duration}
+          {allExpanded}
+          onToggleAll={toggleAllLayers}
+        />
       </div>
 
       <!-- Layers -->
