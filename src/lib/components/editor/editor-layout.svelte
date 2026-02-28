@@ -1,18 +1,16 @@
 <script lang="ts">
   import Toolbar from './toolbar.svelte';
   import Canvas from './canvas/canvas.svelte';
-  import LayersPanel from './panels/layers-panel.svelte';
   import PropertiesPanel from './panels/properties-panel.svelte';
   import Panel from './panels/panel.svelte';
   import KeyboardHandler from './keyboard-handler.svelte';
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from '$lib/components/ui/resizable';
   import { getEditorState } from '$lib/contexts/editor.svelte';
-  import { Layers, Settings, Clock, Sparkles, FolderOpen } from '@lucide/svelte';
+  import { Settings, Clock, Sparkles, FolderOpen } from '@lucide/svelte';
   import AssetsPanel from './panels/assets-panel.svelte';
   import AiChat from '$lib/components/ai/ai-chat.svelte';
   import ModelSelector from '$lib/components/ai/model-selector.svelte';
   import { DEFAULT_MODEL_ID } from '$lib/ai/models';
-  import AddLayer from './panels/add-layer.svelte';
   import { IsMobile } from '$lib/hooks/is-mobile.svelte';
   import * as Tabs from '$lib/components/ui/tabs';
   import Timeline from './timeline/timeline.svelte';
@@ -37,7 +35,6 @@
   // Mobile panel state - start with all closed
   let openPanels = $state({
     aiChat: false,
-    layers: false,
     timeline: false,
     properties: false
   });
@@ -98,22 +95,6 @@
           {/snippet}
         </Panel>
 
-        <!-- Layers Panel -->
-        <Panel
-          title="Layers ({projectStore.state.layers.length})"
-          icon={Layers}
-          actionsComponent={AddLayer}
-          collapsible={true}
-          isOpen={openPanels.layers}
-          onToggle={() => (openPanels.layers = !openPanels.layers)}
-          topOffset="calc(40vh)"
-          zIndex={20}
-        >
-          {#snippet content()}
-            <LayersPanel />
-          {/snippet}
-        </Panel>
-
         {#if !isRecording}
           <!-- Timeline Panel -->
           <Panel
@@ -123,7 +104,7 @@
             isOpen={openPanels.timeline}
             onToggle={() => (openPanels.timeline = !openPanels.timeline)}
             topOffset="calc(40vh)"
-            zIndex={30}
+            zIndex={20}
           >
             {#snippet content()}
               <Timeline />
@@ -143,7 +124,7 @@
             isOpen={openPanels.properties}
             onToggle={() => (openPanels.properties = !openPanels.properties)}
             topOffset="calc(40vh)"
-            zIndex={40}
+            zIndex={30}
           >
             {#snippet content()}
               <PropertiesPanel />
@@ -207,35 +188,12 @@
                 {/snippet}
               </Panel>
             </Tabs.Content>
-            <Tabs.Content value="editor" class="overflow-hidden">
-              <Tabs.Root value="layers" class="flex h-full flex-col gap-0">
-                <div class="px-1.5 pb-1.5">
-                  <Tabs.List class="w-full">
-                    <Tabs.Trigger value="layers">
-                      Layers ({projectStore.state.layers.length})
-                    </Tabs.Trigger>
-                    <Tabs.Trigger value="properties">Properties</Tabs.Trigger>
-                  </Tabs.List>
-                </div>
-                <Tabs.Content value="layers" class="overflow-auto">
-                  <Panel
-                    title="Layers ({projectStore.state.layers.length})"
-                    actionsComponent={AddLayer}
-                    class="border-t"
-                  >
-                    {#snippet content()}
-                      <LayersPanel />
-                    {/snippet}
-                  </Panel>
-                </Tabs.Content>
-                <Tabs.Content value="properties" class="overflow-auto">
-                  <Panel title="Properties" class="border-t">
-                    {#snippet content()}
-                      <PropertiesPanel />
-                    {/snippet}
-                  </Panel>
-                </Tabs.Content>
-              </Tabs.Root>
+            <Tabs.Content value="editor" class="overflow-auto">
+              <Panel title="Properties" class="border-t">
+                {#snippet content()}
+                  <PropertiesPanel />
+                {/snippet}
+              </Panel>
             </Tabs.Content>
             <Tabs.Content value="assets" class="overflow-auto">
               <Panel title="Assets" icon={FolderOpen} class="border-t">

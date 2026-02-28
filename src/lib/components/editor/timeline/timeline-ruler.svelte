@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { Button } from '$lib/components/ui/button';
+  import { Plus } from '@lucide/svelte';
+  import AddLayer from '../panels/add-layer-dropdown.svelte';
+
   interface Props {
     pixelsPerSecond: number;
     duration: number;
@@ -59,9 +63,18 @@
 </script>
 
 <div class="timeline-ruler relative flex h-10 bg-muted/20">
-  <!-- Layer names spacer -->
-  <div class="sticky left-0 z-10 flex w-60 shrink-0 items-center border-r bg-background px-3">
+  <!-- Layer names header with controls -->
+  <div
+    class="sticky left-0 z-10 flex w-60 shrink-0 items-center justify-between border-r bg-background px-2"
+  >
     <span class="text-xs font-medium text-muted-foreground">LAYERS</span>
+
+    <!-- Add Layer -->
+    <AddLayer>
+      {#snippet child({ props })}
+        <Button variant="ghost" size="sm" class="h-7 w-7 p-0" icon={Plus} {...props} />
+      {/snippet}
+    </AddLayer>
   </div>
 
   <!-- Time markers -->

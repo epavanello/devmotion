@@ -9,7 +9,7 @@
   import type { LiteralUnion } from 'type-fest';
   import type { LayerCategory } from '$lib/layers/base';
   import { SvelteMap } from 'svelte/reactivity';
-  import type { Component } from 'svelte';
+  import type { Component, Snippet } from 'svelte';
   import { defaultTransform } from '$lib/schemas/base';
   import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
 
@@ -60,24 +60,24 @@
         layers: groups.get(c)!
       }));
   });
+
+  const {
+    child
+  }: {
+    child: Snippet<[{ props: Record<string, unknown> }]>;
+  } = $props();
 </script>
 
 <DropdownMenu.Root>
-  <DropdownMenu.Trigger disabled={projectStore.isRecording}>
-    {#snippet child({ props })}
-      <Button variant="outline" size="icon" {...props}>
-        <Plus />
-      </Button>
-    {/snippet}
-  </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="center">
+  <DropdownMenu.Trigger disabled={projectStore.isRecording} {child} />
+  <DropdownMenu.Content align="start" class="w-56">
     <!-- Folder/Group option at the top -->
     <DropdownMenu.Item onclick={() => addLayer('group')}>
       <Folder class="mr-2 h-4 w-4" />
       Folder
     </DropdownMenu.Item>
     <DropdownMenu.Separator />
-    <ScrollArea viewportClass="max-h-[calc(100vh-20rem)]">
+    <ScrollArea viewportClass="max-h-[calc(50vh)]">
       {#each groupedLayers as group, i (group.category)}
         <DropdownMenu.Group>
           <DropdownMenu.GroupHeading class="flex items-center">

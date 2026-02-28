@@ -7,10 +7,7 @@
   import ScrubInput from './panels/scrub-input.svelte';
   import InputsWrapper from './panels/inputs-wrapper.svelte';
   import InterpolationSelect from './panels/properties/interpolation-select.svelte';
-  import {
-    isTransformProperty,
-    isStyleProperty
-  } from '$lib/utils/property-names';
+  import { isTransformProperty, isStyleProperty } from '$lib/utils/property-names';
   import { BaseAnimatablePropertyLabels, type BaseAnimatableProperty } from '$lib/schemas/base';
   import type { LiteralUnion } from 'type-fest';
   import type { AnimatableProperty, Interpolation } from '$lib/types/animation';

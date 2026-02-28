@@ -289,7 +289,7 @@ export class ProjectStore {
    * Applies the group transform so the layer maintains its world position.
    * If the group would have fewer than 2 children, the group is dissolved.
    */
-  removeLayerFromGroup(layerId: string) {
+  removeLayerFromGroup(layerId: string, { preserveGroup = false } = {}) {
     const layer = this.state.layers.find((l) => l.id === layerId);
     if (!layer?.parentId) return;
 
@@ -332,10 +332,12 @@ export class ProjectStore {
       return l;
     });
 
-    // If group has fewer than 2 children, dissolve it
-    const remaining = this.state.layers.filter((l) => l.parentId === groupId);
-    if (remaining.length < 2 && group) {
-      this.ungroupLayers(groupId);
+    // If group has fewer than 2 children, dissolve it (unless preserveGroup)
+    if (!preserveGroup) {
+      const remaining = this.state.layers.filter((l) => l.parentId === groupId);
+      if (remaining.length < 2 && group) {
+        this.ungroupLayers(groupId);
+      }
     }
   }
 
@@ -588,11 +590,11 @@ export class ProjectStore {
   }
 
   get selectedLayer(): TypedLayer | null {
-    if (!this.selectedLayerId) return null;
-    if (isProjectLayer(this.selectedLayerId)) {
+    const layerId = this.selectedLayerId ?? PROJECT_LAYER_ID;
+    if (isProjectLayer(layerId)) {
       return createVirtualProjectLayer(this.state);
     }
-    return this.state.layers.find((l) => l.id === this.selectedLayerId) || null;
+    return this.state.layers.find((l) => l.id === layerId) || null;
   }
 
   // ========================================

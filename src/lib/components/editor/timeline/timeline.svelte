@@ -22,31 +22,144 @@
   const MIN_PIXELS_PER_SECOND = 20;
   const MAX_PIXELS_PER_SECOND = 500;
 
-  // Expanded layers/properties state
+  // Expanded layers state
   const expandedLayers = new SvelteSet<string>();
-  const expandedProperties = new SvelteSet<string>(); // layerId:property format
+
+  // Drag & drop state for layer reordering
+  let dropTargetId = $state<string | null>(null);
+  let dropPosition = $state<'above' | 'below' | 'inside' | null>(null);
+  let draggedLayerId = $state<string | null>(null);
+
+  function handleLayerDragStart(e: DragEvent, layerId: string, index: number) {
+    e.dataTransfer!.effectAllowed = 'move';
+    e.dataTransfer!.setData('text/plain', index.toString());
+    e.dataTransfer!.setData('application/layer-id', layerId);
+    draggedLayerId = layerId;
+  }
+
+  function handleLayerDragOver(e: DragEvent, targetId: string, targetElement: HTMLElement) {
+    e.preventDefault();
+    if (!e.dataTransfer?.types.includes('application/layer-id')) return;
+
+    // Don't show drop indicators on the dragged layer itself
+    if (targetId === draggedLayerId) {
+      dropTargetId = null;
+      dropPosition = null;
+      return;
+    }
+
+    e.dataTransfer!.dropEffect = 'move';
+    dropTargetId = targetId;
+
+    // Determine drop position based on mouse Y position relative to element
+    const rect = targetElement.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const height = rect.height;
+
+    const targetLayer = projectStore.state.layers.find((l) => l.id === targetId);
+
+    // If it's a group, default to "inside" with small above/below edge zones
+    if (targetLayer?.type === 'group') {
+      if (y < height * 0.2) {
+        dropPosition = 'above';
+      } else if (y > height * 0.8) {
+        // Only show "below" if we wouldn't want "inside" (i.e. don't nest groups)
+        const dragLayer = draggedLayerId
+          ? projectStore.state.layers.find((l) => l.id === draggedLayerId)
+          : null;
+        dropPosition = dragLayer?.type === 'group' ? 'below' : 'inside';
+      } else {
+        dropPosition = 'inside';
+      }
+    } else {
+      // For non-groups, only allow above/below
+      dropPosition = y < height / 2 ? 'above' : 'below';
+    }
+  }
+
+  function handleLayerDragLeave() {
+    dropTargetId = null;
+    dropPosition = null;
+  }
+
+  function handleLayerDrop(e: DragEvent, dropIndex: number, targetLayerId: string) {
+    e.preventDefault();
+    const targetDropPosition = dropPosition;
+    dropTargetId = null;
+    dropPosition = null;
+    draggedLayerId = null;
+
+    const dragLayerId = e.dataTransfer!.getData('application/layer-id');
+    if (!dragLayerId || dragLayerId === targetLayerId) return;
+
+    const dragLayer = projectStore.state.layers.find((l) => l.id === dragLayerId);
+    const targetLayer = projectStore.state.layers.find((l) => l.id === targetLayerId);
+    if (!dragLayer || !targetLayer) return;
+
+    // Case 1: Dropping inside a group
+    if (targetLayer.type === 'group' && targetDropPosition === 'inside') {
+      projectStore.addLayerToGroup(dragLayerId, targetLayerId);
+      // Auto-expand the group so the user sees the result
+      expandedLayers.add(targetLayerId);
+      return;
+    }
+
+    // Case 2: Dropping above/below a target
+    // First, if the dragged layer is a child of a group and we're dropping on a
+    // top-level layer, we need to unparent it first
+    const targetIsChild = !!targetLayer.parentId;
+    const dragIsChild = !!dragLayer.parentId;
+
+    if (dragIsChild && !targetIsChild) {
+      // Unparent the dragged layer (clears parentId, bakes transform)
+      // preserveGroup: don't dissolve the folder just because a child was dragged out
+      projectStore.removeLayerFromGroup(dragLayerId, { preserveGroup: true });
+    } else if (!dragIsChild && targetIsChild && targetLayer.parentId) {
+      // Dragging a top-level layer onto a child → add to that group
+      projectStore.addLayerToGroup(dragLayerId, targetLayer.parentId);
+      return;
+    }
+
+    // Now reorder in the array
+    // Re-fetch indices since removeLayerFromGroup may have changed the array
+    const layers = projectStore.state.layers;
+    const newDragIndex = layers.findIndex((l) => l.id === dragLayerId);
+    const newDropIndex = layers.findIndex((l) => l.id === targetLayerId);
+    if (newDragIndex === -1 || newDropIndex === -1) return;
+
+    let finalDropIndex = newDropIndex;
+    if (targetDropPosition === 'below') {
+      // If target is a group, skip past its children
+      if (targetLayer.type === 'group') {
+        let i = newDropIndex + 1;
+        while (i < layers.length && layers[i].parentId === targetLayerId) {
+          i++;
+        }
+        finalDropIndex = i;
+      } else {
+        finalDropIndex = newDropIndex + 1;
+      }
+    }
+
+    if (newDragIndex !== finalDropIndex && newDragIndex !== finalDropIndex - 1) {
+      projectStore.reorderLayers(
+        newDragIndex,
+        finalDropIndex > newDragIndex ? finalDropIndex - 1 : finalDropIndex
+      );
+    }
+  }
+
+  function handleDragEnd() {
+    dropTargetId = null;
+    dropPosition = null;
+    draggedLayerId = null;
+  }
 
   function toggleLayerExpanded(layerId: string) {
     if (expandedLayers.has(layerId)) {
       expandedLayers.delete(layerId);
-      // Also collapse all properties of this layer
-      const propertyKeys = Array.from(expandedProperties).filter((k) =>
-        k.startsWith(`${layerId}:`)
-      );
-      for (const key of propertyKeys) {
-        expandedProperties.delete(key);
-      }
     } else {
       expandedLayers.add(layerId);
-    }
-  }
-
-  function togglePropertyExpanded(layerId: string, property: string) {
-    const key = `${layerId}:${property}`;
-    if (expandedProperties.has(key)) {
-      expandedProperties.delete(key);
-    } else {
-      expandedProperties.add(key);
     }
   }
 
@@ -261,28 +374,47 @@
       <!-- Layers -->
       <div class="relative">
         {#each projectStore.state.layers.filter((l) => !l.parentId) as layer (layer.id)}
+          {@const layerIndex = projectStore.state.layers.indexOf(layer)}
           <TimelineLayer
             {layer}
             {pixelsPerSecond}
+            {layerIndex}
             isExpanded={expandedLayers.has(layer.id)}
             onToggleExpanded={() => toggleLayerExpanded(layer.id)}
-            {expandedProperties}
-            onToggleProperty={(prop) => togglePropertyExpanded(layer.id, prop)}
+            onDragStart={handleLayerDragStart}
+            onDragOver={handleLayerDragOver}
+            onDragLeave={handleLayerDragLeave}
+            onDrop={handleLayerDrop}
+            onDragEnd={handleDragEnd}
+            isDropTarget={dropTargetId === layer.id}
+            {dropPosition}
+            isDragging={draggedLayerId === layer.id}
           />
 
-          <!-- If this is a group, also render children -->
-          {#if layer.type === 'group'}
-            {#each projectStore.state.layers.filter((l) => l.parentId === layer.id) as child (child.id)}
-              <TimelineLayer
-                layer={child}
-                {pixelsPerSecond}
-                indent={1}
-                isExpanded={expandedLayers.has(child.id)}
-                onToggleExpanded={() => toggleLayerExpanded(child.id)}
-                {expandedProperties}
-                onToggleProperty={(prop) => togglePropertyExpanded(child.id, prop)}
-              />
-            {/each}
+          <!-- If this is a group and expanded, also render children -->
+          {#if layer.type === 'group' && expandedLayers.has(layer.id)}
+            <div class="border-l-2 border-emerald-500/30">
+              {#each projectStore.state.layers.filter((l) => l.parentId === layer.id) as child (child.id)}
+                {@const childIndex = projectStore.state.layers.indexOf(child)}
+                <TimelineLayer
+                  layer={child}
+                  {pixelsPerSecond}
+                  layerIndex={childIndex}
+                  indent={1}
+                  isExpanded={expandedLayers.has(child.id)}
+                  onToggleExpanded={() => toggleLayerExpanded(child.id)}
+                  onDragStart={handleLayerDragStart}
+                  onDragOver={handleLayerDragOver}
+                  onDragLeave={handleLayerDragLeave}
+                  onDrop={handleLayerDrop}
+                  onDragEnd={handleDragEnd}
+                  isDropTarget={dropTargetId === child.id}
+                  {dropPosition}
+                  isDragging={draggedLayerId === child.id}
+                  isChild
+                />
+              {/each}
+            </div>
           {/if}
         {/each}
 

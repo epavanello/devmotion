@@ -1,12 +1,23 @@
 <script lang="ts">
   import type { TypedLayer } from '$lib/layers/typed-registry';
   import { getEditorState } from '$lib/contexts/editor.svelte';
-  import { ChevronDown, ChevronRight } from '@lucide/svelte';
+  import {
+    ChevronDown,
+    ChevronRight,
+    Eye,
+    EyeOff,
+    Lock,
+    Unlock,
+    Trash2,
+    GripVertical
+  } from '@lucide/svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import TimelinePropertyTrack from './timeline-property-track.svelte';
   import { onDestroy } from 'svelte';
   import { cn } from '$lib/utils';
   import { getLayerDefinition } from '$lib/layers/registry';
+  import * as AlertDialog from '$lib/components/ui/alert-dialog';
+  import { Button } from '$lib/components/ui/button';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -17,8 +28,16 @@
     indent?: number;
     isExpanded: boolean;
     onToggleExpanded: () => void;
-    expandedProperties: SvelteSet<string>;
-    onToggleProperty: (property: string) => void;
+    layerIndex: number;
+    onDragStart?: (e: DragEvent, layerId: string, index: number) => void;
+    onDragOver?: (e: DragEvent, targetId: string, element: HTMLElement) => void;
+    onDragLeave?: () => void;
+    onDrop?: (e: DragEvent, dropIndex: number, targetLayerId: string) => void;
+    onDragEnd?: () => void;
+    isDropTarget?: boolean;
+    dropPosition?: 'above' | 'below' | 'inside' | null;
+    isDragging?: boolean;
+    isChild?: boolean;
   }
 
   let {
@@ -27,11 +46,78 @@
     indent = 0,
     isExpanded,
     onToggleExpanded,
-    expandedProperties,
-    onToggleProperty
+    layerIndex,
+    onDragStart,
+    onDragOver,
+    onDragLeave,
+    onDrop,
+    onDragEnd,
+    isDropTarget = false,
+    dropPosition = null,
+    isDragging = false,
+    isChild = false
   }: Props = $props();
 
   const isSelected = $derived(projectStore.selectedLayerId === layer.id);
+  let deleteDialogOpen = $state(false);
+  let layerHeaderRef = $state<HTMLDivElement>();
+
+  // Create custom drag ghost image from layer header
+  function createDragGhost(e: DragEvent) {
+    if (!layerHeaderRef) return;
+
+    // Clone the header element
+    const ghost = layerHeaderRef.cloneNode(true) as HTMLElement;
+    ghost.style.position = 'absolute';
+    ghost.style.top = '-9999px';
+    ghost.style.left = '-9999px';
+    ghost.style.width = `${layerHeaderRef.offsetWidth}px`;
+    ghost.style.opacity = '0.8';
+    ghost.style.pointerEvents = 'none';
+    document.body.appendChild(ghost);
+
+    // Set as drag image
+    e.dataTransfer?.setDragImage(
+      ghost,
+      layerHeaderRef.offsetWidth / 2,
+      layerHeaderRef.offsetHeight / 2
+    );
+
+    // Clean up after drag starts
+    setTimeout(() => {
+      document.body.removeChild(ghost);
+    }, 0);
+  }
+
+  function handleDragStart(e: DragEvent) {
+    createDragGhost(e);
+    onDragStart?.(e, layer.id, layerIndex);
+  }
+
+  function handleDragOver(e: DragEvent) {
+    if (!layerHeaderRef) return;
+    onDragOver?.(e, layer.id, layerHeaderRef);
+  }
+
+  function toggleVisibility(e: Event) {
+    e.stopPropagation();
+    projectStore.updateLayer(layer.id, { visible: !layer.visible });
+  }
+
+  function toggleLock(e: Event) {
+    e.stopPropagation();
+    projectStore.updateLayer(layer.id, { locked: !layer.locked });
+  }
+
+  function deleteLayer() {
+    projectStore.removeLayer(layer.id);
+    deleteDialogOpen = false;
+  }
+
+  function unparentLayer() {
+    projectStore.removeLayerFromGroup(layer.id);
+    deleteDialogOpen = false;
+  }
 
   // Enter/exit time for the layer
   const enterTime = $derived(layer.enterTime ?? 0);
@@ -53,7 +139,6 @@
   function selectLayer() {
     document.getElementById('editor-tab')?.click();
     projectStore.selectedLayerId = layer.id;
-    onToggleExpanded();
   }
 
   // Drag state for resizing enter/exit time
@@ -156,47 +241,147 @@
 
 <!-- Layer row -->
 <div
-  class={cn('border-b', {
-    'bg-muted/30': isSelected
+  class={cn('relative border-b transition-opacity', {
+    'bg-muted/30': isSelected,
+    'bg-muted/10': isChild && !isSelected,
+    'opacity-40': isDragging
   })}
+  data-layer-id={layer.id}
+  ondragover={handleDragOver}
+  ondragleave={(e) => {
+    // Only fire leave if we're actually leaving this element, not entering a child
+    const related = e.relatedTarget as HTMLElement | null;
+    if (!related || !e.currentTarget.contains(related)) {
+      onDragLeave?.();
+    }
+  }}
+  ondrop={(e) => onDrop?.(e, layerIndex, layer.id)}
+  ondragend={() => onDragEnd?.()}
+  role="listitem"
 >
-  <div class="flex items-stretch transition-colors hover:bg-muted/20">
-    <!-- Layer header -->
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- Drop indicator line - above -->
+  {#if isDropTarget && dropPosition === 'above'}
     <div
+      class="absolute -top-px right-0 left-0 z-30 h-0.5 bg-primary shadow-lg shadow-primary/50"
+    ></div>
+  {/if}
+
+  <!-- Drop indicator line - below -->
+  {#if isDropTarget && dropPosition === 'below'}
+    <div
+      class="absolute right-0 -bottom-px left-0 z-30 h-0.5 bg-primary shadow-lg shadow-primary/50"
+    ></div>
+  {/if}
+
+  <!-- Drop indicator - inside group -->
+  {#if isDropTarget && dropPosition === 'inside'}
+    <div
+      class="absolute inset-0 z-20 rounded bg-primary/10 ring-2 ring-primary/40 ring-inset"
+    ></div>
+  {/if}
+
+  <div class="group/layer flex items-stretch transition-colors hover:bg-muted/20">
+    <!-- Layer header -->
+    <div
+      bind:this={layerHeaderRef}
       data-layer-header
-      class="sticky left-0 z-10 flex w-60 shrink-0 items-center gap-1.5 border-r bg-background px-2 py-1.5"
-      style:padding-left="{8 + indent * 16}px"
-      onclick={selectLayer}
+      class={cn(
+        'sticky left-0 z-10 flex w-60 shrink-0 items-center gap-1 border-r px-1 py-1.5',
+        isChild ? 'bg-muted/15' : 'bg-background'
+      )}
+      style:padding-left="{4 + indent * 16}px"
+      draggable="true"
+      ondragstart={handleDragStart}
       role="button"
-      tabindex="0"
+      tabindex="-1"
     >
+      <!-- Drag handle -->
+      <div class="flex shrink-0 cursor-grab text-muted-foreground/40 active:cursor-grabbing">
+        <GripVertical class="size-3.5" />
+      </div>
+
       <!-- Expand toggle (only if has animated properties) -->
       {#if hasAnimatedProperties}
-        <button
-          class="flex h-4 w-4 shrink-0 items-center justify-center rounded transition-colors hover:bg-muted"
+        <Button
+          size="icon-xs"
+          variant="ghost"
+          class="shrink-0"
+          icon={isExpanded ? ChevronDown : ChevronRight}
           onclick={(e) => {
             e.stopPropagation();
             onToggleExpanded();
           }}
           aria-label={isExpanded ? 'Collapse layer' : 'Expand layer'}
-        >
-          {#if isExpanded}
-            <ChevronDown class="h-3 w-3 text-muted-foreground" />
-          {:else}
-            <ChevronRight class="h-3 w-3 text-muted-foreground" />
-          {/if}
-        </button>
+        />
+      {:else if layer.type === 'group'}
+        <Button
+          size="icon-xs"
+          variant="ghost"
+          class="shrink-0"
+          icon={isExpanded ? ChevronDown : ChevronRight}
+          onclick={(e) => {
+            e.stopPropagation();
+            onToggleExpanded();
+          }}
+        />
       {:else}
         <div class="w-4"></div>
       {/if}
 
       <!-- Layer icon -->
-      <Icon class="h-4 w-4 shrink-0 text-muted-foreground" />
+      <Icon class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
 
       <!-- Layer name -->
-      <div class="min-w-0 flex-1">
-        <div class="truncate text-sm font-medium">{layer.name}</div>
+      <button
+        class="min-w-0 flex-1 cursor-pointer text-left"
+        onclick={() => {
+          selectLayer();
+          onToggleExpanded();
+        }}
+        tabindex="-1"
+      >
+        <div
+          class={cn('truncate text-xs font-medium', {
+            'opacity-30': !layer.visible
+          })}
+        >
+          {layer.name}
+        </div>
+      </button>
+
+      <!-- Layer controls (hover reveal) -->
+      <div
+        class="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/layer:opacity-100"
+      >
+        <Button
+          size="icon-xs"
+          variant="ghost"
+          class="text-muted-foreground hover:text-foreground"
+          icon={layer.visible ? Eye : EyeOff}
+          onclick={toggleVisibility}
+          aria-label={layer.visible ? 'Hide layer' : 'Show layer'}
+        />
+
+        <Button
+          size="icon-xs"
+          variant="ghost"
+          class="text-muted-foreground hover:text-foreground"
+          icon={layer.locked ? Lock : Unlock}
+          onclick={toggleLock}
+          aria-label={layer.locked ? 'Unlock layer' : 'Lock layer'}
+        />
+
+        <Button
+          size="icon-xs"
+          variant="ghost"
+          class="text-muted-foreground hover:text-destructive"
+          icon={Trash2}
+          onclick={(e) => {
+            e.stopPropagation();
+            deleteDialogOpen = true;
+          }}
+          aria-label="Delete layer"
+        />
       </div>
     </div>
 
@@ -238,3 +423,32 @@
     {/each}
   {/if}
 </div>
+
+<!-- Delete confirmation dialog -->
+<AlertDialog.Root
+  open={deleteDialogOpen}
+  onOpenChange={(open) => {
+    deleteDialogOpen = open;
+  }}
+>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+      <AlertDialog.Title>Delete {layer.type === 'group' ? 'Group' : 'Layer'}</AlertDialog.Title>
+      <AlertDialog.Description>
+        {#if isChild}
+          Remove "{layer.name}" from group, or delete it entirely?
+        {:else}
+          Delete "{layer.name}"{layer.type === 'group' ? ' and all its children' : ''}? This action
+          cannot be undone.
+        {/if}
+      </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+      {#if isChild}
+        <Button variant="secondary" onclick={unparentLayer}>Unparent</Button>
+      {/if}
+      <AlertDialog.Action onclick={deleteLayer}>Delete</AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>

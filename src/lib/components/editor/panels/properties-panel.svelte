@@ -33,7 +33,9 @@
   const selectedLayer = $derived(projectStore.selectedLayer);
 
   /** Whether the currently selected layer is the virtual project settings layer */
-  const isProjectSettings = $derived(isProjectLayer(projectStore.selectedLayerId));
+  const isProjectSettings = $derived(
+    !projectStore.selectedLayerId || isProjectLayer(projectStore.selectedLayerId)
+  );
 
   // Extract property metadata from the layer's Zod schema
   const layerPropertyMetadata = $derived.by(() => {
