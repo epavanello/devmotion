@@ -17,15 +17,12 @@
     } else if (pps >= 200) {
       // Zoomed in: show 0.2s increments
       return { major: 1, minor: 0.2, sub: 0.1, format: (t: number) => `${t.toFixed(1)}s` };
-    } else if (pps >= 100) {
-      // Normal: show 0.5s increments
-      return { major: 1, minor: 0.5, sub: 0.1, format: (t: number) => `${t}s` };
-    } else if (pps >= 50) {
+    } else if (pps >= 70) {
       // Zoomed out: show 1s increments
-      return { major: 5, minor: 1, sub: 0.5, format: (t: number) => `${t}s` };
+      return { major: 1, minor: 0.5, sub: 0.1, format: (t: number) => `${t}s` };
     } else {
       // Very zoomed out: show 5s increments
-      return { major: 10, minor: 5, sub: 1, format: (t: number) => `${t}s` };
+      return { major: 5, minor: 5, sub: 1, format: (t: number) => `${t}s` };
     }
   });
 
@@ -90,10 +87,7 @@
       {@const position = time * pixelsPerSecond}
       {@const labelWidth = 30}
       {@const isNearEnd = position > duration * pixelsPerSecond - labelWidth}
-      <div
-        class="absolute h-full border-l border-muted-foreground/30"
-        style="left: {position}px"
-      >
+      <div class="absolute h-full border-l border-muted-foreground/30" style="left: {position}px">
         <span
           class="absolute top-1 text-[10px] font-medium text-muted-foreground"
           style={isNearEnd ? 'right: 1px' : 'left: 1px'}

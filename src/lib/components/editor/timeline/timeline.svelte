@@ -113,10 +113,6 @@
 
     selectionBox = { x, y, width, height };
 
-    // Calculate time range for selection
-    const startTime = (x - 240) / pixelsPerSecond;
-    const endTime = (x + width - 240) / pixelsPerSecond;
-
     // Find all keyframe elements that intersect with the selection box
     const keyframeElements = timelineContainer.querySelectorAll('[data-keyframe]');
     const selectedIds = new SvelteSet<string>();
@@ -248,7 +244,6 @@
 
 <div class="flex h-full flex-col overflow-hidden">
   <ScrollArea class="h-full" orientation="both" bind:ref={scrollContainer}>
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div
       bind:this={timelineContainer}
       class="relative min-h-full select-none"

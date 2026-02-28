@@ -51,7 +51,9 @@
   });
 
   function selectLayer() {
+    document.getElementById('editor-tab')?.click();
     projectStore.selectedLayerId = layer.id;
+    onToggleExpanded();
   }
 
   // Drag state for resizing enter/exit time
@@ -201,26 +203,29 @@
     <!-- Timeline area with duration bar -->
     <div class="relative h-11 flex-1">
       <!-- Duration bar -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="absolute top-1.5 bottom-1.5 rounded border {barColor} transition-colors"
         style:left="{barLeft}px"
         style:width="{barWidth}px"
         style:cursor={isDraggingBar ? 'grabbing' : 'grab'}
         onmousedown={startDragBar}
+        role="button"
+        tabindex="-1"
       >
         <!-- Enter handle -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="absolute inset-y-0 left-0 w-1 cursor-col-resize rounded-l bg-white/20 transition-colors hover:bg-white/40"
           onmousedown={startDragEnter}
+          role="button"
+          tabindex="-1"
         ></div>
 
         <!-- Exit handle -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="absolute inset-y-0 right-0 w-1 cursor-col-resize rounded-r bg-white/20 transition-colors hover:bg-white/40"
           onmousedown={startDragExit}
+          role="button"
+          tabindex="-1"
         ></div>
       </div>
     </div>
@@ -229,14 +234,7 @@
   <!-- Expanded property tracks -->
   {#if isExpanded && hasAnimatedProperties}
     {#each animatedProperties as property (property)}
-      <TimelinePropertyTrack
-        {layer}
-        {property}
-        {pixelsPerSecond}
-        indent={indent + 1}
-        isExpanded={expandedProperties.has(`${layer.id}:${property}`)}
-        onToggleExpanded={() => onToggleProperty(property)}
-      />
+      <TimelinePropertyTrack {layer} {property} {pixelsPerSecond} indent={indent + 1} />
     {/each}
   {/if}
 </div>

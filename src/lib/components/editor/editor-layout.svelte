@@ -190,7 +190,7 @@
             <div class="p-1.5">
               <Tabs.List class="w-full">
                 <Tabs.Trigger value="chat">Chat</Tabs.Trigger>
-                <Tabs.Trigger value="editor">Editor</Tabs.Trigger>
+                <Tabs.Trigger value="editor" id="editor-tab">Editor</Tabs.Trigger>
                 <Tabs.Trigger value="assets">Assets</Tabs.Trigger>
               </Tabs.List>
             </div>
