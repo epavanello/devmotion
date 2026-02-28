@@ -14,6 +14,7 @@
   import { IsMobile } from '$lib/hooks/is-mobile.svelte';
   import * as Tabs from '$lib/components/ui/tabs';
   import Timeline from './timeline/timeline.svelte';
+  import ScrollArea from '../ui/scroll-area/scroll-area.svelte';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -189,7 +190,9 @@
               </Panel>
             </Tabs.Content>
             <Tabs.Content value="properties" class="overflow-auto">
-              <PropertiesPanel />
+              <ScrollArea class="h-full">
+                <PropertiesPanel />
+              </ScrollArea>
             </Tabs.Content>
             <Tabs.Content value="assets" class="overflow-auto">
               <svelte:boundary>

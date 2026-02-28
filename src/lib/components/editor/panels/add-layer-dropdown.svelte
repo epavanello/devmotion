@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getEditorState } from '$lib/contexts/editor.svelte';
-  
+
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { Code, Film, Folder, LayoutGrid, Shapes, Type } from '@lucide/svelte';
   import { layerRegistry, type LayerMeta } from '$lib/layers/registry';

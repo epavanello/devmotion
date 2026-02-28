@@ -27,6 +27,7 @@
   import type { Asset } from '$lib/server/db/schema';
   import { extractMediaDuration, formatDuration, formatFileSize } from '$lib/utils/media';
   import { resolve } from '$app/paths';
+  import { ScrollArea } from '$lib/components/ui/scroll-area';
 
   const editorState = $derived(getEditorState());
 
@@ -180,7 +181,7 @@
   </div>
 
   <!-- Assets list -->
-  <div class="flex-1 overflow-y-auto">
+  <ScrollArea>
     {#if isLoading}
       <div class="flex items-center justify-center py-8">
         <Loader2 class="size-5 animate-spin text-muted-foreground" />
@@ -250,7 +251,7 @@
         {/each}
       </div>
     {/if}
-  </div>
+  </ScrollArea>
 
   <!-- Hidden file input -->
   <input

@@ -340,8 +340,9 @@
         tabindex="-1"
       >
         <div
-          class={cn('truncate text-xs font-medium', {
-            'opacity-30': !layer.visible
+          class={cn('truncate text-xs font-normal', {
+            'opacity-30': !layer.visible,
+            'font-bold': isSelected
           })}
         >
           {layer.name}
