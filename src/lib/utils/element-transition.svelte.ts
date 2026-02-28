@@ -191,7 +191,7 @@ export class ElementTransition {
 
     const parts: string[] = [];
     const transforms: string[] = [];
-    const hasSmeEffects = this.config.effects.length > 0;
+    const hasSomeEffects = this.config.effects.length > 0;
 
     const opacity = this.getOpacity(fragment);
     if (opacity < 1) parts.push(`opacity:${opacity.toFixed(3)}`);
@@ -206,7 +206,7 @@ export class ElementTransition {
       parts.push(`transform:${transforms.join(' ')}`);
     }
 
-    if (hasSmeEffects) {
+    if (hasSomeEffects) {
       parts.push(`width:calc-size(auto, size * ${fragment.linearProgress.toFixed(3)})`);
     }
 

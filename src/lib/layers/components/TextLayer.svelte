@@ -150,7 +150,7 @@
         'Duration in milliseconds for the enter transition of new text fragments. Only used when transitionEffect is not none.'
       )
       .register(fieldRegistry, {
-        group: 'transition',
+        group: 'transition-params',
         interpolationFamily: 'continuous',
         label: 'Duration (ms)'
       }),
@@ -161,11 +161,37 @@
         'Easing curve for the enter transition. Controls the acceleration of the animation. ease-out = starts fast and slows down, ease-in = starts slow and speeds up, bounce/elastic = playful overshooting effects.'
       )
       .register(fieldRegistry, {
-        group: 'transition',
+        group: 'transition-params',
         interpolationFamily: 'discrete',
         label: 'Easing',
         widget: 'custom',
         component: EasingSelect
+      }),
+    slideDistance: z
+      .number()
+      .min(0)
+      .max(500)
+      .default(24)
+      .describe(
+        'Distance in pixels for the slide-up effect. Determines how far below the final position the text starts when using slide-up transitions.'
+      )
+      .register(fieldRegistry, {
+        group: 'transition-params',
+        interpolationFamily: 'continuous',
+        label: 'Slide Distance (px)'
+      }),
+    scaleFrom: z
+      .number()
+      .min(0)
+      .multipleOf(0.1)
+      .default(0.5)
+      .describe(
+        'Initial scale value for the scale effect. 0 = invisible, 0.5 = half size, 1 = full size (no scaling). Only used when scale transition effect is enabled.'
+      )
+      .register(fieldRegistry, {
+        group: 'transition-params',
+        interpolationFamily: 'continuous',
+        label: 'Scale From'
       })
   });
 
@@ -181,7 +207,8 @@
       { id: 'typography', label: 'Typography' },
       { id: 'spacing', label: 'Spacing' },
       { id: 'layout', label: 'Layout' },
-      { id: 'transition', label: 'Transition effect' }
+      { id: 'transition', label: 'Transition' },
+      { id: 'transition-params', label: 'Transition Parameters' }
     ]
   } as const satisfies LayerMeta;
 
@@ -207,6 +234,8 @@
     transitionEffect,
     transitionDuration,
     transitionEasing,
+    slideDistance,
+    scaleFrom,
     currentTime
   }: WrappedLayerProps<Props> = $props();
 
@@ -230,9 +259,11 @@
       return transitionEasing;
     },
     get slideDistance() {
-      return fontSize * 0.5;
+      return slideDistance;
     },
-    scaleFrom: 0.5
+    get scaleFrom() {
+      return scaleFrom;
+    }
   });
 
   const hasTransition = $derived(transitionEffect !== 'none');
