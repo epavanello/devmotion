@@ -312,3 +312,50 @@ export const BaseAnimatablePropertyLabels: Record<BaseAnimatableProperty, string
   dropShadowX: 'Drop Shadow X',
   dropShadowY: 'Drop Shadow Y'
 };
+
+export const ContinuousInterpolationStrategies = [
+  'linear',
+  'ease-in',
+  'ease-out',
+  'ease-in-out',
+  // Quad
+  'ease-in-quad',
+  'ease-out-quad',
+  'ease-in-out-quad',
+  // Cubic
+  'ease-in-cubic',
+  'ease-out-cubic',
+  'ease-in-out-cubic',
+  // Quart
+  'ease-in-quart',
+  'ease-out-quart',
+  'ease-in-out-quart',
+  // Quint
+  'ease-in-quint',
+  'ease-out-quint',
+  'ease-in-out-quint',
+  // Sine
+  'ease-in-sine',
+  'ease-out-sine',
+  'ease-in-out-sine',
+  // Expo
+  'ease-in-expo',
+  'ease-out-expo',
+  'ease-in-out-expo',
+  // Circ
+  'ease-in-circ',
+  'ease-out-circ',
+  'ease-in-out-circ',
+  // Back (overshoots)
+  'ease-in-back',
+  'ease-out-back',
+  'ease-in-out-back',
+  // Bounce
+  'ease-in-bounce',
+  'ease-out-bounce',
+  'ease-in-out-bounce',
+  // Elastic
+  'ease-in-elastic',
+  'ease-out-elastic',
+  'ease-in-out-elastic'
+];

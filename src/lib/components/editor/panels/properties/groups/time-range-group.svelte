@@ -4,7 +4,6 @@
   import { Label } from '$lib/components/ui/label';
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import type { TypedLayer } from '$lib/layers/typed-registry';
-  import { animationPresets } from '$lib/engine/presets';
   import InputsWrapper from '../../inputs-wrapper.svelte';
   import ScrubInput from '../../scrub-input.svelte';
   import AnimationPresetSelect from '../animation-preset-select.svelte';
@@ -141,12 +140,9 @@
     <Label class="text-xs text-muted-foreground">Apply Animation</Label>
   {/snippet}
   <AnimationPresetSelect
-    id="animation-preset"
     value={selectedPresetId}
-    options={animationPresets}
-    placeholder="None"
     duration={presetDuration}
-    onchange={(v) => {
+    onChange={(v) => {
       selectedPresetId = v;
     }}
   />

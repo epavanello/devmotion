@@ -84,7 +84,12 @@
   />
 {:else if metadata.meta?.widget === 'custom'}
   {@const Component = metadata.meta.component}
-  <Component {value} onChange={(newValue) => onUpdateProp(metadata.name, newValue)} {layer} />
+  <Component
+    {value}
+    onChange={(newValue) => onUpdateProp(metadata.name, newValue)}
+    {layer}
+    {metadata}
+  />
 {:else if metadata.type === 'number'}
   <ScrubInput
     id={`${targetPath}.${metadata.name}`}

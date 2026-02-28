@@ -1,27 +1,31 @@
 <script lang="ts">
   import * as Select from '$lib/components/ui/select';
-  import type { InterpolationFamily, Interpolation } from '$lib/types/animation';
+  import type {
+    InterpolationFamily,
+    Interpolation,
+    AnimatableProperty
+  } from '$lib/types/animation';
   import type { ContinuousInterpolationStrategy } from '$lib/schemas/animation';
   import {
     getStrategyOptionsForFamilies,
     getSupportedInterpolationFamilies
   } from '$lib/utils/interpolation-utils';
-  import { getEasingFunction } from '$lib/engine/interpolation';
   import InputWrapper from '../input-wrapper.svelte';
+  import EasingCurvePreview from './easing-curve-preview.svelte';
 
   const {
-    id,
     layerType,
     property,
     value,
-    onchange
+    onChange: onchange
   }: {
-    id: string;
     layerType: string;
-    property: string;
+    property: AnimatableProperty;
     value: Interpolation | undefined;
-    onchange: (interpolation: Interpolation) => void;
+    onChange: (value: Interpolation) => void;
   } = $props();
+
+  const id = $props.id();
 
   let hoveredStrategy = $state<string | null>(null);
   let previewTime = $state(0);
@@ -58,67 +62,6 @@
   const hoveredOption = $derived(
     currentFamilyOptions.find((opt) => opt.strategy === hoveredStrategy)
   );
-
-  // Generate SVG path for the easing curve and calculate bounds
-  const curveData = $derived.by(() => {
-    if (!hoveredOption || activeFamily !== 'continuous') {
-      return { path: '', viewBox: '0 0 100 100', minY: 0, maxY: 1 };
-    }
-
-    const easingFn = getEasingFunction(hoveredOption.strategy as ContinuousInterpolationStrategy);
-    const steps = 50; // Number of points to sample
-    const values: number[] = [];
-
-    // Sample the easing function to get all Y values
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      values.push(easingFn(t));
-    }
-
-    // Find min/max Y values to determine bounds (with some padding)
-    const minY = Math.min(...values);
-    const maxY = Math.max(...values);
-    const padding = 0.1; // 10% padding
-    const rangeY = maxY - minY;
-    const paddedMinY = minY - rangeY * padding;
-    const paddedMaxY = maxY + rangeY * padding;
-    const paddedRangeY = paddedMaxY - paddedMinY;
-
-    // Build points normalized to the padded range
-    const points: [number, number][] = [];
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      const x = t * 100; // X coordinate (time)
-      // Normalize Y to 0-100 range based on padded min/max, then invert for SVG
-      const normalizedY = ((values[i] - paddedMinY) / paddedRangeY) * 100;
-      const y = 100 - normalizedY; // Inverted because SVG Y grows downward
-      points.push([x, y]);
-    }
-
-    // Build SVG path
-    const path = points
-      .map((p, i) => (i === 0 ? `M ${p[0]} ${p[1]}` : `L ${p[0]} ${p[1]}`))
-      .join(' ');
-
-    return { path, viewBox: '0 0 100 100', minY: paddedMinY, maxY: paddedMaxY };
-  });
-
-  // Current position on the easing curve (for the animated dot)
-  const previewDot = $derived.by(() => {
-    if (!hoveredOption || activeFamily !== 'continuous') return { x: 0, y: 0 };
-
-    const easingFn = getEasingFunction(hoveredOption.strategy as ContinuousInterpolationStrategy);
-    const rawY = easingFn(previewTime);
-
-    // Normalize to the same range as the curve
-    const { minY, maxY } = curveData;
-    const normalizedY = ((rawY - minY) / (maxY - minY)) * 100;
-
-    return {
-      x: previewTime * 100,
-      y: 100 - normalizedY // Inverted for SVG
-    };
-  });
 
   function handleFamilyChange(family: InterpolationFamily) {
     // When changing family, use the first strategy available for that family
@@ -258,38 +201,10 @@
       >
         <!-- Preview visualization for continuous easing -->
         {#if hoveredOption && activeFamily === 'continuous'}
-          <div
-            class="sticky top-0 z-10 flex items-center justify-center border-b border-border bg-background p-4"
-          >
-            <div class="relative h-20 w-20 overflow-hidden rounded border border-border">
-              <!-- Easing curve visualization -->
-              <svg class="h-full w-full" viewBox={curveData.viewBox} preserveAspectRatio="none">
-                <!-- Grid lines at 0 and 1 normalized positions -->
-                <line x1="0" y1="100" x2="100" y2="100" stroke="currentColor" opacity="0.1" />
-                <line x1="0" y1="0" x2="100" y2="0" stroke="currentColor" opacity="0.1" />
-                <line x1="0" y1="0" x2="0" y2="100" stroke="currentColor" opacity="0.1" />
-                <line x1="100" y1="0" x2="100" y2="100" stroke="currentColor" opacity="0.1" />
-
-                <!-- Easing curve -->
-                <path
-                  d={curveData.path}
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  class="text-primary"
-                />
-
-                <!-- Animated dot -->
-                <circle
-                  cx={previewDot.x}
-                  cy={previewDot.y}
-                  r="3"
-                  fill="currentColor"
-                  class="text-primary"
-                />
-              </svg>
-            </div>
-          </div>
+          <EasingCurvePreview
+            strategy={hoveredOption.strategy as ContinuousInterpolationStrategy}
+            progress={previewTime}
+          />
         {/if}
 
         {#each currentFamilyOptions as option (option.strategy)}

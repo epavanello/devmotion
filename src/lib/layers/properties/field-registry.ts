@@ -3,10 +3,11 @@ import type { Component } from 'svelte';
 import type { TypedLayer } from '../typed-registry';
 import z from 'zod';
 
-export type CustomPropertyComponentProps = {
-  value: unknown;
-  onChange: (value: unknown) => void;
+export type CustomPropertyComponentProps<T = unknown> = {
+  value: T;
+  onChange: (value: T) => void;
   layer: TypedLayer;
+  metadata: FieldMeta;
 };
 
 /**
@@ -33,7 +34,8 @@ export type FieldMeta = {
     }
   | {
       widget: 'custom';
-      component: Component<CustomPropertyComponentProps>;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      component: Component<CustomPropertyComponentProps<any>>;
     }
 );
 

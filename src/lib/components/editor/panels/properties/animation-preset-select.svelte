@@ -1,26 +1,22 @@
 <script lang="ts">
   import * as Select from '$lib/components/ui/select';
-  import type { TypedAnimationPreset } from '$lib/engine/presets';
+  import { animationPresets, type TypedAnimationPreset } from '$lib/engine/presets';
   import { getLayerTransform, getLayerStyle } from '$lib/engine/layer-rendering';
   import { generateTransformCSS, generateFilterCSS } from '$lib/layers/base';
   import { createLayer } from '$lib/engine/layer-factory';
   import { SvelteMap } from 'svelte/reactivity';
 
   const {
-    id,
     value,
-    options,
-    placeholder = 'Select animation',
-    duration,
-    onchange
+    duration = 1,
+    onChange
   }: {
-    id: string;
     value: string;
-    options: TypedAnimationPreset[];
-    placeholder?: string;
-    duration: number;
-    onchange: (value: string) => void;
+    duration?: number;
+    onChange: (value: string) => void;
   } = $props();
+
+  const options = animationPresets;
 
   let hoveredPresetId = $state<string | null>(null);
   let previewTime = $state(0);
@@ -119,7 +115,7 @@
 
   function handleValueChange(newValue: string | undefined) {
     if (newValue) {
-      onchange(newValue);
+      onChange(newValue);
       stopPreview();
     }
   }
@@ -131,8 +127,8 @@
 </script>
 
 <Select.Root type="single" {value} onValueChange={handleValueChange}>
-  <Select.Trigger class="w-full" {id}>
-    {selectedPreset?.name ?? placeholder}
+  <Select.Trigger class="w-full">
+    {selectedPreset?.name ?? 'Select animation'}
   </Select.Trigger>
   <Select.Content class="max-h-[calc(50vh)] w-80 p-0" onmouseleave={stopPreview}>
     <!-- Sticky preview at the top -->

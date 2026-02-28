@@ -7,6 +7,7 @@
   import ApplyFont from '$lib/components/font/apply-font.svelte';
   import FontProperty from '../properties/FontProperty.svelte';
   import type { WrappedLayerProps } from '../LayerWrapper.svelte';
+  import { ContinuousInterpolationStrategies } from '$lib/schemas/base';
 
   /**
    * Schema for Text Layer custom properties
@@ -142,6 +143,7 @@
     transitionDuration: z
       .number()
       .min(0)
+      .multipleOf(5)
       .max(5000)
       .default(0)
       .describe(
@@ -151,6 +153,19 @@
         group: 'transition',
         interpolationFamily: 'continuous',
         label: 'Duration (ms)'
+      }),
+    transitionEasing: z
+      .enum(ContinuousInterpolationStrategies)
+      .default('ease-out')
+      .describe(
+        'Easing curve for the enter transition. Controls the acceleration of the animation. ease-out = starts fast and slows down, ease-in = starts slow and speeds up, bounce/elastic = playful overshooting effects.'
+      )
+      .register(fieldRegistry, {
+        group: 'transition',
+        interpolationFamily: 'discrete',
+        label: 'Easing',
+        widget: 'custom',
+        component: EasingSelect
       })
   });
 
@@ -166,7 +181,7 @@
       { id: 'typography', label: 'Typography' },
       { id: 'spacing', label: 'Spacing' },
       { id: 'layout', label: 'Layout' },
-      { id: 'transition', label: 'Transition' }
+      { id: 'transition', label: 'Transition effect' }
     ]
   } as const satisfies LayerMeta;
 
@@ -176,6 +191,7 @@
 <script lang="ts">
   import { watch } from 'runed';
   import { ElementTransition, type TransitionEffect } from '$lib/utils/element-transition.svelte';
+  import EasingSelect from '$lib/components/editor/panels/properties/easing-select.svelte';
 
   let {
     content,
@@ -190,6 +206,7 @@
     textAlign,
     transitionEffect,
     transitionDuration,
+    transitionEasing,
     currentTime
   }: WrappedLayerProps<Props> = $props();
 
@@ -209,6 +226,9 @@
     get effects() {
       return effectMap[transitionEffect] ?? [];
     },
+    get easing() {
+      return transitionEasing;
+    },
     get slideDistance() {
       return fontSize * 0.5;
     },
@@ -218,14 +238,9 @@
   const hasTransition = $derived(transitionEffect !== 'none');
 
   watch(
-    () => [content, currentTime, transitionEffect, transitionDuration] as const,
-    ([content, currentTime, effect, duration]) => {
-      if (effect === 'none') return;
-      transition.config = {
-        ...transition.config,
-        duration,
-        effects: effectMap[effect] ?? []
-      };
+    () => [content, currentTime] as const,
+    ([content, currentTime]) => {
+      if (transitionEffect === 'none') return;
       transition.update(content, currentTime);
     }
   );

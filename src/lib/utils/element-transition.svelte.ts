@@ -8,7 +8,7 @@
  * Works with server-side frame-by-frame rendering.
  *
  * Usage inside a component:
- *   const transition = new ElementTransition({ duration: 0.3, effects: ['fade', 'scale'] });
+ *   const transition = new ElementTransition({ duration: 0.3, effects: ['fade', 'scale'], easing: 'ease-out-cubic' });
  *   watch(() => [content, currentTime], ([content, currentTime]) => {
  *     transition.update(content, currentTime);
  *   });
@@ -16,6 +16,8 @@
  */
 
 import { SvelteMap } from 'svelte/reactivity';
+import { getEasingFunction } from '$lib/engine/interpolation';
+import type { ContinuousInterpolationStrategy } from '$lib/schemas/animation';
 
 export type TransitionEffect = 'fade' | 'scale' | 'slide-up';
 
@@ -24,6 +26,8 @@ export interface TransitionConfig {
   duration?: number;
   /** Which effects to apply (default ['fade']) */
   effects?: TransitionEffect[];
+  /** Easing curve for the transition (default 'ease-out') */
+  easing?: ContinuousInterpolationStrategy;
   /** Scale start value when using 'scale' effect (default 0) */
   scaleFrom?: number;
   /** Slide distance in px when using 'slide-up' effect (default 8) */
@@ -32,13 +36,16 @@ export interface TransitionConfig {
 
 export interface TransitionFragment {
   text: string;
-  /** 0-1 clamped transition progress */
+  /** Eased progress (may overshoot beyond 1 for elastic/back easings) */
   progress: number;
+  /** Linear 0-1 clamped progress (before easing) */
+  linearProgress: number;
 }
 
 const DEFAULTS = {
   duration: 300,
   effects: ['fade'] as TransitionEffect[],
+  easing: 'ease-out' as ContinuousInterpolationStrategy,
   scaleFrom: 0,
   slideDistance: 8
 } as const;
@@ -58,6 +65,7 @@ export class ElementTransition {
     this.config = $derived({
       duration: config.duration ?? DEFAULTS.duration,
       effects: config.effects ?? DEFAULTS.effects,
+      easing: config.easing ?? DEFAULTS.easing,
       scaleFrom: config.scaleFrom ?? DEFAULTS.scaleFrom,
       slideDistance: config.slideDistance ?? DEFAULTS.slideDistance
     });
@@ -85,7 +93,7 @@ export class ElementTransition {
       this.isFirstUpdate = false;
       // Don't set appearedAt for initial content - it will get progress=1
       // Build fragments with progress=1 for all initial content
-      this.fragments = value ? [{ text: value, progress: 1 }] : [];
+      this.fragments = value ? [{ text: value, progress: 1, linearProgress: 1 }] : [];
       return;
     }
 
@@ -117,6 +125,7 @@ export class ElementTransition {
    */
   private rebuildFragments(value: string, currentTime: number): void {
     const frags: TransitionFragment[] = [];
+    const easingFn = getEasingFunction(this.config.easing);
     let i = 0;
 
     while (i < value.length) {
@@ -130,17 +139,21 @@ export class ElementTransition {
 
       const text = value.substring(i, j);
       let progress: number;
+      let linearProgress: number;
 
       if (appearedAt === undefined) {
         // Was present before any tracking — fully transitioned
         progress = 1;
+        linearProgress = 1;
       } else {
         const elapsed = currentTime - appearedAt;
         const durationSec = this.config.duration / 1000;
-        progress = durationSec > 0 ? Math.min(1, Math.max(0, elapsed / durationSec)) : 1;
+        linearProgress = durationSec > 0 ? Math.min(1, Math.max(0, elapsed / durationSec)) : 1;
+        // Apply easing curve (may overshoot beyond 1)
+        progress = easingFn(linearProgress);
       }
 
-      frags.push({ text, progress });
+      frags.push({ text, progress, linearProgress });
       i = j;
     }
 
@@ -173,7 +186,8 @@ export class ElementTransition {
 
   /** Get a combined inline style string for a fragment */
   getStyle(fragment: TransitionFragment): string {
-    if (fragment.progress >= 1) return '';
+    // Use linearProgress to determine completion, not progress (which can overshoot)
+    if (fragment.linearProgress >= 1) return '';
 
     const parts: string[] = [];
     const transforms: string[] = [];
@@ -214,14 +228,21 @@ export class ElementTransition {
   progressFromTime(currentTime: number, appearedAt: number): number {
     const elapsed = currentTime - appearedAt;
     const durationSec = this.config.duration / 1000;
-    return durationSec > 0 ? Math.min(1, Math.max(0, elapsed / durationSec)) : 1;
+    const linearProgress = durationSec > 0 ? Math.min(1, Math.max(0, elapsed / durationSec)) : 1;
+    const easingFn = getEasingFunction(this.config.easing);
+    return easingFn(linearProgress);
   }
 
   /**
    * Build a TransitionFragment from known timing, for use with getStyle/getOpacity/getScale.
    */
   fragmentFromTime(text: string, currentTime: number, appearedAt: number): TransitionFragment {
-    return { text, progress: this.progressFromTime(currentTime, appearedAt) };
+    const elapsed = currentTime - appearedAt;
+    const durationSec = this.config.duration / 1000;
+    const linearProgress = durationSec > 0 ? Math.min(1, Math.max(0, elapsed / durationSec)) : 1;
+    const easingFn = getEasingFunction(this.config.easing);
+    const progress = easingFn(linearProgress);
+    return { text, progress, linearProgress };
   }
 }
 

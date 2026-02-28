@@ -254,11 +254,10 @@
         </InputsWrapper>
 
         <InterpolationSelect
-          id={`interpolation-${startKeyframe.id}`}
           {layerType}
           property={startKeyframe.property}
           value={startKeyframe.interpolation}
-          onchange={handleInterpolationChange}
+          onChange={handleInterpolationChange}
         />
       {/if}
     {/if}

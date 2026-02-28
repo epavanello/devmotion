@@ -5,7 +5,12 @@
 import { getAvailableLayerTypes } from '$lib/layers/registry';
 import { z } from 'zod';
 import { BackgroundValueSchema } from './background';
-import { TransformSchema, LayerStyleSchema, BaseLayerFieldsSchema } from './base';
+import {
+  TransformSchema,
+  LayerStyleSchema,
+  BaseLayerFieldsSchema,
+  ContinuousInterpolationStrategies
+} from './base';
 import { googleFontValues } from '$lib/utils/fonts';
 import type { LiteralUnion } from 'type-fest';
 
@@ -17,6 +22,7 @@ import type { LiteralUnion } from 'type-fest';
 // Use for: numbers (position, scale, opacity, fontSize, etc.) AND hex colors (including alpha)
 // Colors are interpolated in RGB space (e.g., #ff0000 → #0000ff smoothly transitions through purple)
 // The value smoothly transitions between keyframes using mathematical easing curves
+
 const ContinuousInterpolationSchema = z.object({
   family: z
     .literal('continuous')
@@ -24,52 +30,7 @@ const ContinuousInterpolationSchema = z.object({
       'Smooth interpolation for numbers AND colors. Use for: position, scale, opacity, fontSize, AND color properties (fill, stroke, dropShadowColor). Colors are interpolated in RGB space.'
     ),
   strategy: z
-    .enum([
-      'linear',
-      'ease-in',
-      'ease-out',
-      'ease-in-out',
-      // Quad
-      'ease-in-quad',
-      'ease-out-quad',
-      'ease-in-out-quad',
-      // Cubic
-      'ease-in-cubic',
-      'ease-out-cubic',
-      'ease-in-out-cubic',
-      // Quart
-      'ease-in-quart',
-      'ease-out-quart',
-      'ease-in-out-quart',
-      // Quint
-      'ease-in-quint',
-      'ease-out-quint',
-      'ease-in-out-quint',
-      // Sine
-      'ease-in-sine',
-      'ease-out-sine',
-      'ease-in-out-sine',
-      // Expo
-      'ease-in-expo',
-      'ease-out-expo',
-      'ease-in-out-expo',
-      // Circ
-      'ease-in-circ',
-      'ease-out-circ',
-      'ease-in-out-circ',
-      // Back (overshoots)
-      'ease-in-back',
-      'ease-out-back',
-      'ease-in-out-back',
-      // Bounce
-      'ease-in-bounce',
-      'ease-out-bounce',
-      'ease-in-out-bounce',
-      // Elastic
-      'ease-in-elastic',
-      'ease-out-elastic',
-      'ease-in-out-elastic'
-    ])
+    .enum(ContinuousInterpolationStrategies)
     .describe(
       'Easing curve: ease-out for entrances (fast→slow), ease-in for exits (slow→fast), ease-in-out for middle animations. More dramatic effects: back (overshoot), bounce, elastic. Default: ease-in-out'
     )
