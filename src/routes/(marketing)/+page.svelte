@@ -4,6 +4,7 @@
   import { Button } from '$lib/components/ui/button';
   import { resolve } from '$app/paths';
   import Player from '$lib/components/player/player.svelte';
+  import Arrow from '$lib/assets/svg/arrow.svelte';
   import {
     Clock,
     Sparkles,
@@ -22,6 +23,8 @@
     ChevronDown
   } from '@lucide/svelte';
   import type { SoftwareApplication, WithContext } from 'schema-dts';
+  import ApplyFont from '$lib/components/font/apply-font.svelte';
+  import { IsMobile } from '$lib/hooks/is-mobile.svelte.js';
 
   const { data } = $props();
 
@@ -190,7 +193,9 @@
     { value: 'square', label: '1:1', icon: Square, width: 720, height: 720, desc: 'Square' }
   ];
 
-  let selectedAspectRatio = $state('landscape');
+  const mediaQuery = new IsMobile();
+  const isMobile = $derived(mediaQuery.current);
+  let selectedAspectRatio = $state(isMobile ? 'portrait' : 'landscape');
 
   const projectData = $derived.by(() => {
     const baseProject = data.projectSnapshot;
@@ -305,31 +310,27 @@
   <!-- Live Player Demo - Full Width -->
   <div class="relative mt-16 w-full bg-muted/20 py-12">
     <!-- Header with aspect ratio switcher -->
-    <div class="container mx-auto mb-8 px-4 sm:px-6 lg:px-8">
-      <div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col items-center justify-between gap-6 sm:flex-row sm:gap-4">
         <div class="text-center sm:text-left">
-          <h2 class="text-xl font-bold text-foreground md:text-2xl">One Project, Every Platform</h2>
+          <h2 class="text-xl font-bold text-foreground md:text-2xl">
+            <span class="block sm:inline">One Project,</span>
+            <span class="block sm:ml-1 sm:inline">Every Platform</span>
+          </h2>
           <p class="mt-1 text-sm text-muted-foreground">
             Create once, optimize for YouTube, Instagram, TikTok instantly.
           </p>
         </div>
 
-        <!-- Aspect Ratio Toggle Group with Arrow -->
-        <div class="relative flex items-center gap-4">
-          <!-- Animated Arrow pointing to buttons -->
-          <div class="animate-bounce-horizontal hidden text-primary sm:block" aria-hidden="true">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M5 12h14M12 5l7 7-7 7"></path>
-            </svg>
+        <div class="flex items-center gap-2">
+          <!-- Curved Arrow with CTA text -->
+          <div class="flex flex-row items-center justify-center gap-2" aria-hidden="true">
+            <span class="mt-3 text-2xl font-medium whitespace-nowrap text-muted-foreground">
+              <ApplyFont fontFamily="Indie Flower">Try it!</ApplyFont>
+            </span>
+            <div class="w-20 text-primary">
+              <Arrow />
+            </div>
           </div>
 
           <div class="flex items-center gap-2 rounded-lg border border-border bg-background p-1">
@@ -587,21 +588,5 @@
   }
   :global(.animate-float-slow) {
     animation: float-slow 20s ease-in-out infinite;
-  }
-
-  @keyframes bounce-horizontal {
-    0%,
-    100% {
-      transform: translateX(0);
-      opacity: 0.7;
-    }
-    50% {
-      transform: translateX(8px);
-      opacity: 1;
-    }
-  }
-
-  :global(.animate-bounce-horizontal) {
-    animation: bounce-horizontal 1.5s ease-in-out infinite;
   }
 </style>
