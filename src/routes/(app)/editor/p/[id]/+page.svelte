@@ -9,7 +9,7 @@
   import { toast } from 'svelte-sonner';
   import { watch } from 'runed';
   import { Loader2 } from '@lucide/svelte';
-  import { resolve } from '$app/paths';
+  import { projectUrl, projectOgImageUrl } from '$lib/utils/urls';
 
   let { data }: { data: PageData } = $props();
 
@@ -20,12 +20,8 @@
   const projectDescription = $derived(
     `${projectName} - Motion graphics created with DevMotion. Professional animation editor for the web, powered by AI.`
   );
-  const projectUrl = $derived(
-    `${baseUrl}${resolve('/(app)/editor/p/[id]', { id: data.project.id })}`
-  );
-  const ogImage = $derived(
-    `${baseUrl}${resolve('/(app)/editor/p/[id]/og.png', { id: data.project.id })}`
-  );
+  const url = $derived(projectUrl(data.project.id));
+  const ogImage = $derived(projectOgImageUrl(data.project.id));
 
   // Load project data when route changes
   watch(
@@ -68,7 +64,7 @@
   description={projectDescription}
   image={ogImage}
   type="article"
-  canonical={projectUrl}
+  canonical={url}
   author={data.project.user?.name || 'Anonymous Creator'}
   publishedTime={data.project.createdAt.toISOString()}
   modifiedTime={data.project.updatedAt.toISOString()}
@@ -81,7 +77,7 @@
     '@type': 'VideoObject',
     name: projectName,
     description: projectDescription,
-    url: projectUrl,
+    url: url,
     thumbnailUrl: ogImage,
     uploadDate: data.project.createdAt.toISOString(),
     author: {
@@ -131,7 +127,7 @@
         '@type': 'ListItem',
         position: 3,
         name: projectName,
-        item: projectUrl
+        item: url
       }
     ]
   }}

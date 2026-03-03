@@ -26,10 +26,11 @@ import {
   mutateUngroupLayers,
   type MutationContext
 } from '$lib/ai/mutations';
-import { PUBLIC_BASE_URL } from '$env/static/public';
+
 import type { ProjectData } from '$lib/schemas/animation';
 import { getDefaultProject } from '$lib/contexts/editor.svelte';
 import { resolve } from '$app/paths';
+import { absoluteUrl } from '$lib/utils/urls.js';
 
 const handler = createMcpHandler(
   (server) => {
@@ -61,7 +62,7 @@ const handler = createMcpHandler(
           updatedAt: new Date()
         });
 
-        const previewUrl = `${PUBLIC_BASE_URL}${resolve('/(app)/editor/p/[id]', { id })}`;
+        const previewUrl = absoluteUrl(resolve('/(app)/editor/p/[id]', { id }));
 
         return {
           content: [
@@ -97,7 +98,7 @@ const handler = createMcpHandler(
         }
 
         const projectData = dbProject.data as ProjectData;
-        const previewUrl = `${PUBLIC_BASE_URL}${resolve('/(app)/editor/p/[id]', { id: projectId })}`;
+        const previewUrl = absoluteUrl(resolve('/(app)/editor/p/[id]', { id: projectId }));
 
         // Build a human-readable summary
         const summary = [

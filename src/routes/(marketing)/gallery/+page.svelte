@@ -7,6 +7,7 @@
   import { ArrowLeft, ArrowRight, Eye, Film } from '@lucide/svelte';
   import { resolve } from '$app/paths';
   import { PUBLIC_BASE_URL } from '$env/static/public';
+  import { projectUrl, projectOgImageUrl } from '$lib/utils/urls';
 
   let { data } = $props();
 
@@ -65,10 +66,8 @@
         item: {
           '@type': 'CreativeWork',
           name: project.name,
-          url: `${baseUrl}${resolve('/(app)/editor/p/[id]', { id: project.id })}`,
-          thumbnailUrl:
-            project.thumbnailUrl ||
-            `${baseUrl}${resolve('/(app)/editor/p/[id]/og.png', { id: project.id })}`,
+          url: projectUrl(project.id),
+          thumbnailUrl: project.thumbnailUrl || projectOgImageUrl(project.id),
           author: {
             '@type': 'Person',
             name: project.user?.name || 'Anonymous Creator'
