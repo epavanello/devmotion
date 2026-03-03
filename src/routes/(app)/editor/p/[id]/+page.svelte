@@ -66,7 +66,7 @@
 <SeoHead
   title="{projectName} - Animation by {data.project.user?.name || 'Community'} | DevMotion"
   description={projectDescription}
-  image={`${resolve('/(app)/editor/p/[id]/og.png', { id: data.project.id })}`}
+  image={ogImage}
   type="article"
   canonical={projectUrl}
   author={data.project.user?.name || 'Anonymous Creator'}

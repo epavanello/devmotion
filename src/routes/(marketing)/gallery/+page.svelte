@@ -65,7 +65,7 @@
         item: {
           '@type': 'CreativeWork',
           name: project.name,
-          url: `${baseUrl}/${resolve('/(app)/editor/p/[id]', { id: project.id })}`,
+          url: `${baseUrl}${resolve('/(app)/editor/p/[id]', { id: project.id })}`,
           thumbnailUrl:
             project.thumbnailUrl ||
             `${baseUrl}${resolve('/(app)/editor/p/[id]/og.png', { id: project.id })}`,
