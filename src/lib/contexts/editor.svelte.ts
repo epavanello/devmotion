@@ -104,56 +104,6 @@ export function getDefaultProject(): Project {
         },
         keyframes: [
           {
-            id: 'Ss42V1gv8S3dbcsDi_U2f',
-            time: 0,
-            property: 'opacity',
-            value: 0,
-            interpolation: {
-              family: 'continuous',
-              strategy: 'ease-out'
-            }
-          },
-          {
-            id: 'oiCZlfa03aiJ4uJte8dv5',
-            time: 0,
-            property: 'blur',
-            value: 12,
-            interpolation: {
-              family: 'continuous',
-              strategy: 'ease-out'
-            }
-          },
-          {
-            id: 'jLeS2ink97_bp2T95cj8a',
-            time: 0,
-            property: 'position.y',
-            value: 30,
-            interpolation: {
-              family: 'continuous',
-              strategy: 'ease-out'
-            }
-          },
-          {
-            id: '9uLBgWrTNFUKqqa-pBIz_',
-            time: 0,
-            property: 'scale.x',
-            value: 1.08,
-            interpolation: {
-              family: 'continuous',
-              strategy: 'ease-out'
-            }
-          },
-          {
-            id: 'BK3KLBIQzQp0casl-IInP',
-            time: 0,
-            property: 'scale.y',
-            value: 1.08,
-            interpolation: {
-              family: 'continuous',
-              strategy: 'ease-out'
-            }
-          },
-          {
             id: '4pGlkj1gzzn5YiiNa5MQO',
             time: 0,
             property: 'props.content',
@@ -175,36 +125,6 @@ export function getDefaultProject(): Project {
             }
           },
           {
-            id: 'dZ2kKVrLcrxp6yZ5FlqWb',
-            time: 1.5,
-            property: 'opacity',
-            value: 1,
-            interpolation: {
-              family: 'continuous',
-              strategy: 'linear'
-            }
-          },
-          {
-            id: 'vF_xldAVs_EszHKRJyDg7',
-            time: 1.5,
-            property: 'blur',
-            value: 0,
-            interpolation: {
-              family: 'continuous',
-              strategy: 'linear'
-            }
-          },
-          {
-            id: 'ryaEU6a6CwF-E5ZxrFJZG',
-            time: 2,
-            property: 'position.y',
-            value: 0,
-            interpolation: {
-              family: 'continuous',
-              strategy: 'linear'
-            }
-          },
-          {
             id: 'toegtpgCtiKu38wCuIdio',
             time: 2.6800000000000046,
             property: 'props.content',
@@ -212,26 +132,6 @@ export function getDefaultProject(): Project {
             interpolation: {
               family: 'text',
               strategy: 'char-reveal'
-            }
-          },
-          {
-            id: 'z-2XgYZecDZoZ4Maki0U1',
-            time: 4,
-            property: 'scale.x',
-            value: 1,
-            interpolation: {
-              family: 'continuous',
-              strategy: 'linear'
-            }
-          },
-          {
-            id: '1AsiNouYycg7Vkr4J5O2c',
-            time: 4,
-            property: 'scale.y',
-            value: 1,
-            interpolation: {
-              family: 'continuous',
-              strategy: 'linear'
             }
           }
         ],
