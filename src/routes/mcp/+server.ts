@@ -29,6 +29,7 @@ import {
 import { PUBLIC_BASE_URL } from '$env/static/public';
 import type { ProjectData } from '$lib/schemas/animation';
 import { getDefaultProject } from '$lib/contexts/editor.svelte';
+import { resolve } from '$app/paths';
 
 const handler = createMcpHandler(
   (server) => {
@@ -60,7 +61,7 @@ const handler = createMcpHandler(
           updatedAt: new Date()
         });
 
-        const previewUrl = `${PUBLIC_BASE_URL}/p/${id}`;
+        const previewUrl = `${PUBLIC_BASE_URL}${resolve('/(app)/editor/p/[id]', { id })}`;
 
         return {
           content: [
@@ -96,7 +97,7 @@ const handler = createMcpHandler(
         }
 
         const projectData = dbProject.data as ProjectData;
-        const previewUrl = `${PUBLIC_BASE_URL}/p/${projectId}`;
+        const previewUrl = `${PUBLIC_BASE_URL}${resolve('/(app)/editor/p/[id]', { id: projectId })}`;
 
         // Build a human-readable summary
         const summary = [

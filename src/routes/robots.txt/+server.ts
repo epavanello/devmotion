@@ -7,7 +7,8 @@ export const GET = () => {
 User-agent: *
 Allow: /
 Allow: /gallery
-Allow: /p/
+Allow: /editor
+Allow: /editor/p/
 
 # Disallow private/internal routes
 Disallow: /render/

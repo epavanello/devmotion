@@ -9,6 +9,7 @@
   import { toast } from 'svelte-sonner';
   import { watch } from 'runed';
   import { Loader2 } from '@lucide/svelte';
+  import { resolve } from '$app/paths';
 
   let { data }: { data: PageData } = $props();
 
@@ -19,8 +20,12 @@
   const projectDescription = $derived(
     `${projectName} - Motion graphics created with DevMotion. Professional animation editor for the web, powered by AI.`
   );
-  const projectUrl = $derived(`${baseUrl}/p/${data.project.id}`);
-  const ogImage = $derived(`${baseUrl}/p/${data.project.id}/og.png`);
+  const projectUrl = $derived(
+    `${baseUrl}${resolve('/(app)/editor/p/[id]', { id: data.project.id })}`
+  );
+  const ogImage = $derived(
+    `${baseUrl}${resolve('/(app)/editor/p/[id]/og.png', { id: data.project.id })}`
+  );
 
   // Load project data when route changes
   watch(
@@ -61,7 +66,7 @@
 <SeoHead
   title="{projectName} - Animation by {data.project.user?.name || 'Community'} | DevMotion"
   description={projectDescription}
-  image="/p/{data.project.id}/og.png"
+  image={`${resolve('/(app)/editor/p/[id]/og.png', { id: data.project.id })}`}
   type="article"
   canonical={projectUrl}
   author={data.project.user?.name || 'Anonymous Creator'}

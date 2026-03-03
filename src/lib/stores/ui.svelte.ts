@@ -40,7 +40,7 @@ class UIStore {
     if (result.success && result.data.id) {
       editorState.markAsSaved();
       if (!projectId) {
-        replaceState(resolve(`/p/${result.data.id}`), {});
+        replaceState(resolve('/(app)/editor/p/[id]', { id: result.data.id }), {});
         editorState.setDbContext(result.data.id, true, true, false);
       }
     }

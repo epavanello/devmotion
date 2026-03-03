@@ -2,10 +2,8 @@
   import { onMount } from 'svelte';
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import CanvasControls from './canvas-controls.svelte';
-  import CanvasPlayerControls from './canvas-player-controls.svelte';
-  import LayersRenderer from './layers-renderer.svelte';
-  import Watermark from './watermark.svelte';
-  import { getBackgroundColor, getBackgroundImage } from '$lib/schemas/background';
+  import PlayerControls from '$lib/components/player/player-controls.svelte';
+  import ProjectViewport from '$lib/components/player/project-viewport.svelte';
   import { cn } from '$lib/utils';
   import { createLayer } from '$lib/engine/layer-factory';
   import { defaultTransform } from '$lib/schemas/base';
@@ -314,43 +312,21 @@
       {/if}
 
       <!-- Project viewport area - exact dimensions of the video output -->
-      <div
-        bind:this={projectViewport}
-        class={cn('group/viewport absolute z-2 origin-center rounded-2xl', {
+      <ProjectViewport
+        bind:projectViewport
+        project={projectStore.state}
+        currentTime={projectStore.currentTime}
+        isPlaying={projectStore.isPlaying}
+        globalVolume={projectStore.globalVolume}
+        selectedLayerId={projectStore.selectedLayerId}
+        disableSelection={projectStore.isRecording}
+        getCachedFrame={projectStore.isRecording ? projectStore.getCachedFrame : undefined}
+        isRecording={projectStore.isRecording}
+        class={cn('absolute z-2', {
           'relative! shadow-none!': isRecording
         })}
-        style:transform-style="preserve-3d"
-        style:width="{projectStore.state.width}px"
-        style:height="{projectStore.state.height}px"
-        style:left={isRecording ? 'auto' : `-${projectStore.state.width / 2}px`}
-        style:top={isRecording ? 'auto' : `-${projectStore.state.height / 2}px`}
-        style:transform={isRecording ? `scale(${recordingScale})` : undefined}
-        style:perspective="1000px"
-        style:perspective-origin="center center"
-        style:isolation="isolate"
-        style:background-color={getBackgroundColor(projectStore.state.background)}
-        style:background-image={getBackgroundImage(projectStore.state.background)}
-        style:cursor={projectStore.isRecording ? 'none' : undefined}
+        style="{isRecording ? 'auto' : `left: -${projectStore.state.width / 2}px; top: -${projectStore.state.height / 2}px;`} {isRecording ? `transform: scale(${recordingScale})` : ''}"
       >
-        <!-- Layers -->
-        <div
-          class="absolute inset-0"
-          style:transform-style="preserve-3d"
-          style:pointer-events={projectStore.isRecording ? 'none' : undefined}
-        >
-          <LayersRenderer
-            layers={projectStore.state.layers}
-            currentTime={projectStore.currentTime}
-            projectDuration={projectStore.state.duration}
-            isPlaying={projectStore.isPlaying}
-            selectedLayerId={projectStore.selectedLayerId}
-            disableSelection={projectStore.isRecording}
-            getCachedFrame={projectStore.isRecording ? projectStore.getCachedFrame : undefined}
-            projectFont={projectStore.state.fontFamily}
-            globalVolume={projectStore.globalVolume}
-          />
-        </div>
-
         {#if isDragOver}
           <div
             class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-2xl border-2 border-dashed border-primary/50 bg-primary/10"
@@ -363,12 +339,16 @@
           </div>
         {/if}
 
-        <Watermark />
-
         {#if !isRecording}
-          <CanvasPlayerControls {projectStore} {canvasContainer} />
+          <PlayerControls
+            bind:isPlaying={projectStore.isPlaying}
+            bind:currentTime={projectStore.currentTime}
+            bind:globalVolume={projectStore.globalVolume}
+            duration={projectStore.state.duration}
+            {canvasContainer}
+          />
         {/if}
-      </div>
+      </ProjectViewport>
     </div>
   </div>
   {#if !isRecording}

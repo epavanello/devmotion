@@ -385,7 +385,7 @@
       tabindex="0"
     >
       <!-- Ruler -->
-      <div class="sticky top-0 z-20 border-b bg-background">
+      <div class="sticky top-0 border-b bg-background">
         <TimelineRuler
           {pixelsPerSecond}
           duration={projectStore.state.duration}

@@ -12,8 +12,6 @@
     GitFork,
     Globe,
     Github,
-    Sun,
-    Moon,
     UserCircle
   } from '@lucide/svelte';
   import { getEditorState } from '$lib/contexts/editor.svelte';
@@ -22,7 +20,7 @@
   const editorState = $derived(getEditorState());
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { uiStore } from '$lib/stores/ui.svelte';
-  import { themeStore } from '$lib/stores/theme.svelte';
+  import ThemeToggle from '$lib/components/ui/theme-toggle.svelte';
   import { getUser, signOut } from '$lib/functions/auth.remote';
   import { toggleVisibility, forkProject } from '$lib/functions/projects.remote';
   import { goto } from '$app/navigation';
@@ -62,6 +60,7 @@
   import { Menu, X } from '@lucide/svelte';
   import TooltipButton from '../ui/tooltip/tooltip-button.svelte';
   import GoogleIcon from '$lib/assets/svg/google-icon.svelte';
+  import type { ResolvedPathname } from '$app/types';
 
   let headerOpen = $state(false);
 
@@ -113,7 +112,7 @@
   async function handleLogin() {
     await authClient.signIn.social({
       provider: 'google',
-      callbackURL: resolve('/')
+      callbackURL: resolve('/editor')
     });
   }
 
@@ -131,7 +130,7 @@
     if (!projectId) return;
     const result = await forkProject({ id: projectId });
     if (result.success && result.data.id) {
-      goto(resolve(`/p/${result.data.id}`));
+      goto(resolve('/(app)/editor/p/[id]', { id: result.data.id }));
     }
   }
 
@@ -146,7 +145,7 @@
     icon: Component;
     variant?: 'ghost' | 'outline' | 'default';
     onclick?: () => void;
-    href?: string;
+    href?: ResolvedPathname;
     target?: string;
     disabled: boolean;
     visible: boolean;
@@ -263,14 +262,7 @@
       <div class="flex items-center gap-2">
         {#if !isMobile}
           <!-- Theme Toggle -->
-          <TooltipButton
-            content={themeStore.resolvedTheme === 'dark'
-              ? 'Switch to Light Mode'
-              : 'Switch to Dark Mode'}
-            variant="ghost"
-            onclick={() => themeStore.toggle()}
-            icon={themeStore.resolvedTheme === 'dark' ? Sun : Moon}
-          />
+          <ThemeToggle />
 
           <!-- Keyboard Shortcuts (Desktop) -->
           <DropdownMenu.Root>

@@ -65,8 +65,10 @@
         item: {
           '@type': 'CreativeWork',
           name: project.name,
-          url: `${baseUrl}/p/${project.id}`,
-          thumbnailUrl: project.thumbnailUrl || `${baseUrl}/p/${project.id}/og.png`,
+          url: `${baseUrl}/${resolve('/(app)/editor/p/[id]', { id: project.id })}`,
+          thumbnailUrl:
+            project.thumbnailUrl ||
+            `${baseUrl}${resolve('/(app)/editor/p/[id]/og.png', { id: project.id })}`,
           author: {
             '@type': 'Person',
             name: project.user?.name || 'Anonymous Creator'
@@ -124,7 +126,7 @@
       <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {#each data.projects as project (project.id)}
           <a
-            href={resolve('/(app)/p/[id]', {
+            href={resolve('/(app)/editor/p/[id]', {
               id: project.id
             })}
             class="group relative flex flex-col overflow-hidden rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/10"

@@ -285,7 +285,7 @@
       bind:this={layerHeaderRef}
       data-layer-header
       class={cn(
-        'sticky left-0 z-10 flex w-60 shrink-0 items-center gap-1 border-r px-1 py-1.5',
+        'sticky left-0 z-30 flex w-60 shrink-0 items-center gap-1 border-r px-1 py-1.5',
         isChild ? 'bg-muted/15' : 'bg-background'
       )}
       style:padding-left="{4 + indent * 16}px"

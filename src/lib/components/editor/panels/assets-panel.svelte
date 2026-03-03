@@ -230,7 +230,7 @@
                   &middot; {formatDuration(assetItem.duration)}
                 {/if}
                 {#each assetItem.projectIds as projectId (projectId)}
-                  <a href={resolve(`/p/${projectId}`)}>
+                  <a href={resolve('/(app)/editor/p/[id]', { id: projectId })}>
                     <CornerUpLeft class="size-2.5 text-muted-foreground" />
                   </a>
                 {/each}

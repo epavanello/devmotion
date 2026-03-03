@@ -1,4 +1,5 @@
 <script lang="ts" module>
+  import type { ResolvedPathname } from '$app/types';
   /* eslint-disable svelte/no-navigation-without-resolve */
   import { cn, type WithElementRef } from '$lib/utils.js';
   import { LoaderCircle } from '@lucide/svelte';
@@ -56,6 +57,7 @@
       size?: ButtonSize;
       icon?: Component;
       loading?: boolean;
+      href?: ResolvedPathname | `https://${string}`;
     };
 </script>
 

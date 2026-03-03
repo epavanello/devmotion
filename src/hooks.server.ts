@@ -35,7 +35,7 @@ const cacheHandle: Handle = async ({ event, resolve }) => {
   const path = event.url.pathname;
 
   // Cache public project pages (1 hour)
-  if (path.startsWith('/p/') && !path.includes('/og.png')) {
+  if (path.startsWith('/editor/p/') && !path.includes('/og.png')) {
     response.headers.set('Cache-Control', 'public, max-age=3600, s-maxage=7200');
   }
 

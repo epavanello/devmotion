@@ -46,12 +46,12 @@
 
   function handleNewProject() {
     editorState.resetToNew();
-    goto(resolve('/'));
+    goto(resolve('/editor'));
   }
 
   function handleOpenProject(id: string) {
     if (editingProjectId === id) return; // Don't navigate while editing
-    goto(resolve(`/p/${id}`));
+    goto(resolve('/(app)/editor/p/[id]', { id }));
   }
 
   function startRename(project: { id: string; name: string }, e: Event) {

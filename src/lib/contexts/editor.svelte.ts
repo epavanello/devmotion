@@ -104,17 +104,7 @@ export function getDefaultProject(): Project {
         },
         keyframes: [
           {
-            id: '4pGlkj1gzzn5YiiNa5MQO',
-            time: 0,
-            property: 'props.content',
-            value: 'Welcome',
-            interpolation: {
-              family: 'text',
-              strategy: 'char-reveal'
-            }
-          },
-          {
-            id: 'Mo5Pf3AvtnhFwT7EnmMQe',
+            id: 'AeK8s913yNF-XN-z9JmKD',
             time: 0,
             property: 'props.content',
             value: '',
@@ -126,7 +116,7 @@ export function getDefaultProject(): Project {
           },
           {
             id: 'toegtpgCtiKu38wCuIdio',
-            time: 2.6800000000000046,
+            time: 1.7216319918916565,
             property: 'props.content',
             value: 'Welcome to DevMotion!',
             interpolation: {
@@ -137,25 +127,25 @@ export function getDefaultProject(): Project {
         ],
         props: {
           color: '#ffffff',
-          width: 400,
+          width: 680,
           content: 'Welcome to DevMotion',
-          fontSize: 72,
-          autoWidth: true,
+          fontSize: 60,
+          autoWidth: false,
           scaleFrom: 4.79,
-          textAlign: 'center',
+          textAlign: 'left',
           blurAmount: 10,
           fontFamily: 'Inter',
           fontWeight: '800',
           lineHeight: 1.4,
           letterSpacing: -2,
           slideDistance: 73,
-          transitionEasing: 'ease-in-back',
+          transitionEasing: 'ease-out-back',
           transitionEffects: ['fade', 'scale', 'blur', 'slide-left', 'slide-up'],
-          transitionDuration: 306.8,
-          transitionColorFrom: '#ffa200'
+          transitionDuration: 500,
+          transitionColorFrom: '#7dff7f'
         },
         enterTime: 0,
-        exitTime: 4
+        exitTime: 5
       }
     ],
     fontFamily: 'Poppins'

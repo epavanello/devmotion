@@ -1,29 +1,53 @@
 <script lang="ts">
   import { Play, Pause, Volume2, VolumeX, Maximize2 } from '@lucide/svelte';
-  import type { ProjectStore } from '$lib/stores/project.svelte';
 
-  interface Props {
-    projectStore: ProjectStore;
-    canvasContainer: HTMLDivElement | undefined;
-  }
-
-  let { projectStore, canvasContainer }: Props = $props();
+  let {
+    isPlaying = $bindable(false),
+    currentTime = $bindable(0),
+    duration = 0,
+    globalVolume = $bindable(100),
+    canvasContainer,
+    onPlayPause,
+    onTimeChange,
+    onVolumeChange
+  }: {
+    isPlaying?: boolean;
+    currentTime?: number;
+    duration?: number;
+    globalVolume?: number;
+    canvasContainer?: HTMLDivElement;
+    onPlayPause?: () => void;
+    onTimeChange?: (time: number) => void;
+    onVolumeChange?: (volume: number) => void;
+  } = $props();
 
   let isDraggingTimeline = $state(false);
   let timelineElement: HTMLElement | null = null;
+  let wasPlayingBeforeScrub = $state(false);
 
   function handleTimelineClick(event: MouseEvent) {
     if (!timelineElement) return;
     const rect = timelineElement.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const percentage = x / rect.width;
-    const newTime = percentage * projectStore.state.duration;
-    projectStore.setCurrentTime(Math.max(0, Math.min(projectStore.state.duration, newTime)));
+    const newTime = percentage * duration;
+    const clampedTime = Math.max(0, Math.min(duration, newTime));
+
+    currentTime = clampedTime;
+    onTimeChange?.(clampedTime);
   }
 
   function startTimelineDrag(event: MouseEvent) {
     event.preventDefault();
     isDraggingTimeline = true;
+
+    // Remember if we were playing and pause
+    wasPlayingBeforeScrub = isPlaying;
+    if (isPlaying) {
+      isPlaying = false;
+      onPlayPause?.();
+    }
+
     handleTimelineClick(event);
   }
 
@@ -34,6 +58,13 @@
 
   function stopTimelineDrag() {
     isDraggingTimeline = false;
+
+    // Restore playing state if it was playing before
+    if (wasPlayingBeforeScrub) {
+      isPlaying = true;
+      onPlayPause?.();
+      wasPlayingBeforeScrub = false;
+    }
   }
 
   $effect(() => {
@@ -49,11 +80,8 @@
   });
 
   function togglePlayback() {
-    if (projectStore.isPlaying) {
-      projectStore.pause();
-    } else {
-      projectStore.play();
-    }
+    isPlaying = !isPlaying;
+    onPlayPause?.();
   }
 
   function toggleFullscreen() {
@@ -66,15 +94,19 @@
   }
 
   function toggleMute() {
-    projectStore.globalVolume = projectStore.globalVolume > 0 ? 0 : 100;
+    const newVolume = globalVolume > 0 ? 0 : 100;
+    globalVolume = newVolume;
+    onVolumeChange?.(newVolume);
   }
 
-  function handleVolumeChange(event: Event) {
+  function handleVolumeInput(event: Event) {
     const target = event.target as HTMLInputElement;
-    projectStore.globalVolume = Number(target.value);
+    const newVolume = Number(target.value);
+    globalVolume = newVolume;
+    onVolumeChange?.(newVolume);
   }
 
-  const timelineProgress = $derived((projectStore.currentTime / projectStore.state.duration) * 100);
+  const timelineProgress = $derived((currentTime / duration) * 100);
 
   function formatTime(seconds: number): string {
     const mins = Math.floor(seconds / 60);
@@ -96,8 +128,8 @@
     tabindex="0"
     aria-label="Timeline"
     aria-valuemin="0"
-    aria-valuemax={projectStore.state.duration}
-    aria-valuenow={projectStore.currentTime}
+    aria-valuemax={duration}
+    aria-valuenow={currentTime}
   >
     <!-- Visual timeline bar -->
     <div class="relative h-1.5 rounded-full bg-white/10">
@@ -122,7 +154,7 @@
       onclick={togglePlayback}
       class="flex size-8 items-center justify-center rounded-full transition-colors hover:bg-white/20"
     >
-      {#if projectStore.isPlaying}
+      {#if isPlaying}
         <Pause class="size-5" />
       {:else}
         <Play class="size-5" />
@@ -135,7 +167,7 @@
         class="flex size-8 items-center justify-center rounded-full transition-colors hover:bg-white/20"
         onclick={toggleMute}
       >
-        {#if projectStore.globalVolume === 0}
+        {#if globalVolume === 0}
           <VolumeX class="size-5" />
         {:else}
           <Volume2 class="size-5" />
@@ -149,17 +181,17 @@
           type="range"
           min="0"
           max="100"
-          value={projectStore.globalVolume}
-          oninput={handleVolumeChange}
+          value={globalVolume}
+          oninput={handleVolumeInput}
           class="h-1 w-20 cursor-pointer appearance-none rounded-full bg-white/30"
         />
-        <span class="min-w-8 text-xs font-medium">{Math.round(projectStore.globalVolume)}%</span>
+        <span class="min-w-8 text-xs font-medium">{Math.round(globalVolume)}%</span>
       </div>
     </div>
 
     <!-- Time display -->
     <span class="font-mono text-sm tabular-nums">
-      {formatTime(projectStore.currentTime)} / {formatTime(projectStore.state.duration)}
+      {formatTime(currentTime)} / {formatTime(duration)}
     </span>
 
     <!-- Spacer -->

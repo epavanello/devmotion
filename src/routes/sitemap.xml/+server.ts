@@ -1,3 +1,4 @@
+import { resolve } from '$app/paths';
 import { PUBLIC_BASE_URL } from '$env/static/public';
 import { db } from '$lib/server/db';
 import { project } from '$lib/server/db/schema';
@@ -50,7 +51,7 @@ export const GET = async () => {
     // Higher views = higher priority (0.6 to 0.8)
     const priorityScore = Math.min(0.6 + (p.views / 1000) * 0.2, 0.8);
     return {
-      url: `/p/${p.id}`,
+      url: resolve('/(app)/editor/p/[id]', { id: p.id }),
       changefreq: 'weekly' as const,
       priority: priorityScore.toFixed(1),
       lastmod: p.updatedAt.toISOString()

@@ -115,7 +115,7 @@
                 <div style="display: flex; flex-direction: column; gap: 0.25rem;">
                   {#each u.projects as p (p.id)}
                     <a
-                      href={resolve('/(app)/p/[id]', { id: p.id })}
+                      href={resolve('/(app)/editor/p/[id]', { id: p.id })}
                       style="color: {p.isPublic
                         ? '#6af'
                         : '#f86'}; text-decoration: none; display: flex; align-items: center; gap: 0.4rem;"
