@@ -195,7 +195,7 @@
 
   const mediaQuery = new IsMobile();
   const isMobile = $derived(mediaQuery.current);
-  let selectedAspectRatio = $state(isMobile ? 'portrait' : 'landscape');
+  let selectedAspectRatio = $derived(isMobile ? 'portrait' : 'landscape');
 
   const projectData = $derived.by(() => {
     const baseProject = data.projectSnapshot;

@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { building } from '$app/environment';
   import { page } from '$app/state';
+  import { PUBLIC_BASE_URL } from '$env/static/public';
 
   let {
     title = 'DevMotion - Motion Graphics, Reinvented for the Web',
@@ -17,7 +19,9 @@
     modifiedTime = ''
   } = $props();
 
-  let absoluteImage = $derived(image.startsWith('http') ? image : `${page.url.origin}${image}`);
+  const origin = building ? PUBLIC_BASE_URL : page.url.origin;
+
+  let absoluteImage = $derived(image.startsWith('http') ? image : `${origin}${image}`);
   let canonicalUrl = $derived.by(() => {
     // If explicit canonical provided, use it
     if (canonical) {
@@ -25,10 +29,10 @@
     }
     // For homepage, use origin only
     if (page.url.pathname === '/') {
-      return page.url.origin;
+      return origin;
     }
     // For all other pages, use origin + pathname (no query params or hash)
-    return `${page.url.origin}${page.url.pathname}`;
+    return `${origin}${page.url.pathname}`;
   });
 </script>
 
