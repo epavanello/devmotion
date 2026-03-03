@@ -325,7 +325,11 @@
         class={cn('absolute z-2', {
           'relative! shadow-none!': isRecording
         })}
-        style="{isRecording ? 'auto' : `left: -${projectStore.state.width / 2}px; top: -${projectStore.state.height / 2}px;`} {isRecording ? `transform: scale(${recordingScale})` : ''}"
+        style="{isRecording
+          ? 'auto'
+          : `left: -${projectStore.state.width / 2}px; top: -${projectStore.state.height / 2}px;`} {isRecording
+          ? `transform: scale(${recordingScale})`
+          : ''}"
       >
         {#if isDragOver}
           <div

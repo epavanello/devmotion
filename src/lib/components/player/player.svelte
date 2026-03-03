@@ -9,7 +9,6 @@
     currentTime = $bindable(0),
     isPlaying = $bindable(false),
     projectViewport = $bindable(),
-    mode = 'simple',
     autoplay = false,
     showControls = true,
     showWatermark = true,

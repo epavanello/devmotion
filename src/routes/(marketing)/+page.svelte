@@ -21,8 +21,6 @@
     Zap,
     ChevronDown
   } from '@lucide/svelte';
-  import { getProject } from '$lib/functions/projects.remote';
-  import { ProjectSchema } from '$lib/types/animation';
   import type { SoftwareApplication, WithContext } from 'schema-dts';
 
   const { data } = $props();
@@ -194,12 +192,8 @@
 
   let selectedAspectRatio = $state('landscape');
 
-  const id = 'n7rYMwfGdUaYFnaGV6lLt';
-  const project = getProject({ id });
   const projectData = $derived.by(() => {
-    if (!project.current?.project) return undefined;
-
-    const baseProject = ProjectSchema.parse({ id, ...project.current.project.data });
+    const baseProject = data.projectSnapshot;
     const selectedRatio = aspectRatios.find((r) => r.value === selectedAspectRatio);
 
     if (selectedRatio) {

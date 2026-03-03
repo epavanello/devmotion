@@ -1,13 +1,28 @@
 import { db } from '$lib/server/db';
 import { project, user } from '$lib/server/db/schema';
+import { ProjectSchema } from '$lib/types/animation';
+import { eq } from 'drizzle-orm';
 import { count, countDistinct } from 'drizzle-orm';
 
 export const prerender = true;
 
 export const load = async () => {
-  const [projectStats, userStats] = await Promise.all([
+  const id = 'n7rYMwfGdUaYFnaGV6lLt';
+
+  const [projectStats, userStats, projectSnapshot] = await Promise.all([
     db.select({ count: count() }).from(project),
-    db.select({ count: countDistinct(user.id) }).from(user)
+    db.select({ count: countDistinct(user.id) }).from(user),
+    db.query.project.findFirst({
+      where: eq(project.id, id),
+      with: {
+        user: {
+          columns: {
+            name: true,
+            id: true
+          }
+        }
+      }
+    })
   ]);
 
   const totalProjects = projectStats[0]?.count || 0;
@@ -17,6 +32,7 @@ export const load = async () => {
     stats: {
       totalProjects,
       totalUsers
-    }
+    },
+    projectSnapshot: ProjectSchema.parse({ id, ...projectSnapshot?.data })
   };
 };
