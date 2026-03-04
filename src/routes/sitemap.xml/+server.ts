@@ -1,34 +1,38 @@
 import { resolve } from '$app/paths';
-import { PUBLIC_BASE_URL } from '$env/static/public';
 import { db } from '$lib/server/db';
 import { project } from '$lib/server/db/schema';
+import { absoluteUrl } from '$lib/utils/urls';
 import { eq, desc } from 'drizzle-orm';
 
 export const GET = async () => {
-  const baseUrl = PUBLIC_BASE_URL;
-
   // Static pages with SEO priorities
   const staticPages = [
     {
-      url: '',
+      url: resolve('/(marketing)'),
       changefreq: 'daily' as const,
       priority: '1.0',
       lastmod: new Date().toISOString()
     },
     {
-      url: '/gallery',
+      url: resolve('/(app)/editor'),
+      changefreq: 'daily' as const,
+      priority: '1.0',
+      lastmod: new Date().toISOString()
+    },
+    {
+      url: resolve('/(marketing)/gallery'),
       changefreq: 'hourly' as const,
       priority: '0.9',
       lastmod: new Date().toISOString()
     },
     {
-      url: '/login',
+      url: resolve('/(auth)/login'),
       changefreq: 'monthly' as const,
       priority: '0.5',
       lastmod: new Date().toISOString()
     },
     {
-      url: '/signup',
+      url: resolve('/(auth)/signup'),
       changefreq: 'monthly' as const,
       priority: '0.5',
       lastmod: new Date().toISOString()
@@ -66,7 +70,7 @@ export const GET = async () => {
 ${allPages
   .map(
     (page) => `  <url>
-    <loc>${baseUrl}${page.url}</loc>
+    <loc>${absoluteUrl(page.url)}</loc>
     <lastmod>${page.lastmod}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
