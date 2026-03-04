@@ -16,7 +16,6 @@
     getCachedFrame,
     isRecording = false,
     showWatermark = true,
-    projectViewport = $bindable(),
     width,
     height,
     class: className,
@@ -32,7 +31,6 @@
     getCachedFrame?: (time: number) => FrameCache | null;
     isRecording?: boolean;
     showWatermark?: boolean;
-    projectViewport?: HTMLDivElement | undefined;
     width?: number;
     height?: number;
     class?: string;
@@ -46,7 +44,7 @@
 
 <!-- Project viewport area - exact dimensions of the video output -->
 <div
-  bind:this={projectViewport}
+  id="project-viewport"
   class={cn('group/viewport origin-center rounded-2xl', className)}
   {style}
   style:transform-style="preserve-3d"

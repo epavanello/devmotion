@@ -16,10 +16,8 @@
   let canvasContainer: HTMLDivElement | undefined = $state();
 
   let {
-    projectViewport = $bindable(),
     isRecording = false
   }: {
-    projectViewport: HTMLDivElement | undefined;
     isRecording?: boolean;
   } = $props();
 
@@ -313,7 +311,6 @@
 
       <!-- Project viewport area - exact dimensions of the video output -->
       <ProjectViewport
-        bind:projectViewport
         project={projectStore.state}
         currentTime={projectStore.currentTime}
         isPlaying={projectStore.isPlaying}

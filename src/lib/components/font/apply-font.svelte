@@ -74,9 +74,4 @@
       -apple-system,
       sans-serif;
   }
-
-  /* Optional: visual indicator during font check */
-  .font-checking {
-    /* Could add opacity or other indicators if needed */
-  }
 </style>

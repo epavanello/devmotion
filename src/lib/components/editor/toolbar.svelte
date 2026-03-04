@@ -29,29 +29,6 @@
   import ProjectSwitcher from './project-switcher.svelte';
   import { onMount, type Component } from 'svelte';
   import { toast } from 'svelte-sonner';
-
-  interface Props {
-    getCanvasElement: () => HTMLDivElement | undefined;
-    isRecording?: boolean;
-    projectId?: string | null;
-    isOwner?: boolean;
-    canEdit?: boolean;
-    isPublic?: boolean;
-    isMcp?: boolean;
-    isMobile?: boolean;
-  }
-
-  let {
-    getCanvasElement,
-    isRecording = $bindable(false),
-    projectId = null,
-    isOwner = true,
-    canEdit = true,
-    isPublic = false,
-    isMcp = false,
-    isMobile = false
-  }: Props = $props();
-
   import {
     Collapsible,
     CollapsibleContent,
@@ -61,6 +38,19 @@
   import TooltipButton from '../ui/tooltip/tooltip-button.svelte';
   import GoogleIcon from '$lib/assets/svg/google-icon.svelte';
   import type { ResolvedPathname } from '$app/types';
+  import { IsMobile } from '$lib/hooks/is-mobile.svelte';
+
+  const projectStore = $derived(editorState.project);
+
+  const projectId = $derived(editorState.dbProjectId);
+  const isOwner = $derived(editorState.isOwner);
+  const canEdit = $derived(editorState.canEdit);
+  const isMcp = $derived(editorState.isMcp);
+  const mediaQuery = new IsMobile();
+  const isMobile = $derived(mediaQuery.current);
+
+  let isPublic = $derived(editorState.isPublic);
+  let isRecording = $derived(projectStore.isRecording);
 
   let headerOpen = $state(false);
 
@@ -399,7 +389,6 @@
 <ExportDialog
   open={showExportDialog}
   onOpenChange={(open) => (showExportDialog = open)}
-  {getCanvasElement}
   bind:isRecording
   {projectId}
 />

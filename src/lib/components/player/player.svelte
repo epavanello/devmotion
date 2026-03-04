@@ -8,7 +8,6 @@
     project,
     currentTime = $bindable(0),
     isPlaying = $bindable(false),
-    projectViewport = $bindable(),
     autoplay = false,
     showControls = true,
     showWatermark = true,
@@ -19,7 +18,6 @@
     project: Project;
     currentTime?: number;
     isPlaying?: boolean;
-    projectViewport?: HTMLDivElement | undefined;
     mode?: 'simple' | 'full';
     autoplay?: boolean;
     showControls?: boolean;
@@ -122,7 +120,6 @@
     >
       <!-- Project viewport at original size, scaled down from top-left -->
       <ProjectViewport
-        bind:projectViewport
         {project}
         {currentTime}
         {isPlaying}

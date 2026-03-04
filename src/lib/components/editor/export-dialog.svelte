@@ -21,18 +21,11 @@
   interface Props {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    getCanvasElement: () => HTMLDivElement | undefined;
     isRecording?: boolean;
     projectId?: string | null;
   }
 
-  let {
-    open,
-    onOpenChange,
-    getCanvasElement,
-    isRecording = $bindable(false),
-    projectId = null
-  }: Props = $props();
+  let { open, onOpenChange, isRecording = $bindable(false), projectId = null }: Props = $props();
 
   type ExportMode = 'browser' | 'server';
 
@@ -166,7 +159,7 @@
       return;
     }
 
-    const canvasElement = getCanvasElement();
+    const canvasElement = document.getElementById('project-viewport');
     if (!canvasElement) {
       errorMessage = 'Canvas element not found. Please try again.';
       isExporting = false;
