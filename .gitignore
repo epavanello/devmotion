@@ -31,3 +31,6 @@ tools.json
 # Email previews and test config
 .email-previews
 scripts/email-config.ts
+
+# Sentry Config File
+.env.sentry-build-plugin

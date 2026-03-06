@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/sveltekit';
 import type { Handle } from '@sveltejs/kit';
 import { auth } from '$lib/server/auth';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
@@ -72,4 +73,5 @@ const cacheHandle: Handle = async ({ event, resolve }) => {
   return response;
 };
 
-export const handle: Handle = sequence(authHandle, cacheHandle);
+export const handle: Handle = sequence(Sentry.sentryHandle(), authHandle, cacheHandle);
+export const handleError = Sentry.handleErrorWithSentry();

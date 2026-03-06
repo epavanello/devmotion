@@ -3,12 +3,21 @@ import { defineConfig } from 'vitest/config';
 import { sveltekit } from '@sveltejs/kit/vite';
 import devtoolsJson from 'vite-plugin-devtools-json';
 import { loadEnv } from 'vite';
+import { sentrySvelteKit } from '@sentry/sveltekit';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
-    plugins: [tailwindcss(), sveltekit(), devtoolsJson()],
+    plugins: [
+      tailwindcss(),
+      sentrySvelteKit({
+        org: 'emadev',
+        project: 'devmotion'
+      }),
+      sveltekit(),
+      devtoolsJson()
+    ],
     ssr: {
       external: ['@resvg/resvg-js']
     },
