@@ -9,11 +9,11 @@ import { PUBLIC_BASE_URL } from '$env/static/public';
 import type { ProjectData } from '$lib/schemas/animation';
 import { Readable } from 'stream';
 import { sanitizeFilename } from '$lib/server/utils/filename-sanitizer';
+import { canExportAtResolution, canUseFeature } from '$lib/server/services/subscription-limits';
 
 export const POST: RequestHandler = async ({ params, request, url, locals }) => {
   // Check authorization
-  const isLogged = !!locals.user?.id;
-  if (!isLogged) {
+  if (!locals.user?.id) {
     error(403, 'Forbidden');
   }
 
@@ -52,6 +52,15 @@ export const POST: RequestHandler = async ({ params, request, url, locals }) => 
     // No body or invalid JSON, use defaults
   }
 
+  // Validate export resolution against user's plan limits
+  const resolutionCheck = await canExportAtResolution(locals.user.id, config.width, config.height);
+  if (!resolutionCheck.allowed) {
+    error(403, resolutionCheck.reason || 'Export resolution not allowed for your plan');
+  }
+
+  // Check if user has watermark-free exports
+  const isWatermarkFree = await canUseFeature(locals.user.id, 'watermarkFree');
+
   const baseUrl = PUBLIC_BASE_URL;
 
   try {
@@ -64,7 +73,8 @@ export const POST: RequestHandler = async ({ params, request, url, locals }) => 
       fps: config.fps,
       duration: config.duration,
       baseUrl,
-      projectData
+      projectData,
+      addWatermark: !isWatermarkFree
     });
 
     // Return the stream as response

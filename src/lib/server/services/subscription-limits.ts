@@ -142,6 +142,61 @@ export async function getMaxExportResolution(userId: string): Promise<'720p' | '
 }
 
 /**
+ * Resolution limits in pixels
+ */
+const RESOLUTION_LIMITS = {
+  '720p': { width: 1280, height: 720, pixels: 1280 * 720 },
+  '1080p': { width: 1920, height: 1080, pixels: 1920 * 1080 },
+  '4k': { width: 3840, height: 2160, pixels: 3840 * 2160 }
+} as const;
+
+/**
+ * Validate if user can export at the requested resolution
+ */
+export async function canExportAtResolution(
+  userId: string,
+  width: number,
+  height: number
+): Promise<{
+  allowed: boolean;
+  reason?: string;
+  maxResolution?: '720p' | '1080p' | '4k';
+}> {
+  const maxResolution = await getMaxExportResolution(userId);
+  const maxLimit = RESOLUTION_LIMITS[maxResolution];
+  const requestedPixels = width * height;
+
+  // Check if requested resolution exceeds plan limit
+  if (requestedPixels > maxLimit.pixels) {
+    return {
+      allowed: false,
+      reason: `Export resolution ${width}x${height} exceeds your plan limit of ${maxResolution} (${maxLimit.width}x${maxLimit.height}). Upgrade to export at higher resolutions.`,
+      maxResolution
+    };
+  }
+
+  // Also check individual dimensions don't exceed 4K even with allowed pixel count
+  // (prevent edge cases like 7680x540 which has same pixels as 1080p but is wider than 4K)
+  const absolute4kLimit = RESOLUTION_LIMITS['4k'];
+  if (width > absolute4kLimit.width || height > absolute4kLimit.height) {
+    return {
+      allowed: false,
+      reason: `Individual dimensions cannot exceed 4K limits (${absolute4kLimit.width}x${absolute4kLimit.height}).`,
+      maxResolution
+    };
+  }
+
+  return { allowed: true, maxResolution };
+}
+
+/**
+ * Get max width and height for a given resolution tier
+ */
+export function getResolutionLimits(tier: '720p' | '1080p' | '4k') {
+  return RESOLUTION_LIMITS[tier];
+}
+
+/**
  * Format bytes for display
  */
 function formatBytes(bytes: number): string {

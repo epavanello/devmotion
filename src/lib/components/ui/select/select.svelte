@@ -21,6 +21,7 @@
     options: {
       value: string;
       label: string;
+      disabled?: boolean;
     }[];
   } & {
     root?: Omit<
@@ -44,7 +45,9 @@
   <Select.Content {...content}>
     <Select.Group {...group}>
       {#each options as option (option.value)}
-        <Select.Item value={option.value} {...item}>{option.label}</Select.Item>
+        <Select.Item value={option.value} disabled={option.disabled} {...item}>
+          {option.label}
+        </Select.Item>
       {/each}
     </Select.Group>
   </Select.Content>

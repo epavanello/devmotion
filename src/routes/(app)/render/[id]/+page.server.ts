@@ -7,6 +7,7 @@ import { validateRenderToken } from '$lib/server/render-token';
 
 export const load: PageServerLoad = async ({ params, url }) => {
   const token = url.searchParams.get('token');
+  const showWatermark = url.searchParams.get('watermark') === 'true';
 
   // Validate render token (internal use only)
   if (!token || !validateRenderToken(token, params.id)) {
@@ -22,6 +23,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
   }
 
   return {
-    project: result.data
+    project: result.data,
+    showWatermark
   };
 };
