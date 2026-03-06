@@ -3,12 +3,14 @@
   import { themeStore } from '$lib/stores/theme.svelte';
   import TooltipButton from './tooltip/tooltip-button.svelte';
   import { browser } from '$app/environment';
+  import type { Snippet } from 'svelte';
 
   interface Props {
     variant?: 'ghost' | 'outline' | 'default';
+    children?: Snippet;
   }
 
-  let { variant = 'ghost' }: Props = $props();
+  let { variant = 'ghost', children }: Props = $props();
 
   const icon = $derived(themeStore.resolvedTheme === 'dark' ? Sun : Moon);
 </script>
@@ -19,5 +21,7 @@
     {variant}
     onclick={() => themeStore.toggle()}
     {icon}
-  />
+  >
+    {@render children?.()}
+  </TooltipButton>
 {/if}

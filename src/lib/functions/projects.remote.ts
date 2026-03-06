@@ -9,6 +9,7 @@ import { invalid } from '@sveltejs/kit';
 import { projectDataSchema } from '$lib/schemas/animation';
 import { thumbnailQueue } from '$lib/server/thumbnail-queue';
 import { ADMIN_ROLE } from '$lib/roles';
+import { canCreateProject } from '$lib/server/services/subscription-limits';
 
 export const saveProject = command(
   z.object({
@@ -24,6 +25,7 @@ export const saveProject = command(
     const projectId = id || nanoid();
 
     if (id) {
+      // Update existing project
       const existing = await db.query.project.findFirst({
         where: and(eq(project.id, id), eq(project.userId, locals.user.id))
       });
@@ -35,6 +37,12 @@ export const saveProject = command(
         .set({ data, name: data.name, updatedAt: new Date() })
         .where(eq(project.id, id));
     } else {
+      // Create new project - check limits
+      const limitCheck = await canCreateProject(locals.user.id);
+      if (!limitCheck.allowed) {
+        invalid(limitCheck.reason || 'Project limit reached');
+      }
+
       await db.insert(project).values({
         id: projectId,
         userId: locals.user.id,
@@ -152,6 +160,12 @@ export const forkProject = command(
 
     if (!original.isPublic && original.userId !== locals.user.id) {
       throw new Error('Cannot fork private project');
+    }
+
+    // Check project limits before forking
+    const limitCheck = await canCreateProject(locals.user.id);
+    if (!limitCheck.allowed) {
+      throw new Error(limitCheck.reason || 'Project limit reached');
     }
 
     const newId = nanoid();

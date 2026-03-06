@@ -1,12 +1,71 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { page } from '$app/state';
+  import confetti from 'canvas-confetti';
   import EditorShell from '$lib/components/editor/editor-shell.svelte';
   import Editor from '$lib/components/editor/editor.svelte';
   import SeoHead from '$lib/components/seo-head.svelte';
   import JsonLd from '$lib/components/json-ld.svelte';
   import { PUBLIC_BASE_URL } from '$env/static/public';
   import { Loader2 } from '@lucide/svelte';
+  import { toast } from 'svelte-sonner';
+  import { resolve } from '$app/paths';
 
   const baseUrl = PUBLIC_BASE_URL;
+
+  // Monitor checkout status from URL params
+  const checkoutStatus = $derived(page.url.searchParams.get('checkout'));
+
+  // Handle checkout success/error feedback
+  onMount(() => {
+    if (checkoutStatus === 'success') {
+      // Celebration effect with confetti
+      const duration = 3000;
+      const end = Date.now() + duration;
+
+      const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b'];
+
+      (function frame() {
+        confetti({
+          particleCount: 3,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors
+        });
+        confetti({
+          particleCount: 3,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      })();
+
+      // Show success toast
+      toast.success('Thanks for subscribing!', {
+        duration: 5000
+      });
+
+      // Clean URL params
+      goto(resolve('/editor'), { replaceState: true });
+    } else if (checkoutStatus === 'error') {
+      // Show error toast
+      toast.error('Checkout failed', {
+        description:
+          'There was an issue processing your payment. Please try again or contact support.',
+        duration: 6000
+      });
+
+      // Clean URL params
+      goto(resolve('/editor'), { replaceState: true });
+    }
+  });
 </script>
 
 <SeoHead

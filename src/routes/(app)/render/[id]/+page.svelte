@@ -11,6 +11,7 @@
 
   // Project data from server
   const project = $derived(ProjectSchema.omit({ id: true }).parse(data.project) as Project);
+  const showWatermark = $derived(data.showWatermark ?? false);
 
   // Current time controlled externally via window.__DEVMOTION__
   let currentTime = $state(0);
@@ -160,7 +161,9 @@
     />
   </div>
 
-  <Watermark />
+  {#if showWatermark}
+    <Watermark />
+  {/if}
 </div>
 
 <style>

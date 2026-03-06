@@ -9,9 +9,14 @@
   import { defaultTransform } from '$lib/schemas/base';
   import { ASSET_DRAG_TYPE, type DragAsset } from '../panels/assets-panel.svelte';
   import { prepareMediaLayerData, applyMediaLayerData } from '$lib/utils/media';
+  import { getUser } from '$lib/functions/auth.remote';
+  import { getPlan } from '$lib/config/plans';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
+  const user = $derived(getUser());
+  const userTier = $derived(user.current?.tier || 'free');
+  const showWatermark = $derived(!getPlan(userTier).limits.watermarkFree);
 
   let canvasContainer: HTMLDivElement | undefined = $state();
 
@@ -319,6 +324,7 @@
         disableSelection={projectStore.isRecording}
         getCachedFrame={projectStore.isRecording ? projectStore.getCachedFrame : undefined}
         isRecording={projectStore.isRecording}
+        {showWatermark}
         class={cn('absolute z-2', {
           'relative! shadow-none!': isRecording
         })}

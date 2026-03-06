@@ -4,19 +4,31 @@ import { invalid, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { withErrorHandling } from '.';
 import { db } from '$lib/server/db';
-import { aiUserUnlock } from '$lib/server/db/schema';
+import { userSubscription } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
-import { scheduleOnboardingEmail } from '$lib/server/workers/onboarding-email';
+import {
+  scheduleOnboardingEmail,
+  scheduleFollowUpEmail
+} from '$lib/server/workers/onboarding-email';
+import { resolve } from '$app/paths';
 
 export const login = form(
   z.object({ email: z.email(), password: z.string() }),
   withErrorHandling(async ({ email, password }) => {
-    const { request } = getRequestEvent();
+    const { request, url } = getRequestEvent();
     await auth.api.signInEmail({
       body: { email, password },
       headers: request.headers
     });
-    redirect(303, '/');
+
+    // Get redirect param and validate it's a relative path
+    const redirectTo = url.searchParams.get('redirect');
+    const destination =
+      redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//')
+        ? redirectTo
+        : resolve('/editor');
+
+    redirect(303, destination);
   })
 );
 
@@ -42,14 +54,19 @@ export const signup = form(
       email: result.user.email,
       name: result.user.name
     });
+    await scheduleFollowUpEmail({
+      userId: result.user.id,
+      email: result.user.email,
+      name: result.user.name
+    });
 
-    redirect(303, '/');
+    redirect(303, resolve('/editor'));
   })
 );
 export const forgotPassword = form(
   z.object({ email: z.email('Invalid email address') }),
   withErrorHandling(async ({ email }) => {
-    await auth.api.forgetPassword({
+    await auth.api.requestPasswordReset({
       body: { email }
     });
   })
@@ -63,8 +80,6 @@ export const signOut = form(
     });
     locals.session = null;
     locals.user = null;
-    await getUser().refresh();
-    redirect(303, '/');
   })
 );
 
@@ -74,11 +89,20 @@ export const getUser = query(async () => {
   if (!user?.id) {
     return null;
   }
-  const plan = await db
-    .select({ plan: aiUserUnlock.plan })
-    .from(aiUserUnlock)
-    .where(eq(aiUserUnlock.userId, user.id));
-  return { ...locals.user, plan: plan[0]?.plan };
+  const subscription = await db
+    .select({ tier: userSubscription.tier })
+    .from(userSubscription)
+    .where(eq(userSubscription.userId, user.id));
+  return { ...locals.user, tier: subscription[0]?.tier || 'free' };
+});
+
+export const getUserOrRedirect = query(async () => {
+  const { url } = getRequestEvent();
+  const user = await getUser();
+  if (!user) {
+    redirect(303, `${resolve('/login')}?redirect=${url.pathname}`);
+  }
+  return user;
 });
 
 export const checkRole = query(z.enum(['admin', 'user']), async (role) => {
@@ -91,7 +115,7 @@ export const checkRole = query(z.enum(['admin', 'user']), async (role) => {
 export const updateUser = form(
   z.object({
     name: z.string().min(1, 'Name is required'),
-    emailConsent: z.boolean()
+    emailConsent: z.boolean().optional().default(false)
   }),
   withErrorHandling(async ({ name, emailConsent }, issues) => {
     const { request, locals } = getRequestEvent();

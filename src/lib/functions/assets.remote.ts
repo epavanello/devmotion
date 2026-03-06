@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { withErrorHandling } from '.';
 import { invalid } from '@sveltejs/kit';
 import { deleteFile } from '$lib/server/storage';
+import { updateStorageUsage } from '$lib/server/services/subscription-limits';
 
 /**
  * Extended asset type with project IDs
@@ -101,6 +102,9 @@ export const deleteAsset = command(
 
     // Delete from database
     await db.delete(asset).where(eq(asset.id, id));
+
+    // Update subscription storage usage (decrement)
+    await updateStorageUsage(locals.user.id, -existing.size);
 
     return { success: true };
   })

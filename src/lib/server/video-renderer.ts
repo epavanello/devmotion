@@ -16,6 +16,7 @@ interface RenderConfig {
   duration: number;
   baseUrl: string;
   projectData?: ProjectData;
+  addWatermark?: boolean;
 }
 
 export interface RenderProgress {
@@ -89,15 +90,17 @@ function getAudioTracks(projectData: ProjectData) {
 }
 
 export async function renderProjectToVideoStream(config: RenderConfig): Promise<Readable> {
-  const { projectId, renderId, width, height, fps, duration, baseUrl, projectData } = config;
+  const { projectId, renderId, width, height, fps, duration, baseUrl, projectData, addWatermark } =
+    config;
   const totalFrames = Math.ceil(fps * duration);
   const tag = `[render:${renderId.slice(0, 8)}]`;
   const log = (...args: unknown[]) => console.log(tag, ...args);
 
   const videoStream = new PassThrough();
   const token = generateRenderToken(projectId);
-  const renderUrl = `${baseUrl}/render/${projectId}?token=${token}`;
-  log('Starting render', { projectId, width, height, fps, duration, totalFrames });
+  const watermarkParam = addWatermark ? '&watermark=true' : '';
+  const renderUrl = `${baseUrl}/render/${projectId}?token=${token}${watermarkParam}`;
+  log('Starting render', { projectId, width, height, fps, duration, totalFrames, addWatermark });
 
   const audioTracks = projectData ? getAudioTracks(projectData) : [];
 

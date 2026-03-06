@@ -14,6 +14,8 @@
 
   let { data }: { data: PageData } = $props();
 
+  const project = $derived(data.project);
+
   const editorState = $derived(getEditorState());
 
   const baseUrl = PUBLIC_BASE_URL;
@@ -21,15 +23,18 @@
   const projectDescription = $derived(
     `${projectName} - Motion graphics created with DevMotion. Professional animation editor for the web, powered by AI.`
   );
-  const url = $derived(projectUrl(data.project.id));
-  const ogImage = $derived(projectOgImageUrl(data.project.id));
+  const url = $derived(projectUrl(project.id));
+  const ogImage = $derived(projectOgImageUrl(project.id));
+  const title = $derived(
+    `${projectName} - Animation by ${project.user?.name || 'Community'} | DevMotion`
+  );
 
   // Load project data when route changes
   watch(
     () => data,
     () => {
       try {
-        const projectData = ProjectSchema.omit({ id: true }).parse(data.project.data);
+        const projectData = ProjectSchema.omit({ id: true }).parse(project.data);
 
         editorState.project.loadProject({
           id: data.project.id,
@@ -61,14 +66,14 @@
 </script>
 
 <SeoHead
-  title="{projectName} - Animation by {data.project.user?.name || 'Community'} | DevMotion"
+  {title}
   description={projectDescription}
   image={ogImage}
   type="article"
   canonical={url}
-  author={data.project.user?.name || 'Anonymous Creator'}
-  publishedTime={data.project.createdAt.toISOString()}
-  modifiedTime={data.project.updatedAt.toISOString()}
+  author={project.user?.name || 'Anonymous Creator'}
+  publishedTime={project.createdAt.toISOString()}
+  modifiedTime={project.updatedAt.toISOString()}
 />
 
 <!-- JSON-LD for specific project -->
@@ -80,10 +85,10 @@
     description: projectDescription,
     url: url,
     thumbnailUrl: ogImage,
-    uploadDate: data.project.createdAt.toISOString(),
+    uploadDate: project.createdAt.toISOString(),
     author: {
       '@type': 'Person',
-      name: data.project.user?.name || 'Anonymous'
+      name: project.user?.name || 'Anonymous'
     },
     creator: {
       '@type': 'Organization',
@@ -102,7 +107,7 @@
     interactionStatistic: {
       '@type': 'InteractionCounter',
       interactionType: { '@type': 'WatchAction' },
-      userInteractionCount: data.project.views || 0
+      userInteractionCount: project.views || 0
     }
   }}
 />
@@ -135,7 +140,7 @@
 />
 
 <!-- SEO: H1 for project page (visually hidden but accessible to search engines) -->
-<h1 class="sr-only">{projectName} - Animation by {data.project.user?.name || 'Community'}</h1>
+<h1 class="sr-only">{title}</h1>
 
 <EditorShell>
   <svelte:boundary>

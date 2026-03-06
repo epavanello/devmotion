@@ -1,18 +1,7 @@
 <script lang="ts">
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
-  import {
-    Bot,
-    Loader2,
-    User,
-    Trash2,
-    Send,
-    Square,
-    CreditCard,
-    Bitcoin,
-    ImagePlus,
-    X
-  } from '@lucide/svelte';
+  import { Bot, Loader2, User, Trash2, Send, Square, Bitcoin, ImagePlus, X } from '@lucide/svelte';
   import { DEFAULT_MODEL_ID } from '$lib/ai/models';
   import { Chat } from '@ai-sdk/svelte';
   import {
@@ -264,40 +253,22 @@
   <div class="flex w-full flex-col border-b bg-background">
     {#if credits.current}
       <div class="flex items-center justify-between gap-3 px-4 py-2">
-        <div class="flex items-center gap-1">
-          <span class="font-mono text-xs text-muted-foreground">
-            {Math.round(credits.current.remainingCredits * 100)}/{Math.round(
-              credits.current.maxCredits * 100
-            )}
-          </span>
-          <Bitcoin class="size-3 text-muted-foreground" />
-          <div class="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
-            <div
-              class="h-full transition-all {credits.current.remainingCredits /
-                credits.current.maxCredits <
-              0.2
-                ? 'bg-destructive'
-                : 'bg-primary'}"
-              style="width: {(credits.current.remainingCredits / credits.current.maxCredits) *
-                100}%"
-            ></div>
-          </div>
+        <span class="font-mono text-xs text-muted-foreground">
+          {Math.round(credits.current.remainingCredits * 100)}/{Math.round(
+            credits.current.maxCredits * 100
+          )}
+        </span>
+        <Bitcoin class="size-3 text-muted-foreground" />
+        <div class="h-1.5 w-24 flex-1 overflow-hidden rounded-full bg-muted">
+          <div
+            class="h-full transition-all {credits.current.remainingCredits /
+              credits.current.maxCredits <
+            0.2
+              ? 'bg-destructive'
+              : 'bg-primary'}"
+            style="width: {(credits.current.remainingCredits / credits.current.maxCredits) * 100}%"
+          ></div>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          class="h-7 gap-1.5 text-xs"
-          icon={CreditCard}
-          onclick={() => {
-            window.plausible?.('buy_credits');
-            window.open(
-              'mailto:credits@devmotion.app?subject=Credits Request&body=I need credits',
-              '_blank'
-            );
-          }}
-        >
-          Buy Credits
-        </Button>
       </div>
     {/if}
     <div class="bg-muted/30 px-4 py-1.5 {credits.current ? 'border-t' : ''}">

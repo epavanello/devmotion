@@ -25,6 +25,7 @@
   import type { SoftwareApplication, WithContext } from 'schema-dts';
   import ApplyFont from '$lib/components/font/apply-font.svelte';
   import { IsMobile } from '$lib/hooks/is-mobile.svelte.js';
+  import PricingSection from '$lib/components/marketing/pricing-section.svelte';
 
   const { data } = $props();
 
@@ -76,9 +77,9 @@
   // FAQ - easy to modify
   const faqs = [
     {
-      question: 'Is DevMotion really free?',
+      question: 'Is DevMotion free to use?',
       answer:
-        'Yes, DevMotion is 100% free and open source (MIT license). You can use it without creating an account, and there are no hidden costs or premium tiers.',
+        'Yes, DevMotion offers a free forever plan with full timeline & keyframe editor, 20 AI credits/month, 5 cloud projects, and 100 MB storage. Perfect for getting started with animation creation.',
       show: true
     },
     {
@@ -88,9 +89,15 @@
       show: true
     },
     {
+      question: 'What are AI credits and how do they work?',
+      answer:
+        'AI credits power our AI assistant that helps you create animations. 1 credit = $0.01. The Free plan includes 20 credits/month, Creator gets 200, and Pro gets 1000 credits/month.',
+      show: true
+    },
+    {
       question: 'Can I export my animations as videos?',
       answer:
-        'Yes, you can export your animations as high-quality MP4 videos (1080p) ready for YouTube, Instagram, TikTok, or any other platform.',
+        'Yes! Free plan exports to HD (720p) with watermark. Creator plan removes the watermark and exports at Full HD (1080p). Pro plan supports 4K export quality.',
       show: true
     },
     {
@@ -100,15 +107,9 @@
       show: true
     },
     {
-      question: 'How does the AI assistance work?',
+      question: 'Can I upgrade or downgrade my plan?',
       answer:
-        'Chat with our AI assistant to create animations. Describe what you want (e.g., "Add a bounce effect" or "Make this fade in"), and the AI helps generate the animation automatically.',
-      show: true
-    },
-    {
-      question: 'Can I use DevMotion for commercial projects?',
-      answer:
-        'Yes, DevMotion is MIT licensed, which means you can use it for personal and commercial projects without restrictions.',
+        'Yes, you can upgrade from Free to Creator ($9/month) or Pro ($29/month) at any time. Upgrades are prorated and take effect immediately.',
       show: true
     }
   ];
@@ -470,8 +471,18 @@
   </div>
 </section>
 
+<!-- ===== PRICING ===== -->
+<svelte:boundary>
+  {#snippet pending()}
+    <div class="flex items-center justify-center py-12">
+      <div class="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+    </div>
+  {/snippet}
+  <PricingSection />
+</svelte:boundary>
+
 <!-- ===== FAQ ===== -->
-<section class="relative border-t border-border/40 bg-muted/30">
+<section class="relative bg-muted/30">
   <div class="container mx-auto px-4 py-24 sm:px-6 lg:px-8">
     <div class="mb-16 space-y-4 text-center">
       <h2 class="text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">

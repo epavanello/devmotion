@@ -141,7 +141,7 @@
   <!-- Property header -->
   <div
     data-property-header
-    class="sticky left-0 z-30 flex w-60 shrink-0 items-center gap-1.5 border-r bg-background px-2 py-1"
+    class="sticky left-0 z-10 flex w-60 shrink-0 items-center gap-1.5 border-r bg-background px-2 py-1"
     style:padding-left="{8 + indent * 16}px"
   >
     <!-- Keyframe indicator -->

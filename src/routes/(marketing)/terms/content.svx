@@ -1,0 +1,63 @@
+# Terms of Service
+
+_Last updated: March 6, 2026_
+
+## 1. Acceptance of Terms
+
+By accessing or using DevMotion ("the Service"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service.
+
+## 2. Description of Service
+
+DevMotion is a browser-based motion graphics editor that allows users to create animations, manage projects, and export video content. DevMotion's source code is open source under the MIT License, and the hosted Service may offer both free and paid subscription tiers with additional features or capabilities.
+
+## 3. User Accounts
+
+To access certain features, you may need to create an account using Google OAuth. You are responsible for:
+
+- Maintaining the security of your account credentials
+- All activities that occur under your account
+- Notifying us immediately of any unauthorized access
+
+## 4. User Content
+
+You retain all rights to the content you create using DevMotion. By using the Service, you grant DevMotion a license to store, process, and display your content solely to provide the Service.
+
+You agree not to create or upload content that:
+
+- Violates any laws or regulations
+- Infringes on intellectual property rights of others
+- Contains malware, viruses, or harmful code
+- Promotes violence, harassment, or discrimination
+- Contains pornographic or sexually explicit material
+
+## 5. Service Availability
+
+We strive to maintain high availability but do not guarantee uninterrupted access to the Service. We reserve the right to modify, suspend, or discontinue any part of the Service at any time without prior notice.
+
+## 6. Intellectual Property
+
+DevMotion is open source software licensed under the MIT License. The source code is available at [github.com/epavanello/devmotion](https://github.com/epavanello/devmotion). The DevMotion name, logo, and branding are proprietary.
+
+## 7. Limitation of Liability
+
+DevMotion is provided "as is" without warranties of any kind. To the maximum extent permitted by law, DevMotion shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the Service.
+
+## 8. Data Backup
+
+While we implement reasonable data protection measures, you are responsible for maintaining backups of your projects. We recommend regularly exporting your work.
+
+## 9. Termination
+
+We reserve the right to suspend or terminate your account if you violate these Terms of Service or engage in harmful behavior. You may delete your account at any time.
+
+## 10. Changes to Terms
+
+We may update these Terms of Service periodically. Continued use of the Service after changes constitutes acceptance of the updated terms.
+
+## 11. Contact
+
+For questions about these Terms of Service, please contact us at: [contact@devmotion.app](mailto:contact@devmotion.app)
+
+## 12. Governing Law
+
+These Terms of Service shall be governed by and construed in accordance with applicable laws, without regard to conflict of law principles.

@@ -1,11 +1,12 @@
 <script lang="ts">
-  import Logo from '$lib/components/editor/Logo.svelte';
+  import AppHeader from '$lib/components/layout/app-header.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { ArrowLeft, Github } from '@lucide/svelte';
+  import { ArrowLeft } from '@lucide/svelte';
   import { PUBLIC_BASE_URL } from '$env/static/public';
   import JsonLd from '$lib/components/json-ld.svelte';
   import ThemeToggle from '$lib/components/ui/theme-toggle.svelte';
   import { page } from '$app/state';
+  import { resolve } from '$app/paths';
 
   const baseUrl = PUBLIC_BASE_URL;
   const description =
@@ -77,21 +78,10 @@
   <header
     class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60"
   >
-    <div class="container mx-auto flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center gap-2">
-        <Logo />
-        <Button
-          variant="ghost"
-          size="icon"
-          href="https://github.com/epavanello/devmotion"
-          target="_blank"
-          rel="noreferrer"
-          icon={Github}
-        />
-      </div>
-
-      <div class="flex items-center gap-2">
-        <!-- Theme Toggle -->
+    <AppHeader
+      class="container mx-auto flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8"
+    >
+      {#snippet rightContent()}
         <ThemeToggle />
 
         {#if page.url.pathname !== '/'}
@@ -100,8 +90,8 @@
             Back to Home
           </Button>
         {/if}
-      </div>
-    </div>
+      {/snippet}
+    </AppHeader>
   </header>
 
   <main class="flex flex-1 flex-col">
@@ -126,6 +116,28 @@
           class="font-medium underline underline-offset-4">GitHub</a
         >.
       </p>
+      <div class="flex items-center gap-4 text-sm text-muted-foreground">
+        <a
+          href={resolve('/terms')}
+          class="font-medium underline underline-offset-4 transition-colors hover:text-foreground"
+        >
+          Terms
+        </a>
+        <a
+          href={resolve('/privacy')}
+          class="font-medium underline underline-offset-4 transition-colors hover:text-foreground"
+        >
+          Privacy
+        </a>
+        <a
+          href="https://devmotion.canny.io/feature-requests"
+          target="_blank"
+          rel="noreferrer"
+          class="font-medium underline underline-offset-4 transition-colors hover:text-foreground"
+        >
+          Request a feature
+        </a>
+      </div>
     </div>
   </footer>
 </div>

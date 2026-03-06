@@ -1,7 +1,13 @@
 import { inferAdditionalFields } from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/svelte';
-import type { auth } from './server/auth';
+import { polarClient } from '@polar-sh/better-auth/client';
 
-export const authClient = createAuthClient({ plugins: [inferAdditionalFields<typeof auth>()] });
+import type { auth } from './server/auth';
+import { PUBLIC_BASE_URL } from '$env/static/public';
+
+export const authClient = createAuthClient({
+  baseURL: PUBLIC_BASE_URL,
+  plugins: [inferAdditionalFields<typeof auth>(), polarClient()]
+});
 
 export const { signIn, signUp, useSession } = authClient;
