@@ -100,7 +100,10 @@
   }
 
   async function handleSaveToCloud() {
-    await uiStore.requireLogin('save your project', () => uiStore.doSaveToCloud(editorState));
+    await uiStore.requireLogin(
+      'save your project',
+      async () => await uiStore.doSaveToCloud(editorState)
+    );
   }
 
   async function handleToggleVisibility() {
@@ -127,7 +130,7 @@
     tooltip: string;
     icon: Component;
     variant?: 'ghost' | 'outline' | 'default';
-    onclick?: () => void;
+    onclick?: () => void | Promise<void>;
     href?: ResolvedPathname;
     target?: string;
     disabled: boolean;

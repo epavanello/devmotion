@@ -243,17 +243,15 @@
                   size="sm"
                   class="h-7 w-7 p-0"
                   onclick={(e: Event) => startRename(proj, e)}
-                >
-                  <Pencil class="h-3 w-3" />
-                </Button>
+                  icon={Pencil}
+                />
                 <Button
                   variant="ghost"
                   size="sm"
                   class="h-7 w-7 p-0"
                   onclick={(e: Event) => handleDeleteProject(proj.id, e)}
-                >
-                  <Trash2 class="h-3 w-3" />
-                </Button>
+                  icon={Trash2}
+                />
               </div>
             {/if}
           </DropdownMenu.Item>
