@@ -4,6 +4,7 @@ import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { building } from '$app/environment';
 import { sequence } from '@sveltejs/kit/hooks';
 import '$lib/server/thumbnail-queue';
+import '$lib/server/queue-init';
 import type { UserRole } from '$lib/server/db/schema';
 
 const authHandle: Handle = async ({ event, resolve }) => {

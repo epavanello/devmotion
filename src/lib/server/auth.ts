@@ -13,6 +13,7 @@ import {
 import { aiUserUnlock, userRoles } from './db/schema';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { scheduleOnboardingEmail } from './workers/onboarding-email';
 
 export const auth = betterAuth({
   secret: PRIVATE_BETTER_AUTH_SECRET,
@@ -47,8 +48,10 @@ export const auth = betterAuth({
               .where(eq(aiUserUnlock.userId, user.id))
               .limit(1);
 
+            const isNewUser = existingUnlock.length === 0;
+
             // Only create if doesn't exist (new user)
-            if (existingUnlock.length === 0) {
+            if (isNewUser) {
               await db.insert(aiUserUnlock).values({
                 id: nanoid(),
                 userId: user.id,
@@ -56,6 +59,15 @@ export const auth = betterAuth({
                 maxCostPerMonth: 0.2, // 20 cents
                 notes: 'Welcome bonus for new Google sign-up'
               });
+
+              // Schedule onboarding email for new Google sign-ups (if consent given)
+              if (user.emailConsent !== false) {
+                await scheduleOnboardingEmail({
+                  userId: user.id,
+                  email: user.email,
+                  name: user.name
+                });
+              }
             }
           }
         }

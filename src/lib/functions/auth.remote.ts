@@ -6,6 +6,7 @@ import { withErrorHandling } from '.';
 import { db } from '$lib/server/db';
 import { aiUserUnlock } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
+import { scheduleOnboardingEmail } from '$lib/server/workers/onboarding-email';
 
 export const login = form(
   z.object({ email: z.email(), password: z.string() }),
@@ -32,9 +33,16 @@ export const signup = form(
       path: ['confirmPassword']
     }),
   withErrorHandling(async ({ name, email, password }) => {
-    await auth.api.signUpEmail({
+    const result = await auth.api.signUpEmail({
       body: { name, email, password }
     });
+
+    await scheduleOnboardingEmail({
+      userId: result.user.id,
+      email: result.user.email,
+      name: result.user.name
+    });
+
     redirect(303, '/');
   })
 );
