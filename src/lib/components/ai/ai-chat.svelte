@@ -1,17 +1,7 @@
 <script lang="ts">
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { Button } from '$lib/components/ui/button';
-  import {
-    Bot,
-    Loader2,
-    User,
-    Trash2,
-    Send,
-    Square,
-    Bitcoin,
-    ImagePlus,
-    X
-  } from '@lucide/svelte';
+  import { Bot, Loader2, User, Trash2, Send, Square, Bitcoin, ImagePlus, X } from '@lucide/svelte';
   import { DEFAULT_MODEL_ID } from '$lib/ai/models';
   import { Chat } from '@ai-sdk/svelte';
   import {

@@ -18,6 +18,7 @@ import {
 import { db } from '$lib/server/db';
 import { asset } from '$lib/server/db/schema';
 import { checkStorageQuota } from '$lib/server/utils/storage-quota';
+import { updateStorageUsage } from '$lib/server/services/subscription-limits';
 import { nanoid } from 'nanoid';
 
 const MAX_REQUEST_SIZE = 40 * 1024 * 1024; // 10MB
@@ -114,6 +115,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       size: result.size,
       duration: duration && isFinite(duration) ? Math.floor(duration) : null
     });
+
+    // Update subscription storage usage to keep it in sync
+    await updateStorageUsage(locals.user.id, result.size);
 
     return json({
       success: true,
