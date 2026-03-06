@@ -8,7 +8,6 @@
     Trash2,
     Send,
     Square,
-    CreditCard,
     Bitcoin,
     ImagePlus,
     X

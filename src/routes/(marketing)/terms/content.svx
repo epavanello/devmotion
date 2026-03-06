@@ -8,7 +8,7 @@ By accessing or using DevMotion ("the Service"), you agree to be bound by these 
 
 ## 2. Description of Service
 
-DevMotion is a browser-based motion graphics editor that allows users to create animations, manage projects, and export video content. The Service is provided free of charge and is open source under the MIT License.
+DevMotion is a browser-based motion graphics editor that allows users to create animations, manage projects, and export video content. DevMotion's source code is open source under the MIT License, and the hosted Service may offer both free and paid subscription tiers with additional features or capabilities.
 
 ## 3. User Accounts
 

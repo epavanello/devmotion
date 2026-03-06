@@ -25,7 +25,30 @@ We store the following data to provide our service:
 - Project settings and metadata
 - Media files you upload (images, videos, audio)
 
-### 2.3 Anonymous Usage
+### 2.3 Payment and Subscription Data
+
+If you purchase a paid subscription, we collect and process:
+
+- Payment method information (tokenized by Polar; we do not store full card numbers)
+- Billing and shipping addresses
+- Transaction history and receipts
+- Subscription status and tier
+- Customer ID from our payment processor
+
+This data is collected to process payments, maintain subscription access, comply with financial regulations, and provide customer support. Payment processing is handled by Polar, which has its own privacy policy governing how payment information is handled.
+
+### 2.4 Email Communications
+
+We use your email address to:
+
+- Send onboarding emails when you create an account
+- Provide transactional notifications (payment confirmations, subscription changes)
+- Send important service updates and security alerts
+- Respond to support inquiries
+
+Email delivery is handled by our email service provider (Resend). You can manage your email preferences or opt out of non-essential communications through your account settings or the unsubscribe link in emails.
+
+### 2.5 Anonymous Usage
 
 You can use DevMotion without creating an account. Anonymous projects are stored locally in your browser and are not accessible to us.
 
@@ -55,6 +78,8 @@ While we implement reasonable security measures, no method of transmission over 
 We do not sell, trade, or rent your personal information to third parties. We may share data only in these circumstances:
 
 - **Service Providers:** Third-party services that help us operate (hosting, storage, analytics) under strict confidentiality agreements
+- **Payment Processors:** Polar receives payment information to process transactions securely
+- **Email Service:** Resend receives email addresses and message content to deliver onboarding, transactional, and service emails
 - **Legal Requirements:** When required by law or to protect our rights and safety
 - **Public Gallery:** Projects you explicitly choose to publish to the community gallery
 
@@ -82,11 +107,21 @@ To exercise these rights, contact us at [contact@devmotion.app](mailto:contact@d
 
 ## 8. Data Retention
 
-We retain your data as long as your account is active. When you delete your account:
+We retain your data as long as your account is active or as needed to provide services. Specific retention periods:
 
-- Your projects and uploaded media are permanently deleted
-- Your authentication data is removed
-- Some anonymized data may be retained for analytics purposes
+- **Account and project data:** Retained while your account is active; permanently deleted within 30 days of account deletion
+- **Authentication data:** Removed when you delete your account
+- **Payment and transaction records:** Retained for 7 years to comply with financial and tax regulations, even after account deletion
+- **Subscription history:** Retained for 7 years for billing dispute resolution and regulatory compliance
+- **Email communication logs:** Retained for 2 years for support and compliance purposes
+- **Anonymized analytics data:** May be retained indefinitely
+
+When you delete your account:
+
+- Your projects and uploaded media are permanently deleted within 30 days
+- Your personal profile data is removed
+- Payment records are anonymized but retained for regulatory compliance
+- You can request a full data export before deletion
 
 ## 9. Children's Privacy
 
@@ -101,9 +136,11 @@ DevMotion is operated globally. Your data may be transferred to and processed in
 DevMotion integrates with:
 
 - **Google OAuth:** For authentication (governed by [Google's Privacy Policy](https://policies.google.com/privacy))
+- **Polar:** For payment processing (governed by [Polar's Privacy Policy](https://polar.sh/legal/privacy))
+- **Resend:** For email delivery (governed by [Resend's Privacy Policy](https://resend.com/legal/privacy-policy))
 - **OpenRouter:** For AI features (optional)
 
-We are not responsible for the privacy practices of third-party services.
+We are not responsible for the privacy practices of third-party services. We recommend reviewing their privacy policies to understand how they handle your data.
 
 ## 12. Changes to Privacy Policy
 
