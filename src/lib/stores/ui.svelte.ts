@@ -7,10 +7,10 @@ import { getUserProjects, saveProject } from '$lib/functions/projects.remote';
 class UIStore {
   showLoginPrompt = $state(false);
   promptAction = $state('this action');
+  user = $derived(getUser());
 
   async requireLogin(action: string, fn: () => void | Promise<void>) {
-    const user = await getUser();
-    if (user) {
+    if (this.user.current) {
       await fn();
     } else {
       this.promptAction = action;

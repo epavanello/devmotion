@@ -214,7 +214,6 @@ export function initializeEditorContext() {
     watch(
       () => $state.snapshot(projectStore.state),
       () => {
-        console.log($state.snapshot(projectStore.state));
         // Skip saving during initial load
         if (!initialized) {
           initialized = true;

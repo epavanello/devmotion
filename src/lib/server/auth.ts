@@ -4,18 +4,56 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db } from './db';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
-import { PUBLIC_BASE_URL } from '$env/static/public';
+import {
+  PUBLIC_BASE_URL,
+  PUBLIC_POLAR_CREATOR_PRODUCT_ID,
+  PUBLIC_POLAR_PRO_PRODUCT_ID
+} from '$env/static/public';
 import {
   PRIVATE_BETTER_AUTH_SECRET,
   PRIVATE_GOOGLE_CLIENT_ID,
-  PRIVATE_GOOGLE_CLIENT_SECRET
+  PRIVATE_GOOGLE_CLIENT_SECRET,
+  POLAR_ACCESS_TOKEN,
+  POLAR_SERVER,
+  POLAR_WEBHOOK_SECRET
 } from '$env/static/private';
-import { aiUserUnlock, userRoles } from './db/schema';
-import { eq } from 'drizzle-orm';
-import { nanoid } from 'nanoid';
-import { scheduleOnboardingEmail } from './workers/onboarding-email';
+import { userRoles } from './db/schema';
+import { scheduleOnboardingEmail, scheduleFollowUpEmail } from './workers/onboarding-email';
+import { Polar } from '@polar-sh/sdk';
+import { polar, checkout, portal, webhooks } from '@polar-sh/better-auth';
+import { subscriptionService } from './services/subscription';
+import type { Subscription } from '@polar-sh/sdk/models/components/subscription.js';
 
+// Initialize Polar SDK client
+const polarClient = new Polar({
+  accessToken: POLAR_ACCESS_TOKEN,
+  server: POLAR_SERVER as 'production' | 'sandbox'
+});
+
+/**
+ * Helper function to update user subscription from Polar subscription data
+ */
+async function updateUserSubscriptionFromPolar(userId: string, subscription: Subscription) {
+  const tierMapping = {
+    [PUBLIC_POLAR_CREATOR_PRODUCT_ID]: 'creator' as const,
+    [PUBLIC_POLAR_PRO_PRODUCT_ID]: 'pro' as const
+  };
+
+  await subscriptionService.updateFromPolar(
+    userId,
+    {
+      id: subscription.id as string,
+      productId: subscription.productId as string,
+      currentPeriodStart: subscription.currentPeriodStart,
+      currentPeriodEnd: subscription.currentPeriodEnd,
+      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd
+    },
+    tierMapping
+  );
+}
 export const auth = betterAuth({
+  baseURL: PUBLIC_BASE_URL,
+  basePath: '/api/auth',
   secret: PRIVATE_BETTER_AUTH_SECRET,
   database: drizzleAdapter(db, {
     provider: 'pg'
@@ -29,8 +67,88 @@ export const auth = betterAuth({
       clientSecret: PRIVATE_GOOGLE_CLIENT_SECRET
     }
   },
-  baseURL: PUBLIC_BASE_URL,
-  plugins: [sveltekitCookies(getRequestEvent)],
+  // Allow better-auth to work behind proxies like ngrok
+  trustedOrigins: [
+    PUBLIC_BASE_URL,
+    // Allow ngrok domains in development
+    ...(PUBLIC_BASE_URL.includes('ngrok') ? ['https://*.ngrok-free.dev', 'https://*.ngrok.io'] : [])
+  ],
+  advanced: {
+    useSecureCookies: PUBLIC_BASE_URL.startsWith('https'),
+    // Critical: Disable origin check when behind proxy in development
+    disableCSRFCheck: PUBLIC_BASE_URL.includes('ngrok')
+  },
+  plugins: [
+    sveltekitCookies(getRequestEvent),
+    polar({
+      client: polarClient,
+      createCustomerOnSignUp: true,
+      getCustomerCreateParams: async ({ user }) => {
+        console.log({ user });
+        return {
+          metadata: {
+            ...(user.id && { userId: user.id }),
+            ...(user.email && { email: user.email })
+          }
+        };
+      },
+      use: [
+        checkout({
+          products:
+            PUBLIC_POLAR_CREATOR_PRODUCT_ID && PUBLIC_POLAR_PRO_PRODUCT_ID
+              ? [
+                  {
+                    productId: PUBLIC_POLAR_CREATOR_PRODUCT_ID,
+                    slug: 'creator'
+                  },
+                  {
+                    productId: PUBLIC_POLAR_PRO_PRODUCT_ID,
+                    slug: 'pro'
+                  }
+                ]
+              : [],
+          successUrl: '/editor?checkout=success&checkout_id={CHECKOUT_ID}',
+          authenticatedUsersOnly: true
+        }),
+        portal(),
+        webhooks({
+          secret: POLAR_WEBHOOK_SECRET,
+          // Handle subscription lifecycle events
+          onSubscriptionActive: async (payload) => {
+            // Update user subscription in database
+            const customerId = payload.data.customerId;
+            // Find user by Polar customer ID (externalId)
+            const customer = await polarClient.customers.get({ id: customerId });
+            if (customer.externalId) {
+              await updateUserSubscriptionFromPolar(customer.externalId, payload.data);
+            }
+          },
+          onSubscriptionCanceled: async (payload) => {
+            const customerId = payload.data.customerId;
+            const customer = await polarClient.customers.get({ id: customerId });
+            if (customer.externalId) {
+              await subscriptionService.markCanceled(customer.externalId);
+            }
+          },
+          onSubscriptionRevoked: async (payload) => {
+            const customerId = payload.data.customerId;
+            const customer = await polarClient.customers.get({ id: customerId });
+            if (customer.externalId) {
+              // Downgrade to free tier
+              await subscriptionService.revokeAndDowngrade(customer.externalId);
+            }
+          },
+          onSubscriptionUpdated: async (payload) => {
+            const customerId = payload.data.customerId;
+            const customer = await polarClient.customers.get({ id: customerId });
+            if (customer.externalId) {
+              await updateUserSubscriptionFromPolar(customer.externalId, payload.data);
+            }
+          }
+        })
+      ]
+    })
+  ],
   hooks: {
     after: createAuthMiddleware(async (ctx) => {
       // Intercept social sign-up to grant welcome bonus
@@ -39,30 +157,23 @@ export const auth = betterAuth({
         if (newSession) {
           const user = newSession.user;
 
-          // Grant 20 cents to new Google sign-ups
+          // Create free tier subscription for new sign-ups
           if (ctx.context.socialProviders.find((p) => p.id === 'google')) {
-            // Check if user already has an AI unlock record
-            const existingUnlock = await db
-              .select()
-              .from(aiUserUnlock)
-              .where(eq(aiUserUnlock.userId, user.id))
-              .limit(1);
-
-            const isNewUser = existingUnlock.length === 0;
+            // Check if user already has a subscription
+            const isNewUser = !(await subscriptionService.exists(user.id));
 
             // Only create if doesn't exist (new user)
             if (isNewUser) {
-              await db.insert(aiUserUnlock).values({
-                id: nanoid(),
-                userId: user.id,
-                enabled: true,
-                maxCostPerMonth: 0.2, // 20 cents
-                notes: 'Welcome bonus for new Google sign-up'
-              });
+              await subscriptionService.createFreeTier(user.id, 'Welcome bonus for new sign-up');
 
               // Schedule onboarding email for new Google sign-ups (if consent given)
               if (user.emailConsent !== false) {
                 await scheduleOnboardingEmail({
+                  userId: user.id,
+                  email: user.email,
+                  name: user.name
+                });
+                await scheduleFollowUpEmail({
                   userId: user.id,
                   email: user.email,
                   name: user.name

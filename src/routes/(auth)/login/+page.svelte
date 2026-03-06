@@ -3,23 +3,18 @@
   import * as Card from '$lib/components/ui/card';
   import { Input } from '$lib/components/ui/input';
   import * as Field from '$lib/components/ui/field/index.js';
-  import GoogleIcon from '$lib/assets/svg/google-icon.svelte';
   import { login } from '$lib/functions/auth.remote';
-  import { authClient } from '$lib/auth-client';
   import { resolve } from '$app/paths';
+  import { page } from '$app/state';
+  import SocialAuthButtons from '$lib/components/auth/social-auth-buttons.svelte';
 
   const id = $props.id();
 
-  async function handleGoogleLogin() {
-    try {
-      await authClient.signIn.social({
-        provider: 'google',
-        callbackURL: '/'
-      });
-    } catch (error) {
-      console.error('Google login failed:', error);
-    }
-  }
+  // Get redirect param from URL
+  const redirectTo = $derived(page.url.searchParams.get('redirect'));
+  const callbackURL = $derived(
+    redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '/'
+  );
 </script>
 
 <Card.Root class="mx-auto w-full max-w-sm">
@@ -63,20 +58,15 @@
         {/if}
         <Field.Field>
           <Button type="submit" class="w-full" disabled={!!login.pending}>Login</Button>
-          <Button
-            type="button"
-            variant="outline"
-            class="w-full"
-            onclick={handleGoogleLogin}
-            icon={GoogleIcon}
-          >
-            Login with Google
-          </Button>
-          <p class="text-center text-xs text-muted-foreground">
-            Google sign-in includes free AI credits
-          </p>
+          <SocialAuthButtons {callbackURL} showSeparator={true} buttonText="Login with Google" />
           <Field.Description class="text-center">
             Don't have an account? <a href={resolve('/signup')}>Sign up</a>
+          </Field.Description>
+          <Field.Description class="text-center text-xs">
+            By continuing, you agree to the
+            <a href={resolve('/terms')} class="underline hover:text-foreground">Terms of Service</a>
+            and
+            <a href={resolve('/privacy')} class="underline hover:text-foreground">Privacy Policy</a>
           </Field.Description>
         </Field.Field>
       </Field.Group>

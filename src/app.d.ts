@@ -1,4 +1,7 @@
+/// <reference types="mdsvex/globals" />
+
 import type { Session, User } from '$lib/server/auth';
+import type { PlanTier } from '$lib/config/plans';
 
 // for information about these interfaces
 interface DevMotionAPI {
@@ -18,7 +21,11 @@ declare global {
     // interface Error {}
     interface Locals {
       session: Session | null;
-      user: User | null;
+      user:
+        | (User & {
+            subscriptionTier: PlanTier;
+          })
+        | null;
     }
     // interface PageData {}
     // interface PageState {}

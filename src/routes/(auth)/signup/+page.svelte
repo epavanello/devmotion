@@ -3,23 +3,11 @@
   import * as Card from '$lib/components/ui/card';
   import { Input } from '$lib/components/ui/input';
   import * as Field from '$lib/components/ui/field/index.js';
-  import GoogleIcon from '$lib/assets/svg/google-icon.svelte';
   import { signup } from '$lib/functions/auth.remote';
-  import { authClient } from '$lib/auth-client';
   import { resolve } from '$app/paths';
+  import SocialAuthButtons from '$lib/components/auth/social-auth-buttons.svelte';
 
   const id = $props.id();
-
-  async function handleGoogleSignup() {
-    try {
-      await authClient.signIn.social({
-        provider: 'google',
-        callbackURL: '/'
-      });
-    } catch (error) {
-      console.error('Google signup failed:', error);
-    }
-  }
 </script>
 
 <Card.Root class="mx-auto w-full max-w-sm">
@@ -77,15 +65,19 @@
         {/if}
         <Field.Field>
           <Button type="submit" class="w-full" disabled={!!signup.pending}>Sign Up</Button>
-          <Button type="button" variant="outline" class="w-full" onclick={handleGoogleSignup}>
-            <GoogleIcon />
-            Sign up with Google
-          </Button>
-          <p class="text-center text-xs text-muted-foreground">
-            Google sign-up includes free AI credits
-          </p>
+          <SocialAuthButtons
+            callbackURL="/"
+            showSeparator={true}
+            buttonText="Sign up with Google"
+          />
           <Field.Description class="text-center">
             Already have an account? <a href={resolve('/login')}>Sign in</a>
+          </Field.Description>
+          <Field.Description class="text-center text-xs">
+            By continuing, you agree to the
+            <a href={resolve('/terms')} class="underline hover:text-foreground">Terms of Service</a>
+            and
+            <a href={resolve('/privacy')} class="underline hover:text-foreground">Privacy Policy</a>
           </Field.Description>
         </Field.Field>
       </Field.Group>

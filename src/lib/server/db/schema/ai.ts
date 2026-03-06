@@ -1,18 +1,49 @@
-import { pgTable, text, timestamp, boolean, real, index, pgEnum } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  text,
+  timestamp,
+  boolean,
+  real,
+  index,
+  pgEnum,
+  integer
+} from 'drizzle-orm/pg-core';
 import { user } from './auth';
 
-export const aiPlanEnum = pgEnum('ai_plan', ['free', 'pro']);
+// =============================================================================
+// CURRENT SCHEMA - Unified subscription system
+// =============================================================================
 
-export const aiUserUnlock = pgTable(
-  'ai_user_unlock',
+export const planTierEnum = pgEnum('plan_tier', ['free', 'creator', 'pro']);
+
+/**
+ * User subscription/plan information
+ * Unified table for tracking user's plan tier and usage
+ */
+export const userSubscription = pgTable(
+  'user_subscription',
   {
     id: text('id').primaryKey(),
     userId: text('user_id')
       .notNull()
+      .unique()
       .references(() => user.id, { onDelete: 'cascade' }),
+    tier: planTierEnum('tier').default('free').notNull(),
     enabled: boolean('enabled').default(true).notNull(),
-    maxCostPerMonth: real('max_cost_per_month').notNull(),
-    plan: aiPlanEnum('plan').default('free').notNull(),
+
+    // External billing provider IDs
+    stripeCustomerId: text('stripe_customer_id'),
+    stripeSubscriptionId: text('stripe_subscription_id'),
+    polarSubscriptionId: text('polar_subscription_id'),
+
+    // Billing period
+    currentPeriodStart: timestamp('current_period_start').defaultNow().notNull(),
+    currentPeriodEnd: timestamp('current_period_end').defaultNow().notNull(),
+    cancelAtPeriodEnd: boolean('cancel_at_period_end').default(false).notNull(),
+
+    // Usage tracking (reset monthly)
+    storageUsedBytes: integer('storage_used_bytes').default(0).notNull(),
+
     notes: text('notes'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
@@ -20,9 +51,15 @@ export const aiUserUnlock = pgTable(
       .$onUpdate(() => new Date())
       .notNull()
   },
-  (table) => [index('ai_user_unlock_user_id_idx').on(table.userId)]
+  (table) => [
+    index('user_subscription_user_id_idx').on(table.userId),
+    index('user_subscription_tier_idx').on(table.tier)
+  ]
 );
 
+/**
+ * AI usage log for tracking token consumption and costs
+ */
 export const aiUsageLog = pgTable(
   'ai_usage_log',
   {
@@ -43,3 +80,8 @@ export const aiUsageLog = pgTable(
     index('ai_usage_log_created_at_idx').on(table.createdAt)
   ]
 );
+
+// =============================================================================
+// LEGACY - Removed in migration 0014
+// Old ai_user_unlock table has been migrated to userSubscription
+// =============================================================================

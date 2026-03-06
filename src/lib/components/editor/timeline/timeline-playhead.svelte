@@ -18,7 +18,7 @@
 
 <!-- Playhead with enhanced visual design -->
 <div
-  class="pointer-events-none absolute top-0.5 bottom-0 z-20 w-0.5"
+  class="pointer-events-none absolute top-11 bottom-0 w-0.5"
   style="left: {position}px; background: linear-gradient(180deg, rgb(239 68 68) 0%, rgb(239 68 68 / 0.8) 100%); box-shadow: 0 0 4px rgb(239 68 68 / 0.5)"
 >
   <!-- Draggable handle at top -->

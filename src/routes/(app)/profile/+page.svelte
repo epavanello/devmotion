@@ -4,11 +4,22 @@
   import { Input } from '$lib/components/ui/input';
   import * as Field from '$lib/components/ui/field/index.js';
   import * as Avatar from '$lib/components/ui/avatar';
-  import { getUser, signOut, updateUser } from '$lib/functions/auth.remote';
+  import { getUserOrRedirect, signOut, updateUser } from '$lib/functions/auth.remote';
   import { User, Mail, LogOut } from '@lucide/svelte';
+  import { watch } from 'runed';
 
   const id = $props.id();
-  const user = getUser();
+  const user = $derived(await getUserOrRedirect());
+
+  watch(
+    () => user,
+    () => {
+      updateUser.fields.set({
+        name: user.name ?? '',
+        emailConsent: user.emailConsent ?? false
+      });
+    }
+  );
 
   let showSuccess = $state(false);
 
@@ -19,7 +30,7 @@
       setTimeout(() => {
         showSuccess = false;
       }, 3000);
-      await user.refresh();
+      await getUserOrRedirect().refresh();
     }
   });
 </script>
@@ -33,10 +44,10 @@
     <Card.Content>
       <div class="mb-6 flex items-center gap-4">
         <Avatar.Root class="size-16">
-          <Avatar.Image src={user.current?.image} alt={user.current?.name ?? 'User'} />
+          <Avatar.Image src={user.image} alt={user.name ?? 'User'} />
           <Avatar.Fallback>
-            {#if user.current?.name}
-              {user.current.name
+            {#if user.name}
+              {user.name
                 .split(' ')
                 .map((n) => n[0])
                 .join('')
@@ -48,10 +59,10 @@
           </Avatar.Fallback>
         </Avatar.Root>
         <div class="flex-1">
-          <p class="font-medium">{user.current?.name ?? 'User'}</p>
+          <p class="font-medium">{user.name ?? 'User'}</p>
           <p class="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Mail class="size-3.5" />
-            {user.current?.email ?? ''}
+            {user.email ?? ''}
           </p>
         </div>
       </div>
@@ -65,7 +76,6 @@
               placeholder="Your name"
               required
               {...updateUser.fields.name.as('text')}
-              value={user.current?.name ?? ''}
             />
             {#each updateUser.fields.name.issues() as issue, index (index)}
               <Field.Error>{issue.message}</Field.Error>
@@ -77,7 +87,6 @@
               <input
                 id="email-consent-{id}"
                 {...updateUser.fields.emailConsent.as('checkbox')}
-                checked={user.current?.emailConsent ?? false}
                 class="size-4 rounded border-input bg-background accent-primary"
               />
               <div>

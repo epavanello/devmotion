@@ -4,28 +4,27 @@
   import {
     Download,
     Save,
-    User,
-    LogOut,
     Keyboard,
     Lock,
     Unlock,
     GitFork,
     Globe,
     Github,
-    UserCircle
+    MessageSquare,
+    Zap
   } from '@lucide/svelte';
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import ExportDialog from './export-dialog.svelte';
+  import PricingDialog from './pricing-dialog.svelte';
 
   const editorState = $derived(getEditorState());
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { uiStore } from '$lib/stores/ui.svelte';
   import ThemeToggle from '$lib/components/ui/theme-toggle.svelte';
-  import { getUser, signOut } from '$lib/functions/auth.remote';
+  import { getUser } from '$lib/functions/auth.remote';
   import { toggleVisibility, forkProject } from '$lib/functions/projects.remote';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import { authClient } from '$lib/auth-client';
   import ProjectSwitcher from './project-switcher.svelte';
   import { onMount, type Component } from 'svelte';
   import { toast } from 'svelte-sonner';
@@ -36,7 +35,6 @@
   } from '$lib/components/ui/collapsible';
   import { Menu, X } from '@lucide/svelte';
   import TooltipButton from '../ui/tooltip/tooltip-button.svelte';
-  import GoogleIcon from '$lib/assets/svg/google-icon.svelte';
   import type { ResolvedPathname } from '$app/types';
   import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 
@@ -55,8 +53,10 @@
   let headerOpen = $state(false);
 
   let showExportDialog = $state(false);
+  let showPricingDialog = $state(false);
 
-  const user = getUser();
+  const user = $derived(getUser());
+  const shouldShowUpgrade = $derived(user.current && user.current.tier === 'free');
 
   const WELCOME_TOAST_KEY = 'devmotion_welcome_shown';
 
@@ -97,13 +97,6 @@
     }
 
     showExportDialog = true;
-  }
-
-  async function handleLogin() {
-    await authClient.signIn.social({
-      provider: 'google',
-      callbackURL: resolve('/editor')
-    });
   }
 
   async function handleSaveToCloud() {
@@ -254,6 +247,16 @@
           <!-- Theme Toggle -->
           <ThemeToggle />
 
+          <!-- Feature Requests (Desktop) -->
+          <TooltipButton
+            content="Request a feature or report a bug"
+            variant="ghost"
+            href="https://devmotion.canny.io/feature-requests"
+            target="_blank"
+            rel="noreferrer"
+            icon={MessageSquare}
+          />
+
           <!-- Keyboard Shortcuts (Desktop) -->
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
@@ -277,6 +280,18 @@
             </DropdownMenu.Content>
           </DropdownMenu.Root>
 
+          <!-- Upgrade Button (Desktop - only for free tier) -->
+          {#if shouldShowUpgrade}
+            <TooltipButton
+              content="Upgrade to Creator or Pro"
+              variant="default"
+              onclick={() => (showPricingDialog = true)}
+              icon={Zap}
+            >
+              Upgrade
+            </TooltipButton>
+          {/if}
+
           <!-- Export (Desktop) -->
           {#each buttons.filter((b) => b.visible && b.id === 'export') as button (button.id)}
             <TooltipButton
@@ -289,44 +304,6 @@
               {button.label}
             </TooltipButton>
           {/each}
-        {/if}
-
-        <!-- User Menu (Always Visible) -->
-        {#if user.current}
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger>
-              {#snippet child({ props })}
-                <Button variant="ghost" icon={User} {...props} />
-              {/snippet}
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content align="end">
-              <DropdownMenu.Label>
-                <div class="flex flex-col space-y-1">
-                  <p class="text-sm leading-none font-medium">{user.current.name}</p>
-                  <p class="text-xs leading-none text-muted-foreground">
-                    {user.current.email}
-                  </p>
-                </div>
-              </DropdownMenu.Label>
-              <DropdownMenu.Separator />
-              <DropdownMenu.Item onclick={() => goto(resolve('/profile'))}>
-                <UserCircle />
-                Profile
-              </DropdownMenu.Item>
-              <DropdownMenu.Separator />
-              <form {...signOut}>
-                <DropdownMenu.Item>
-                  {#snippet child({ props })}
-                    <Button {...props} variant="ghost" type="submit" class="w-full">Logout</Button>
-                  {/snippet}
-                  <LogOut />
-                  Logout
-                </DropdownMenu.Item>
-              </form>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
-        {:else}
-          <Button onclick={handleLogin} icon={GoogleIcon} variant="outline">Login</Button>
         {/if}
 
         {#if isMobile}
@@ -350,6 +327,18 @@
     <div class="flex flex-col gap-2 border-b bg-muted/30 p-4">
       <!-- Mobile Actions -->
       <div class="grid grid-cols-2 gap-2">
+        <!-- Upgrade Button (Mobile - only for free tier) -->
+        {#if shouldShowUpgrade}
+          <Button
+            variant="default"
+            onclick={() => (showPricingDialog = true)}
+            icon={Zap}
+            class="col-span-2 w-full"
+          >
+            Upgrade to Pro
+          </Button>
+        {/if}
+
         {#each buttons.filter((b) => b.visible) as button (button.id)}
           <div class="relative">
             <Button
@@ -381,6 +370,19 @@
         >
           GitHub
         </Button>
+
+        <!-- Feature Requests (Mobile Only) -->
+        <Button
+          variant="outline"
+          href="https://devmotion.canny.io/feature-requests"
+          target="_blank"
+          rel="noreferrer"
+          icon={MessageSquare}
+          class="w-full"
+        >
+          Request a feature
+        </Button>
+        <ThemeToggle variant="outline">Toggle theme</ThemeToggle>
       </div>
     </div>
   </CollapsibleContent>
@@ -392,3 +394,5 @@
   bind:isRecording
   {projectId}
 />
+
+<PricingDialog bind:open={showPricingDialog} />

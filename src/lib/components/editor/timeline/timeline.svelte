@@ -385,7 +385,7 @@
       tabindex="0"
     >
       <!-- Ruler -->
-      <div class="sticky top-0 border-b bg-background">
+      <div class="sticky top-0 z-20 border-b bg-background">
         <TimelineRuler
           {pixelsPerSecond}
           duration={projectStore.state.duration}
@@ -458,7 +458,7 @@
       <!-- Selection Marquee -->
       {#if selectionBox}
         <div
-          class="pointer-events-none absolute z-30 border-2 border-primary bg-primary/10"
+          class="pointer-events-none absolute border-2 border-primary bg-primary/10"
           style="left: {selectionBox.x}px; top: {selectionBox.y}px; width: {selectionBox.width}px; height: {selectionBox.height}px;"
         ></div>
       {/if}

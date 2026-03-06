@@ -41,8 +41,8 @@
     }
   });
 
-  const projects = getUserProjects();
-  const user = getUser();
+  const projects = $derived(getUserProjects());
+  const user = $derived(getUser());
 
   function handleNewProject() {
     editorState.resetToNew();
@@ -50,7 +50,10 @@
   }
 
   function handleOpenProject(id: string) {
-    if (editingProjectId === id) return; // Don't navigate while editing
+    if (editingProjectId === id) {
+      // Don't navigate while editing
+      return;
+    }
     goto(resolve('/(app)/editor/p/[id]', { id }));
   }
 

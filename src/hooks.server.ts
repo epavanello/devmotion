@@ -5,7 +5,10 @@ import { building } from '$app/environment';
 import { sequence } from '@sveltejs/kit/hooks';
 import '$lib/server/thumbnail-queue';
 import '$lib/server/queue-init';
-import type { UserRole } from '$lib/server/db/schema';
+import { db } from '$lib/server/db';
+import { userSubscription } from '$lib/server/db/schema';
+import { eq } from 'drizzle-orm';
+import type { PlanTier } from '$lib/config/plans';
 
 const authHandle: Handle = async ({ event, resolve }) => {
   // Fetch current session from Better Auth
@@ -15,9 +18,17 @@ const authHandle: Handle = async ({ event, resolve }) => {
   // Make session and user available on server
   if (session) {
     event.locals.session = session.session;
+
+    // Fetch subscription tier for the user
+    const subscription = await db
+      .select({ tier: userSubscription.tier })
+      .from(userSubscription)
+      .where(eq(userSubscription.userId, session.user.id))
+      .limit(1);
+
     event.locals.user = {
       ...session.user,
-      role: (session.user.role ?? 'user') as UserRole
+      subscriptionTier: (subscription[0]?.tier ?? 'free') as PlanTier
     };
   }
   return svelteKitHandler({ event, resolve, auth, building });

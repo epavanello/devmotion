@@ -260,23 +260,19 @@
 >
   <!-- Drop indicator line - above -->
   {#if isDropTarget && dropPosition === 'above'}
-    <div
-      class="absolute -top-px right-0 left-0 z-30 h-0.5 bg-primary shadow-lg shadow-primary/50"
-    ></div>
+    <div class="absolute -top-px right-0 left-0 h-0.5 bg-primary shadow-lg shadow-primary/50"></div>
   {/if}
 
   <!-- Drop indicator line - below -->
   {#if isDropTarget && dropPosition === 'below'}
     <div
-      class="absolute right-0 -bottom-px left-0 z-30 h-0.5 bg-primary shadow-lg shadow-primary/50"
+      class="absolute right-0 -bottom-px left-0 h-0.5 bg-primary shadow-lg shadow-primary/50"
     ></div>
   {/if}
 
   <!-- Drop indicator - inside group -->
   {#if isDropTarget && dropPosition === 'inside'}
-    <div
-      class="absolute inset-0 z-20 rounded bg-primary/10 ring-2 ring-primary/40 ring-inset"
-    ></div>
+    <div class="absolute inset-0 rounded bg-primary/10 ring-2 ring-primary/40 ring-inset"></div>
   {/if}
 
   <div class="group/layer flex items-stretch transition-colors hover:bg-muted/20">
@@ -285,7 +281,7 @@
       bind:this={layerHeaderRef}
       data-layer-header
       class={cn(
-        'sticky left-0 z-30 flex w-60 shrink-0 items-center gap-1 border-r px-1 py-1.5',
+        'sticky left-0 z-10 flex w-60 shrink-0 items-center gap-1 border-r px-1 py-1.5',
         isChild ? 'bg-muted/15' : 'bg-background'
       )}
       style:padding-left="{4 + indent * 16}px"

@@ -1,0 +1,121 @@
+# Privacy Policy
+
+_Last updated: March 6, 2026_
+
+## 1. Introduction
+
+DevMotion ("we", "us", or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use our motion graphics editor service.
+
+## 2. Information We Collect
+
+### 2.1 Authentication Data
+
+When you sign in with Google OAuth, we collect:
+
+- Email address
+- Name
+- Profile picture
+- Google account ID
+
+### 2.2 Project Data
+
+We store the following data to provide our service:
+
+- Animation projects (layers, keyframes, timelines)
+- Project settings and metadata
+- Media files you upload (images, videos, audio)
+
+### 2.3 Anonymous Usage
+
+You can use DevMotion without creating an account. Anonymous projects are stored locally in your browser and are not accessible to us.
+
+## 3. How We Use Your Information
+
+We use collected information to:
+
+- Provide and maintain the animation editor service
+- Store and sync your projects across devices
+- Authenticate your account and prevent unauthorized access
+- Improve and optimize the Service
+- Communicate important service updates
+
+## 4. Data Storage and Security
+
+Your data is stored using industry-standard security measures:
+
+- Projects and user data are stored in a secure PostgreSQL database with encrypted connections
+- Media files are stored in S3-compatible object storage
+- Authentication uses secure OAuth 2.0 protocol
+- All connections to DevMotion use HTTPS encryption
+
+While we implement reasonable security measures, no method of transmission over the Internet is 100% secure. We cannot guarantee absolute security.
+
+## 5. Data Sharing
+
+We do not sell, trade, or rent your personal information to third parties. We may share data only in these circumstances:
+
+- **Service Providers:** Third-party services that help us operate (hosting, storage, analytics) under strict confidentiality agreements
+- **Legal Requirements:** When required by law or to protect our rights and safety
+- **Public Gallery:** Projects you explicitly choose to publish to the community gallery
+
+## 6. Cookies and Local Storage
+
+DevMotion uses browser local storage and cookies to:
+
+- Maintain your login session
+- Store projects locally when using without an account
+- Remember your preferences and settings
+
+You can clear local storage and cookies through your browser settings, but this may affect functionality.
+
+## 7. Your Rights
+
+You have the right to:
+
+- Access the personal data we hold about you
+- Request correction of inaccurate data
+- Request deletion of your account and associated data
+- Export your projects and data
+- Opt out of non-essential communications
+
+To exercise these rights, contact us at [contact@devmotion.app](mailto:contact@devmotion.app)
+
+## 8. Data Retention
+
+We retain your data as long as your account is active. When you delete your account:
+
+- Your projects and uploaded media are permanently deleted
+- Your authentication data is removed
+- Some anonymized data may be retained for analytics purposes
+
+## 9. Children's Privacy
+
+DevMotion is not intended for users under 13 years of age. We do not knowingly collect personal information from children under 13. If you believe we have collected such data, please contact us immediately.
+
+## 10. International Users
+
+DevMotion is operated globally. Your data may be transferred to and processed in countries other than your own. By using the Service, you consent to such transfers.
+
+## 11. Third-Party Services
+
+DevMotion integrates with:
+
+- **Google OAuth:** For authentication (governed by [Google's Privacy Policy](https://policies.google.com/privacy))
+- **OpenRouter:** For AI features (optional)
+
+We are not responsible for the privacy practices of third-party services.
+
+## 12. Changes to Privacy Policy
+
+We may update this Privacy Policy from time to time. We will notify users of significant changes via email or a prominent notice on the Service. Continued use after changes constitutes acceptance.
+
+## 13. Open Source
+
+DevMotion is open source software. While the code is publicly available, this does not affect the privacy of your personal data or projects stored on our servers.
+
+## 14. Contact Us
+
+If you have questions about this Privacy Policy or our data practices, please contact us:
+
+- Email: [contact@devmotion.app](mailto:contact@devmotion.app)
+- GitHub: [github.com/epavanello/devmotion/issues](https://github.com/epavanello/devmotion/issues)

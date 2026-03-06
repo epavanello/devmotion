@@ -1,12 +1,14 @@
 /**
  * AI Access Control Service
- * Manages per-user AI unlock status and usage tracking
+ * Manages per-user AI usage based on subscription tier
  */
 import { db } from '$lib/server/db';
-import { aiUserUnlock, aiUsageLog } from '$lib/server/db/schema';
+import { aiUsageLog } from '$lib/server/db/schema';
 import { eq, and, gte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { getModel } from '$lib/ai/models';
+import { getPlan, type PlanTier } from '$lib/config/plans';
+import { subscriptionService } from './subscription';
 
 /**
  * Calculate estimated cost for token usage
@@ -30,16 +32,25 @@ export function calculateCost(
 }
 
 /**
- * Get AI unlock details for a user
+ * Get user subscription
  */
-export async function getUserAIUnlock(userId: string) {
-  const unlock = await db
-    .select()
-    .from(aiUserUnlock)
-    .where(eq(aiUserUnlock.userId, userId))
-    .limit(1);
+export async function getUserSubscription(userId: string): Promise<{
+  tier: PlanTier;
+  enabled: boolean;
+  maxCostPerMonth: number;
+} | null> {
+  const sub = await subscriptionService.getByUserId(userId);
 
-  return unlock[0] || null;
+  if (sub) {
+    const plan = getPlan(sub.tier);
+    return {
+      tier: sub.tier,
+      enabled: sub.enabled,
+      maxCostPerMonth: plan.limits.maxCostPerMonth
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -68,37 +79,54 @@ export async function canUserAccessAI(userId: string): Promise<{
   reason?: string;
   currentCost?: number;
   maxCost?: number;
+  tier?: PlanTier;
 }> {
-  const unlock = await getUserAIUnlock(userId);
+  const subscription = await getUserSubscription(userId);
 
-  if (!unlock) {
-    return { allowed: false, reason: 'AI access not enabled for this user' };
+  if (!subscription) {
+    return {
+      allowed: false,
+      reason: 'No subscription found. Please sign in to get free AI credits.',
+      tier: 'free'
+    };
   }
 
-  if (!unlock.enabled) {
-    return { allowed: false, reason: 'AI access is disabled' };
-  }
-
-  // Check monthly cost limit if set
-  if (unlock.maxCostPerMonth === null) {
-    return { allowed: false, reason: 'AI access is disabled' };
+  if (!subscription.enabled) {
+    return {
+      allowed: false,
+      reason: 'AI access is disabled',
+      tier: subscription.tier
+    };
   }
 
   const currentCost = await getMonthlyUsageCost(userId);
+  const maxCost = subscription.maxCostPerMonth;
 
-  if (currentCost >= unlock.maxCostPerMonth) {
+  // Check if unlimited (only Pro plan has this)
+  if (maxCost === -1) {
+    return {
+      allowed: true,
+      currentCost,
+      maxCost: -1,
+      tier: subscription.tier
+    };
+  }
+
+  if (currentCost >= maxCost) {
     return {
       allowed: false,
-      reason: 'Monthly cost limit exceeded',
+      reason: `Monthly AI credit limit reached (${Math.round(maxCost * 100)} credits used). Upgrade your plan for more credits.`,
       currentCost,
-      maxCost: unlock.maxCostPerMonth
+      maxCost,
+      tier: subscription.tier
     };
   }
 
   return {
     allowed: true,
     currentCost,
-    maxCost: unlock.maxCostPerMonth
+    maxCost,
+    tier: subscription.tier
   };
 }
 
@@ -127,4 +155,11 @@ export async function logAIUsage(params: {
     estimatedCost,
     metadata: metadata ? JSON.stringify(metadata) : null
   });
+}
+
+/**
+ * Create or update user subscription
+ */
+export async function ensureUserSubscription(userId: string, tier: PlanTier = 'free') {
+  return await subscriptionService.ensure(userId, tier);
 }

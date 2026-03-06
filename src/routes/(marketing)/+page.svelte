@@ -25,6 +25,7 @@
   import type { SoftwareApplication, WithContext } from 'schema-dts';
   import ApplyFont from '$lib/components/font/apply-font.svelte';
   import { IsMobile } from '$lib/hooks/is-mobile.svelte.js';
+  import PricingSection from '$lib/components/marketing/pricing-section.svelte';
 
   const { data } = $props();
 
@@ -470,8 +471,18 @@
   </div>
 </section>
 
+<!-- ===== PRICING ===== -->
+<svelte:boundary>
+  {#snippet pending()}
+    <div class="flex items-center justify-center py-12">
+      <div class="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+    </div>
+  {/snippet}
+  <PricingSection />
+</svelte:boundary>
+
 <!-- ===== FAQ ===== -->
-<section class="relative border-t border-border/40 bg-muted/30">
+<section class="relative bg-muted/30">
   <div class="container mx-auto px-4 py-24 sm:px-6 lg:px-8">
     <div class="mb-16 space-y-4 text-center">
       <h2 class="text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
