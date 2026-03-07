@@ -238,7 +238,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const agent = new ToolLoopAgent({
       model: openrouter(model.id, {
         reasoning: {
-          effort: model.disableThinking ? 'none' : 'xhigh'
+          effort: model.effort
         }
       }),
       instructions: {

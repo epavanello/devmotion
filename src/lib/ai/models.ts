@@ -3,6 +3,7 @@
  * Supports multiple models via OpenRouter for optimal video generation
  */
 
+import type { OpenRouterProviderOptions } from '@openrouter/ai-sdk-provider';
 import type { LiteralUnion } from 'type-fest';
 
 export interface AIModel {
@@ -14,8 +15,8 @@ export interface AIModel {
   recommended?: boolean;
   /** Cost tier: 'low' | 'medium' | 'high' */
   costTier: 'low' | 'medium' | 'high';
-  /** Disable thinking */
-  disableThinking?: boolean;
+  /** Reasoning effort */
+  effort: 'xhigh' | 'high' | 'medium' | 'low' | 'minimal' | 'none';
   /** Pricing per 1M tokens (in USD) */
   pricing: {
     input: number;
@@ -36,6 +37,7 @@ export const AI_MODELS = {
     description: 'Excellent for creative and complex tasks with 128K context',
     recommended: false,
     costTier: 'low',
+    effort: 'xhigh',
     pricing: {
       input: 0.3,
       output: 1.2
@@ -49,6 +51,7 @@ export const AI_MODELS = {
     description: 'Excellent for creative and complex tasks with 128K context',
     recommended: true,
     costTier: 'low',
+    effort: 'xhigh',
     pricing: {
       input: 0.5,
       output: 2.8
@@ -61,6 +64,7 @@ export const AI_MODELS = {
     description: 'Excellent for creative and complex tasks with 128K context',
     recommended: false,
     costTier: 'low',
+    effort: 'medium',
     pricing: {
       input: 0.2,
       output: 0.5
@@ -73,6 +77,7 @@ export const AI_MODELS = {
     description: 'Excellent for creative and complex tasks with 128K context',
     recommended: false,
     costTier: 'high',
+    effort: 'low',
     pricing: {
       input: 2,
       output: 12
@@ -86,6 +91,7 @@ export const AI_MODELS = {
     description: 'Excellent for creative and complex tasks with 256K context',
     recommended: false,
     costTier: 'medium',
+    effort: 'low',
     pricing: {
       input: 3,
       output: 15
@@ -99,6 +105,7 @@ export const AI_MODELS = {
     description: 'Excellent for creative and complex tasks with 1M context',
     recommended: false,
     costTier: 'high',
+    effort: 'low',
     pricing: {
       input: 3,
       output: 15
@@ -112,6 +119,7 @@ export const AI_MODELS = {
     description: 'Excellent for creative and complex tasks with 128K context',
     recommended: false,
     costTier: 'high',
+    effort: 'low',
     pricing: {
       input: 2.5,
       output: 15
