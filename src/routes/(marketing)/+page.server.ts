@@ -7,7 +7,7 @@ import { count, countDistinct } from 'drizzle-orm';
 export const prerender = true;
 
 export const load = async () => {
-  const id = 'n7rYMwfGdUaYFnaGV6lLt';
+  const id = 'Vl-F4vV0jlQZ3ayhBzZdx';
 
   const [projectStats, userStats, projectSnapshot] = await Promise.all([
     db.select({ count: count() }).from(project),

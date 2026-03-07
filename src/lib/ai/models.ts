@@ -105,16 +105,16 @@ export const AI_MODELS = {
     },
     proOnly: true
   },
-  'openai/gpt-5.2': {
-    id: 'openai/gpt-5.2',
-    name: 'GPT-5.2',
+  'openai/gpt-5.4': {
+    id: 'openai/gpt-5.4',
+    name: 'GPT-5.4',
     provider: 'OpenAI',
     description: 'Excellent for creative and complex tasks with 128K context',
     recommended: false,
     costTier: 'high',
     pricing: {
-      input: 1.75,
-      output: 14
+      input: 2.5,
+      output: 15
     },
     proOnly: true
   }
