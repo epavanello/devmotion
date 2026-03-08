@@ -5,6 +5,7 @@
 import type { Layer } from '$lib/schemas/animation';
 import { meta as audioMeta } from './components/AudioLayer.svelte';
 import { meta as browserMeta } from './components/BrowserLayer.svelte';
+import { meta as laptopMeta } from './components/LaptopLayer.svelte';
 import { meta as buttonMeta } from './components/ButtonLayer.svelte';
 import { meta as captionsMeta } from './components/CaptionsLayer.svelte';
 import { meta as codeMeta } from './components/CodeLayer.svelte';
@@ -29,6 +30,7 @@ import type { z } from 'zod';
 export type LayerPropsMap = {
   audio: z.infer<typeof audioMeta.schema>;
   browser: z.infer<typeof browserMeta.schema>;
+  laptop: z.infer<typeof laptopMeta.schema>;
   button: z.infer<typeof buttonMeta.schema>;
   captions: z.infer<typeof captionsMeta.schema>;
   code: z.infer<typeof codeMeta.schema>;

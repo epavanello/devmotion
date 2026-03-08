@@ -16,7 +16,7 @@ import {
 import type { FieldMeta } from './properties/field-registry';
 import { fieldRegistry } from './properties/field-registry';
 
-export type LayerCategory = 'media' | 'text' | 'shape' | 'ui' | 'code' | 'browser';
+export type LayerCategory = 'media' | 'text' | 'shape' | 'ui' | 'code';
 
 /**
  * Interpolation family types for animation properties

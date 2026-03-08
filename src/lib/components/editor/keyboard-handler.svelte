@@ -3,6 +3,7 @@
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { createLayer } from '$lib/engine/layer-factory';
   import { confirmDialogStore } from '$lib/stores/confirm-dialog.svelte';
+  import { SvelteMap } from 'svelte/reactivity';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -47,7 +48,7 @@
             .then((confirmed) => {
               if (confirmed) {
                 // Get all layer IDs and their keyframes to delete
-                const keyframesToDelete = new Map<string, string[]>();
+                const keyframesToDelete = new SvelteMap<string, string[]>();
 
                 for (const layer of projectStore.state.layers) {
                   for (const kf of layer.keyframes) {

@@ -3,7 +3,7 @@
  * Supports multiple models via OpenRouter for optimal video generation
  */
 
-import type { OpenRouterProviderOptions } from '@openrouter/ai-sdk-provider';
+
 import type { LiteralUnion } from 'type-fest';
 
 export interface AIModel {

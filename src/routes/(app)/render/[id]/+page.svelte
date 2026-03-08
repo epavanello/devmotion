@@ -158,6 +158,7 @@
       isServerSideRendering={true}
       projectFont={project.fontFamily}
       globalVolume={100}
+      viewportSize={{ width: project.width, height: project.height }}
     />
   </div>
 
