@@ -3,11 +3,11 @@
  * Single source of truth for pricing, features, and limits.
  */
 
-import { PUBLIC_POLAR_CREATOR_PRODUCT_ID, PUBLIC_POLAR_PRO_PRODUCT_ID } from '$env/static/public';
-
-// Optional: Lifetime plan product ID (experimental)
-const PUBLIC_POLAR_LIFETIME_PRODUCT_ID =
-  (import.meta.env?.PUBLIC_POLAR_LIFETIME_PRODUCT_ID as string | undefined) || '';
+import {
+  PUBLIC_POLAR_CREATOR_PRODUCT_ID,
+  PUBLIC_POLAR_PRO_PRODUCT_ID,
+  PUBLIC_POLAR_LIFETIME_PRODUCT_ID
+} from '$env/static/public';
 
 export type PlanTier = 'free' | 'creator' | 'pro' | 'lifetime';
 

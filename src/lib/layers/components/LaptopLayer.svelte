@@ -102,11 +102,7 @@
 </script>
 
 <!-- 3D laptop container -->
-<div
-  class="laptop-container"
-  style:width="{width}px"
-  style:height="{height + baseDepth}px"
->
+<div class="laptop-container" style:width="{width}px" style:height="{height + baseDepth}px">
   <!-- ====== SHADOW on surface ====== -->
   <div
     class="laptop-shadow"
@@ -381,11 +377,7 @@
     transform: translateX(-50%);
     width: 30%;
     height: 24%;
-    background: linear-gradient(
-      180deg,
-      rgba(0, 0, 0, 0.04) 0%,
-      rgba(0, 0, 0, 0.02) 100%
-    );
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.02) 100%);
     border-radius: 8px;
     box-shadow:
       inset 0 0 0 0.5px rgba(0, 0, 0, 0.15),

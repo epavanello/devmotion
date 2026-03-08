@@ -255,7 +255,12 @@
   style:--primary-color={BRAND_COLORS.blue}
   style:visibility={visible ? 'visible' : 'hidden'}
 >
-  <div class="layer-content" style:opacity={style.opacity} style:filter={filterCSS} style:transform-style="preserve-3d">
+  <div
+    class="layer-content"
+    style:opacity={style.opacity}
+    style:filter={filterCSS}
+    style:transform-style="preserve-3d"
+  >
     <C {...customProps} />
   </div>
 </div>
