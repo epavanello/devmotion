@@ -72,13 +72,14 @@ export async function getMonthlyUsageCost(userId: string): Promise<number> {
 }
 
 /**
- * Check if user can use AI (enabled + within monthly limit)
+ * Check if user can use AI (enabled + within monthly limit or credit balance)
  */
 export async function canUserAccessAI(userId: string): Promise<{
   allowed: boolean;
   reason?: string;
   currentCost?: number;
   maxCost?: number;
+  creditBalance?: number;
   tier?: PlanTier;
 }> {
   const subscription = await getUserSubscription(userId);
@@ -99,11 +100,31 @@ export async function canUserAccessAI(userId: string): Promise<{
     };
   }
 
-  const currentCost = await getMonthlyUsageCost(userId);
   const maxCost = subscription.maxCostPerMonth;
 
-  // Check if unlimited (only Pro plan has this)
+  // Lifetime plan: use expandable credit balance
+  if (maxCost === -2) {
+    const creditBalance = await subscriptionService.getCreditBalance(userId);
+
+    if (creditBalance <= 0) {
+      return {
+        allowed: false,
+        reason: 'Credit balance exhausted. Top up your credits to continue using AI features.',
+        creditBalance,
+        tier: subscription.tier
+      };
+    }
+
+    return {
+      allowed: true,
+      creditBalance,
+      tier: subscription.tier
+    };
+  }
+
+  // Unlimited plan
   if (maxCost === -1) {
+    const currentCost = await getMonthlyUsageCost(userId);
     return {
       allowed: true,
       currentCost,
@@ -112,6 +133,8 @@ export async function canUserAccessAI(userId: string): Promise<{
     };
   }
 
+  // Monthly limit plans
+  const currentCost = await getMonthlyUsageCost(userId);
   if (currentCost >= maxCost) {
     return {
       allowed: false,
@@ -132,6 +155,7 @@ export async function canUserAccessAI(userId: string): Promise<{
 
 /**
  * Log AI usage for tracking and billing
+ * For lifetime plans, also deducts from credit balance
  */
 export async function logAIUsage(params: {
   userId: string;
@@ -145,6 +169,7 @@ export async function logAIUsage(params: {
   const totalTokens = promptTokens + completionTokens;
   const estimatedCost = calculateCost(modelId, promptTokens, completionTokens);
 
+  // Log usage
   await db.insert(aiUsageLog).values({
     id: nanoid(),
     userId,
@@ -155,6 +180,12 @@ export async function logAIUsage(params: {
     estimatedCost,
     metadata: metadata ? JSON.stringify(metadata) : null
   });
+
+  // For lifetime plans, deduct from credit balance
+  const subscription = await subscriptionService.getByUserId(userId);
+  if (subscription?.tier === 'lifetime') {
+    await subscriptionService.updateCreditBalance(userId, -estimatedCost);
+  }
 }
 
 /**

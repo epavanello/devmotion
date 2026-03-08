@@ -5,7 +5,11 @@
 
 import { PUBLIC_POLAR_CREATOR_PRODUCT_ID, PUBLIC_POLAR_PRO_PRODUCT_ID } from '$env/static/public';
 
-export type PlanTier = 'free' | 'creator' | 'pro';
+// Optional: Lifetime plan product ID (experimental)
+const PUBLIC_POLAR_LIFETIME_PRODUCT_ID =
+  (import.meta.env?.PUBLIC_POLAR_LIFETIME_PRODUCT_ID as string | undefined) || '';
+
+export type PlanTier = 'free' | 'creator' | 'pro' | 'lifetime';
 
 export interface PlanFeature {
   text: string;
@@ -23,12 +27,14 @@ export interface PlanConfig {
   ctaAction: 'start' | 'login' | 'upgrade';
   variant: 'outline' | 'default';
   popular?: boolean;
+  experimental?: boolean; // Mark experimental plans
   // External billing provider IDs
   polarProductId?: string; // Polar product ID from dashboard
   stripeProductId?: string; // Future: Stripe product ID
   limits: {
     // AI usage - represented as "credits" in UI (1 credit = $0.01)
-    maxCostPerMonth: number; // Max monthly AI cost in USD (-1 = unlimited)
+    maxCostPerMonth: number; // Max monthly AI cost in USD (-1 = unlimited, -2 = use expandable credit balance)
+    expandableCreditBalance?: number; // For lifetime plans: initial credit balance in USD (e.g., 10.0 = $10)
     cloudProjects: number; // -1 = unlimited, 0 = local only
     storageBytes: number; // Storage limit in bytes
     watermarkFree: boolean;
@@ -128,6 +134,37 @@ export const PLANS: Record<PlanTier, PlanConfig> = {
       maxExportResolution: '4k',
       prioritySupport: true
     }
+  },
+  lifetime: {
+    tier: 'lifetime',
+    name: 'Lifetime',
+    price: 90,
+    period: 'one-time',
+    description: 'Pay once, use forever',
+    features: [
+      { text: 'Everything in Creator', highlight: true },
+      { text: '1000 AI credits (expandable)', highlight: true },
+      { text: '50 cloud projects' },
+      { text: '1 GB storage' },
+      { text: 'Full HD (1080p) exports', highlight: true },
+      { text: 'Watermark-free', highlight: true },
+      { text: 'Top up credits without subscription' }
+    ],
+    cta: 'Get Lifetime',
+    ctaAction: 'login',
+    variant: 'default',
+    popular: false,
+    experimental: true,
+    polarProductId: PUBLIC_POLAR_LIFETIME_PRODUCT_ID,
+    limits: {
+      maxCostPerMonth: -2, // -2 = use expandable credit balance
+      expandableCreditBalance: 10.0, // Internal: $10.00 = 1000 credits (users only see credits)
+      cloudProjects: 50,
+      storageBytes: 1 * GB,
+      watermarkFree: true,
+      maxExportResolution: '1080p',
+      prioritySupport: false
+    }
   }
 };
 
@@ -147,9 +184,14 @@ export function getPlan(tier: PlanTier): PlanConfig {
 
 /**
  * Get only paid plans (for upgrade dialogs)
+ * @param includeExperimental - Include experimental plans like lifetime (default: true)
  */
-export function getPaidPlans(): PlanConfig[] {
-  return [PLANS.creator, PLANS.pro];
+export function getPaidPlans(includeExperimental = true): PlanConfig[] {
+  const plans = [PLANS.creator, PLANS.pro];
+  if (includeExperimental && PLANS.lifetime) {
+    plans.push(PLANS.lifetime);
+  }
+  return plans;
 }
 
 /**
@@ -186,7 +228,7 @@ export function formatStorage(bytes: number): string {
  * Get tier priority (higher = better plan)
  */
 export function getTierPriority(tier: PlanTier): number {
-  const priority = { free: 0, creator: 1, pro: 2 };
+  const priority = { free: 0, creator: 1, lifetime: 1, pro: 2 };
   return priority[tier];
 }
 

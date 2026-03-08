@@ -14,7 +14,7 @@ import { user } from './auth';
 // CURRENT SCHEMA - Unified subscription system
 // =============================================================================
 
-export const planTierEnum = pgEnum('plan_tier', ['free', 'creator', 'pro']);
+export const planTierEnum = pgEnum('plan_tier', ['free', 'creator', 'pro', 'lifetime']);
 
 /**
  * User subscription/plan information
@@ -43,6 +43,10 @@ export const userSubscription = pgTable(
 
     // Usage tracking (reset monthly)
     storageUsedBytes: integer('storage_used_bytes').default(0).notNull(),
+
+    // Expandable credit balance for lifetime plans (in USD, e.g., 10.0 = $10.00 = 1000 credits)
+    // This balance can be topped up without a subscription
+    creditBalance: real('credit_balance').default(0).notNull(),
 
     notes: text('notes'),
     createdAt: timestamp('created_at').defaultNow().notNull(),

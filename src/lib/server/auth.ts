@@ -7,7 +7,8 @@ import { getRequestEvent } from '$app/server';
 import {
   PUBLIC_BASE_URL,
   PUBLIC_POLAR_CREATOR_PRODUCT_ID,
-  PUBLIC_POLAR_PRO_PRODUCT_ID
+  PUBLIC_POLAR_PRO_PRODUCT_ID,
+  PUBLIC_POLAR_LIFETIME_PRODUCT_ID
 } from '$env/static/public';
 import {
   PRIVATE_BETTER_AUTH_SECRET,
@@ -34,9 +35,10 @@ const polarClient = new Polar({
  * Helper function to update user subscription from Polar subscription data
  */
 async function updateUserSubscriptionFromPolar(userId: string, subscription: Subscription) {
-  const tierMapping = {
+  const tierMapping: Record<string, 'creator' | 'pro' | 'lifetime'> = {
     [PUBLIC_POLAR_CREATOR_PRODUCT_ID]: 'creator' as const,
-    [PUBLIC_POLAR_PRO_PRODUCT_ID]: 'pro' as const
+    [PUBLIC_POLAR_PRO_PRODUCT_ID]: 'pro' as const,
+    [PUBLIC_POLAR_LIFETIME_PRODUCT_ID]: 'lifetime' as const
   };
 
   await subscriptionService.updateFromPolar(
@@ -94,26 +96,49 @@ export const auth = betterAuth({
       },
       use: [
         checkout({
-          products:
-            PUBLIC_POLAR_CREATOR_PRODUCT_ID && PUBLIC_POLAR_PRO_PRODUCT_ID
-              ? [
-                  {
-                    productId: PUBLIC_POLAR_CREATOR_PRODUCT_ID,
-                    slug: 'creator'
-                  },
-                  {
-                    productId: PUBLIC_POLAR_PRO_PRODUCT_ID,
-                    slug: 'pro'
-                  }
-                ]
-              : [],
+          products: [
+            PUBLIC_POLAR_CREATOR_PRODUCT_ID && {
+              productId: PUBLIC_POLAR_CREATOR_PRODUCT_ID,
+              slug: 'creator'
+            },
+            PUBLIC_POLAR_PRO_PRODUCT_ID && {
+              productId: PUBLIC_POLAR_PRO_PRODUCT_ID,
+              slug: 'pro'
+            },
+            PUBLIC_POLAR_LIFETIME_PRODUCT_ID && {
+              productId: PUBLIC_POLAR_LIFETIME_PRODUCT_ID,
+              slug: 'lifetime'
+            }
+          ].filter(Boolean) as Array<{ productId: string; slug: string }>,
           successUrl: '/editor?checkout=success&checkout_id={CHECKOUT_ID}',
           authenticatedUsersOnly: true
         }),
         portal(),
         webhooks({
           secret: POLAR_WEBHOOK_SECRET,
-          // Handle subscription lifecycle events
+
+          // Handle one-time purchases (lifetime plan) - triggered when payment is completed
+          onOrderPaid: async (payload) => {
+            const customerId = payload.data.customerId;
+            const productId = payload.data.productId;
+
+            // Check if this is a lifetime plan purchase
+            if (productId === PUBLIC_POLAR_LIFETIME_PRODUCT_ID) {
+              const customer = await polarClient.customers.get({ id: customerId });
+              if (customer.externalId) {
+                // Create lifetime subscription (credit balance auto-initialized by upsert)
+                await subscriptionService.upsert(customer.externalId, {
+                  tier: 'lifetime',
+                  enabled: true,
+                  currentPeriodStart: new Date(),
+                  currentPeriodEnd: new Date('2099-12-31'), // Far future date for lifetime
+                  cancelAtPeriodEnd: false
+                });
+              }
+            }
+          },
+
+          // Handle subscription lifecycle events (recurring plans)
           onSubscriptionActive: async (payload) => {
             // Update user subscription in database
             const customerId = payload.data.customerId;
