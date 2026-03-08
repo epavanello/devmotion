@@ -27,7 +27,6 @@ export interface PlanConfig {
   ctaAction: 'start' | 'login' | 'upgrade';
   variant: 'outline' | 'default';
   popular?: boolean;
-  experimental?: boolean; // Mark experimental plans
   // External billing provider IDs
   polarProductId?: string; // Polar product ID from dashboard
   stripeProductId?: string; // Future: Stripe product ID
@@ -154,7 +153,6 @@ export const PLANS: Record<PlanTier, PlanConfig> = {
     ctaAction: 'login',
     variant: 'default',
     popular: false,
-    experimental: true,
     polarProductId: PUBLIC_POLAR_LIFETIME_PRODUCT_ID,
     limits: {
       maxCostPerMonth: -2, // -2 = use expandable credit balance
@@ -184,13 +182,9 @@ export function getPlan(tier: PlanTier): PlanConfig {
 
 /**
  * Get only paid plans (for upgrade dialogs)
- * @param includeExperimental - Include experimental plans like lifetime (default: true)
  */
-export function getPaidPlans(includeExperimental = true): PlanConfig[] {
-  const plans = [PLANS.creator, PLANS.pro];
-  if (includeExperimental && PLANS.lifetime) {
-    plans.push(PLANS.lifetime);
-  }
+export function getPaidPlans(): PlanConfig[] {
+  const plans = [PLANS.creator, PLANS.pro, PLANS.lifetime];
   return plans;
 }
 
