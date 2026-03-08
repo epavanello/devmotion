@@ -4,6 +4,7 @@
   import { Toaster } from 'svelte-sonner';
   import { uiStore } from '$lib/stores/ui.svelte';
   import LoginPromptDialog from '$lib/components/editor/login-prompt-dialog.svelte';
+  import ConfirmDialog from '$lib/components/ui/confirm-dialog.svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
   import { onMount } from 'svelte';
 
@@ -36,4 +37,5 @@
 
 <Toaster richColors position="top-right" />
 <LoginPromptDialog bind:open={uiStore.showLoginPrompt} action={uiStore.promptAction} />
+<ConfirmDialog />
 {@render children?.()}

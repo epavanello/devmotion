@@ -6,7 +6,7 @@
   import { onDestroy } from 'svelte';
   import { cn } from '$lib/utils';
   import { navigateToProperty } from '$lib/utils/property-navigation';
-  import * as AlertDialog from '$lib/components/ui/alert-dialog';
+  import { confirmDialogStore } from '$lib/stores/confirm-dialog.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
 
   const editorState = $derived(getEditorState());
@@ -114,12 +114,22 @@
     window.removeEventListener('mouseup', handleKeyframeMouseUp);
   }
 
-  // State for delete confirmation
-  let deleteDialogKeyframeId = $state<string | null>(null);
-
   function handleDeleteKeyframe(keyframeId: string) {
-    projectStore.removeKeyframe(layer.id, keyframeId);
-    deleteDialogKeyframeId = null;
+    const keyframe = keyframes.find((kf) => kf.id === keyframeId);
+    if (!keyframe) return;
+
+    confirmDialogStore
+      .confirm({
+        title: 'Delete Keyframe',
+        description: `Delete keyframe at ${keyframe.time.toFixed(2)}s? This action cannot be undone.`,
+        confirmLabel: 'Delete',
+        variant: 'destructive'
+      })
+      .then((confirmed) => {
+        if (confirmed) {
+          projectStore.removeKeyframe(layer.id, keyframeId);
+        }
+      });
   }
 
   onDestroy(() => {
@@ -192,7 +202,7 @@
                 onmousedown={(e) => handleKeyframeMouseDown(e, keyframe)}
                 oncontextmenu={(e) => {
                   e.preventDefault();
-                  deleteDialogKeyframeId = keyframe.id;
+                  handleDeleteKeyframe(keyframe.id);
                 }}
                 aria-label="Keyframe at {keyframe.time.toFixed(2)}s"
               ></button>
@@ -227,36 +237,3 @@
   </div>
 </div>
 
-<!-- Delete confirmation dialog -->
-<AlertDialog.Root
-  open={deleteDialogKeyframeId !== null}
-  onOpenChange={(open) => {
-    if (!open) deleteDialogKeyframeId = null;
-  }}
->
-  <AlertDialog.Content>
-    <AlertDialog.Header>
-      <AlertDialog.Title>Delete Keyframe</AlertDialog.Title>
-      <AlertDialog.Description>
-        {#if deleteDialogKeyframeId}
-          {@const kf = keyframes.find((k) => k.id === deleteDialogKeyframeId)}
-          {#if kf}
-            Delete keyframe at {kf.time.toFixed(2)}s? This action cannot be undone.
-          {/if}
-        {/if}
-      </AlertDialog.Description>
-    </AlertDialog.Header>
-    <AlertDialog.Footer>
-      <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-      <AlertDialog.Action
-        onclick={() => {
-          if (deleteDialogKeyframeId) {
-            handleDeleteKeyframe(deleteDialogKeyframeId);
-          }
-        }}
-      >
-        Delete
-      </AlertDialog.Action>
-    </AlertDialog.Footer>
-  </AlertDialog.Content>
-</AlertDialog.Root>

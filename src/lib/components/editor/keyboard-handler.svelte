@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { getEditorState } from '$lib/contexts/editor.svelte';
   import { createLayer } from '$lib/engine/layer-factory';
+  import { confirmDialogStore } from '$lib/stores/confirm-dialog.svelte';
 
   const editorState = $derived(getEditorState());
   const projectStore = $derived(editorState.project);
@@ -23,11 +24,68 @@
         }
       }
 
-      // Delete - Remove selected layer
-      if ((e.code === 'Delete' || e.code === 'Backspace') && projectStore.selectedLayerId) {
+      // Delete - Remove selected keyframes or layer
+      if (e.code === 'Delete' || e.code === 'Backspace') {
         e.preventDefault();
-        if (confirm('Delete selected layer?')) {
-          projectStore.removeLayer(projectStore.selectedLayerId);
+
+        // Priority 1: Delete selected keyframes if any
+        if (projectStore.selectedKeyframeIds.size > 0) {
+          const count = projectStore.selectedKeyframeIds.size;
+          const title = count === 1 ? 'Delete Keyframe' : 'Delete Keyframes';
+          const description =
+            count === 1
+              ? 'Delete selected keyframe? This action cannot be undone.'
+              : `Delete ${count} selected keyframes? This action cannot be undone.`;
+
+          confirmDialogStore
+            .confirm({
+              title,
+              description,
+              confirmLabel: 'Delete',
+              variant: 'destructive'
+            })
+            .then((confirmed) => {
+              if (confirmed) {
+                // Get all layer IDs and their keyframes to delete
+                const keyframesToDelete = new Map<string, string[]>();
+
+                for (const layer of projectStore.state.layers) {
+                  for (const kf of layer.keyframes) {
+                    if (projectStore.selectedKeyframeIds.has(kf.id)) {
+                      if (!keyframesToDelete.has(layer.id)) {
+                        keyframesToDelete.set(layer.id, []);
+                      }
+                      keyframesToDelete.get(layer.id)!.push(kf.id);
+                    }
+                  }
+                }
+
+                // Delete all selected keyframes
+                for (const [layerId, keyframeIds] of keyframesToDelete) {
+                  for (const keyframeId of keyframeIds) {
+                    projectStore.removeKeyframe(layerId, keyframeId);
+                  }
+                }
+
+                // Clear selection after deletion
+                projectStore.clearKeyframeSelection();
+              }
+            });
+        }
+        // Priority 2: Delete selected layer if no keyframes are selected
+        else if (projectStore.selectedLayerId) {
+          confirmDialogStore
+            .confirm({
+              title: 'Delete Layer',
+              description: 'Delete selected layer? This action cannot be undone.',
+              confirmLabel: 'Delete',
+              variant: 'destructive'
+            })
+            .then((confirmed) => {
+              if (confirmed) {
+                projectStore.removeLayer(projectStore.selectedLayerId!);
+              }
+            });
         }
       }
 
