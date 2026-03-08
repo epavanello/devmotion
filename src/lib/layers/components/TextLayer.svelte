@@ -268,7 +268,8 @@
     scaleFrom,
     blurAmount,
     transitionColorFrom,
-    currentTime
+    currentTime,
+    viewportSize
   }: WrappedLayerProps<Props> = $props();
 
   const transition = new ElementTransition({
@@ -312,13 +313,12 @@
 <ApplyFont {fontFamily}>
   <div
     class="select-none"
-    class:whitespace-nowrap={autoWidth}
+    style:width={autoWidth ? `${viewportSize.width}px` : `${width}px`}
     style:font-size="{fontSize}px"
     style:font-weight={fontWeight}
     style:color
     style:letter-spacing="{letterSpacing}px"
     style:line-height={lineHeight}
-    style:width={autoWidth ? 'auto' : `${width}px`}
     style:text-align={textAlign}
   >
     {#if hasTransition}

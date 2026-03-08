@@ -18,7 +18,8 @@
     getCachedFrame,
     isServerSideRendering = false,
     projectFont,
-    globalVolume = 100
+    globalVolume = 100,
+    viewportSize
   }: {
     layers: TypedLayer[];
     currentTime: number;
@@ -30,6 +31,7 @@
     isServerSideRendering?: boolean;
     projectFont?: GoogleFont;
     globalVolume?: number;
+    viewportSize: { width: number; height: number };
   } = $props();
 
   /**
@@ -100,8 +102,9 @@
               currentTime,
               isPlaying,
               isServerSideRendering,
-              globalVolume
-            }}
+              globalVolume,
+              viewportSize
+            } satisfies WrappedLayerProps}
 
             <LayerWrapper
               id={child.id}
@@ -131,7 +134,8 @@
           currentTime,
           isPlaying,
           isServerSideRendering,
-          globalVolume
+          globalVolume,
+          viewportSize
         } satisfies WrappedLayerProps}
 
         <LayerWrapper

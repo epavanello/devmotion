@@ -5,6 +5,7 @@
     isPlaying: boolean;
     isServerSideRendering: boolean;
     globalVolume: number;
+    viewportSize: { width: number; height: number };
   };
 </script>
 

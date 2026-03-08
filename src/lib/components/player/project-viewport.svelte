@@ -73,6 +73,7 @@
       {getCachedFrame}
       projectFont={project.fontFamily}
       {globalVolume}
+      viewportSize={{ width: viewportWidth, height: viewportHeight }}
     />
   </div>
 
