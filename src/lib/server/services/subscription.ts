@@ -1,4 +1,4 @@
-import type { PlanTier } from '$lib/config/plans';
+import { getPlan, type PlanTier } from '$lib/config/plans';
 import { db } from '../db';
 import { userSubscription } from '../db/schema';
 import { eq } from 'drizzle-orm';
@@ -14,6 +14,7 @@ export interface SubscriptionData {
   currentPeriodEnd: Date;
   cancelAtPeriodEnd: boolean;
   enabled: boolean;
+  creditBalance?: number;
 }
 
 /**
@@ -39,20 +40,29 @@ export const subscriptionService = {
    */
   async upsert(userId: string, data: Partial<SubscriptionData>) {
     const now = new Date();
+    const tier = data.tier || 'free';
+
+    // Initialize credit balance for lifetime plans
+    let creditBalance = data.creditBalance ?? 0;
+    if (tier === 'lifetime' && creditBalance === 0) {
+      const plan = getPlan(tier);
+      creditBalance = plan.limits.expandableCreditBalance || 0;
+    }
 
     await db
       .insert(userSubscription)
       .values({
         id: nanoid(),
         userId,
-        tier: data.tier || 'free',
+        tier,
         polarSubscriptionId: data.polarSubscriptionId || null,
         stripeSubscriptionId: data.stripeSubscriptionId || null,
         currentPeriodStart: data.currentPeriodStart || now,
         currentPeriodEnd: data.currentPeriodEnd || now,
         cancelAtPeriodEnd: data.cancelAtPeriodEnd ?? false,
         enabled: data.enabled ?? true,
-        storageUsedBytes: 0
+        storageUsedBytes: 0,
+        creditBalance
       })
       .onConflictDoUpdate({
         target: userSubscription.userId,
@@ -170,5 +180,39 @@ export const subscriptionService = {
         updatedAt: new Date()
       })
       .where(eq(userSubscription.userId, userId));
+  },
+
+  /**
+   * Update credit balance (for lifetime plans)
+   * @param deltaCredits - Amount to add/subtract in USD (e.g., -0.05 to deduct $0.05)
+   */
+  async updateCreditBalance(userId: string, deltaCredits: number) {
+    const { sql } = await import('drizzle-orm');
+    await db
+      .update(userSubscription)
+      .set({
+        creditBalance: sql`GREATEST(0, ${userSubscription.creditBalance} + ${deltaCredits})`,
+        updatedAt: new Date()
+      })
+      .where(eq(userSubscription.userId, userId));
+  },
+
+  /**
+   * Top up credit balance (for lifetime plans)
+   * @param amount - Amount to add in USD (e.g., 10.0 for $10)
+   */
+  async topUpCredits(userId: string, amount: number) {
+    if (amount <= 0) {
+      throw new Error('Top-up amount must be positive');
+    }
+    await this.updateCreditBalance(userId, amount);
+  },
+
+  /**
+   * Get current credit balance
+   */
+  async getCreditBalance(userId: string): Promise<number> {
+    const sub = await this.getByUserId(userId);
+    return sub?.creditBalance || 0;
   }
 };

@@ -17,7 +17,7 @@ import { getPlan, type PlanTier } from '$lib/config/plans';
 /**
  * Available subscription plan tiers
  */
-export const PlanTierSchema = z.enum(['free', 'creator', 'pro']);
+export const PlanTierSchema = z.enum(['free', 'creator', 'pro', 'lifetime']);
 
 export type { PlanTier };
 
@@ -32,6 +32,11 @@ export const UsageStatsSchema = z.object({
   aiCostUsed: z.number().min(0).default(0).describe('AI cost used this month in USD'),
   cloudProjects: z.number().int().min(0).default(0).describe('Current number of cloud projects'),
   storageUsedBytes: z.number().int().min(0).default(0).describe('Storage used in bytes'),
+  creditBalance: z
+    .number()
+    .min(0)
+    .default(0)
+    .describe('Expandable credit balance in USD (for lifetime plans)'),
   periodStart: z.date().describe('Billing period start'),
   periodEnd: z.date().describe('Billing period end')
 });

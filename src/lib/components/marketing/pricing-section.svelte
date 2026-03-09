@@ -57,7 +57,9 @@
       </p>
     </div>
 
-    <div class="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
+    <div
+      class="mx-auto grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 xl:max-w-7xl xl:grid-cols-4"
+    >
       {#each plans as plan (plan.tier)}
         <PricingCard
           {plan}
