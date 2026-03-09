@@ -16,6 +16,7 @@
 import { Resend } from 'resend';
 import {
   type EmailTemplate,
+  type TemplateDataMap,
   followUpEmail,
   onboardingEmail,
   renderEmailTemplate
@@ -43,42 +44,33 @@ async function loadConfig() {
   return configModule.config as EmailConfig;
 }
 
-function getTemplate(config: EmailConfig): EmailTemplate {
-  if (config.type === 'custom') {
-    return config.template;
-  }
+// Template registry - maps template names to their functions
+const templateFunctions = {
+  onboarding: onboardingEmail,
+  'follow-up': followUpEmail
+} as const;
 
-  // Standard templates - fully type-safe
-  switch (config.template) {
-    case 'onboarding': {
-      return onboardingEmail(config.data);
-    }
-    case 'follow-up': {
-      return followUpEmail(config.data);
-    }
-    default: {
-      // TypeScript ensures this is exhaustive
-      const _exhaustive: never = config;
-      throw new Error(`Unknown template: ${_exhaustive}`);
-    }
+function getTemplateForRecipient<K extends keyof TemplateDataMap>(
+  templateName: K,
+  data: TemplateDataMap[K]
+): EmailTemplate {
+  const templateFn = templateFunctions[templateName];
+  if (!templateFn) {
+    throw new Error(`Unknown template: ${templateName}`);
   }
+  return templateFn(data);
 }
 
-async function sendEmail(recipient: string, config: EmailConfig) {
+async function sendEmail(email: string, template: EmailTemplate): Promise<boolean> {
   const resend = new Resend(RESEND_API_KEY);
-
-  // Get template - fully type-safe based on config.type
-  const template = getTemplate(config);
-
-  // Render to HTML and text
   const { subject, html, text } = renderEmailTemplate(template);
 
-  console.log(`\n📧 Sending to: ${recipient}`);
+  console.log(`\n📧 Sending to: ${email}`);
 
   try {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
-      to: [recipient],
+      to: [email],
       subject,
       html,
       text
@@ -115,40 +107,73 @@ async function main() {
 
   console.log(`📋 Configuration loaded:`);
   console.log(`   Type: ${config.type}`);
-  if (config.type === 'standard') {
-    console.log(`   Template: ${config.template}`);
-  } else {
+
+  if (config.type === 'custom') {
     console.log(`   Template: Custom MJML`);
-  }
-  console.log(`   Recipients: ${config.recipients.length}\n`);
+    console.log(`   Recipients: ${config.recipients.length}\n`);
 
-  // Validate recipients
-  if (config.recipients.length === 0) {
-    console.error('❌ No recipients configured in email-config.ts');
-    process.exit(1);
-  }
-
-  // Confirm before sending
-  console.log('⚠️  This will send real emails to the configured recipients.');
-  console.log('   Press Ctrl+C to cancel, or wait 3 seconds to continue...\n');
-
-  await new Promise((resolve) => setTimeout(resolve, 3000));
-
-  // Send to all recipients
-  let successCount = 0;
-  for (const recipient of config.recipients) {
-    const success = await sendEmail(recipient, config);
-    if (success) successCount++;
-
-    // Small delay between emails to avoid rate limiting
-    if (config.recipients.indexOf(recipient) < config.recipients.length - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+    // Validate recipients
+    if (config.recipients.length === 0) {
+      console.error('❌ No recipients configured in email-config.ts');
+      process.exit(1);
     }
-  }
 
-  console.log(
-    `\n${successCount === config.recipients.length ? '✅' : '⚠️'} Sent ${successCount}/${config.recipients.length} emails successfully\n`
-  );
+    // Confirm before sending
+    console.log('⚠️  This will send real emails to the configured recipients.');
+    console.log('   Press Ctrl+C to cancel, or wait 3 seconds to continue...\n');
+
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    // Send custom template to all recipients with their specific data
+    let successCount = 0;
+    for (const [email, data] of config.recipients) {
+      const template = config.template(data);
+      const success = await sendEmail(email, template);
+      if (success) successCount++;
+
+      // Small delay between emails to avoid rate limiting
+      if (config.recipients.indexOf([email, data]) < config.recipients.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
+
+    console.log(
+      `\n${successCount === config.recipients.length ? '✅' : '⚠️'} Sent ${successCount}/${config.recipients.length} emails successfully\n`
+    );
+  } else {
+    // Per-recipient mode with typed data
+    console.log(`   Template: ${config.template}`);
+    console.log(`   Recipients: ${config.recipients.length}\n`);
+
+    // Validate recipients
+    if (config.recipients.length === 0) {
+      console.error('❌ No recipients configured in email-config.ts');
+      process.exit(1);
+    }
+
+    // Confirm before sending
+    console.log('⚠️  This will send real emails to the configured recipients.');
+    console.log('   Press Ctrl+C to cancel, or wait 3 seconds to continue...\n');
+
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    // Send to all recipients with their specific data
+    let successCount = 0;
+    for (const [email, data] of config.recipients) {
+      const template = getTemplateForRecipient(config.template, data);
+      const success = await sendEmail(email, template);
+      if (success) successCount++;
+
+      // Small delay between emails to avoid rate limiting
+      if (config.recipients.indexOf([email, data]) < config.recipients.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
+
+    console.log(
+      `\n${successCount === config.recipients.length ? '✅' : '⚠️'} Sent ${successCount}/${config.recipients.length} emails successfully\n`
+    );
+  }
 }
 
 main().catch(console.error);

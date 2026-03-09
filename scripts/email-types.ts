@@ -6,26 +6,37 @@
 import type { EmailTemplate, TemplateDataMap } from '../src/lib/server/email/templates';
 
 /**
- * Standard template configurations
- * Automatically generates discriminated union from TemplateDataMap
+ * Recipient with email and template-specific data
  */
-export type StandardTemplateConfig = {
-  [K in keyof TemplateDataMap]: {
-    template: K;
-    data: TemplateDataMap[K];
-  };
-}[keyof TemplateDataMap];
+export type RecipientWithData<K extends keyof TemplateDataMap> = [
+  email: string,
+  data: TemplateDataMap[K]
+];
+
+/**
+ * Custom template data (can be anything)
+ */
+export type CustomTemplateData = Record<string, unknown>;
+
+/**
+ * Recipient with custom template data
+ */
+export type CustomRecipientWithData = [email: string, data: CustomTemplateData];
 
 /**
  * Email configuration - discriminated union for type safety
+ * Automatically infers correct data type based on template name
  */
 export type EmailConfig =
-  | ({
-      type: 'standard';
-      recipients: string[];
-    } & StandardTemplateConfig)
+  | {
+      [K in keyof TemplateDataMap]: {
+        type: 'per-recipient';
+        template: K;
+        recipients: RecipientWithData<K>[];
+      };
+    }[keyof TemplateDataMap]
   | {
       type: 'custom';
-      recipients: string[];
-      template: EmailTemplate;
+      recipients: CustomRecipientWithData[];
+      template: (data: CustomTemplateData) => EmailTemplate;
     };

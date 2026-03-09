@@ -3,7 +3,6 @@
  * Supports multiple models via OpenRouter for optimal video generation
  */
 
-
 import type { LiteralUnion } from 'type-fest';
 
 export interface AIModel {
