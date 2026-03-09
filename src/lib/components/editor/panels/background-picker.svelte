@@ -109,6 +109,11 @@
       : gradientPresets.filter((p) => p.category === selectedCategory)
   );
 
+  // Check if a preset is currently selected
+  function isPresetSelected(preset: GradientPreset): boolean {
+    return JSON.stringify(preset.value) === JSON.stringify(value);
+  }
+
   function updateSolidColor(color: string) {
     onchange(solidBackground(color));
   }
@@ -366,21 +371,22 @@
 
           <!-- Preset grid -->
           <ScrollArea class="h-64" viewportClass="p-1">
-            <div class="grid grid-cols-3 gap-2 p-1.5">
+            <div class="grid grid-cols-6 gap-1.5">
               {#each filteredPresets as preset (preset.id)}
+                {@const isSelected = isPresetSelected(preset)}
                 <button
                   type="button"
-                  class="group relative h-12 overflow-hidden rounded-md border transition-all hover:ring-2 hover:ring-primary"
+                  class="aspect-square cursor-pointer rounded-lg transition-all hover:scale-105"
+                  class:ring-1={!isSelected}
+                  class:ring-border={!isSelected}
+                  class:ring-2={isSelected}
+                  class:ring-primary={isSelected}
+                  class:ring-offset-1={isSelected}
+                  class:ring-offset-card={isSelected}
                   style:background={backgroundValueToCSS(preset.value)}
                   onclick={() => applyPreset(preset)}
-                  title={preset.name}
-                >
-                  <span
-                    class="absolute inset-x-0 bottom-0 truncate bg-black/60 px-1 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
-                  >
-                    {preset.name}
-                  </span>
-                </button>
+                  aria-label={preset.name}
+                ></button>
               {/each}
             </div>
           </ScrollArea>

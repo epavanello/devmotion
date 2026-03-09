@@ -16,230 +16,229 @@ export interface GradientPreset {
  */
 export const gradientPresets = [
   // ============================================
-  // Warm gradients
+  // Pastel gradients - soft and dreamy
   // ============================================
   {
-    id: 'sunset-glow',
-    name: 'Sunset Glow',
-    category: 'warm',
+    id: 'unicorn-dream',
+    name: 'Unicorn Dream',
+    category: 'pastel',
     value: {
-      type: 'radial',
-      shape: 'circle',
-      size: 'farthest-corner',
-      position: { x: 10, y: 20 },
+      type: 'linear',
+      angle: 135,
       stops: [
-        { color: '#fdf605', position: 0 },
-        { color: '#f58b8b', position: 100 }
+        { color: '#faf5ff', position: 0 },
+        { color: '#ff9a9e', position: 25 },
+        { color: '#fecfef', position: 50 },
+        { color: '#a18cd1', position: 75 },
+        { color: '#667eea', position: 100 }
       ]
     }
   },
   {
-    id: 'warm-flame',
-    name: 'Warm Flame',
-    category: 'warm',
+    id: 'candy-shop',
+    name: 'Candy Shop',
+    category: 'pastel',
     value: {
       type: 'linear',
-      angle: 45,
+      angle: 135,
       stops: [
-        { color: '#ff9a9e', position: 0 },
-        { color: '#fad0c4', position: 100 }
+        { color: '#f5f3ff', position: 0 },
+        { color: '#667eea', position: 25 },
+        { color: '#764ba2', position: 50 },
+        { color: '#f093fb', position: 75 },
+        { color: '#ff6b9d', position: 100 }
       ]
     }
   },
   {
-    id: 'juicy-peach',
-    name: 'Juicy Peach',
-    category: 'warm',
+    id: 'ocean-sky',
+    name: 'Ocean Sky',
+    category: 'pastel',
     value: {
       type: 'linear',
-      angle: 90,
+      angle: 135,
       stops: [
-        { color: '#ffecd2', position: 0 },
+        { color: '#f0f9ff', position: 0 },
+        { color: '#f093fb', position: 25 },
+        { color: '#f5576c', position: 50 },
+        { color: '#4facfe', position: 75 },
+        { color: '#00f2fe', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'mint-lime',
+    name: 'Mint Lime',
+    category: 'pastel',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#f0fff4', position: 0 },
+        { color: '#4facfe', position: 25 },
+        { color: '#00f2fe', position: 50 },
+        { color: '#43e97b', position: 75 },
+        { color: '#fee140', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'spring-green',
+    name: 'Spring Green',
+    category: 'pastel',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#f6ffed', position: 0 },
+        { color: '#43e97b', position: 25 },
+        { color: '#38f9d7', position: 50 },
+        { color: '#667eea', position: 75 },
+        { color: '#a18cd1', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'peach-sunset',
+    name: 'Peach Sunset',
+    category: 'pastel',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#fff7ed', position: 0 },
+        { color: '#fa709a', position: 25 },
+        { color: '#fee140', position: 50 },
+        { color: '#ff9a9e', position: 75 },
+        { color: '#ffd1ff', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'blush-pink',
+    name: 'Blush Pink',
+    category: 'pastel',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#fef7ff', position: 0 },
+        { color: '#a8edea', position: 25 },
+        { color: '#fed6e3', position: 50 },
+        { color: '#ffecd2', position: 75 },
         { color: '#fcb69f', position: 100 }
       ]
     }
   },
   {
-    id: 'mango-papaya',
-    name: 'Mango Papaya',
-    category: 'warm',
-    value: {
-      type: 'linear',
-      angle: 135,
-      stops: [
-        { color: '#ffe259', position: 0 },
-        { color: '#ffa751', position: 100 }
-      ]
-    }
-  },
-
-  // ============================================
-  // Cool gradients
-  // ============================================
-  {
-    id: 'ocean-breeze',
-    name: 'Ocean Breeze',
-    category: 'cool',
-    value: {
-      type: 'linear',
-      angle: 99,
-      stops: [
-        { color: '#22aff5', position: 3 },
-        { color: '#62f797', position: 98 }
-      ]
-    }
-  },
-  {
-    id: 'winter-neva',
-    name: 'Winter Neva',
-    category: 'cool',
-    value: {
-      type: 'linear',
-      angle: 120,
-      stops: [
-        { color: '#a1c4fd', position: 0 },
-        { color: '#c2e9fb', position: 100 }
-      ]
-    }
-  },
-  {
-    id: 'deep-sea',
-    name: 'Deep Sea',
-    category: 'cool',
-    value: {
-      type: 'linear',
-      angle: 180,
-      stops: [
-        { color: '#2193b0', position: 0 },
-        { color: '#6dd5ed', position: 100 }
-      ]
-    }
-  },
-  {
-    id: 'aqua-splash',
-    name: 'Aqua Splash',
-    category: 'cool',
-    value: {
-      type: 'linear',
-      angle: 45,
-      stops: [
-        { color: '#13547a', position: 0 },
-        { color: '#80d0c7', position: 100 }
-      ]
-    }
-  },
-
-  // ============================================
-  // Vibrant gradients
-  // ============================================
-  {
-    id: 'electric-violet',
-    name: 'Electric Violet',
-    category: 'vibrant',
-    value: {
-      type: 'linear',
-      angle: 180,
-      stops: [
-        { color: '#f915d7', position: 1 },
-        { color: '#160062', position: 99 }
-      ]
-    }
-  },
-  {
-    id: 'purple-haze',
-    name: 'Purple Haze',
-    category: 'vibrant',
-    value: {
-      type: 'linear',
-      angle: 110,
-      stops: [
-        { color: '#c4f9ff', position: 11 },
-        { color: '#eec5f6', position: 42 },
-        { color: '#edb5fe', position: 72 },
-        { color: '#7bb7fd', position: 100 }
-      ]
-    }
-  },
-  {
-    id: 'neon-glow',
-    name: 'Neon Glow',
-    category: 'vibrant',
-    value: {
-      type: 'linear',
-      angle: 45,
-      stops: [
-        { color: '#f953c6', position: 0 },
-        { color: '#b91d73', position: 100 }
-      ]
-    }
-  },
-  {
-    id: 'cosmic-fusion',
-    name: 'Cosmic Fusion',
-    category: 'vibrant',
-    value: {
-      type: 'linear',
-      angle: 135,
-      stops: [
-        { color: '#ff0844', position: 0 },
-        { color: '#ffb199', position: 100 }
-      ]
-    }
-  },
-  {
-    id: 'ultra-violet',
-    name: 'Ultra Violet',
-    category: 'vibrant',
-    value: {
-      type: 'linear',
-      angle: 90,
-      stops: [
-        { color: '#654ea3', position: 0 },
-        { color: '#eaafc8', position: 100 }
-      ]
-    }
-  },
-
-  // ============================================
-  // Pastel gradients
-  // ============================================
-  {
-    id: 'cotton-candy',
-    name: 'Cotton Candy',
-    category: 'pastel',
-    value: {
-      type: 'linear',
-      angle: 103,
-      stops: [
-        { color: '#fce1d0', position: 30 },
-        { color: '#ffadd6', position: 56 },
-        { color: '#a2baf5', position: 82 }
-      ]
-    }
-  },
-  {
-    id: 'soft-pink',
-    name: 'Soft Pink',
-    category: 'pastel',
-    value: {
-      type: 'linear',
-      angle: 180,
-      stops: [
-        { color: '#fbc2eb', position: 0 },
-        { color: '#a6c1ee', position: 100 }
-      ]
-    }
-  },
-  {
-    id: 'lavender-dream',
-    name: 'Lavender Dream',
+    id: 'coral-reef',
+    name: 'Coral Reef',
     category: 'pastel',
     value: {
       type: 'linear',
       angle: 135,
       stops: [
-        { color: '#e0c3fc', position: 0 },
-        { color: '#8ec5fc', position: 100 }
+        { color: '#fff8f1', position: 0 },
+        { color: '#ffecd2', position: 25 },
+        { color: '#fcb69f', position: 50 },
+        { color: '#fad0c4', position: 75 },
+        { color: '#f093fb', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'lemon-sky',
+    name: 'Lemon Sky',
+    category: 'pastel',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#fefce8', position: 0 },
+        { color: '#4facfe', position: 25 },
+        { color: '#f5576c', position: 50 },
+        { color: '#fcb69f', position: 75 },
+        { color: '#ffd1ff', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'lavender-mist',
+    name: 'Lavender Mist',
+    category: 'pastel',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#fefce8', position: 0 },
+        { color: '#f6d6ff', position: 25 },
+        { color: '#d0f4de', position: 50 },
+        { color: '#fff1c1', position: 75 },
+        { color: '#ffd6e0', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'baby-blue',
+    name: 'Baby Blue',
+    category: 'pastel',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#f0f9ff', position: 0 },
+        { color: '#a0c4ff', position: 25 },
+        { color: '#bdb2ff', position: 50 },
+        { color: '#ffc6ff', position: 75 },
+        { color: '#caffbf', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'lilac-dream',
+    name: 'Lilac Dream',
+    category: 'pastel',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#f0fdfa', position: 0 },
+        { color: '#e0c3fc', position: 25 },
+        { color: '#8ecae6', position: 50 },
+        { color: '#bde0fe', position: 75 },
+        { color: '#ffe6e6', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'peachy-cream',
+    name: 'Peachy Cream',
+    category: 'pastel',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#fef7f0', position: 0 },
+        { color: '#f9f9c5', position: 25 },
+        { color: '#f7c8e0', position: 50 },
+        { color: '#c1f7d3', position: 75 },
+        { color: '#c1c8e4', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'soft-rainbow',
+    name: 'Soft Rainbow',
+    category: 'pastel',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#fef2f2', position: 0 },
+        { color: '#e2f0cb', position: 25 },
+        { color: '#b5ead7', position: 50 },
+        { color: '#ffb7b2', position: 75 },
+        { color: '#ffdac1', position: 100 }
       ]
     }
   },
@@ -256,115 +255,597 @@ export const gradientPresets = [
       ]
     }
   },
+
+  // ============================================
+  // Vibrant gradients - bold and energetic
+  // ============================================
   {
-    id: 'peach-blossom',
-    name: 'Peach Blossom',
-    category: 'pastel',
+    id: 'fire-passion',
+    name: 'Fire Passion',
+    category: 'vibrant',
     value: {
       type: 'linear',
-      angle: 45,
+      angle: 135,
       stops: [
-        { color: '#ffecd2', position: 0 },
-        { color: '#fcb69f', position: 100 }
+        { color: '#fef2f2', position: 0 },
+        { color: '#ff6b6b', position: 25 },
+        { color: '#ff8e53', position: 50 },
+        { color: '#ff6b9d', position: 75 },
+        { color: '#c44569', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'ocean-wave',
+    name: 'Ocean Wave',
+    category: 'vibrant',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#ecfeff', position: 0 },
+        { color: '#4ecdc4', position: 25 },
+        { color: '#44a08d', position: 50 },
+        { color: '#96ceb4', position: 75 },
+        { color: '#55a3ff', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'purple-power',
+    name: 'Purple Power',
+    category: 'vibrant',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#faf5ff', position: 0 },
+        { color: '#a29bfe', position: 25 },
+        { color: '#6c5ce7', position: 50 },
+        { color: '#fd79a8', position: 75 },
+        { color: '#e84393', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'teal-blast',
+    name: 'Teal Blast',
+    category: 'vibrant',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#f0fdfa', position: 0 },
+        { color: '#00d2d3', position: 25 },
+        { color: '#01a3a4', position: 50 },
+        { color: '#00b894', position: 75 },
+        { color: '#55efc4', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'hot-sunset',
+    name: 'Hot Sunset',
+    category: 'vibrant',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#fef2f2', position: 0 },
+        { color: '#fd79a8', position: 25 },
+        { color: '#fdcb6e', position: 50 },
+        { color: '#e17055', position: 75 },
+        { color: '#d63031', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'electric-blue',
+    name: 'Electric Blue',
+    category: 'vibrant',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#eff6ff', position: 0 },
+        { color: '#74b9ff', position: 25 },
+        { color: '#0984e3', position: 50 },
+        { color: '#6c5ce7', position: 75 },
+        { color: '#a29bfe', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'mint-ocean',
+    name: 'Mint Ocean',
+    category: 'vibrant',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#f0fdfa', position: 0 },
+        { color: '#00b894', position: 25 },
+        { color: '#00cec9', position: 50 },
+        { color: '#74b9ff', position: 75 },
+        { color: '#0984e3', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'sunset-fire',
+    name: 'Sunset Fire',
+    category: 'vibrant',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#fff7ed', position: 0 },
+        { color: '#e17055', position: 25 },
+        { color: '#d63031', position: 50 },
+        { color: '#fd79a8', position: 75 },
+        { color: '#e84393', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'violet-burst',
+    name: 'Violet Burst',
+    category: 'vibrant',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#faf5ff', position: 0 },
+        { color: '#6c5ce7', position: 25 },
+        { color: '#a29bfe', position: 50 },
+        { color: '#fd79a8', position: 75 },
+        { color: '#ff7675', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'tropical-heat',
+    name: 'Tropical Heat',
+    category: 'vibrant',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#fffbeb', position: 0 },
+        { color: '#ff7675', position: 25 },
+        { color: '#fd79a8', position: 50 },
+        { color: '#fdcb6e', position: 75 },
+        { color: '#ffeaa7', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'neon-violet',
+    name: 'Neon Violet',
+    category: 'vibrant',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#f0f9ff', position: 0 },
+        { color: '#55a3ff', position: 25 },
+        { color: '#74b9ff', position: 50 },
+        { color: '#a29bfe', position: 75 },
+        { color: '#dda8dd', position: 100 }
       ]
     }
   },
 
   // ============================================
-  // Dark gradients
+  // Dark gradients - moody and sophisticated
   // ============================================
   {
-    id: 'midnight',
-    name: 'Midnight',
-    category: 'dark',
-    value: {
-      type: 'linear',
-      angle: 180,
-      stops: [
-        { color: '#232526', position: 0 },
-        { color: '#414345', position: 100 }
-      ]
-    }
-  },
-  {
-    id: 'dark-ocean',
-    name: 'Dark Ocean',
+    id: 'dark-ember',
+    name: 'Dark Ember',
     category: 'dark',
     value: {
       type: 'linear',
       angle: 135,
       stops: [
-        { color: '#373B44', position: 0 },
-        { color: '#4286f4', position: 100 }
+        { color: '#1a2026', position: 0 },
+        { color: '#872816', position: 50 },
+        { color: '#c4710b', position: 100 }
       ]
     }
   },
   {
-    id: 'royal-purple',
-    name: 'Royal Purple',
+    id: 'deep-teal',
+    name: 'Deep Teal',
     category: 'dark',
     value: {
       type: 'linear',
-      angle: 90,
+      angle: 135,
       stops: [
-        { color: '#141E30', position: 0 },
-        { color: '#243B55', position: 100 }
+        { color: '#011f26', position: 0 },
+        { color: '#4a8c8c', position: 50 },
+        { color: '#fab062', position: 100 }
       ]
     }
   },
   {
-    id: 'deep-space',
-    name: 'Deep Space',
+    id: 'midnight-blue',
+    name: 'Midnight Blue',
     category: 'dark',
     value: {
       type: 'linear',
-      angle: 180,
+      angle: 135,
       stops: [
-        { color: '#000000', position: 0 },
-        { color: '#434343', position: 100 }
+        { color: '#141421', position: 0 },
+        { color: '#547c8c', position: 50 },
+        { color: '#d6907c', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'dark-navy',
+    name: 'Dark Navy',
+    category: 'dark',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#11192d', position: 0 },
+        { color: '#283b8c', position: 50 },
+        { color: '#58d8db', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'midnight-indigo',
+    name: 'Midnight Indigo',
+    category: 'dark',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#120a2d', position: 0 },
+        { color: '#164782', position: 50 },
+        { color: '#e2a359', position: 100 }
       ]
     }
   },
 
   // ============================================
-  // Neutral gradients
+  // Warm gradients - cozy and inviting
   // ============================================
   {
-    id: 'silver-lake',
-    name: 'Silver Lake',
-    category: 'neutral',
+    id: 'autumn-warmth',
+    name: 'Autumn Warmth',
+    category: 'warm',
     value: {
       type: 'linear',
-      angle: 180,
+      angle: 135,
       stops: [
-        { color: '#bdc3c7', position: 0 },
-        { color: '#2c3e50', position: 100 }
+        { color: '#dac7be', position: 0 },
+        { color: '#f7e7ce', position: 25 },
+        { color: '#e9c46a', position: 50 },
+        { color: '#f4a261', position: 75 },
+        { color: '#e76f51', position: 100 }
       ]
     }
   },
   {
-    id: 'cloudy-day',
-    name: 'Cloudy Day',
+    id: 'sunrise-glow',
+    name: 'Sunrise Glow',
+    category: 'warm',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#4f5d75', position: 0 },
+        { color: '#bfc0c0', position: 33 },
+        { color: '#ffffff', position: 67 },
+        { color: '#ffd166', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'terracotta',
+    name: 'Terracotta',
+    category: 'warm',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#a0756c', position: 0 },
+        { color: '#f4f3ee', position: 25 },
+        { color: '#e9c46a', position: 50 },
+        { color: '#f4a261', position: 75 },
+        { color: '#e76f51', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'coastal-blue',
+    name: 'Coastal Blue',
+    category: 'warm',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#6b8e8e', position: 0 },
+        { color: '#f7f9fc', position: 25 },
+        { color: '#a8dadc', position: 50 },
+        { color: '#457b9d', position: 75 },
+        { color: '#1d3557', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'plum-wine',
+    name: 'Plum Wine',
+    category: 'warm',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#8d7b8b', position: 0 },
+        { color: '#f8f4f9', position: 25 },
+        { color: '#dda0dd', position: 50 },
+        { color: '#ba68c8', position: 75 },
+        { color: '#8e24aa', position: 100 }
+      ]
+    }
+  },
+
+  // ============================================
+  // Cool gradients - fresh and calming
+  // ============================================
+  {
+    id: 'ocean-mist',
+    name: 'Ocean Mist',
+    category: 'cool',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#fff2ef', position: 0 },
+        { color: '#ffdbba', position: 33 },
+        { color: '#f7a5a5', position: 67 },
+        { color: '#5d688a', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'arctic-sky',
+    name: 'Arctic Sky',
+    category: 'cool',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#b8cced', position: 0 },
+        { color: '#f6e7e4', position: 33 },
+        { color: '#fbf4f9', position: 67 },
+        { color: '#f6e4f2', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'rose-blush',
+    name: 'Rose Blush',
+    category: 'cool',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#ffecc0', position: 0 },
+        { color: '#ffc29b', position: 33 },
+        { color: '#f39f9f', position: 67 },
+        { color: '#b95e82', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'violet-pink',
+    name: 'Violet Pink',
+    category: 'cool',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#fed2e2', position: 0 },
+        { color: '#c68efd', position: 33 },
+        { color: '#e9a5f1', position: 67 },
+        { color: '#8f87f1', position: 100 }
+      ]
+    }
+  },
+
+  // ============================================
+  // Neutral gradients - elegant and balanced
+  // ============================================
+  {
+    id: 'silver-mist',
+    name: 'Silver Mist',
     category: 'neutral',
     value: {
       type: 'linear',
       angle: 135,
       stops: [
-        { color: '#ECE9E6', position: 0 },
-        { color: '#FFFFFF', position: 100 }
+        { color: '#bcb6ff', position: 0 },
+        { color: '#b8e1ff', position: 33 },
+        { color: '#a9fff7', position: 67 },
+        { color: '#94fbab', position: 100 }
       ]
     }
   },
   {
-    id: 'metal-shine',
-    name: 'Metal Shine',
+    id: 'glacier-blue',
+    name: 'Glacier Blue',
     category: 'neutral',
     value: {
       type: 'linear',
-      angle: 180,
+      angle: 135,
       stops: [
-        { color: '#d7d2cc', position: 0 },
-        { color: '#304352', position: 100 }
+        { color: '#cae5ff', position: 0 },
+        { color: '#acedff', position: 25 },
+        { color: '#89bbfe', position: 50 },
+        { color: '#6f8ab7', position: 75 },
+        { color: '#615d6c', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'lavender-sky',
+    name: 'Lavender Sky',
+    category: 'neutral',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#9381ff', position: 0 },
+        { color: '#b8b8ff', position: 25 },
+        { color: '#f8f7ff', position: 50 },
+        { color: '#ffeedd', position: 75 },
+        { color: '#ffd8be', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'rustic-autumn',
+    name: 'Rustic Autumn',
+    category: 'neutral',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#780116', position: 0 },
+        { color: '#f7b538', position: 25 },
+        { color: '#db7c26', position: 50 },
+        { color: '#d8572a', position: 75 },
+        { color: '#c32f27', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'steel-blue',
+    name: 'Steel Blue',
+    category: 'neutral',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#0d1321', position: 0 },
+        { color: '#1d2d44', position: 33 },
+        { color: '#3e5c76', position: 67 },
+        { color: '#748cab', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'sunset-coral',
+    name: 'Sunset Coral',
+    category: 'neutral',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#fefeff', position: 0 },
+        { color: '#d6efff', position: 25 },
+        { color: '#fed18c', position: 50 },
+        { color: '#fed99b', position: 75 },
+        { color: '#fe654f', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'sage-garden',
+    name: 'Sage Garden',
+    category: 'neutral',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#b8d8ba', position: 0 },
+        { color: '#d9dbbc', position: 33 },
+        { color: '#fcddbc', position: 67 },
+        { color: '#ef959d', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'moody-night',
+    name: 'Moody Night',
+    category: 'neutral',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#151e3f', position: 0 },
+        { color: '#030027', position: 25 },
+        { color: '#f2f3d9', position: 50 },
+        { color: '#dc9e82', position: 75 },
+        { color: '#c16e70', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'graphite-stone',
+    name: 'Graphite Stone',
+    category: 'neutral',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#14110f', position: 0 },
+        { color: '#34312d', position: 25 },
+        { color: '#7e7f83', position: 50 },
+        { color: '#d9c5b2', position: 75 },
+        { color: '#f3f3f4', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'pink-teal',
+    name: 'Pink Teal',
+    category: 'neutral',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#d12383', position: 0 },
+        { color: '#de4d86', position: 25 },
+        { color: '#f29ca3', position: 50 },
+        { color: '#f7cacd', position: 75 },
+        { color: '#84e6f8', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'teal-beige',
+    name: 'Teal Beige',
+    category: 'neutral',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#0892a5', position: 0 },
+        { color: '#06908f', position: 25 },
+        { color: '#0ca4a5', position: 50 },
+        { color: '#dbb68f', position: 75 },
+        { color: '#dbbaa9', position: 100 }
+      ]
+    }
+  },
+  {
+    id: 'forest-mint',
+    name: 'Forest Mint',
+    category: 'neutral',
+    value: {
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#d7fff1', position: 0 },
+        { color: '#aafcb8', position: 25 },
+        { color: '#8cd790', position: 50 },
+        { color: '#77af9c', position: 75 },
+        { color: '#285943', position: 100 }
       ]
     }
   }
