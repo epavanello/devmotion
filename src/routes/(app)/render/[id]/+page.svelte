@@ -4,7 +4,7 @@
   import LayersRenderer from '$lib/components/editor/canvas/layers-renderer.svelte';
   import Watermark from '$lib/components/editor/canvas/watermark.svelte';
   import { ProjectSchema, type Project } from '$lib/types/animation';
-  import { getBackgroundColor, getBackgroundImage } from '$lib/schemas/background';
+  import { getStyleProperties } from '$lib/schemas/background';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();
@@ -15,6 +15,9 @@
 
   // Current time controlled externally via window.__DEVMOTION__
   let currentTime = $state(0);
+
+  // Get background style properties including filters
+  const backgroundStyle = $derived(getStyleProperties(project.background));
 
   // Promise that resolves when ready
   let readyResolve: () => void;
@@ -145,8 +148,9 @@
   class="render-container"
   style:width="{project.width}px"
   style:height="{project.height}px"
-  style:background-color={getBackgroundColor(project.background)}
-  style:background-image={getBackgroundImage(project.background)}
+  style:background-color={backgroundStyle.backgroundColor}
+  style:background-image={backgroundStyle.backgroundImage}
+  style:filter={backgroundStyle.filter}
 >
   <!-- Layers -->
   <div class="layers-container">

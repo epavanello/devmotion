@@ -135,6 +135,7 @@ export const AnimatablePropertySchema = z.union([
 // animation.ts → registry.ts → layer components → animation.ts would break if
 // these schemas lived here, so they live in background.ts and are re-exported.
 export {
+  BackgroundFiltersSchema,
   ColorStopSchema,
   SolidBackgroundSchema,
   LinearGradientSchema,
@@ -142,6 +143,7 @@ export {
   ConicGradientSchema,
   BackgroundValueSchema,
   backgroundValueToCSS,
+  buildFilterCSS,
   solidBackground,
   linearGradient,
   radialGradient,
@@ -149,6 +151,7 @@ export {
   isSolid
 } from './background';
 export type {
+  BackgroundFilters,
   ColorStop,
   SolidBackground,
   LinearGradient,

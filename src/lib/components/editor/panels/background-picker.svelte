@@ -11,6 +11,7 @@
   import { Palette, Sparkles, Plus, Trash2, ChevronDown } from '@lucide/svelte';
   import {
     type BackgroundValue,
+    type BackgroundFilters,
     type ColorStop,
     backgroundValueToCSS,
     solidBackground,
@@ -173,6 +174,32 @@
   function applyPreset(preset: GradientPreset) {
     onchange(preset.value);
   }
+
+  // Filter management
+  let filters = $derived<BackgroundFilters | undefined>(
+    isGradient(value) ? value.filters : undefined
+  );
+
+  function updateFilter<K extends keyof NonNullable<BackgroundFilters>>(
+    key: K,
+    filterValue: NonNullable<BackgroundFilters>[K]
+  ) {
+    if (isGradient(value)) {
+      const newFilters = { ...filters, [key]: filterValue };
+      onchange({ ...value, filters: newFilters });
+    }
+  }
+
+  function resetFilters() {
+    if (isGradient(value)) {
+      const { filters: _removed, ...rest } = value;
+      onchange(rest as BackgroundValue);
+    }
+  }
+
+  const hasFilters = $derived(
+    filters && Object.values(filters).some((v) => v !== undefined && v !== 1 && v !== 0)
+  );
 </script>
 
 <Popover.Root>
@@ -243,7 +270,7 @@
           </div>
         </div>
       {:else if activeTab === 'gradient'}
-        <ScrollArea viewportClass="p-1">
+        <ScrollArea class="h-64" viewportClass="p-1">
           <div class="space-y-3 pr-2">
             <!-- Gradient type selector -->
             <InputWrapper for="gradient-type" label="Type">
@@ -268,8 +295,8 @@
                     max={360}
                     bind:value={angle}
                     onchange={updateGradient}
+                    postFix="deg"
                   />
-                  <span class="text-muted-foreground">deg</span>
                 </div>
               </InputWrapper>
             {/if}
@@ -340,17 +367,114 @@
                     {#if stops.length > 2}
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon-xs"
                         class="size-6 p-0"
                         onclick={() => removeColorStop(index)}
-                      >
-                        <Trash2 class="size-3" />
-                      </Button>
+                        icon={Trash2}
+                      />
                     {/if}
                   </div>
                 {/each}
               </div>
             </InputWrapper>
+
+            <Separator />
+
+            <!-- Filters Section -->
+            <div class="space-y-3">
+              <!-- Blur -->
+              <InputsWrapper
+                fields={[
+                  { for: 'filter-blur', labels: 'Blur' },
+                  { for: 'filter-brightness', labels: 'Brightness' }
+                ]}
+              >
+                <ScrubInput
+                  id="filter-blur"
+                  min={0}
+                  max={50}
+                  value={filters?.blur ?? 0}
+                  onchange={(v) => updateFilter('blur', v)}
+                  postFix="px"
+                /><ScrubInput
+                  id="filter-brightness"
+                  min={0}
+                  max={2}
+                  step={0.1}
+                  value={filters?.brightness ?? 1}
+                  onchange={(v) => updateFilter('brightness', v)}
+                />
+              </InputsWrapper>
+
+              <!-- Contrast -->
+              <InputsWrapper
+                fields={[
+                  { for: 'filter-contrast', labels: 'Contrast' },
+                  { for: 'filter-saturate', labels: 'Saturation' }
+                ]}
+              >
+                <ScrubInput
+                  id="filter-contrast"
+                  min={0}
+                  max={2}
+                  step={0.1}
+                  value={filters?.contrast ?? 1}
+                  onchange={(v) => updateFilter('contrast', v)}
+                />
+                <ScrubInput
+                  id="filter-saturate"
+                  min={0}
+                  max={2}
+                  step={0.1}
+                  value={filters?.saturate ?? 1}
+                  onchange={(v) => updateFilter('saturate', v)}
+                />
+              </InputsWrapper>
+
+              <!-- Hue Rotate -->
+              <InputsWrapper
+                fields={[
+                  { for: 'filter-hue', labels: 'Hue Rotate' },
+                  { for: 'filter-opacity', labels: 'Opacity' }
+                ]}
+              >
+                <ScrubInput
+                  id="filter-hue"
+                  min={0}
+                  max={360}
+                  value={filters?.hueRotate ?? 0}
+                  onchange={(v) => updateFilter('hueRotate', v)}
+                  postFix="deg"
+                />
+                <ScrubInput
+                  id="filter-opacity"
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  value={filters?.opacity ?? 1}
+                  onchange={(v) => updateFilter('opacity', v)}
+                />
+              </InputsWrapper>
+
+              <!-- Grain -->
+              <InputWrapper for="filter-grain" label="Grain">
+                <ScrubInput
+                  id="filter-grain"
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  value={filters?.grain ?? 0}
+                  onchange={(v) => updateFilter('grain', v)}
+                />
+              </InputWrapper>
+
+              <!-- Reset button -->
+              {#if hasFilters}
+                <Button variant="outline" size="sm" class="w-full" onclick={resetFilters}>
+                  Reset Filters
+                </Button>
+              {/if}
+            </div>
           </div>
         </ScrollArea>
       {:else if activeTab === 'presets'}

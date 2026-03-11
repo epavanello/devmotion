@@ -211,6 +211,7 @@
   style:height={'height' in shapeStyles ? shapeStyles.height : undefined}
   style:background-color={shapeStyles.backgroundColor}
   style:background-image={shapeStyles.backgroundImage}
+  style:filter={shapeStyles.filter}
   style:border={shapeStyles.border}
   style:border-radius={'borderRadius' in shapeStyles ? shapeStyles.borderRadius : undefined}
   style:clip-path={'clipPath' in shapeStyles ? shapeStyles.clipPath : undefined}
