@@ -1,7 +1,7 @@
 <script lang="ts">
   import LayersRenderer from '$lib/components/editor/canvas/layers-renderer.svelte';
   import Watermark from '$lib/components/editor/canvas/watermark.svelte';
-  import { getBackgroundColor, getBackgroundImage } from '$lib/schemas/background';
+  import { getStyleProperties } from '$lib/schemas/background';
   import { cn } from '$lib/utils';
   import type { Project } from '$lib/schemas/animation';
   import type { FrameCache } from '$lib/stores/project.svelte';
@@ -40,6 +40,9 @@
 
   const viewportWidth = $derived(width ?? project.width);
   const viewportHeight = $derived(height ?? project.height);
+
+  // Get background style properties including filters
+  const backgroundStyle = $derived(getStyleProperties(project.background));
 </script>
 
 <!-- Project viewport area - exact dimensions of the video output -->
@@ -53,8 +56,9 @@
   style:perspective="1000px"
   style:perspective-origin="center center"
   style:isolation="isolate"
-  style:background-color={getBackgroundColor(project.background)}
-  style:background-image={getBackgroundImage(project.background)}
+  style:background-color={backgroundStyle.backgroundColor}
+  style:background-image={backgroundStyle.backgroundImage}
+  style:filter={backgroundStyle.filter}
   style:cursor={isRecording ? 'none' : undefined}
 >
   <!-- Layers -->
